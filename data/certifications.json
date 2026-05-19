@@ -1,0 +1,26 @@
+[
+  {
+    "id": "iso-22000",
+    "name": "ISO 22000:2018",
+    "description": "Food Safety Management System",
+    "image": null
+  },
+  {
+    "id": "gmp",
+    "name": "GMP Certified",
+    "description": "Good Manufacturing Practices",
+    "image": null
+  },
+  {
+    "id": "organic",
+    "name": "Organic Certified",
+    "description": "For certified organic products",
+    "image": null
+  },
+  {
+    "id": "export-licensed",
+    "name": "Export Licensed",
+    "description": "Authorized by Ministry of Trade",
+    "image": null
+  }
+]

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" aria-hidden="true">
+  <!-- Coffee branch — 3 cherries + 2 leaves, bold strokes -->
+  <!-- branch -->
+  <path d="M 80 320 C 150 280 210 200 270 110" stroke="#21341a" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <!-- back leaf -->
+  <path d="M 240 130 C 180 120 150 165 175 215 C 230 215 275 175 275 130 C 270 122 258 128 240 130 Z"
+        fill="#a3c074" stroke="#21341a" stroke-width="2.5"/>
+  <path d="M 180 210 C 215 185 250 155 273 132" stroke="#21341a" stroke-width="1.5" fill="none" opacity="0.5"/>
+  <!-- front leaf -->
+  <path d="M 145 245 C 90 260 70 305 105 335 C 150 335 180 295 180 250 C 175 240 162 244 145 245 Z"
+        fill="#76944c" stroke="#21341a" stroke-width="2.5"/>
+  <path d="M 110 332 C 130 305 155 275 178 252" stroke="#21341a" stroke-width="1.5" fill="none" opacity="0.5"/>
+  <!-- 3 cherries -->
+  <circle cx="220" cy="200" r="32" fill="#39572f" stroke="#21341a" stroke-width="2.5"/>
+  <circle cx="260" cy="180" r="30" fill="#39572f" stroke="#21341a" stroke-width="2.5"/>
+  <circle cx="245" cy="225" r="28" fill="#39572f" stroke="#21341a" stroke-width="2.5"/>
+  <!-- highlights -->
+  <ellipse cx="210" cy="190" rx="6" ry="3" fill="#c8dba3" opacity="0.7"/>
+  <ellipse cx="252" cy="172" rx="6" ry="3" fill="#c8dba3" opacity="0.7"/>
+  <ellipse cx="237" cy="217" rx="5" ry="2.5" fill="#c8dba3" opacity="0.7"/>
+</svg>

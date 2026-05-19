@@ -1,0 +1,35 @@
+---
+// CertificationShowcase.astro
+// Wrapper has data-cert-section so client-side loader can hide the entire
+// section (title + cards + trust statement) when there are zero certs,
+// preventing the empty white void.
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Certifications & Standards",
+  description = "All our products meet international certification requirements"
+} = Astro.props;
+---
+
+<div class="py-16 hidden" data-cert-section>
+  {title && (
+    <div class="text-center mb-12 scroll-trigger" data-trigger-animation="fadeIn">
+      <h2 class="font-heading text-5xl font-bold text-primary-900 mb-4">{title}</h2>
+      <p class="text-lg text-primary-600 max-w-2xl mx-auto">{description}</p>
+    </div>
+  )}
+
+  <div
+    id="certificationsContainer"
+    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto"
+  ></div>
+
+  <div class="text-center mt-16 scroll-trigger" data-trigger-animation="fadeIn">
+    <p class="text-primary-900 max-w-lg mx-auto">
+      Our commitment to international quality standards ensures every product meets or exceeds industry requirements.
+    </p>
+  </div>
+</div>

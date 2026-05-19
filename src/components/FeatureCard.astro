@@ -1,0 +1,35 @@
+---
+// FeatureCard.astro - Professional feature card with SVG or PNG icons
+import TwoToneIcon from './TwoToneIcon.astro';
+
+interface Props {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+const { icon, title, description } = Astro.props;
+const isImageIcon = icon.startsWith('/');
+---
+
+<article class="group bg-white border border-gray-200 hover:border-primary-600 rounded-lg transition-all duration-300 p-8 shadow-sm hover:shadow-lg hover:-translate-y-1">
+  <!-- Icon -->
+  <div class="mb-6">
+    {isImageIcon ? (
+      <img
+        src={icon}
+        alt={title}
+        width="96"
+        height="96"
+        loading="lazy"
+        class="feature-icon w-24 h-24 object-contain opacity-70 transition-all duration-300"
+      />
+    ) : (
+      <TwoToneIcon name={icon} size={60} />
+    )}
+  </div>
+
+  <!-- Content -->
+  <h3 class="font-heading text-lg font-bold text-primary-900 mb-3 tracking-tight">{title}</h3>
+  <p class="text-primary-900 text-sm leading-relaxed">{description}</p>
+</article>

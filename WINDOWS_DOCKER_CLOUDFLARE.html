@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows + Docker + Cloudflare Tunnel Setup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        h2 {
+            color: #667eea;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            font-size: 1.8em;
+        }
+
+        h3 {
+            color: #2c3e50;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-left: 5px solid #667eea;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .before-start {
+            background: #e8f4f8;
+            padding: 20px;
+            border-left: 5px solid #3498db;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        code {
+            background: #2c3e50;
+            color: #1abc9c;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+        }
+
+        pre {
+            background: #2c3e50;
+            color: #1abc9c;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            line-height: 1.4;
+        }
+
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin: 15px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #ecf0f1;
+        }
+
+        .download-box {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #ff9800;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #bdc3c7;
+            text-align: center;
+            color: #7f8c8d;
+        }
+
+        hr {
+            border: none;
+            border-top: 2px solid #ecf0f1;
+            margin: 30px 0;
+        }
+
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #667eea;
+            z-index: -1;
+        }
+
+        .timeline-item {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            border-radius: 50%;
+            border: 3px solid white;
+            z-index: 1;
+        }
+
+        .timeline-item h4 {
+            margin-top: 50px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .timeline-item p {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐳 Windows + Docker + Cloudflare Tunnel</h1>
+        <div class="subtitle">
+            <strong>Time:</strong> 30 minutes | <strong>Result:</strong> Website live at https://olira.com (no port forwarding)
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-item">
+                <h4>STEP 1</h4>
+                <p>Install Docker<br>(10 min)</p>
+            </div>
+            <div class="timeline-item">
+                <h4>STEP 2</h4>
+                <p>Build Container<br>(5 min)</p>
+            </div>
+            <div class="timeline-item">
+                <h4>STEP 3</h4>
+                <p>Cloudflare Tunnel<br>(10 min)</p>
+            </div>
+            <div class="timeline-item">
+                <h4>STEP 4</h4>
+                <p>Test Website<br>(5 min)</p>
+            </div>
+        </div>
+
+        <hr>
+
+        <h2>BEFORE YOU START</h2>
+
+        <div class="before-start">
+            <p><strong>Download these:</strong></p>
+            <ul>
+                <li><strong>Docker Desktop for Windows:</strong> https://www.docker.com/products/docker-desktop</li>
+                <li><strong>Have olira.com domain ready</strong> (with Cloudflare account)</li>
+            </ul>
+        </div>
+
+        <hr>
+
+        <h2>STEP 1️⃣: INSTALL DOCKER DESKTOP (10 min)</h2>
+
+        <div class="step">
+            <ol>
+                <li>Download Docker Desktop from link above</li>
+                <li>Install it (follow wizard)</li>
+                <li>Restart Windows</li>
+                <li>Open PowerShell/Command Prompt and run:
+                    <pre>docker --version
+# Should show: Docker version XX.X.X</pre>
+                </li>
+            </ol>
+            <p class="success">✅ Docker installed!</p>
+        </div>
+
+        <hr>
+
+        <h2>STEP 2️⃣: CLONE OLIRA & BUILD CONTAINER (5 min)</h2>
+
+        <div class="step">
+            <pre># Create folder
+mkdir C:\websites
+cd C:\websites
+
+# Clone repo
+git clone https://github.com/archimatrix47-design/Olira.git olira
+cd olira</pre>
+
+            <h3>Create: <code>Dockerfile</code></h3>
+            <pre>FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+EXPOSE 3004
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "3004"]</pre>
+
+            <h3>Create: <code>docker-compose.yml</code></h3>
+            <pre>version: '3.8'
+
+services:
+  olira:
+    build: .
+    container_name: olira-website
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped</pre>
+
+            <h3>Now run:</h3>
+            <pre># Build and start
+docker compose up -d --build
+
+# Watch progress
+docker logs olira-website -f
+
+# When you see "Server running at http://0.0.0.0:3004/" - done!
+# Press Ctrl+C to exit logs</pre>
+
+            <p class="success">✅ Website running in Docker!</p>
+
+            <h3>Test locally:</h3>
+            <pre># Open browser: http://localhost:3004
+# Should load: Olira website</pre>
+        </div>
+
+        <hr>
+
+        <h2>STEP 3️⃣: SET UP CLOUDFLARE TUNNEL (10 min)</h2>
+
+        <div class="step">
+            <h3>3.1: In Cloudflare Dashboard</h3>
+            <ol>
+                <li>Go to <strong>https://dash.cloudflare.com</strong></li>
+                <li>Select your domain <code>olira.com</code></li>
+                <li>Go to: <strong>Networks → Tunnels</strong></li>
+                <li>Click: <strong>Create a tunnel</strong></li>
+                <li>Name it: <code>olira-tunnel</code></li>
+                <li>Choose: <strong>Docker</strong></li>
+                <li>Copy the token (long string)</li>
+            </ol>
+
+            <h3>3.2: Run Cloudflare Tunnel in Docker</h3>
+            <pre># In PowerShell, run:
+docker run -d ^
+  --name cloudflare-tunnel ^
+  --restart unless-stopped ^
+  cloudflare/cloudflared:latest ^
+  tunnel run --token YOUR_TOKEN_HERE
+
+# Replace YOUR_TOKEN_HERE with the token from step 3.1</pre>
+
+            <h3>3.3: Connect Domain to Website</h3>
+            <p>Back in Cloudflare Dashboard (still on Tunnels page):</p>
+            <ol>
+                <li>Click: <strong>Configure routing</strong></li>
+                <li>Under "Public Hostname":
+                    <ul>
+                        <li>Domain: <code>olira.com</code></li>
+                        <li>Service type: <code>HTTP</code></li>
+                        <li>URL: <code>localhost:3004</code></li>
+                        <li>Click: <strong>Save hostname</strong></li>
+                    </ul>
+                </li>
+                <li>Also add:
+                    <ul>
+                        <li>Domain: <code>www.olira.com</code></li>
+                        <li>Service type: <code>HTTP</code></li>
+                        <li>URL: <code>localhost:3004</code></li>
+                        <li>Click: <strong>Save hostname</strong></li>
+                    </ul>
+                </li>
+            </ol>
+            <p>Wait 1 minute for DNS to update.</p>
+            <p class="success">✅ Tunnel is live!</p>
+        </div>
+
+        <hr>
+
+        <h2>STEP 4️⃣: TEST (5 min)</h2>
+
+        <div class="step">
+            <p>Open browser:</p>
+            <pre>https://olira.com</pre>
+
+            <p>You should see:</p>
+            <ul>
+                <li>✅ Olira website loads</li>
+                <li>✅ Lock icon (HTTPS)</li>
+                <li>✅ No warnings</li>
+            </ul>
+
+            <p class="success">✅ DONE! Website is LIVE!</p>
+        </div>
+
+        <hr>
+
+        <h2>QUICK COMMANDS</h2>
+
+        <div class="step">
+            <pre># Check if running
+docker ps
+
+# View logs
+docker logs olira-website -f
+docker logs cloudflare-tunnel -f
+
+# Restart
+docker restart olira-website
+docker restart cloudflare-tunnel
+
+# Update website
+cd C:\websites\olira && git pull && docker compose up -d --build
+
+# Stop all
+docker compose down
+docker stop cloudflare-tunnel
+
+# Start all
+cd C:\websites\olira && docker compose up -d
+docker start cloudflare-tunnel</pre>
+        </div>
+
+        <hr>
+
+        <h2>AUTO-START ON WINDOWS REBOOT</h2>
+
+        <div class="step">
+            <h3>Option: Docker Desktop Settings (Easiest)</h3>
+            <ol>
+                <li>Open <strong>Docker Desktop</strong></li>
+                <li>Go to <strong>Settings → General</strong></li>
+                <li>Check: <strong>Start Docker Desktop when you log in</strong></li>
+                <li>Check: <strong>Use the WSL 2 based engine</strong></li>
+            </ol>
+            <p>Done! Everything auto-starts on reboot.</p>
+        </div>
+
+        <hr>
+
+        <h2>TROUBLESHOOTING</h2>
+
+        <table>
+            <tr>
+                <th>Problem</th>
+                <th>Fix</th>
+            </tr>
+            <tr>
+                <td><code>docker: command not found</code></td>
+                <td>Restart PowerShell after Docker install</td>
+            </tr>
+            <tr>
+                <td><code>port 3004 already in use</code></td>
+                <td><code>docker kill olira-website</code>, then restart</td>
+            </tr>
+            <tr>
+                <td>Website won't load</td>
+                <td>Check: <code>docker logs olira-website -f</code></td>
+            </tr>
+            <tr>
+                <td>Cloudflare tunnel disconnected</td>
+                <td>Check token is correct, restart tunnel</td>
+            </tr>
+            <tr>
+                <td>DNS not resolving</td>
+                <td>Wait 5 minutes, then refresh browser</td>
+            </tr>
+            <tr>
+                <td>Untrusted certificate</td>
+                <td>Check Cloudflare SSL/TLS is "Full (strict)"</td>
+            </tr>
+        </table>
+
+        <hr>
+
+        <div class="footer">
+            <h2 style="color: #667eea; border: none; margin-bottom: 20px;">✅ YOU'RE DONE!</h2>
+            <p style="font-size: 1.1em; margin: 15px 0;"><strong>Your website is:</strong></p>
+            <ul style="list-style: none; margin: 15px 0;">
+                <li>✅ Running in Docker (professional setup)</li>
+                <li>✅ Live at https://olira.com</li>
+                <li>✅ Secure with Cloudflare</li>
+                <li>✅ Auto-restart on reboot</li>
+                <li>✅ Easy to manage</li>
+            </ul>
+            <p style="font-size: 1.2em; margin-top: 20px;"><strong>No more work. It just runs.</strong></p>
+            <p style="margin-top: 30px; font-size: 1.2em;">🚀 Enjoy!</p>
+        </div>
+    </div>
+</body>
+</html>

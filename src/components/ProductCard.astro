@@ -1,0 +1,99 @@
+---
+// ProductCard.astro — flat, B2B-tuned.
+// Specs are ALWAYS visible (no hover-only reveal — both an a11y issue
+// and a conversion problem: importers scan specs to qualify a product).
+interface Props {
+  name: string;
+  category: string;
+  description: string;
+  specs: string[];
+  purity?: string;
+  moq?: string;
+  image?: string | null;
+  /** Index in the product grid (0-based). First-row cards get eager loading. */
+  cardIndex?: number;
+}
+const { name, category, description, specs, purity, moq, image, cardIndex = 99 } = Astro.props;
+const productId = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+// Above-fold cards (first row of 4) load eagerly with high priority so the
+// hero is followed by visible products. The rest defer.
+const eager = cardIndex < 4;
+---
+
+<article class="group bg-white border border-primary-200 hover:border-primary-600 transition-[border-color,transform,box-shadow] duration-300 ease-out h-full flex flex-col hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(10,20,7,0.45)]">
+  <!-- Photo frame. Image is oversized (h-[124%]) so it can be parallax-shifted
+       within the clipped frame as the card scrolls (AIR's image-move). -->
+  <div class="relative h-56 bg-primary-50 flex items-center justify-center overflow-hidden">
+    <!-- Category label, top-left — pill on photo for legibility -->
+    <span class="absolute top-4 left-4 z-10 font-sans text-[10px] uppercase tracking-[0.2em] text-white bg-primary-900/85 backdrop-blur-sm px-3 py-1.5 rounded-full">
+      {category}
+    </span>
+    {image ? (
+      <!-- Plain <img> rather than Astro <Image> because the source path is
+           determined at runtime (data/products.json + admin uploads to
+           public/uploads/products/), so it can't be statically imported.
+           We mitigate CLS via explicit width/height + intrinsic ratio,
+           and prioritize above-fold cards via loading + fetchpriority. -->
+      <img
+        src={image}
+        alt={`${name} — ${category}`}
+        width="800"
+        height="600"
+        loading={eager ? 'eager' : 'lazy'}
+        fetchpriority={eager ? 'high' : 'low'}
+        decoding="async"
+        data-parallax-img
+        class="absolute left-0 w-full h-[124%] -top-[12%] object-cover will-change-transform"
+        style="transform: translate3d(0, var(--py, 0px), 0)"
+      />
+    ) : (
+      <p class="text-primary-600 text-sm font-medium">Image coming soon</p>
+    )}
+  </div>
+
+  <!-- Content -->
+  <div class="p-6 flex flex-col flex-grow">
+    <h3 class="font-heading text-2xl font-bold text-primary-900 mb-3 leading-tight min-h-[3.5rem]">{name}</h3>
+    <p class="text-primary-800 text-sm leading-relaxed mb-6 min-h-[5rem]">{description}</p>
+
+    <!-- Specs (always visible) -->
+    {(purity || moq) && (
+      <div class="grid grid-cols-2 gap-4 mb-5 pb-5 border-b border-primary-200">
+        {purity && (
+          <div>
+            <span class="text-[10px] text-primary-600 font-semibold tracking-[0.18em] uppercase">Purity</span>
+            <p class="font-bold text-primary-900 text-base mt-1">{purity}</p>
+          </div>
+        )}
+        {moq && (
+          <div>
+            <span class="text-[10px] text-primary-600 font-semibold tracking-[0.18em] uppercase">MOQ</span>
+            <p class="font-bold text-primary-900 text-base mt-1">{moq}</p>
+          </div>
+        )}
+      </div>
+    )}
+
+    {specs && specs.length > 0 && (
+      <ul class="space-y-2 mb-6 flex-grow">
+        {specs.map((spec) => (
+          <li class="text-sm text-primary-800 flex items-start gap-2">
+            <span class="text-primary-600 mt-0.5" aria-hidden="true">·</span>
+            <span>{spec}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    <!-- CTA: button-shaped (this is commerce, not vibes) but flat — no shadow, no transform -->
+    <!-- Opens inquiry modal — no arrow because no navigation occurs.
+         "Request quote" sets correct expectation that this opens a form. -->
+    <button
+      type="button"
+      data-open-inquiry={productId}
+      class="w-full bg-primary-900 hover:bg-primary-800 active:bg-primary-700 active:scale-[0.97] text-white px-6 py-3 font-semibold text-sm tracking-wide transition-[colors,transform] duration-200 cursor-pointer mt-auto min-h-[44px]"
+    >
+      Request quote
+    </button>
+  </div>
+</article>

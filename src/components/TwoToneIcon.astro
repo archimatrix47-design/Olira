@@ -1,0 +1,58 @@
+---
+// TwoToneIcon.astro - Two-tone SVG icons using primary color palette
+interface Props {
+  name: string;
+  size?: number;
+}
+
+const { name, size = 40 } = Astro.props;
+
+const icons: Record<string, string> = {
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M20 6L9 17l-5-5" stroke="#39572f" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="12" cy="12" r="11" fill="none" stroke="#70a45e" stroke-width="2" opacity="0.3"/>
+  </svg>`,
+
+  globe: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="10" stroke="#39572f"/>
+    <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="#70a45e" opacity="0.5"/>
+  </svg>`,
+
+  heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="#39572f"/>
+    <circle cx="12" cy="12" r="1.5" fill="#70a45e"/>
+  </svg>`,
+
+  leaf: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M11 22c5-2.5 8-6 8-11 0-3.314-2.686-6-6-6-3.314 0-6 2.686-6 6 0 3 1.5 4.5 2.5 6.5" stroke="#39572f"/>
+    <path d="M12 8v8M9 9h6" stroke="#70a45e" opacity="0.5"/>
+  </svg>`,
+
+  box: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="#39572f"/>
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="#70a45e" opacity="0.5"/>
+    <line x1="12" y1="22.08" x2="12" y2="12" stroke="#70a45e" opacity="0.3"/>
+  </svg>`,
+
+  coin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="9" stroke="#39572f"/>
+    <path d="M7 12a5 5 0 1 1 10 0 5 5 0 0 1-10 0" stroke="#70a45e" opacity="0.4"/>
+    <line x1="12" y1="8" x2="12" y2="16" stroke="#70a45e" opacity="0.6"/>
+    <line x1="9" y1="12" x2="15" y2="12" stroke="#70a45e" opacity="0.6"/>
+  </svg>`
+};
+
+const svg = icons[name] || icons.check;
+---
+
+<div style={{ width: `${size}px`, height: `${size}px` }}>
+  <Fragment set:html={svg} />
+</div>
+
+<style>
+  div {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>

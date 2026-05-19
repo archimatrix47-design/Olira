@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" aria-hidden="true">
+  <!-- Mixed beans — bold cluster, 3 distinct shapes -->
+  <ellipse cx="200" cy="335" rx="155" ry="12" fill="#39572f" opacity="0.18"/>
+  <!-- kidney bean (back) -->
+  <path d="M 110 200 C 75 195 60 240 90 270 C 130 285 175 270 175 235 C 175 210 150 200 110 200 Z"
+        fill="#76944c" stroke="#21341a" stroke-width="2.5"/>
+  <!-- round bean (top right) -->
+  <circle cx="285" cy="220" r="48" fill="#c8dba3" stroke="#39572f" stroke-width="2.5"/>
+  <path d="M 260 215 C 270 230 295 232 315 220" stroke="#39572f" stroke-width="1.6" fill="none" opacity="0.6"/>
+  <!-- speckled oval (front) -->
+  <ellipse cx="200" cy="305" rx="62" ry="38" fill="#a3c074" stroke="#21341a" stroke-width="2.5" transform="rotate(-6 200 305)"/>
+  <circle cx="185" cy="298" r="2.4" fill="#21341a"/>
+  <circle cx="210" cy="312" r="2.4" fill="#21341a"/>
+  <circle cx="225" cy="295" r="2.4" fill="#21341a"/>
+  <circle cx="195" cy="320" r="2.4" fill="#21341a"/>
+</svg>

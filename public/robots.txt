@@ -1,0 +1,22 @@
+# Robots.txt for Olira Agro Industry
+# Allow all bots to crawl the site
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /.astro
+Disallow: /dist
+
+# Specific rules for Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Specific rules for Bing
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Sitemaps
+Sitemap: https://oliraagroindustry.com/sitemap.xml

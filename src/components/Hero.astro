@@ -1,0 +1,78 @@
+---
+// Hero.astro — confident, concrete, B2B-tuned.
+// Keeps trust signals (stats above the fold) but drops decorative ornaments.
+interface Props {
+  backgroundImage?: string;
+}
+const { backgroundImage } = Astro.props;
+---
+
+<header
+  class="relative w-full min-h-screen flex items-center justify-center pt-20 overflow-hidden"
+  style={backgroundImage
+    ? `background-image: ${backgroundImage}; background-size: cover; background-position: center;`
+    : 'background: linear-gradient(180deg, #f4f9ed 0%, #ffffff 70%);'}
+>
+  {backgroundImage && <div class="absolute inset-0 bg-black/40 z-0" />}
+
+  <div class="max-w-6xl mx-auto px-6 py-24 w-full relative z-10">
+    <div class="animate-hero-fade-in max-w-3xl">
+      <p class={`font-sans uppercase tracking-[0.18em] text-xs font-semibold mb-6 ${backgroundImage ? 'text-primary-100' : 'text-primary-600'}`}>
+        Ethiopian agricultural exports · Since 2008
+      </p>
+
+      <h1 class={`font-heading text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] mb-8 ${backgroundImage ? 'text-white drop-shadow-lg' : 'text-primary-900'}`}>
+        Sesame from the fertile lowlands.<br/>
+        Coffee from the cool highlands.<br/>
+        Sourced across landscapes, exported across the globe.
+      </h1>
+
+      <p class={`text-lg max-w-xl mb-12 leading-relaxed ${backgroundImage ? 'text-primary-50' : 'text-primary-800'}`}>
+        Premium sesame, pulses, spices, and specialty coffee — sourced and processed in Burayu, Ethiopia. ISO 22000 certified, exported to importers in 50+ countries.
+      </p>
+
+      <!-- Trust signals: numbers count up when scrolled into view. -->
+      <div class="grid grid-cols-3 gap-8 max-w-xl pt-10">
+        <div class={`pt-4 border-t-2 stat-tile ${backgroundImage ? 'border-white/40' : 'border-primary-600'}`} style="animation-delay: 0.1s;">
+          <div data-counter class={`font-heading text-5xl font-bold ${backgroundImage ? 'text-white' : 'text-primary-900'}`}>16+</div>
+          <p class={`text-xs mt-2 uppercase tracking-[0.18em] font-semibold ${backgroundImage ? 'text-primary-50' : 'text-primary-600'}`}>Years</p>
+        </div>
+        <div class={`pt-4 border-t-2 stat-tile ${backgroundImage ? 'border-white/40' : 'border-primary-600'}`} style="animation-delay: 0.25s;">
+          <div data-counter class={`font-heading text-5xl font-bold ${backgroundImage ? 'text-white' : 'text-primary-900'}`}>50+</div>
+          <p class={`text-xs mt-2 uppercase tracking-[0.18em] font-semibold ${backgroundImage ? 'text-primary-50' : 'text-primary-600'}`}>Countries</p>
+        </div>
+        <div class={`pt-4 border-t-2 stat-tile ${backgroundImage ? 'border-white/40' : 'border-primary-600'}`} style="animation-delay: 0.4s;">
+          <div data-counter class={`font-heading text-5xl font-bold ${backgroundImage ? 'text-white' : 'text-primary-900'}`}>20 MT</div>
+          <p class={`text-xs mt-2 uppercase tracking-[0.18em] font-semibold ${backgroundImage ? 'text-primary-50' : 'text-primary-600'}`}>Per day</p>
+        </div>
+      </div>
+
+      <div class="mt-12 flex flex-wrap gap-4">
+        <!-- Arrows point ↓ — both CTAs scroll down. Active scale gives tactile press feedback. -->
+        <a href="#products" class="group inline-flex items-center gap-3 bg-primary-900 hover:bg-primary-800 active:scale-[0.97] text-white px-8 py-4 font-semibold text-sm tracking-wide transition-[colors,transform] duration-200">
+          View products
+          <span aria-hidden="true" class="transition-transform duration-300 group-hover:translate-y-1">↓</span>
+        </a>
+        <a href="#contact" class="group inline-flex items-center gap-3 border border-primary-900 text-primary-900 hover:bg-primary-50 active:scale-[0.97] px-8 py-4 font-semibold text-sm tracking-wide transition-[colors,transform] duration-200">
+          Request samples
+          <span aria-hidden="true" class="transition-transform duration-300 group-hover:translate-y-1">↓</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  /* Stat tiles slide up + fade in, staggered via inline animation-delay */
+  .stat-tile {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: statRise 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes statRise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stat-tile { opacity: 1; transform: none; animation: none; }
+  }
+</style>
