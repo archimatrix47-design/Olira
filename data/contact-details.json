@@ -1,0 +1,31 @@
+{
+  "phones": [
+    "+251-911 22 36 19",
+    "+251-118 96 37 42"
+  ],
+  "emails": [
+    "info@oliraagroindustry.com",
+    "eliasgeneti@gmail.com"
+  ],
+  "address": {
+    "line1": "Lemi Kura Subcity, Woreda 08",
+    "line2": "Soreti Building, 2nd Floor, Room 214",
+    "poBox": "P.O. Box 46325",
+    "city": "Addis Ababa",
+    "country": "Ethiopia"
+  },
+  "office": {
+    "label": "Head Office",
+    "name": "Soreti Building",
+    "city": "Lemi Kura, Addis Ababa",
+    "lat": 9.010410741253997,
+    "lng": 38.85021746658821
+  },
+  "factory": {
+    "label": "Processing Factory",
+    "name": "Burayu",
+    "city": "15 km West of Addis Ababa",
+    "lat": 9.036639722121777,
+    "lng": 38.63643949629655
+  }
+}

@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Environment variables (sensitive configuration)
+.env
+.env.local
+.env.*.local
+
+# Email configuration (contains SMTP credentials)
+email-config.json
+
+# Astro build artifacts
+dist/
+.astro/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Testing
+.nyc_output/
+coverage/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Development
+.cache/
+tmp/
+temp/
+
+# Claude Code working files
+CLAUDE.md
+.claude/

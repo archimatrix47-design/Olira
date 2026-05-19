@@ -1,0 +1,68 @@
+---
+// Timeline.astro — symmetric timeline using 3-col grid
+// Center column holds the dots and the vertical line. Side columns hold cards
+// alternating left/right. This guarantees dots align perfectly with cards
+// and removes the wandering-gap problem of the previous flex layout.
+
+interface TimelineItem {
+  year: string | number;
+  title: string;
+  description: string;
+  icon?: string;
+}
+
+interface Props {
+  items: TimelineItem[];
+  title?: string;
+}
+
+const { items, title } = Astro.props;
+---
+
+<div class="relative py-8">
+  {title && (
+    <div class="text-center mb-12">
+      <h2 class="font-heading text-4xl font-bold text-primary-900 mb-3">{title}</h2>
+      <p class="text-primary-600 text-base">Our journey of growth and innovation</p>
+    </div>
+  )}
+
+  <div class="relative timeline-container max-w-5xl mx-auto">
+    <!-- Vertical line, fixed at center column -->
+    <div class="absolute left-1/2 top-0 bottom-0 w-px bg-primary-300 -translate-x-1/2" aria-hidden="true"></div>
+
+    <ul class="space-y-10">
+      {items.map((item, index) => {
+        const onLeft = index % 2 === 0;
+        return (
+          <li class="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
+            <!-- Left card -->
+            <div class={onLeft ? 'text-right pr-2' : ''}>
+              {onLeft && (
+                <div class="inline-block max-w-md">
+                  <span class="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-primary-600">{item.year}</span>
+                  <h3 class="font-heading text-2xl font-bold text-primary-900 mt-1 mb-2 leading-tight">{item.title}</h3>
+                  <p class="text-sm text-primary-800 leading-relaxed">{item.description}</p>
+                </div>
+              )}
+            </div>
+
+            <!-- Center dot -->
+            <div class="w-3 h-3 rounded-full bg-primary-600 ring-4 ring-white relative z-10"></div>
+
+            <!-- Right card -->
+            <div class={onLeft ? '' : 'text-left pl-2'}>
+              {!onLeft && (
+                <div class="inline-block max-w-md text-left">
+                  <span class="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-primary-600">{item.year}</span>
+                  <h3 class="font-heading text-2xl font-bold text-primary-900 mt-1 mb-2 leading-tight">{item.title}</h3>
+                  <p class="text-sm text-primary-800 leading-relaxed">{item.description}</p>
+                </div>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</div>

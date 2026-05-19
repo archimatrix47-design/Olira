@@ -1,0 +1,107 @@
+[
+  {
+    "id": "cleaned-natural-sesame-seeds",
+    "name": "Cleaned Natural Sesame Seeds",
+    "category": "Sesame",
+    "description": "Premium Humera variety with 50%+ oil content and creamy color. 99.95% purity. Perfect for bakery, tahini, and halva production.",
+    "purity": "99.95%",
+    "moq": "10 MT",
+    "specs": [
+      "Humera variety",
+      "High oil content (50%+)",
+      "Creamy color",
+      "ISO 22000 certified"
+    ],
+    "image": "/products/photos/sesame-natural.webp"
+  },
+  {
+    "id": "mechanically-hulled-seeds",
+    "name": "Mechanically Hulled Seeds",
+    "category": "Sesame",
+    "description": "Premium Humera variety hulled seeds, white color, ideal for oil extraction and food production. Processed with state-of-the-art technology.",
+    "purity": "99.95%",
+    "moq": "15 MT",
+    "specs": [
+      "Pure white seeds",
+      "Humera variety",
+      "Ready for oil extraction",
+      "Export certified"
+    ],
+    "image": "/products/photos/sesame-hulled.webp"
+  },
+  {
+    "id": "hulled-roasted-sesame",
+    "name": "Hulled & Roasted Sesame",
+    "category": "Sesame",
+    "description": "Roasted hulled Humera sesame seeds with unique pleasant aroma. Premium quality for bakery and specialty food applications.",
+    "purity": "99.95%",
+    "moq": "10 MT",
+    "specs": [
+      "Roasted hulled seeds",
+      "Pleasant aroma",
+      "Bakery grade",
+      "ISO 22000 certified"
+    ],
+    "image": "/products/photos/sesame-roasted.webp"
+  },
+  {
+    "id": "pulses-legumes",
+    "name": "Pulses & Legumes",
+    "category": "Pulses",
+    "description": "Premium pulses sourced through sustainable contract farming. White pea beans, red kidney beans, mung beans, faba beans, and speckled beans. Cleaned, graded, and packed to export standards.",
+    "purity": "99.50%",
+    "moq": "20 MT",
+    "specs": [
+      "White pea beans",
+      "Red kidney beans",
+      "Mung & faba beans",
+      "Exported to Middle East"
+    ],
+    "image": "/products/photos/pulses.webp"
+  },
+  {
+    "id": "premium-spices",
+    "name": "Premium Spices",
+    "category": "Spices",
+    "description": "Hand-selected, aromatic spices including cumin seed, turmeric, ginger, and coriander. Sourced through sustainable contract farming for consistent quality and high-value markets.",
+    "purity": "99.70%",
+    "moq": "5 MT",
+    "specs": [
+      "Cumin, turmeric, ginger",
+      "Coriander & more",
+      "Contract farming sourced",
+      "Premium quality grade"
+    ],
+    "image": "/products/photos/spices.webp"
+  },
+  {
+    "id": "ethiopian-coffee",
+    "name": "Ethiopian Coffee",
+    "category": "Coffee",
+    "description": "Premium Ethiopian highland coffee varieties including Harar, Yirga Cheffe, Sidama, Giji, Jima, Nekemte, and Limu types. Grade 1-4 available with exceptional aroma and sweetness.",
+    "purity": "98.50%",
+    "moq": "5 MT",
+    "specs": [
+      "Harar, Yirga Cheffe, Sidama",
+      "Highland varieties",
+      "Grades 1-4 available",
+      "Exceptional aroma & sweetness"
+    ],
+    "image": "/products/photos/coffee.webp"
+  },
+  {
+    "id": "custom-products",
+    "name": "Custom Products",
+    "category": "Specialty",
+    "description": "Tailored solutions for your unique requirements. Custom blending and packaging available for bulk orders.",
+    "purity": "Custom",
+    "moq": "50 MT",
+    "specs": [
+      "Full customization",
+      "Flexible packaging",
+      "Volume discounts",
+      "Direct from producer"
+    ],
+    "image": "/products/photos/custom.webp"
+  }
+]

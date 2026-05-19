@@ -1,0 +1,515 @@
+---
+// BaseLayout.astro - Modern layout with SEO
+import Navigation from '../components/Navigation.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  keywords?: string;
+}
+
+const {
+  title,
+  description = 'Premium agricultural exports from Ethiopia - Sesame, pulses, spices, and coffee. ISO 22000 certified. Trusted by 50+ countries.',
+  keywords = 'sesame seeds, agricultural exports, Ethiopia, pulses, spices, coffee, ISO 22000'
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Essential Meta Tags -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="keywords" content={keywords} />
+    <meta name="theme-color" content="#39572f" />
+    <meta name="language" content="English" />
+    <meta name="author" content="Olira Agro Industry" />
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://oliraagroindustry.com" />
+    <meta property="og:site_name" content="Olira Agro Industry" />
+
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Canonical Tag -->
+    <link rel="canonical" href={`https://oliraagroindustry.com${Astro.url.pathname}`} />
+
+    <!-- Preconnect to external fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Google Fonts - Lora (heading) + Sora (body) -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Dynamic Google Analytics & Ads Integration Loader -->
+    <script is:inline>
+      // Load integration configuration
+      async function loadIntegrations() {
+        try {
+          const response = await fetch('/api/integrations');
+          if (!response.ok) throw new Error('Failed to load integrations');
+
+          const config = await response.json();
+          const measurementId = config.analytics?.measurementId;
+          const conversionId = config.ads?.conversionId;
+
+          // Only load Google Tag Manager if Measurement ID is configured
+          if (measurementId && measurementId.match(/^G-[A-Z0-9]{10}$/)) {
+            // Load GTM script dynamically
+            const gtagScript = document.createElement('script');
+            gtagScript.async = true;
+            gtagScript.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+            document.head.appendChild(gtagScript);
+
+            // Initialize GTM
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){window.dataLayer.push(arguments);}
+            window.gtag = gtag;
+            gtag('js', new Date());
+            gtag('config', measurementId);
+
+            // Track page view
+            gtag('event', 'page_view', {
+              page_title: document.title,
+              page_path: window.location.pathname
+            });
+
+            console.log('✅ Google Analytics configured:', measurementId);
+          } else {
+            console.warn('⚠️ Google Analytics Measurement ID not configured. Go to /admin-integrations to set it up.');
+            window.gtag = () => {}; // Stub function
+          }
+
+          // Setup conversion tracking
+          if (conversionId) {
+            window.google_conversion_id = parseInt(conversionId);
+            window.google_conversion_language = "en";
+            window.google_conversion_format = "3";
+            window.google_conversion_color = "ffffff";
+            window.google_remarketing_only = false;
+            console.log('✅ Google Ads conversion tracking configured:', conversionId);
+          } else {
+            console.warn('⚠️ Google Ads Conversion ID not configured. Go to /admin-integrations to set it up.');
+            window.google_conversion_id = 0;
+          }
+
+          // Setup global conversion tracking function
+          window.trackConversion = function(data = {}) {
+            if (window.gtag) {
+              window.gtag('event', 'conversion', {
+                'value': data.value || 1.0,
+                'currency': 'USD',
+                'transaction_id': 'inquiry_' + Date.now(),
+                ...data
+              });
+            }
+          };
+
+        } catch (error) {
+          console.error('Error loading integrations:', error);
+          window.gtag = () => {}; // Stub function
+          window.trackConversion = () => {}; // Stub function
+        }
+      }
+
+      // Load integrations when page loads
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadIntegrations);
+      } else {
+        loadIntegrations();
+      }
+    </script>
+
+    <!-- Fallback Google Ads script (optional, loaded only if needed) -->
+    <script async src="https://www.googleadservices.com/pagead/conversion.js" data-skip-if-loaded="true"></script>
+
+    <!-- Title and Favicon -->
+    <title>{title} | Olira Agro Industry</title>
+    <link rel="icon" type="image/png" href="/logo.png" />
+
+    <!-- Structured Data (JSON-LD) - Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Olira Agro Industry",
+        "url": "https://oliraagroindustry.com",
+        "logo": "https://oliraagroindustry.com/logo.svg",
+        "image": "https://oliraagroindustry.com/og-image.png",
+        "description": "Premium agricultural exports from Ethiopia - Sesame, pulses, spices, and coffee. ISO 22000 certified. Trusted by 50+ countries.",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Soreti Building, 2nd Floor, Lemi Kura Subcity, Woreda 08",
+          "postOfficeBoxNumber": "46325",
+          "addressLocality": "Addis Ababa",
+          "addressCountry": "ET"
+        },
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "Customer Service",
+          "telephone": "+251911223619",
+          "email": "info@oliraagroindustry.com"
+        },
+        "areaServed": ["ET", "US", "EU", "SA", "AE"],
+        "knowsAbout": ["Agricultural Exports", "Sesame Seeds", "Pulses", "Spices", "Ethiopian Coffee"],
+        "legalName": "Olira Agro Industry",
+        "foundingDate": "2008"
+      }
+    </script>
+
+    <!-- Structured Data (JSON-LD) - LocalBusiness -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Olira Agro Industry",
+        "image": "https://oliraagroindustry.com/logo.svg",
+        "url": "https://oliraagroindustry.com",
+        "telephone": "+251911223619",
+        "email": "info@oliraagroindustry.com",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Soreti Building, 2nd Floor, Lemi Kura Subcity, Woreda 08",
+          "postOfficeBoxNumber": "46325",
+          "addressLocality": "Addis Ababa",
+          "addressCountry": "ET"
+        },
+        "priceRange": "$$$"
+      }
+    </script>
+
+    <!-- Sitemap Reference -->
+    <link rel="sitemap" type="application/xml" href="https://oliraagroindustry.com/sitemap.xml" />
+
+    <!-- Additional Meta Tags for SEO -->
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta property="og:image" content="https://oliraagroindustry.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:image" content="https://oliraagroindustry.com/og-image.png" />
+  </head>
+  <body class="font-sans text-primary-900">
+    <!-- Skip-to-main link for keyboard users (WCAG 2.4.1) -->
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-primary-900 focus:text-white focus:px-4 focus:py-2 focus:font-semibold focus:rounded">
+      Skip to main content
+    </a>
+    <Navigation />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+
+    <!-- Floating back-to-top button: appears once user scrolls past viewport height. -->
+    <button
+      id="backToTop"
+      type="button"
+      aria-label="Back to top"
+      class="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-primary-900 hover:bg-primary-800 text-white shadow-lg flex items-center justify-center opacity-0 pointer-events-none translate-y-2 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-600"
+    >
+      <span class="sr-only">Back to top</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 19V5M5 12l7-7 7 7"/>
+      </svg>
+    </button>
+
+    <!-- Lightweight parallax image-move (AIR's `parallax-image-move`).
+         Each [data-parallax-img] sits in an overflow-hidden frame and is
+         oversized, so we can shift it ±~24px as it scrolls through the
+         viewport. rAF-throttled, passive, reduced-motion aware. ~25 lines,
+         zero deps — none of Locomotive's scroll-hijack. -->
+    <script is:inline>
+      (function () {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const imgs = Array.from(document.querySelectorAll('[data-parallax-img]'));
+        if (!imgs.length) return;
+        const RANGE = 24; // px of travel each direction
+        let ticking = false;
+
+        function apply() {
+          ticking = false;
+          const vh = window.innerHeight;
+          for (const img of imgs) {
+            const frame = img.parentElement;
+            const r = frame.getBoundingClientRect();
+            if (r.bottom < 0 || r.top > vh) continue; // off-screen, skip
+            // progress: -1 (frame entering at bottom) → 1 (leaving at top)
+            const center = r.top + r.height / 2;
+            const p = (center - vh / 2) / (vh / 2 + r.height / 2);
+            img.style.setProperty('--py', (-p * RANGE).toFixed(1) + 'px');
+          }
+        }
+        window.addEventListener('scroll', () => {
+          if (!ticking) { ticking = true; requestAnimationFrame(apply); }
+        }, { passive: true });
+        window.addEventListener('resize', apply);
+        apply();
+      })();
+
+      (function () {
+        const btn = document.getElementById('backToTop');
+        if (!btn) return;
+        const onScroll = () => {
+          // Appear only after the full-height hero is scrolled past (1.15×
+          // viewport) so it never floats over the hero headline/CTAs.
+          const visible = window.scrollY > window.innerHeight * 1.15;
+          btn.style.opacity = visible ? '1' : '0';
+          btn.style.transform = visible ? 'translateY(0)' : 'translateY(8px)';
+          btn.style.pointerEvents = visible ? 'auto' : 'none';
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+        btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      })();
+    </script>
+
+    <script>
+      // Global logo loader — fetches /api/branding so public pages always show
+      // the latest admin-uploaded logo without rebuild.
+      async function loadAndApplyLogos() {
+        try {
+          const res = await fetch('/api/branding');
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!data.logo) return;
+          const headerEl = document.getElementById('header-logo');
+          const footerEl = document.getElementById('footer-logo');
+          if (headerEl) headerEl.src = data.logo;
+          if (footerEl) footerEl.src = data.logo;
+        } catch (err) {
+          console.error('Failed to load branding:', err);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', loadAndApplyLogos);
+      loadAndApplyLogos();
+    </script>
+
+    <script is:inline>
+      // Load certifications from /api/certifications and reveal the section
+      // only if certs exist — prevents the empty white void from a stale render.
+      async function loadCertificationsFromStorage() {
+        const container = document.getElementById('certificationsContainer');
+        const section = document.querySelector('[data-cert-section]');
+        if (!container) return;
+
+        let certifications = [];
+        try {
+          const res = await fetch('/api/certifications');
+          if (res.ok) certifications = await res.json();
+        } catch (error) {
+          console.error('Error fetching certifications:', error);
+        }
+
+        // Hide the entire section (title + grid + trust statement) when 0 certs.
+        if (section) {
+          section.classList.toggle('hidden', certifications.length === 0);
+        }
+
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+
+        // Render exactly the certifications the admin has added.
+        // No empty "+" placeholders — the grid simply shows whatever is in the data.
+        certifications.forEach((cert, index) => {
+          const certDiv = document.createElement('div');
+          certDiv.className = 'bg-gradient-green text-white p-8 animate-slideUp rounded-lg';
+          certDiv.style.animationDelay = `${index * 0.1}s`;
+
+          if (cert.image) {
+            const img = document.createElement('img');
+            img.src = cert.image;
+            img.alt = cert.name;
+            img.className = 'w-20 h-20 mx-auto mb-4 object-contain';
+            img.loading = 'lazy';
+            certDiv.appendChild(img);
+          }
+
+          const title = document.createElement('h4');
+          title.className = 'font-heading text-2xl font-bold mb-2';
+          title.textContent = cert.name;
+          certDiv.appendChild(title);
+
+          const desc = document.createElement('p');
+          desc.className = 'font-medium';
+          desc.textContent = cert.description;
+          certDiv.appendChild(desc);
+
+          container.appendChild(certDiv);
+        });
+      }
+
+      // Load certifications when page loads
+      document.addEventListener('DOMContentLoaded', loadCertificationsFromStorage);
+      loadCertificationsFromStorage();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    line-height: 1.6;
+    background-color: #ffffff;
+    color: #21341a;
+    /* Body grid pattern removed — let whitespace breathe and let
+       individual sections (e.g. the topographical map in
+       .section-gradient-light) carry the visual texture. */
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  button {
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    font-weight: bold;
+  }
+
+  input, textarea, select {
+    font-family: inherit;
+  }
+
+  /* Selection styling */
+  ::selection {
+    background-color: #39572f;
+    color: #ffffff;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f0f0f0;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #70a45e;
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #547d46;
+  }
+
+  /* Scroll-triggered reveals.
+     Supports per-element stagger via inline `--reveal-delay`
+     (e.g., style="--reveal-delay: 120ms").
+     IntersectionObserver adds .is-visible when the element enters viewport. */
+  .scroll-trigger {
+    --reveal-delay: 0ms;
+    --reveal-duration: 800ms;
+    will-change: opacity, transform;
+  }
+
+  .scroll-trigger[data-trigger-animation="slideUp"]    { opacity: 0; transform: translateY(32px); }
+  .scroll-trigger[data-trigger-animation="slideInLeft"]  { opacity: 0; transform: translateX(-44px); }
+  .scroll-trigger[data-trigger-animation="slideInRight"] { opacity: 0; transform: translateX(44px); }
+  .scroll-trigger[data-trigger-animation="fadeIn"]     { opacity: 0; }
+  .scroll-trigger[data-trigger-animation="scaleIn"]    { opacity: 0; transform: scale(0.94); }
+
+  /* Reveal: cubic-bezier feels natural without overshoot for body content */
+  .scroll-trigger.is-visible {
+    opacity: 1 !important;
+    transform: none !important;
+    transition:
+      opacity var(--reveal-duration) cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay),
+      transform var(--reveal-duration) cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-trigger { opacity: 1 !important; transform: none !important; transition: none !important; }
+  }
+</style>
+
+<script is:inline>
+  // Scroll-triggered reveals via IntersectionObserver.
+  //
+  // We observe TWO families of selectors:
+  //   1. `.scroll-trigger` (explicit opt-in via [data-trigger-animation])
+  //   2. `.animate-slideUp` / `.animate-slideInLeft` / `.animate-slideInRight`
+  //      / `.animate-fadeIn` / `.animate-scaleIn` — these used to be one-shot
+  //      CSS animations that fired on render (bad: below-fold elements were
+  //      already "animated" by the time the user saw them). Now they're
+  //      transition-based scroll reveals.
+  //
+  // Stagger: any element with inline `style="animation-delay: 0.2s"` (legacy)
+  // or `style="--reveal-delay: 200ms"` already works. We auto-promote the
+  // legacy animationDelay → CSS var so existing markup keeps its stagger.
+  const REVEAL_SELECTOR = [
+    '.scroll-trigger',
+    '.animate-fadeIn',
+    '.animate-slideUp',
+    '.animate-slideInLeft',
+    '.animate-slideInRight',
+    '.animate-scaleIn'
+  ].join(',');
+
+  function promoteLegacyDelay(el) {
+    // If markup uses inline `style="animation-delay: 0.2s"`, copy that value
+    // into --reveal-delay so the new transition system honors it.
+    const inlineDelay = el.style.animationDelay;
+    if (inlineDelay && !el.style.getPropertyValue('--reveal-delay')) {
+      el.style.setProperty('--reveal-delay', inlineDelay);
+    }
+  }
+
+  const scrollTriggerObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          requestAnimationFrame(() => {
+            entry.target.classList.add('is-visible');
+            scrollTriggerObserver.unobserve(entry.target);
+          });
+        }
+      });
+    },
+    { threshold: 0.12, rootMargin: '0px 0px -60px 0px' }
+  );
+
+  document.querySelectorAll(REVEAL_SELECTOR).forEach((el) => {
+    promoteLegacyDelay(el);
+    // If the element is already on screen at page load (e.g. above the fold),
+    // reveal immediately so it doesn't hold an invisible state.
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      requestAnimationFrame(() => el.classList.add('is-visible'));
+    } else {
+      scrollTriggerObserver.observe(el);
+    }
+  });
+
+  // Handle reduced motion preference - skip animations entirely
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll(REVEAL_SELECTOR).forEach((el) => {
+      el.style.opacity = '1';
+      el.style.transform = 'none';
+    });
+  }
+</script>

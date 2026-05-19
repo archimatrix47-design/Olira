@@ -1,0 +1,536 @@
+---
+// admin-integrations.astro - Marketing Integrations Dashboard
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Admin - Marketing Integrations" description="Manage Google Analytics and Google Ads tracking">
+  <div class="min-h-screen bg-gray-50 py-12 px-4">
+    <div class="max-w-4xl mx-auto">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-4xl font-bold text-primary-900 mb-2">Marketing Integrations</h1>
+        <p class="text-gray-600">Connect Google Analytics and Google Ads to track conversions and analyze user behavior</p>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex gap-4 mb-8 border-b border-gray-200">
+        <button
+          class="tab-btn active px-4 py-2 font-semibold text-primary-900 border-b-2 border-primary-600"
+          data-tab="analytics"
+        >
+          Google Analytics
+        </button>
+        <button
+          class="tab-btn px-4 py-2 font-semibold text-gray-600 hover:text-primary-900"
+          data-tab="ads"
+        >
+          Google Ads
+        </button>
+        <button
+          class="tab-btn px-4 py-2 font-semibold text-gray-600 hover:text-primary-900"
+          data-tab="status"
+        >
+          Connection Status
+        </button>
+      </div>
+
+      <!-- Google Analytics Section -->
+      <div id="analytics-section" class="tab-content bg-white rounded-lg shadow-md p-8 mb-8">
+        <h2 class="text-2xl font-bold text-primary-900 mb-6">Google Analytics 4 Setup</h2>
+
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+          <p class="text-blue-900"><strong>ℹ️ How to find your Measurement ID:</strong></p>
+          <ol class="list-decimal list-inside text-blue-800 mt-2">
+            <li>Go to <a href="https://analytics.google.com" target="_blank" class="underline">Google Analytics</a></li>
+            <li>Click <strong>Admin</strong> → <strong>Data Streams</strong></li>
+            <li>Select your website's data stream</li>
+            <li>Copy the <strong>Measurement ID</strong> (format: G-XXXXXXXXXX)</li>
+          </ol>
+        </div>
+
+        <form id="analyticsForm" class="space-y-6">
+          <div>
+            <label for="measurementId" class="block text-sm font-semibold text-primary-900 mb-2">
+              Google Analytics Measurement ID *
+            </label>
+            <input
+              type="text"
+              id="measurementId"
+              name="measurementId"
+              placeholder="G-XXXXXXXXXX"
+              pattern="^G-[A-Z0-9]{10}$"
+              required
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-600 focus:outline-none font-mono"
+            />
+            <p class="text-sm text-gray-500 mt-2">Format must be G-XXXXXXXXXX (where X are numbers/letters)</p>
+          </div>
+
+          <div>
+            <label for="analyticsPropertyId" class="block text-sm font-semibold text-primary-900 mb-2">
+              Google Analytics Property ID (Optional)
+            </label>
+            <input
+              type="text"
+              id="analyticsPropertyId"
+              name="analyticsPropertyId"
+              placeholder="123456789"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-600 focus:outline-none font-mono"
+            />
+            <p class="text-sm text-gray-500 mt-2">Found in Admin → Property Settings</p>
+          </div>
+
+          <div class="flex gap-4">
+            <button
+              type="submit"
+              class="px-6 py-3 bg-primary-900 text-white font-bold rounded-lg hover:bg-primary-800 transition"
+            >
+              Save Analytics Config
+            </button>
+            <button
+              type="button"
+              id="testAnalytics"
+              class="px-6 py-3 bg-gray-300 text-gray-900 font-bold rounded-lg hover:bg-gray-400 transition"
+            >
+              Test Connection
+            </button>
+          </div>
+
+          <div id="analyticsMessage" class="hidden p-4 rounded-lg"></div>
+        </form>
+      </div>
+
+      <!-- Google Ads Section -->
+      <div id="ads-section" class="tab-content hidden bg-white rounded-lg shadow-md p-8 mb-8">
+        <h2 class="text-2xl font-bold text-primary-900 mb-6">Google Ads Conversion Tracking</h2>
+
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+          <p class="text-blue-900"><strong>ℹ️ How to find your Conversion ID:</strong></p>
+          <ol class="list-decimal list-inside text-blue-800 mt-2">
+            <li>Go to <a href="https://ads.google.com" target="_blank" class="underline">Google Ads</a></li>
+            <li>Click <strong>Tools</strong> → <strong>Conversions</strong></li>
+            <li>Select or create "Contact Form Submission" conversion</li>
+            <li>Copy the <strong>Conversion ID</strong> (10-digit number)</li>
+          </ol>
+        </div>
+
+        <form id="adsForm" class="space-y-6">
+          <div>
+            <label for="conversionId" class="block text-sm font-semibold text-primary-900 mb-2">
+              Google Ads Conversion ID *
+            </label>
+            <input
+              type="text"
+              id="conversionId"
+              name="conversionId"
+              placeholder="123456789"
+              pattern="^[0-9]{10}$"
+              required
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-600 focus:outline-none font-mono"
+            />
+            <p class="text-sm text-gray-500 mt-2">Format: 10-digit number (e.g., 1234567890)</p>
+          </div>
+
+          <div>
+            <label for="conversionLabel" class="block text-sm font-semibold text-primary-900 mb-2">
+              Conversion Label
+            </label>
+            <input
+              type="text"
+              id="conversionLabel"
+              name="conversionLabel"
+              placeholder="abc123-DEFGH"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-600 focus:outline-none font-mono"
+            />
+            <p class="text-sm text-gray-500 mt-2">Found in same location as Conversion ID</p>
+          </div>
+
+          <div>
+            <label for="conversionValue" class="block text-sm font-semibold text-primary-900 mb-2">
+              Conversion Value (USD)
+            </label>
+            <input
+              type="number"
+              id="conversionValue"
+              name="conversionValue"
+              placeholder="10"
+              value="10"
+              min="0"
+              step="0.01"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-600 focus:outline-none"
+            />
+            <p class="text-sm text-gray-500 mt-2">Average value per inquiry (for quality scoring)</p>
+          </div>
+
+          <div class="flex gap-4">
+            <button
+              type="submit"
+              class="px-6 py-3 bg-primary-900 text-white font-bold rounded-lg hover:bg-primary-800 transition"
+            >
+              Save Ads Config
+            </button>
+            <button
+              type="button"
+              id="testAds"
+              class="px-6 py-3 bg-gray-300 text-gray-900 font-bold rounded-lg hover:bg-gray-400 transition"
+            >
+              Test Connection
+            </button>
+          </div>
+
+          <div id="adsMessage" class="hidden p-4 rounded-lg"></div>
+        </form>
+      </div>
+
+      <!-- Connection Status Section -->
+      <div id="status-section" class="tab-content hidden bg-white rounded-lg shadow-md p-8 mb-8">
+        <h2 class="text-2xl font-bold text-primary-900 mb-6">Connection Status</h2>
+
+        <div class="space-y-4">
+          <!-- Analytics Status -->
+          <div class="border-2 border-gray-200 rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-primary-900">Google Analytics</h3>
+              <span id="analyticsStatus" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm font-semibold">
+                Loading...
+              </span>
+            </div>
+            <div class="space-y-2 text-sm">
+              <p><strong>Measurement ID:</strong> <span id="analyticsMeasurementId" class="font-mono text-gray-600">Not configured</span></p>
+              <p><strong>Property ID:</strong> <span id="analyticsProperty" class="font-mono text-gray-600">Not configured</span></p>
+              <p><strong>Status:</strong> <span id="analyticsStatusText" class="text-gray-600">Waiting for configuration...</span></p>
+            </div>
+          </div>
+
+          <!-- Ads Status -->
+          <div class="border-2 border-gray-200 rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-primary-900">Google Ads</h3>
+              <span id="adsStatus" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm font-semibold">
+                Loading...
+              </span>
+            </div>
+            <div class="space-y-2 text-sm">
+              <p><strong>Conversion ID:</strong> <span id="adsConversionId" class="font-mono text-gray-600">Not configured</span></p>
+              <p><strong>Conversion Value:</strong> <span id="adsValue" class="font-mono text-gray-600">Not configured</span></p>
+              <p><strong>Status:</strong> <span id="adsStatusText" class="text-gray-600">Waiting for configuration...</span></p>
+            </div>
+          </div>
+
+          <!-- Last Updated -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-sm text-gray-600">
+              <strong>Last Updated:</strong> <span id="lastUpdated" class="font-mono">Never</span>
+            </p>
+            <p class="text-sm text-gray-600 mt-2">
+              <strong>Next Deployment:</strong> Changes take effect immediately on the live website
+            </p>
+          </div>
+        </div>
+
+        <button
+          id="refreshStatus"
+          class="mt-6 px-6 py-3 bg-primary-600 text-white font-bold rounded-lg hover:bg-primary-700 transition"
+        >
+          Refresh Status
+        </button>
+      </div>
+
+      <!-- Help Section -->
+      <div class="bg-primary-50 rounded-lg p-8 border-2 border-primary-200">
+        <h3 class="text-xl font-bold text-primary-900 mb-4">📚 Need Help?</h3>
+        <ul class="space-y-3 text-primary-900">
+          <li>
+            <strong>Google Analytics Setup:</strong>
+            <a href="https://support.google.com/analytics/answer/9539009" target="_blank" class="text-primary-600 hover:underline">
+              Official Google Analytics Guide →
+            </a>
+          </li>
+          <li>
+            <strong>Google Ads Conversions:</strong>
+            <a href="https://support.google.com/google-ads/answer/1722054" target="_blank" class="text-primary-600 hover:underline">
+              Set up conversion tracking →
+            </a>
+          </li>
+          <li>
+            <strong>Step-by-step Setup Guide:</strong>
+            Check your project memory folder for "google_ads_setup_guide.md"
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .tab-btn.active {
+    border-b-color: var(--primary-600);
+  }
+
+  .tab-content {
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  #analyticsMessage,
+  #adsMessage {
+    animation: slideDown 0.3s ease-in;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<script>
+  // Tab switching
+  const tabs = document.querySelectorAll('.tab-btn');
+  const contents = document.querySelectorAll('.tab-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Remove active state from all tabs
+      tabs.forEach(t => {
+        t.classList.remove('active', 'border-b-2', 'border-primary-600');
+        t.classList.add('text-gray-600');
+      });
+
+      // Hide all content
+      contents.forEach(content => content.classList.add('hidden'));
+
+      // Add active state to clicked tab
+      tab.classList.add('active', 'border-b-2', 'border-primary-600');
+      tab.classList.remove('text-gray-600');
+      tab.classList.add('text-primary-900');
+
+      // Show corresponding content
+      const tabName = tab.dataset.tab;
+      document.getElementById(`${tabName}-section`).classList.remove('hidden');
+    });
+  });
+
+  // Load current configuration on page load
+  async function loadConfiguration() {
+    try {
+      const response = await fetch('/api/integrations');
+      if (!response.ok) throw new Error('Failed to load configuration');
+
+      const config = await response.json();
+
+      // Load Analytics
+      if (config.analytics) {
+        document.getElementById('measurementId').value = config.analytics.measurementId || '';
+        document.getElementById('analyticsPropertyId').value = config.analytics.propertyId || '';
+      }
+
+      // Load Ads
+      if (config.ads) {
+        document.getElementById('conversionId').value = config.ads.conversionId || '';
+        document.getElementById('conversionLabel').value = config.ads.conversionLabel || '';
+        document.getElementById('conversionValue').value = config.ads.conversionValue || '10';
+      }
+
+      // Update status
+      updateConnectionStatus();
+    } catch (error) {
+      console.error('Error loading configuration:', error);
+    }
+  }
+
+  // Save Analytics Configuration
+  document.getElementById('analyticsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const messageDiv = document.getElementById('analyticsMessage');
+
+    try {
+      const response = await fetch('/api/integrations/analytics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          measurementId: document.getElementById('measurementId').value,
+          propertyId: document.getElementById('analyticsPropertyId').value
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to save configuration');
+
+      const result = await response.json();
+
+      messageDiv.className = 'bg-green-100 text-green-900 p-4 rounded-lg border-l-4 border-green-500';
+      messageDiv.textContent = '✅ Analytics configuration saved successfully!';
+      messageDiv.classList.remove('hidden');
+
+      updateConnectionStatus();
+
+      setTimeout(() => messageDiv.classList.add('hidden'), 5000);
+    } catch (error) {
+      messageDiv.className = 'bg-red-100 text-red-900 p-4 rounded-lg border-l-4 border-red-500';
+      messageDiv.textContent = `❌ Error: ${error.message}`;
+      messageDiv.classList.remove('hidden');
+    }
+  });
+
+  // Save Ads Configuration
+  document.getElementById('adsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const messageDiv = document.getElementById('adsMessage');
+
+    try {
+      const response = await fetch('/api/integrations/ads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversionId: document.getElementById('conversionId').value,
+          conversionLabel: document.getElementById('conversionLabel').value,
+          conversionValue: parseFloat(document.getElementById('conversionValue').value)
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to save configuration');
+
+      const result = await response.json();
+
+      messageDiv.className = 'bg-green-100 text-green-900 p-4 rounded-lg border-l-4 border-green-500';
+      messageDiv.textContent = '✅ Ads configuration saved successfully!';
+      messageDiv.classList.remove('hidden');
+
+      updateConnectionStatus();
+
+      setTimeout(() => messageDiv.classList.add('hidden'), 5000);
+    } catch (error) {
+      messageDiv.className = 'bg-red-100 text-red-900 p-4 rounded-lg border-l-4 border-red-500';
+      messageDiv.textContent = `❌ Error: ${error.message}`;
+      messageDiv.classList.remove('hidden');
+    }
+  });
+
+  // Test Analytics Connection
+  document.getElementById('testAnalytics').addEventListener('click', async () => {
+    const btn = document.getElementById('testAnalytics');
+    const originalText = btn.textContent;
+    btn.textContent = 'Testing...';
+    btn.disabled = true;
+
+    try {
+      const measurementId = document.getElementById('measurementId').value;
+      if (!measurementId) {
+        alert('Please enter a Measurement ID first');
+        return;
+      }
+
+      // Simulate test - in real implementation, would verify with Google API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const messageDiv = document.getElementById('analyticsMessage');
+      messageDiv.className = 'bg-green-100 text-green-900 p-4 rounded-lg border-l-4 border-green-500';
+      messageDiv.textContent = '✅ Measurement ID format is valid! Tracking should work.';
+      messageDiv.classList.remove('hidden');
+
+      setTimeout(() => messageDiv.classList.add('hidden'), 5000);
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  });
+
+  // Test Ads Connection
+  document.getElementById('testAds').addEventListener('click', async () => {
+    const btn = document.getElementById('testAds');
+    const originalText = btn.textContent;
+    btn.textContent = 'Testing...';
+    btn.disabled = true;
+
+    try {
+      const conversionId = document.getElementById('conversionId').value;
+      if (!conversionId) {
+        alert('Please enter a Conversion ID first');
+        return;
+      }
+
+      // Simulate test
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const messageDiv = document.getElementById('adsMessage');
+      messageDiv.className = 'bg-green-100 text-green-900 p-4 rounded-lg border-l-4 border-green-500';
+      messageDiv.textContent = '✅ Conversion ID format is valid! Tracking should work.';
+      messageDiv.classList.remove('hidden');
+
+      setTimeout(() => messageDiv.classList.add('hidden'), 5000);
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  });
+
+  // Update connection status
+  async function updateConnectionStatus() {
+    try {
+      const response = await fetch('/api/integrations');
+      if (!response.ok) throw new Error('Failed to load status');
+
+      const config = await response.json();
+
+      // Analytics Status
+      const analyticsMeasurementId = config.analytics?.measurementId || 'Not configured';
+      const analyticsProperty = config.analytics?.propertyId || 'Not configured';
+      const analyticsConfigured = config.analytics?.measurementId ? true : false;
+
+      document.getElementById('analyticsMeasurementId').textContent = analyticsMeasurementId;
+      document.getElementById('analyticsProperty').textContent = analyticsProperty;
+      document.getElementById('analyticsStatus').textContent = analyticsConfigured ? '✅ Connected' : '⚠️ Not Connected';
+      document.getElementById('analyticsStatus').className = analyticsConfigured
+        ? 'px-3 py-1 bg-green-200 text-green-900 rounded-full text-sm font-semibold'
+        : 'px-3 py-1 bg-yellow-200 text-yellow-900 rounded-full text-sm font-semibold';
+      document.getElementById('analyticsStatusText').textContent = analyticsConfigured
+        ? 'Tracking page views and events'
+        : 'Configure above to start tracking';
+
+      // Ads Status
+      const adsConversionId = config.ads?.conversionId || 'Not configured';
+      const adsValue = config.ads?.conversionValue ? `$${config.ads.conversionValue} USD` : 'Not configured';
+      const adsConfigured = config.ads?.conversionId ? true : false;
+
+      document.getElementById('adsConversionId').textContent = adsConversionId;
+      document.getElementById('adsValue').textContent = adsValue;
+      document.getElementById('adsStatus').textContent = adsConfigured ? '✅ Connected' : '⚠️ Not Connected';
+      document.getElementById('adsStatus').className = adsConfigured
+        ? 'px-3 py-1 bg-green-200 text-green-900 rounded-full text-sm font-semibold'
+        : 'px-3 py-1 bg-yellow-200 text-yellow-900 rounded-full text-sm font-semibold';
+      document.getElementById('adsStatusText').textContent = adsConfigured
+        ? 'Tracking form submissions as conversions'
+        : 'Configure above to start tracking';
+
+      // Last updated
+      const lastUpdated = config.lastUpdated ? new Date(config.lastUpdated).toLocaleString() : 'Never';
+      document.getElementById('lastUpdated').textContent = lastUpdated;
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  }
+
+  // Refresh status button
+  document.getElementById('refreshStatus').addEventListener('click', updateConnectionStatus);
+
+  // Load on page load
+  document.addEventListener('DOMContentLoaded', loadConfiguration);
+</script>

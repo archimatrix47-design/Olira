@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" aria-hidden="true">
+  <!-- Sesame pod, bold silhouette -->
+  <ellipse cx="200" cy="380" rx="120" ry="6" fill="#39572f" opacity="0.18"/>
+  <path d="M 200 60 C 240 60 260 110 260 180 L 260 290 C 260 340 235 365 200 365 C 165 365 140 340 140 290 L 140 180 C 140 110 160 60 200 60 Z" fill="#39572f"/>
+  <path d="M 200 80 L 200 350" stroke="#76944c" stroke-width="2" opacity="0.7"/>
+  <path d="M 175 100 C 185 200 185 290 175 340" stroke="#76944c" stroke-width="1.5" opacity="0.5" fill="none"/>
+  <path d="M 225 100 C 215 200 215 290 225 340" stroke="#76944c" stroke-width="1.5" opacity="0.5" fill="none"/>
+  <ellipse cx="160" cy="370" rx="11" ry="6" fill="#f4f9ed" stroke="#39572f" stroke-width="1.5" transform="rotate(-20 160 370)"/>
+  <ellipse cx="240" cy="372" rx="11" ry="6" fill="#f4f9ed" stroke="#39572f" stroke-width="1.5" transform="rotate(15 240 372)"/>
+  <path d="M 200 60 L 195 35 L 200 25 L 205 35 Z" fill="#39572f"/>
+</svg>

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deploy Olira Website - Simple 1, 2, 3 Steps</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        h2 {
+            color: #27ae60;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #27ae60;
+            font-size: 1.8em;
+        }
+
+        h3 {
+            color: #2c3e50;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .step {
+            background: #ecf0f1;
+            padding: 20px;
+            border-left: 5px solid #27ae60;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .before-start {
+            background: #fff3cd;
+            padding: 20px;
+            border-left: 5px solid #ff9800;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        code {
+            background: #2c3e50;
+            color: #1abc9c;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+        }
+
+        pre {
+            background: #2c3e50;
+            color: #1abc9c;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            line-height: 1.4;
+        }
+
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin: 15px 0;
+        }
+
+        .warning {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #27ae60;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #ecf0f1;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #bdc3c7;
+            text-align: center;
+            color: #7f8c8d;
+        }
+
+        hr {
+            border: none;
+            border-top: 2px solid #ecf0f1;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Deploy Olira Website - Simple 1, 2, 3 Steps</h1>
+        <div class="subtitle">
+            <strong>Time:</strong> 2-3 hours | <strong>Difficulty:</strong> Easy | <strong>Result:</strong> Website live at https://olira.com
+        </div>
+
+        <hr>
+
+        <h2>BEFORE YOU START (Do These First)</h2>
+
+        <div class="before-start">
+            <h3>Thing 1: Buy Domains</h3>
+            <ul>
+                <li>Go to <strong>namecheap.com</strong> or <strong>godaddy.com</strong></li>
+                <li>Buy: <code>olira.com</code> (required)</li>
+                <li>Optional: <code>design.com</code>, <code>portfolio.com</code> (if hosting other sites)</li>
+                <li><strong>Cost:</strong> ~$10/year each</li>
+            </ul>
+
+            <h3>Thing 2: Create Cloudflare Account</h3>
+            <ul>
+                <li>Go to <strong>https://cloudflare.com</strong></li>
+                <li>Sign up with your email</li>
+                <li>Click "Add Site"</li>
+                <li>Enter: <code>olira.com</code></li>
+                <li>Cloudflare shows 2 nameservers (write them down)</li>
+            </ul>
+
+            <h3>Thing 3: Change Nameservers</h3>
+            <ul>
+                <li>Go back to your domain registrar (namecheap/godaddy)</li>
+                <li>Find "Manage DNS" or "Nameservers"</li>
+                <li>Replace with Cloudflare's nameservers</li>
+                <li>Wait 10 minutes (or up to 24 hours)</li>
+            </ul>
+
+            <h3>Thing 4: Download Certificate</h3>
+            <ul>
+                <li>In Cloudflare Dashboard, go to: <strong>SSL/TLS → Origin Server</strong></li>
+                <li>Click "Create Certificate"</li>
+                <li>Click "Generate"</li>
+                <li>Download 2 files:
+                    <ul>
+                        <li>Save as: <code>origin-cert.pem</code></li>
+                        <li>Save as: <code>origin-cert.key</code></li>
+                    </ul>
+                </li>
+                <li>Keep these safe (you'll need them)</li>
+            </ul>
+
+            <p class="success">✅ Done with preparation? Let's deploy!</p>
+        </div>
+
+        <hr>
+
+        <h2>STEP 1️⃣: INSTALL UBUNTU ON MINI PC (30 minutes)</h2>
+
+        <div class="step">
+            <h3>Download Ubuntu</h3>
+            <ol>
+                <li>Go to <strong>https://ubuntu.com/download/server</strong></li>
+                <li>Download: <strong>Ubuntu Server 22.04 LTS</strong> (easiest version)</li>
+                <li>Burn to USB drive using <strong>Balena Etcher</strong> (free app)</li>
+            </ol>
+
+            <h3>Install on Mini PC</h3>
+            <ol>
+                <li>Insert USB into mini PC</li>
+                <li>Power on and boot from USB</li>
+                <li>Follow the installation wizard:
+                    <ul>
+                        <li>Choose language</li>
+                        <li>Choose timezone</li>
+                        <li>Create username (example: <code>admin</code>)</li>
+                        <li>Create password (make it strong)</li>
+                        <li><strong>When asked about SSH:</strong> ✅ Yes, install SSH</li>
+                        <li>Choose "Use entire disk" (simple option)</li>
+                        <li>Wait for installation to complete</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h3>After Installation</h3>
+            <ol>
+                <li>Mini PC restarts</li>
+                <li>Login with your username/password</li>
+                <li><strong>Note the IP address shown</strong> (e.g., <code>192.168.1.100</code>)</li>
+            </ol>
+
+            <p class="success">✅ Ubuntu is installed!</p>
+        </div>
+
+        <hr>
+
+        <h2>STEP 2️⃣: RUN THE AUTOMATION SCRIPTS (45 minutes)</h2>
+
+        <div class="step">
+            <h3>Connect to Mini PC from Your Computer</h3>
+            <pre>ssh admin@192.168.1.100
+
+# Type your password when asked
+# You're now "inside" the mini PC</pre>
+
+            <h3>Download Deployment Scripts</h3>
+            <pre>cd ~
+git clone https://github.com/archimatrix47-design/Olira.git
+cd Olira/DEPLOYMENT_SCRIPTS
+chmod +x *.sh</pre>
+
+            <h3>Script 1: Harden the Server</h3>
+            <pre>sudo bash 01-ubuntu-hardening.sh
+
+# Just press Enter when it asks questions
+# This takes 3-5 minutes</pre>
+
+            <h3>Script 2: Install Docker</h3>
+            <pre>bash 02-docker-install.sh
+
+# When it finishes, it says: "log out and log back in"
+# Type: exit
+# Then SSH back in: ssh admin@192.168.1.100</pre>
+
+            <h3>Script 3: Set Up Nginx</h3>
+            <pre>bash ~/Olira/DEPLOYMENT_SCRIPTS/03-nginx-proxy-setup.sh
+
+# Just waits for you to confirm
+# Press Enter to continue</pre>
+
+            <h3>Script 4: Copy Your Certificates</h3>
+            <pre># On your COMPUTER (not mini PC), open a new Terminal and type:
+scp origin-cert.pem admin@192.168.1.100:~/docker/nginx-proxy/certs/
+scp origin-cert.key admin@192.168.1.100:~/docker/nginx-proxy/certs/
+
+# Enter password when asked</pre>
+
+            <h3>Script 5: Start Nginx</h3>
+            <pre># Back on mini PC terminal
+bash ~/Olira/DEPLOYMENT_SCRIPTS/04-start-nginx.sh
+
+# When it asks "is the certificate file there?", you should see: ✓ Files found</pre>
+
+            <h3>Script 6: Deploy Olira Website</h3>
+            <pre>bash ~/Olira/DEPLOYMENT_SCRIPTS/05-deploy-olira.sh
+
+# This takes 5-10 minutes (building the website)
+# Just wait and watch the progress
+# When it finishes, you'll see: ✅ Container is healthy!</pre>
+
+            <h3>Script 7: Connect Domain to Website</h3>
+            <pre>bash ~/Olira/DEPLOYMENT_SCRIPTS/06-create-website-config.sh olira olira.com 3004
+
+# When it asks "Reload Nginx?", type: y
+# Done!</pre>
+
+            <p class="success">✅ Website is deployed!</p>
+        </div>
+
+        <hr>
+
+        <h2>STEP 3️⃣: TEST AND VERIFY (15 minutes)</h2>
+
+        <div class="step">
+            <h3>Test 1: From Mini PC</h3>
+            <pre># On mini PC terminal, type:
+curl http://localhost:3004/
+
+# You should see: &lt;!DOCTYPE html&gt; ... (HTML code)
+# That means the website is running ✓</pre>
+
+            <h3>Test 2: From Your Computer</h3>
+            <pre># Open web browser
+# Type: https://olira.com
+
+# You should see:
+# ✓ Olira website loads
+# ✓ Lock icon in address bar (HTTPS)
+# ✓ No "untrusted" warnings</pre>
+
+            <h3>If Something is Wrong</h3>
+            <table>
+                <tr>
+                    <th>Problem</th>
+                    <th>Fix</th>
+                </tr>
+                <tr>
+                    <td>Browser says "can't reach olira.com"</td>
+                    <td>Wait 5 minutes (DNS is updating), then try again</td>
+                </tr>
+                <tr>
+                    <td>"Connection refused"</td>
+                    <td>Wait 2 minutes for container to start, then refresh</td>
+                </tr>
+                <tr>
+                    <td>"Untrusted certificate"</td>
+                    <td>Check Cloudflare SSL/TLS setting is "Full (strict)"</td>
+                </tr>
+                <tr>
+                    <td>Website shows error</td>
+                    <td>Open terminal on mini PC and type: <code>docker logs olira -f</code></td>
+                </tr>
+            </table>
+
+            <h3>If Website Works</h3>
+            <pre>✅ Website is LIVE!
+✅ Automatic restart on power off/on
+✅ Backups running daily
+✅ HTTPS secure (Cloudflare + Origin cert)
+✅ Ready for visitors!</pre>
+        </div>
+
+        <hr>
+
+        <h2>THAT'S IT! 🎉</h2>
+
+        <p style="font-size: 1.2em; margin: 20px 0;">Your website is now live at: <strong>https://olira.com</strong></p>
+
+        <h3>What Happens Now?</h3>
+        <ul>
+            <li>Website is running 24/7</li>
+            <li>If mini PC restarts, website auto-starts</li>
+            <li>Backups save every day</li>
+            <li>Security is handled by Cloudflare</li>
+            <li>You're done!</li>
+        </ul>
+
+        <hr>
+
+        <h2>📞 Need Help?</h2>
+
+        <h3>Common Questions</h3>
+
+        <p><strong>Q: How do I update the website?</strong></p>
+        <pre>cd ~/docker/olira
+git pull
+docker compose up -d --build</pre>
+
+        <p><strong>Q: How do I check if it's running?</strong></p>
+        <pre>docker ps
+# Should show: olira, nginx-proxy running</pre>
+
+        <p><strong>Q: How do I see the logs?</strong></p>
+        <pre>docker logs olira -f</pre>
+
+        <p><strong>Q: Where are my backups?</strong></p>
+        <pre>ls ~/backups/
+# Shows backup files</pre>
+
+        <p><strong>Q: Can I reboot the mini PC?</strong></p>
+        <pre>Yes! Everything will auto-restart.
+Just type: sudo reboot</pre>
+
+        <div class="footer">
+            <h3 style="color: #27ae60;">✅ You're Done!</h3>
+            <p style="margin: 15px 0; font-size: 1.1em;"><strong>Congratulations!</strong></p>
+            <p>Your Olira website is now:</p>
+            <ul style="list-style: none;">
+                <li>✅ Live on the internet</li>
+                <li>✅ Secure with HTTPS</li>
+                <li>✅ Protected by Cloudflare</li>
+                <li>✅ Auto-backup daily</li>
+                <li>✅ Auto-restart on reboot</li>
+            </ul>
+            <p style="margin-top: 20px; font-size: 1.2em;"><strong>No more work needed. It just runs.</strong></p>
+            <p style="margin-top: 30px;">🚀 Enjoy!</p>
+        </div>
+    </div>
+</body>
+</html>

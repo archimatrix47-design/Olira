@@ -1,0 +1,179 @@
+---
+// Modal.astro - Accessible modal dialog with focus trap
+import ContactForm from './ContactForm.astro';
+---
+
+<div id="contactModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <!-- Modal backdrop - click to close -->
+  <div class="modal-backdrop absolute inset-0" aria-hidden="true"></div>
+
+  <!-- Modal content -->
+  <div class="modal-content relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <!-- Close button -->
+    <button
+      class="modal-close absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition z-10 p-2 rounded-full hover:bg-gray-100 focus:outline-2 focus:outline-primary-600"
+      aria-label="Close contact form"
+      title="Close"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+
+    <!-- Modal header -->
+    <div class="bg-gradient-to-r from-primary-900 to-primary-800 text-white px-8 py-6">
+      <h2 id="modalTitle" class="text-3xl font-bold">Get in Touch</h2>
+      <p class="text-primary-100 mt-2">Send us your inquiry and we'll respond within 24 hours</p>
+    </div>
+
+    <!-- Modal body -->
+    <div class="p-8">
+      <ContactForm />
+    </div>
+  </div>
+</div>
+
+<script>
+  const modal = document.getElementById('contactModal');
+  const modalBackdrop = modal?.querySelector('.modal-backdrop');
+  const modalCloseBtn = modal?.querySelector('.modal-close');
+
+  // Store the previously focused element
+  let previouslyFocusedElement: HTMLElement | null = null;
+
+  // Get all focusable elements in modal
+  function getFocusableElements(): HTMLElement[] {
+    if (!modal) return [];
+    const selector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    return Array.from(modal.querySelectorAll(selector)) as HTMLElement[];
+  }
+
+  // Focus trap implementation
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      closeModal();
+      return;
+    }
+
+    if (e.key !== 'Tab') return;
+
+    const focusableElements = getFocusableElements();
+    if (focusableElements.length === 0) return;
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    const activeElement = document.activeElement as HTMLElement;
+
+    // Shift + Tab on first element -> focus last
+    if (e.shiftKey && activeElement === firstElement) {
+      e.preventDefault();
+      lastElement.focus();
+    }
+    // Tab on last element -> focus first
+    else if (!e.shiftKey && activeElement === lastElement) {
+      e.preventDefault();
+      firstElement.focus();
+    }
+  }
+
+  // Open modal
+  function openModal() {
+    if (!modal) return;
+
+    // Store currently focused element
+    previouslyFocusedElement = document.activeElement as HTMLElement;
+
+    // Show modal
+    modal.classList.remove('hidden');
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+
+    // Add event listeners
+    document.addEventListener('keydown', handleKeyDown);
+    modalBackdrop?.addEventListener('click', closeModal);
+    modalCloseBtn?.addEventListener('click', closeModal);
+
+    // Focus first input in form
+    const firstInput = modal.querySelector('input[type="text"], input[type="email"], textarea') as HTMLElement;
+    if (firstInput) {
+      setTimeout(() => firstInput.focus(), 100);
+    }
+  }
+
+  // Close modal
+  function closeModal() {
+    if (!modal) return;
+
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+
+    // Remove event listeners
+    document.removeEventListener('keydown', handleKeyDown);
+    modalBackdrop?.removeEventListener('click', closeModal);
+    modalCloseBtn?.removeEventListener('click', closeModal);
+
+    // Restore focus to previously focused element
+    if (previouslyFocusedElement) {
+      previouslyFocusedElement.focus();
+    }
+  }
+
+  // Expose openModal globally (for navigation buttons)
+  (window as any).openContactModal = openModal;
+
+  // Contact buttons in page
+  document.addEventListener('DOMContentLoaded', () => {
+    const contactBtns = document.querySelectorAll('[data-action="open-contact-modal"]');
+    contactBtns.forEach(btn => {
+      btn.addEventListener('click', () => openModal());
+    });
+  });
+</script>
+
+<style>
+  #contactModal {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  #contactModal:not(.hidden) {
+    animation: fadeIn 0.3s ease-in-out forwards;
+  }
+
+  #contactModal.hidden {
+    animation: fadeOut 0.3s ease-in-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  .modal-content {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+</style>

@@ -1,0 +1,1454 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icons.astro';
+---
+
+<BaseLayout title="Admin Dashboard | Olira Agro Industry">
+  <div class="pt-32 pb-20 bg-gray-50 min-h-screen">
+    <div class="container mx-auto">
+      <!-- Admin Header with Navigation -->
+      <div class="mb-12 animate-slideUp">
+        <div class="flex items-center justify-between mb-6">
+          <a href="/" class="inline-flex items-center gap-3 hover:opacity-75 transition">
+            <div class="w-10 h-10 bg-primary-900 rounded flex items-center justify-center">
+              <span class="text-white font-bold text-lg">🏠</span>
+            </div>
+            <span class="font-heading text-lg font-bold text-primary-900">Back to Home</span>
+          </a>
+          <a href="/admin-integrations" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-900 font-bold rounded-lg hover:bg-blue-200 transition border-2 border-blue-300">
+            <span>📊</span>
+            <span>Marketing Integrations</span>
+          </a>
+        </div>
+        <h1 class="font-heading text-5xl font-bold text-primary-900 mb-3">Admin Dashboard</h1>
+        <p class="text-xl text-primary-900">Manage website content, products, and images</p>
+      </div>
+
+      <!-- Login Section (if not authenticated) -->
+      <div id="loginSection" class="max-w-md mx-auto mb-12">
+        <div class="bg-white border-2 border-primary-300 p-10 shadow-lg">
+          <div class="flex items-center justify-center w-12 h-12 bg-gradient-green rounded-xl mx-auto mb-8">
+            <Icon name="certified" size={24} class="text-white" />
+          </div>
+
+          <h2 class="font-heading text-2xl font-bold text-primary-900 mb-2 text-center">Admin Access</h2>
+          <p class="text-primary-900 text-center text-sm mb-8">Enter password to access dashboard</p>
+
+          <form id="loginForm" class="space-y-6">
+            <div>
+              <label for="password" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PASSWORD</label>
+              <input
+                type="password"
+                id="password"
+                placeholder="••••••••"
+                class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 placeholder-primary-400 transition outline-none"
+              />
+              <p class="text-primary-600 text-xs mt-2">Contact administrator for credentials</p>
+            </div>
+            <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
+              <Icon name="checkmark" size={20} />
+              LOGIN
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Admin Panel (hidden by default) -->
+      <div id="adminPanel" class="hidden space-y-12">
+        <!-- Header with Logout -->
+        <div class="flex justify-between items-center mb-8 pb-8 border-b-2 border-primary-200">
+          <div>
+            <h2 class="font-heading text-3xl font-bold text-primary-900">Dashboard</h2>
+            <p class="text-primary-600 text-sm">Welcome back! Manage your website content</p>
+          </div>
+          <button id="logoutBtn" class="flex items-center gap-2 px-6 py-3 border-2 border-red-600 text-red-600 font-bold hover:bg-red-50 transition">
+            <Icon name="close" size={20} />
+            LOGOUT
+          </button>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex gap-2 border-b-2 border-primary-200 mb-12 overflow-x-auto">
+          <button id="tabProducts" class="px-6 py-4 font-bold text-primary-900 border-b-4 border-primary-900 whitespace-nowrap flex items-center gap-2 transition">
+            <Icon name="package" size={20} />
+            PRODUCTS
+          </button>
+          <button id="tabBranding" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
+            <Icon name="upload" size={20} />
+            BRANDING
+          </button>
+          <button id="tabEmail" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
+            <Icon name="email" size={20} />
+            EMAIL
+          </button>
+          <button id="tabContent" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
+            <Icon name="edit" size={20} />
+            CONTENT
+          </button>
+        </div>
+
+        <!-- PRODUCTS TAB -->
+        <div id="productsTab" class="space-y-12">
+          <div class="flex items-center justify-between">
+            <h3 class="font-heading text-2xl font-bold text-primary-900">Manage Products</h3>
+            <button id="productsRefreshBtn" type="button" class="text-sm text-primary-600 hover:text-primary-900 underline">Refresh</button>
+          </div>
+
+          <!-- Add / Edit Product Form -->
+          <div class="bg-white border-2 border-primary-300 p-10">
+            <h4 id="productFormTitle" class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
+              <Icon name="save" size={24} />
+              Add Product
+            </h4>
+            <form id="productForm" class="space-y-6">
+              <input type="hidden" id="productId" />
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PRODUCT NAME *</label>
+                <input id="productName" type="text" required placeholder="e.g., Natural Sesame Seeds" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">DESCRIPTION *</label>
+                <textarea id="productDescription" rows="4" required placeholder="Describe the product..." class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none resize-none"></textarea>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PURITY</label>
+                  <input id="productPurity" type="text" placeholder="99.95%" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">MOQ</label>
+                  <input id="productMoq" type="text" placeholder="10 MT" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">CATEGORY</label>
+                  <input id="productCategory" type="text" placeholder="Sesame" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">SPECS (one per line, max 20)</label>
+                <textarea id="productSpecs" rows="4" placeholder="Humera variety&#10;High oil content (50%+)&#10;Creamy color&#10;ISO 22000 certified" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none resize-none"></textarea>
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PRODUCT IMAGE (optional, auto-resized to 1200px WebP)</label>
+                <div class="flex items-start gap-4">
+                  <div class="flex-shrink-0 w-32 h-32 bg-primary-50 border-2 border-primary-200 rounded flex items-center justify-center overflow-hidden">
+                    <img id="productImagePreview" src="" alt="" class="max-w-full max-h-full object-contain" style="display:none;" />
+                    <span id="productImagePlaceholder" class="text-primary-400 text-xs text-center px-2">No image</span>
+                  </div>
+                  <div class="flex-1">
+                    <input type="file" id="productImageFile" accept="image/jpeg,image/png,image/webp,image/svg+xml" class="block text-sm" />
+                    <p class="text-primary-600 text-xs mt-2">JPG / PNG / WebP / SVG. Max 10MB. Auto-converted to WebP @ 1200px wide.</p>
+                    <button type="button" id="productImageClearBtn" class="mt-2 text-xs text-red-600 hover:underline" style="display:none;">Remove image</button>
+                  </div>
+                </div>
+                <input type="hidden" id="productImagePath" />
+              </div>
+
+              <div class="flex gap-3">
+                <button type="submit" id="productSaveBtn" class="flex-1 bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <Icon name="save" size={20} />
+                  <span id="productSaveBtnLabel">SAVE PRODUCT</span>
+                </button>
+                <button type="button" id="productCancelEditBtn" class="px-6 py-4 border-2 border-primary-300 text-primary-900 font-bold hover:bg-primary-50 transition" style="display:none;">CANCEL</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Products List -->
+          <div>
+            <h4 class="font-heading text-xl font-bold text-primary-900 mb-6">
+              Current Products (<span id="productCountLabel">0</span>)
+            </h4>
+            <div id="productsListContainer" class="space-y-4">
+              <p class="text-primary-600 text-sm">Loading products...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- BRANDING TAB -->
+        <div id="brandingTab" class="hidden space-y-12">
+          <h3 class="font-heading text-2xl font-bold text-primary-900">Manage Branding</h3>
+
+          <!-- Logo Upload -->
+          <div class="bg-white border-2 border-primary-300 p-10">
+            <h4 class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
+              <Icon name="upload" size={24} />
+              Company Logo
+            </h4>
+            <p class="text-primary-600 text-sm mb-8">Upload your company logo. It will appear in both the header and footer of your website.</p>
+
+            <form id="logoForm" class="space-y-6">
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">UPLOAD LOGO *</label>
+                <div class="border-2 border-dashed border-primary-300 rounded p-8 text-center hover:border-primary-600 transition cursor-pointer">
+                  <Icon name="upload" size={32} class="text-primary-600 mx-auto mb-3" />
+                  <p class="text-primary-900 font-bold mb-1">Click to upload or drag and drop</p>
+                  <p class="text-primary-600 text-sm">PNG, SVG, JPG (Max 2MB)</p>
+                </div>
+                <input type="file" id="logoInput" accept="image/*" class="w-full mt-4 px-4 py-3 border-2 border-primary-200" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PREVIEW</label>
+                <div class="w-full h-40 bg-primary-50 rounded border-2 border-primary-200 flex items-center justify-center p-4">
+                  <img id="logoPreview" src="" alt="Logo Preview" class="max-h-full max-w-full object-contain" style="display:none;" />
+                  <p id="logoPlaceholder" class="text-primary-600 text-sm">Logo preview will appear here</p>
+                </div>
+              </div>
+
+              <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2">
+                <Icon name="save" size={20} />
+                SAVE LOGO
+              </button>
+            </form>
+          </div>
+
+          <!-- Current Logo Display -->
+          <div class="bg-white border-2 border-primary-200 p-6">
+            <h5 class="font-bold text-primary-900 mb-4">Current Logo</h5>
+            <div class="w-full h-32 bg-primary-50 rounded border-2 border-primary-200 flex items-center justify-center p-4 mb-4">
+              <img id="logoDisplay" src="" alt="Current Logo" class="max-h-full max-w-full object-contain" style="display:none;" />
+              <p id="logoDisplayPlaceholder" class="text-primary-600 text-sm">No logo uploaded</p>
+            </div>
+            <button id="clearLogoBtn" class="w-full p-2 border-2 border-red-600 text-red-600 hover:bg-red-50 font-bold text-sm transition flex items-center justify-center gap-1" style="display:none;">
+              <Icon name="delete" size={16} />
+              CLEAR LOGO
+            </button>
+          </div>
+        </div>
+
+        <!-- EMAIL TAB -->
+        <div id="emailTab" class="hidden space-y-12">
+          <h3 class="font-heading text-2xl font-bold text-primary-900">Email Configuration</h3>
+
+          <!-- SMTP Configuration -->
+          <div class="bg-white border-2 border-primary-300 p-10">
+            <h4 class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
+              <Icon name="email" size={24} />
+              SMTP Settings
+            </h4>
+            <form id="emailConfigForm" class="space-y-6">
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">SMTP HOST *</label>
+                <input type="text" id="smtpHost" name="smtpHost" placeholder="e.g., smtp.gmail.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                <p class="text-primary-600 text-xs mt-2">For Gmail: smtp.gmail.com | For Outlook: smtp-mail.outlook.com</p>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">SMTP PORT *</label>
+                  <input type="number" id="smtpPort" name="smtpPort" placeholder="587 or 465" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                  <p class="text-primary-600 text-xs mt-2">587 = TLS, 465 = SSL</p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">FROM NAME</label>
+                  <input type="text" id="fromName" name="fromName" placeholder="Olira Agro Industry" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">SMTP EMAIL ADDRESS *</label>
+                <input type="email" id="smtpUser" name="smtpUser" placeholder="your-email@gmail.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                <p class="text-primary-600 text-xs mt-2">The email address used to send inquiries</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">SMTP PASSWORD *</label>
+                <input type="password" id="smtpPassword" name="smtpPassword" placeholder="••••••••" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                <p class="text-primary-600 text-xs mt-2">For Gmail: Use an App Password (not your regular password)</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">RECIPIENT EMAIL ADDRESS *</label>
+                <input type="email" id="recipientEmail" name="recipientEmail" placeholder="info@oliraagroindustry.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                <p class="text-primary-600 text-xs mt-2">Where product inquiries will be sent</p>
+              </div>
+
+              <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2">
+                <Icon name="save" size={20} />
+                SAVE EMAIL CONFIGURATION
+              </button>
+            </form>
+          </div>
+
+          <!-- Email Test -->
+          <div class="bg-blue-50 border-2 border-blue-200 p-8 rounded-lg">
+            <h4 class="font-heading text-lg font-bold text-blue-900 mb-4">ℹ️ Gmail Setup Guide</h4>
+            <ol class="text-blue-900 text-sm space-y-2 ml-5 list-decimal">
+              <li>Enable 2-Step Verification in your Google Account</li>
+              <li>Go to myaccount.google.com/apppasswords</li>
+              <li>Select "Mail" and "Windows Computer"</li>
+              <li>Copy the generated 16-character password</li>
+              <li>Paste it in the SMTP PASSWORD field above</li>
+            </ol>
+          </div>
+
+          <!-- Configuration Status -->
+          <div id="emailStatus" class="bg-green-50 border-2 border-green-200 p-6 rounded-lg hidden">
+            <p class="text-green-900 font-bold">✅ Email configuration is active</p>
+            <p class="text-green-700 text-sm mt-2">Inquiries will be sent to: <span id="statusEmail" class="font-mono"></span></p>
+          </div>
+
+          <div id="emailErrorStatus" class="bg-red-50 border-2 border-red-200 p-6 rounded-lg hidden">
+            <p class="text-red-900 font-bold">❌ Email configuration incomplete</p>
+            <p class="text-red-700 text-sm mt-2">Please configure SMTP settings above</p>
+          </div>
+        </div>
+
+        <!-- CONTENT TAB -->
+        <div id="contentTab" class="hidden space-y-12">
+          <h3 class="font-heading text-2xl font-bold text-primary-900">Manage Website Content</h3>
+
+          <!-- Company Info -->
+          <div class="bg-white border-2 border-primary-300 p-10">
+            <h4 class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
+              <Icon name="edit" size={24} />
+              Company Information
+            </h4>
+            <form class="space-y-6">
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">COMPANY TAGLINE</label>
+                <input type="text" value="Producing, processing and packaging high quality agricultural products for export" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PHONE</label>
+                  <input type="text" value="+251-911 223619" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">EMAIL</label>
+                  <input type="email" value="info@oliraagroindustry.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">LOCATION</label>
+                <input type="text" value="Summit Feyel Bet, Addis Ababa, Ethiopia" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+              </div>
+
+              <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2">
+                <Icon name="save" size={20} />
+                SAVE CHANGES
+              </button>
+            </form>
+          </div>
+
+          <!-- Contact Details Management -->
+          <div class="bg-white border-2 border-primary-300 p-10">
+            <h4 class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
+              <Icon name="phone" size={24} />
+              Contact Details for Modal
+            </h4>
+            <form id="contactDetailsForm" class="space-y-6">
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PHONE NUMBERS (One per line)</label>
+                <textarea id="phoneNumbers" name="phoneNumbers" rows="3" placeholder="+251 911 223619&#10;+251 912 334455" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 transition outline-none resize-none"></textarea>
+                <p class="text-primary-600 text-xs mt-2">Enter each phone number on a separate line. These will appear in the contact modal.</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">EMAIL ADDRESSES (One per line)</label>
+                <textarea id="emailAddresses" name="emailAddresses" rows="3" placeholder="info@oliraagroindustry.com&#10;sales@oliraagroindustry.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 transition outline-none resize-none"></textarea>
+                <p class="text-primary-600 text-xs mt-2">Enter each email on a separate line. These will appear in the contact modal.</p>
+              </div>
+
+              <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2">
+                <Icon name="save" size={20} />
+                SAVE CONTACT DETAILS
+              </button>
+            </form>
+
+            <!-- Current Contact Details -->
+            <div class="mt-8 pt-8 border-t border-primary-200">
+              <h5 class="font-bold text-primary-900 mb-4">Current Contact Information:</h5>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p class="text-sm font-bold text-primary-600 mb-2">Phones</p>
+                  <div id="currentPhones" class="space-y-1 text-sm text-primary-900">
+                    <p class="text-primary-400">No phones configured</p>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-sm font-bold text-primary-600 mb-2">Emails</p>
+                  <div id="currentEmails" class="space-y-1 text-sm text-primary-900">
+                    <p class="text-primary-400">No emails configured</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          <!-- Certifications & Standards Management -->
+          <div class="bg-white border-2 border-primary-300 p-10 mt-8">
+            <h4 class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
+              <Icon name="certified" size={24} />
+              Certifications & Standards
+            </h4>
+
+            <!-- Add Certification Form -->
+            <form id="certificationForm" class="space-y-6 mb-8 p-8 border-2 border-primary-200 rounded-lg">
+              <h5 class="font-bold text-primary-900">Add New Certification</h5>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">CERTIFICATION NAME *</label>
+                <input type="text" id="certName" placeholder="e.g., ISO 22000:2018" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">DESCRIPTION *</label>
+                <input type="text" id="certDescription" placeholder="e.g., Food Safety Management System" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">UPLOAD IMAGE/ICON (Optional)</label>
+                <div class="border-2 border-dashed border-primary-300 rounded p-6 text-center hover:border-primary-600 transition cursor-pointer">
+                  <Icon name="upload" size={24} class="text-primary-600 mx-auto mb-2" />
+                  <p class="text-primary-900 font-bold text-sm mb-1">Click to upload or drag and drop</p>
+                  <p class="text-primary-600 text-xs">PNG, SVG, JPG (Max 2MB)</p>
+                </div>
+                <input type="file" id="certImageInput" accept="image/*" class="w-full mt-3 px-4 py-3 border-2 border-primary-200 text-sm" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-primary-900 mb-3">IMAGE PREVIEW</label>
+                <div class="w-full h-24 bg-primary-50 rounded border-2 border-primary-200 flex items-center justify-center p-3">
+                  <img id="certImagePreview" src="" alt="Certification Preview" class="max-h-full max-w-full object-contain" style="display:none;" />
+                  <p id="certImagePlaceholder" class="text-primary-600 text-xs text-center">Image preview will appear here</p>
+                </div>
+              </div>
+
+              <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-3 font-bold transition flex items-center justify-center gap-2 text-sm">
+                <Icon name="save" size={18} />
+                ADD CERTIFICATION
+              </button>
+            </form>
+
+            <!-- Current Certifications List -->
+            <div>
+              <h5 class="font-bold text-primary-900 mb-4">Current Certifications</h5>
+              <div id="certificationsList" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <p class="text-primary-600 text-sm col-span-full">No certifications added yet</p>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script define:vars={{}}>
+    const loginSection = document.getElementById('loginSection');
+    const adminPanel = document.getElementById('adminPanel');
+    const loginForm = document.getElementById('loginForm');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const tabButtons = {
+      products: document.getElementById('tabProducts'),
+      branding: document.getElementById('tabBranding'),
+      email: document.getElementById('tabEmail'),
+      content: document.getElementById('tabContent'),
+    };
+    const tabs = {
+      products: document.getElementById('productsTab'),
+      branding: document.getElementById('brandingTab'),
+      email: document.getElementById('emailTab'),
+      content: document.getElementById('contentTab'),
+    };
+
+    // Login Handler — surfaces lockout (429) and rejection (401/403) messages
+    // from the hardened server.
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const passwordEl = document.getElementById('password');
+      const password = passwordEl.value;
+
+      try {
+        const response = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+          localStorage.setItem('adminLoggedIn', 'true');
+          localStorage.setItem('adminToken', data.token);
+          loginSection.style.display = 'none';
+          adminPanel.style.display = 'block';
+        } else if (response.status === 429) {
+          alert('🔒 ' + (data.error || 'Too many attempts. Try again later.'));
+          passwordEl.value = '';
+        } else if (response.status === 403) {
+          alert('❌ Request blocked (origin check failed).');
+          passwordEl.value = '';
+        } else {
+          alert('❌ Incorrect password');
+          passwordEl.value = '';
+        }
+      } catch (error) {
+        alert('❌ Login failed: ' + error.message);
+        passwordEl.value = '';
+      }
+    });
+
+    // Logout Handler — server-side revocation via /api/admin/logout so the
+    // token is added to the blocklist and can't be replayed even if the
+    // attacker has already extracted it from localStorage.
+    logoutBtn.addEventListener('click', async () => {
+      const token = localStorage.getItem('adminToken');
+      if (token) {
+        try {
+          await fetch('/api/admin/logout', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        } catch {}
+      }
+      localStorage.removeItem('adminLoggedIn');
+      localStorage.removeItem('adminToken');
+      loginSection.style.display = 'block';
+      adminPanel.style.display = 'none';
+      const pw = document.getElementById('password');
+      if (pw) pw.value = '';
+    });
+
+    // Tab Switching
+    Object.keys(tabButtons).forEach((key) => {
+      tabButtons[key].addEventListener('click', () => {
+        // Hide all tabs
+        Object.values(tabs).forEach((tab) => {
+          tab.style.display = 'none';
+        });
+
+        // Remove active styling
+        Object.values(tabButtons).forEach((btn) => {
+          btn.style.borderBottomWidth = '0';
+          btn.style.color = '#70a45e';
+        });
+
+        // Show selected tab
+        tabs[key].style.display = 'block';
+        tabButtons[key].style.borderBottomWidth = '4px';
+        tabButtons[key].style.borderBottomColor = '#39572f';
+        tabButtons[key].style.color = '#39572f';
+      });
+    });
+
+    // Verify session against the server. The previous localStorage flag was
+    // a fake gate — set it manually in DevTools and you'd skip the password.
+    // Now we ask the server to validate the token (which checks both
+    // signature and 24h expiry). If invalid/expired/missing, show login.
+    (async function checkSession() {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        loginSection.style.display = 'block';
+        adminPanel.style.display = 'none';
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/verify', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          loginSection.style.display = 'none';
+          adminPanel.style.display = 'block';
+        } else {
+          // Token invalid or expired — clear stale state and show login
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminLoggedIn');
+          loginSection.style.display = 'block';
+          adminPanel.style.display = 'none';
+        }
+      } catch (err) {
+        // Network error — fall back to showing login (safe default)
+        loginSection.style.display = 'block';
+        adminPanel.style.display = 'none';
+      }
+    })();
+
+    // ============================================
+    // LOGO — API-driven (was localStorage). Uses /api/upload/logo (multer + sharp)
+    // and persists path in branding.json so all pages can read it.
+    // ============================================
+    const logoForm = document.getElementById('logoForm');
+    const logoInput = document.getElementById('logoInput');
+    const logoPreview = document.getElementById('logoPreview');
+    const logoPlaceholder = document.getElementById('logoPlaceholder');
+    const logoDisplay = document.getElementById('logoDisplay');
+    const logoDisplayPlaceholder = document.getElementById('logoDisplayPlaceholder');
+    const clearLogoBtn = document.getElementById('clearLogoBtn');
+
+    async function loadLogo() {
+      try {
+        const res = await fetch('/api/branding');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.logo) {
+          logoDisplay.src = data.logo;
+          logoDisplay.style.display = 'block';
+          logoDisplayPlaceholder.style.display = 'none';
+          clearLogoBtn.style.display = 'flex';
+        } else {
+          logoDisplay.style.display = 'none';
+          logoDisplayPlaceholder.style.display = 'block';
+          clearLogoBtn.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Failed to load logo:', err);
+      }
+    }
+
+    // Logo preview on file input change
+    logoInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && file.size <= 2 * 1024 * 1024) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          logoPreview.src = event.target.result;
+          logoPreview.style.display = 'block';
+          logoPlaceholder.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('File must be under 2MB');
+      }
+    });
+
+    // Helper function for drag and drop
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // Drag and drop for logo
+    const logoDragZone = document.querySelector('[id="logoForm"] .border-dashed');
+    if (logoDragZone) {
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        logoDragZone.addEventListener(eventName, preventDefaults, false);
+      });
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        logoDragZone.addEventListener(eventName, () => {
+          logoDragZone.style.borderColor = '#39572f';
+          logoDragZone.style.backgroundColor = '#f0f5eb';
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        logoDragZone.addEventListener(eventName, () => {
+          logoDragZone.style.borderColor = '#c8d4c1';
+          logoDragZone.style.backgroundColor = 'transparent';
+        }, false);
+      });
+
+      logoDragZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+          logoInput.files = files;
+          const event = new Event('change', { bubbles: true });
+          logoInput.dispatchEvent(event);
+        }
+      }, false);
+    }
+
+    // Logo form submission — uploads to /api/upload/logo (server resizes + saves to /public/uploads)
+    logoForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = logoInput.files[0];
+      if (!file) {
+        toast('Choose a logo file first', 'warn');
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('logo', file);
+
+      try {
+        const res = await fetch('/api/upload/logo', {
+          method: 'POST',
+          headers: { ...getAuthHeader() },
+          body: fd
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+        logoDisplay.src = data.path + '?t=' + Date.now(); // cache-bust
+        logoDisplay.style.display = 'block';
+        logoDisplayPlaceholder.style.display = 'none';
+        clearLogoBtn.style.display = 'flex';
+
+        toast('Logo saved (auto-resized & optimized)', 'success');
+        logoInput.value = '';
+        logoPreview.style.display = 'none';
+        logoPlaceholder.style.display = 'block';
+      } catch (err) {
+        toast('Logo upload failed: ' + err.message, 'error');
+      }
+    });
+
+    // Clear logo — POST empty branding update
+    clearLogoBtn.addEventListener('click', async () => {
+      if (!confirm('Remove the logo from header and footer?')) return;
+      try {
+        const res = await fetch('/api/branding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+          body: JSON.stringify({ logo: null })
+        });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(j.error || 'HTTP ' + res.status);
+        }
+        logoDisplay.src = '';
+        logoDisplay.style.display = 'none';
+        logoDisplayPlaceholder.style.display = 'block';
+        clearLogoBtn.style.display = 'none';
+        toast('Logo removed', 'success');
+      } catch (err) {
+        toast('Failed to remove logo: ' + err.message, 'error');
+      }
+    });
+
+    // Load logo on page load
+    loadLogo();
+
+    // Email Configuration Handler
+    const emailConfigForm = document.getElementById('emailConfigForm');
+    const emailStatus = document.getElementById('emailStatus');
+    const emailErrorStatus = document.getElementById('emailErrorStatus');
+    const statusEmail = document.getElementById('statusEmail');
+
+    // Load email config on page load
+    async function loadEmailConfig() {
+      try {
+        const response = await fetch('/api/email-config', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        });
+        if (response.ok) {
+          const config = await response.json();
+          document.getElementById('smtpHost').value = config.smtpHost || '';
+          document.getElementById('smtpPort').value = config.smtpPort || '';
+          document.getElementById('smtpUser').value = config.smtpUser || '';
+          document.getElementById('recipientEmail').value = config.recipientEmail || '';
+          document.getElementById('fromName').value = config.fromName || 'Olira Agro Industry';
+
+          // Show status
+          if (config.smtpUser && config.recipientEmail) {
+            emailStatus.classList.remove('hidden');
+            emailErrorStatus.classList.add('hidden');
+            statusEmail.textContent = config.recipientEmail;
+          } else {
+            emailStatus.classList.add('hidden');
+            emailErrorStatus.classList.remove('hidden');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading email config:', error);
+        emailErrorStatus.classList.remove('hidden');
+      }
+    }
+
+    // Save email config
+    emailConfigForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const config = {
+        smtpHost: document.getElementById('smtpHost').value,
+        smtpPort: document.getElementById('smtpPort').value,
+        smtpUser: document.getElementById('smtpUser').value,
+        smtpPassword: document.getElementById('smtpPassword').value,
+        recipientEmail: document.getElementById('recipientEmail').value,
+        fromName: document.getElementById('fromName').value
+      };
+
+      // Validate
+      if (!config.smtpHost || !config.smtpPort || !config.smtpUser || !config.smtpPassword || !config.recipientEmail) {
+        alert('❌ Please fill in all required fields');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/email-config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          },
+          body: JSON.stringify(config)
+        });
+
+        if (response.ok) {
+          alert('✅ Email configuration saved successfully!');
+          // Clear password field and reload
+          document.getElementById('smtpPassword').value = '';
+          loadEmailConfig();
+        } else {
+          const error = await response.json();
+          alert(`❌ Error: ${error.error}`);
+        }
+      } catch (error) {
+        console.error('Error saving email config:', error);
+        alert('❌ Failed to save email configuration. Make sure the API server is running.');
+      }
+    });
+
+    // Load email config when email tab is displayed
+    if (tabButtons.email) {
+      tabButtons.email.addEventListener('click', () => {
+        loadEmailConfig();
+      });
+    }
+
+    // Initial load of email config
+    loadEmailConfig();
+
+    // ============================================
+    // CONTACT DETAILS — API-driven (was localStorage)
+    // ============================================
+    const contactDetailsForm = document.getElementById('contactDetailsForm');
+    const phoneNumbersInput = document.getElementById('phoneNumbers');
+    const emailAddressesInput = document.getElementById('emailAddresses');
+    const currentPhonesDiv = document.getElementById('currentPhones');
+    const currentEmailsDiv = document.getElementById('currentEmails');
+
+    async function loadContactDetails() {
+      try {
+        const res = await fetch('/api/contact-details');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        phoneNumbersInput.value = (data.phones || []).join('\n');
+        emailAddressesInput.value = (data.emails || []).join('\n');
+        displayCurrentContacts(data);
+      } catch (err) {
+        console.error('Failed to load contact details:', err);
+      }
+    }
+
+    // Display current contact details
+    function displayCurrentContacts(data) {
+      // Clear previous content safely
+      while (currentPhonesDiv.firstChild) {
+        currentPhonesDiv.removeChild(currentPhonesDiv.firstChild);
+      }
+      while (currentEmailsDiv.firstChild) {
+        currentEmailsDiv.removeChild(currentEmailsDiv.firstChild);
+      }
+
+      if (data.phones && data.phones.length > 0) {
+        data.phones.forEach(phone => {
+          const p = document.createElement('p');
+          p.textContent = '📞 ' + phone;
+          currentPhonesDiv.appendChild(p);
+        });
+      } else {
+        const p = document.createElement('p');
+        p.className = 'text-primary-400';
+        p.textContent = 'No phones configured';
+        currentPhonesDiv.appendChild(p);
+      }
+
+      if (data.emails && data.emails.length > 0) {
+        data.emails.forEach(email => {
+          const p = document.createElement('p');
+          p.textContent = '📧 ' + email;
+          currentEmailsDiv.appendChild(p);
+        });
+      } else {
+        const p = document.createElement('p');
+        p.className = 'text-primary-400';
+        p.textContent = 'No emails configured';
+        currentEmailsDiv.appendChild(p);
+      }
+    }
+
+    // Save contact details — POST to /api/contact-details
+    contactDetailsForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const phones = phoneNumbersInput.value
+        .split('\n')
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+
+      const emails = emailAddressesInput.value
+        .split('\n')
+        .map(e => e.trim())
+        .filter(e => e.length > 0);
+
+      if (phones.length === 0 && emails.length === 0) {
+        toast('Add at least one phone number or email', 'error');
+        return;
+      }
+
+      try {
+        // Preserve other fields (address/office/factory) by reading current state first
+        const currentRes = await fetch('/api/contact-details');
+        const current = currentRes.ok ? await currentRes.json() : {};
+
+        const res = await fetch('/api/contact-details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+          body: JSON.stringify({
+            phones,
+            emails,
+            address: current.address || null,
+            office: current.office || null,
+            factory: current.factory || null
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Save failed');
+        displayCurrentContacts({ phones, emails });
+        toast('Contact details saved', 'success');
+      } catch (err) {
+        toast('Save failed: ' + err.message, 'error');
+      }
+    });
+
+    // Load contact details on page load and when content tab is clicked
+    loadContactDetails();
+    if (tabButtons.content) {
+      tabButtons.content.addEventListener('click', () => {
+        loadContactDetails();
+      });
+    }
+
+    // ============================================
+    // CERTIFICATIONS — API-driven (was localStorage)
+    // ============================================
+    const certificationForm = document.getElementById('certificationForm');
+    const certNameInput = document.getElementById('certName');
+    const certDescriptionInput = document.getElementById('certDescription');
+    const certImageInput = document.getElementById('certImageInput');
+    const certImagePreview = document.getElementById('certImagePreview');
+    const certImagePlaceholder = document.getElementById('certImagePlaceholder');
+    const certificationsList = document.getElementById('certificationsList');
+
+    async function loadCertifications() {
+      try {
+        const res = await fetch('/api/certifications');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const certifications = await res.json();
+        renderCertifications(certifications);
+      } catch (err) {
+        console.error('Failed to load certifications:', err);
+        while (certificationsList.firstChild) certificationsList.removeChild(certificationsList.firstChild);
+        const p = document.createElement('p');
+        p.className = 'text-red-600 text-sm col-span-full';
+        p.textContent = 'Failed to load certifications. Is the API server running?';
+        certificationsList.appendChild(p);
+      }
+    }
+
+    function renderCertifications(certifications) {
+      while (certificationsList.firstChild) {
+        certificationsList.removeChild(certificationsList.firstChild);
+      }
+
+      if (certifications.length === 0) {
+        const p = document.createElement('p');
+        p.className = 'text-primary-600 text-sm col-span-full';
+        p.textContent = 'No certifications added yet';
+        certificationsList.appendChild(p);
+        return;
+      }
+
+      certifications.forEach((cert) => {
+        const div = document.createElement('div');
+        div.className = 'bg-gradient-green text-white p-6 rounded-lg flex flex-col items-center justify-center';
+
+        if (cert.image) {
+          const img = document.createElement('img');
+          img.src = cert.image;
+          img.alt = cert.name;
+          img.className = 'w-16 h-16 mb-3 object-contain';
+          img.loading = 'lazy';
+          div.appendChild(img);
+        }
+
+        const title = document.createElement('h5');
+        title.className = 'font-heading text-lg font-bold text-center mb-1';
+        title.textContent = cert.name;
+        div.appendChild(title);
+
+        const desc = document.createElement('p');
+        desc.className = 'text-sm text-center text-white/90 mb-4';
+        desc.textContent = cert.description;
+        div.appendChild(desc);
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'w-full p-2 bg-white/20 hover:bg-white/30 text-white font-bold text-xs rounded transition';
+        btn.textContent = 'DELETE';
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (!confirm(`Delete "${cert.name}"?`)) return;
+          try {
+            const res = await fetch(`/api/certifications/${encodeURIComponent(cert.id)}`, {
+              method: 'DELETE',
+              headers: { ...getAuthHeader() }
+            });
+            if (!res.ok) {
+              const j = await res.json().catch(() => ({}));
+              throw new Error(j.error || 'HTTP ' + res.status);
+            }
+            toast('Certification deleted', 'success');
+            loadCertifications();
+          } catch (err) {
+            toast('Delete failed: ' + err.message, 'error');
+          }
+        });
+        div.appendChild(btn);
+
+        certificationsList.appendChild(div);
+      });
+    }
+
+    // Image preview on file input change
+    certImageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && file.size <= 2 * 1024 * 1024) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          certImagePreview.src = event.target.result;
+          certImagePreview.style.display = 'block';
+          certImagePlaceholder.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('File must be under 2MB');
+      }
+    });
+
+    // Drag and drop for certification image
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    const certDragZone = document.querySelector('[id="certificationForm"] .border-dashed');
+    if (certDragZone) {
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        certDragZone.addEventListener(eventName, preventDefaults, false);
+      });
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        certDragZone.addEventListener(eventName, () => {
+          certDragZone.style.borderColor = '#39572f';
+          certDragZone.style.backgroundColor = '#f0f5eb';
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        certDragZone.addEventListener(eventName, () => {
+          certDragZone.style.borderColor = '#c8d4c1';
+          certDragZone.style.backgroundColor = 'transparent';
+        }, false);
+      });
+
+      certDragZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+          certImageInput.files = files;
+          const event = new Event('change', { bubbles: true });
+          certImageInput.dispatchEvent(event);
+        }
+      }, false);
+    }
+
+    // Form submission — POST to /api/certifications
+    certificationForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = certNameInput.value.trim();
+      const description = certDescriptionInput.value.trim();
+
+      if (!name || !description) {
+        toast('Certification name and description are required', 'error');
+        return;
+      }
+
+      // Image: if user selected a new file, upload it first; else keep base64 inline (legacy fallback)
+      let imagePath = null;
+      const file = certImageInput.files[0];
+      if (file) {
+        try {
+          const fd = new FormData();
+          fd.append('image', file);
+          fd.append('productId', 'cert-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+          const res = await fetch('/api/upload/product-image', {
+            method: 'POST',
+            headers: { ...getAuthHeader() },
+            body: fd
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Upload failed');
+          imagePath = data.path;
+        } catch (err) {
+          toast('Image upload failed: ' + err.message, 'error');
+          return;
+        }
+      } else if (certImagePreview.src && certImagePreview.style.display !== 'none') {
+        // Preview is showing a previously-set image (data URL or path)
+        imagePath = certImagePreview.src.startsWith('data:') ? certImagePreview.src : new URL(certImagePreview.src, window.location.origin).pathname;
+      }
+
+      try {
+        const res = await fetch('/api/certifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+          body: JSON.stringify({ certification: { name, description, image: imagePath } })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Save failed');
+        toast('Certification added', 'success');
+      } catch (err) {
+        toast('Save failed: ' + err.message, 'error');
+        return;
+      }
+
+      certNameInput.value = '';
+      certDescriptionInput.value = '';
+      certImageInput.value = '';
+      certImagePreview.src = '';
+      certImagePreview.style.display = 'none';
+      certImagePlaceholder.style.display = 'block';
+
+      loadCertifications();
+    });
+
+    // Load certifications on page load and when content tab is clicked
+    loadCertifications();
+    if (tabButtons.content) {
+      const originalContentListener = tabButtons.content.onclick;
+      tabButtons.content.addEventListener('click', () => {
+        loadCertifications();
+      });
+    }
+
+    // ============================================
+    // SHARED HELPERS — toast + auth header
+    // ============================================
+    function getAuthHeader() {
+      const token = localStorage.getItem('adminToken');
+      return token ? { 'Authorization': `Bearer ${token}` } : {};
+    }
+
+    // Lightweight toast — replaces alert() for non-blocking feedback
+    function toast(message, type = 'info') {
+      let host = document.getElementById('admin-toast-host');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'admin-toast-host';
+        host.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+        document.body.appendChild(host);
+      }
+      const el = document.createElement('div');
+      const colors = {
+        info:    { bg: '#39572f', border: '#21341a' },
+        success: { bg: '#2c7a7b', border: '#1f5759' },
+        error:   { bg: '#b91c1c', border: '#7f1d1d' },
+        warn:    { bg: '#b45309', border: '#78350f' }
+      };
+      const c = colors[type] || colors.info;
+      el.style.cssText = `background:${c.bg};color:white;padding:14px 20px;border-radius:8px;border-left:4px solid ${c.border};box-shadow:0 4px 16px rgba(0,0,0,.15);font-weight:500;font-size:14px;max-width:380px;pointer-events:auto;animation:slideInRightToast .3s ease-out;`;
+      el.textContent = message;
+      host.appendChild(el);
+      setTimeout(() => {
+        el.style.transition = 'all .3s ease';
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(20px)';
+        setTimeout(() => el.remove(), 300);
+      }, 3500);
+    }
+
+    // Toast slide-in keyframes (injected once)
+    if (!document.getElementById('admin-toast-style')) {
+      const style = document.createElement('style');
+      style.id = 'admin-toast-style';
+      style.textContent = '@keyframes slideInRightToast{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}';
+      document.head.appendChild(style);
+    }
+
+    // ============================================
+    // PRODUCTS — API-driven CRUD
+    // ============================================
+    const productForm           = document.getElementById('productForm');
+    const productFormTitle      = document.getElementById('productFormTitle');
+    const productIdField        = document.getElementById('productId');
+    const productNameField      = document.getElementById('productName');
+    const productDescField      = document.getElementById('productDescription');
+    const productPurityField    = document.getElementById('productPurity');
+    const productMoqField       = document.getElementById('productMoq');
+    const productCategoryField  = document.getElementById('productCategory');
+    const productSpecsField     = document.getElementById('productSpecs');
+    const productImageFile      = document.getElementById('productImageFile');
+    const productImagePreview   = document.getElementById('productImagePreview');
+    const productImagePlaceholder = document.getElementById('productImagePlaceholder');
+    const productImagePath      = document.getElementById('productImagePath');
+    const productImageClearBtn  = document.getElementById('productImageClearBtn');
+    const productSaveBtn        = document.getElementById('productSaveBtn');
+    const productSaveBtnLabel   = document.getElementById('productSaveBtnLabel');
+    const productCancelEditBtn  = document.getElementById('productCancelEditBtn');
+    const productsListContainer = document.getElementById('productsListContainer');
+    const productCountLabel     = document.getElementById('productCountLabel');
+    const productsRefreshBtn    = document.getElementById('productsRefreshBtn');
+
+    function setProductImagePreview(url) {
+      if (url) {
+        productImagePreview.src = url;
+        productImagePreview.style.display = 'block';
+        productImagePlaceholder.style.display = 'none';
+        productImageClearBtn.style.display = 'inline';
+        productImagePath.value = url;
+      } else {
+        productImagePreview.src = '';
+        productImagePreview.style.display = 'none';
+        productImagePlaceholder.style.display = 'block';
+        productImageClearBtn.style.display = 'none';
+        productImagePath.value = '';
+      }
+    }
+
+    function resetProductForm() {
+      productForm.reset();
+      productIdField.value = '';
+      setProductImagePreview('');
+      productFormTitle.innerHTML = productFormTitle.innerHTML.replace('Edit Product', 'Add Product');
+      productSaveBtnLabel.textContent = 'SAVE PRODUCT';
+      productCancelEditBtn.style.display = 'none';
+    }
+
+    function fillProductForm(p) {
+      productIdField.value = p.id || '';
+      productNameField.value = p.name || '';
+      productDescField.value = p.description || '';
+      productPurityField.value = p.purity || '';
+      productMoqField.value = p.moq || '';
+      productCategoryField.value = p.category || '';
+      productSpecsField.value = (p.specs || []).join('\n');
+      setProductImagePreview(p.image || '');
+      productFormTitle.innerHTML = productFormTitle.innerHTML.replace('Add Product', 'Edit Product');
+      productSaveBtnLabel.textContent = 'UPDATE PRODUCT';
+      productCancelEditBtn.style.display = 'inline-block';
+      productForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function loadProducts() {
+      productsListContainer.textContent = '';
+      const loading = document.createElement('p');
+      loading.className = 'text-primary-600 text-sm';
+      loading.textContent = 'Loading products...';
+      productsListContainer.appendChild(loading);
+
+      try {
+        const res = await fetch('/api/products');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const products = await res.json();
+        renderProducts(products);
+      } catch (err) {
+        console.error('Failed to load products:', err);
+        productsListContainer.textContent = '';
+        const errMsg = document.createElement('p');
+        errMsg.className = 'text-red-600 text-sm';
+        errMsg.textContent = 'Failed to load products. Is the API server running?';
+        productsListContainer.appendChild(errMsg);
+        productCountLabel.textContent = '0';
+      }
+    }
+
+    function renderProducts(products) {
+      productsListContainer.textContent = '';
+      productCountLabel.textContent = products.length;
+
+      if (products.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'text-primary-600 text-sm';
+        empty.textContent = 'No products yet. Add your first one above.';
+        productsListContainer.appendChild(empty);
+        return;
+      }
+
+      products.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'bg-white border-2 border-primary-200 p-6 hover:border-primary-600 transition';
+
+        const top = document.createElement('div');
+        top.className = 'flex justify-between items-start gap-4 mb-4';
+
+        const left = document.createElement('div');
+        left.className = 'flex gap-4 items-start flex-1 min-w-0';
+
+        if (p.image) {
+          const img = document.createElement('img');
+          img.src = p.image;
+          img.alt = p.name;
+          img.className = 'w-20 h-20 object-cover rounded border border-primary-200 flex-shrink-0';
+          img.loading = 'lazy';
+          left.appendChild(img);
+        }
+
+        const info = document.createElement('div');
+        info.className = 'min-w-0';
+        const h5 = document.createElement('h5');
+        h5.className = 'font-bold text-lg text-primary-900 truncate';
+        h5.textContent = p.name;
+        info.appendChild(h5);
+        const desc = document.createElement('p');
+        desc.className = 'text-primary-900 text-sm mt-1 line-clamp-2';
+        desc.textContent = p.description;
+        info.appendChild(desc);
+        left.appendChild(info);
+        top.appendChild(left);
+
+        const actions = document.createElement('div');
+        actions.className = 'flex gap-2 flex-shrink-0';
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'p-2 border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition';
+        editBtn.title = 'Edit';
+        editBtn.textContent = '✏️';
+        editBtn.addEventListener('click', () => fillProductForm(p));
+        actions.appendChild(editBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'p-2 border-2 border-red-600 text-red-600 hover:bg-red-50 transition';
+        delBtn.title = 'Delete';
+        delBtn.textContent = '🗑️';
+        delBtn.addEventListener('click', () => deleteProduct(p));
+        actions.appendChild(delBtn);
+
+        top.appendChild(actions);
+        card.appendChild(top);
+
+        const meta = document.createElement('div');
+        meta.className = 'flex flex-wrap gap-x-6 gap-y-2 text-sm text-primary-600';
+        if (p.purity)   { const s = document.createElement('span'); s.className = 'font-semibold'; s.textContent = `Purity: ${p.purity}`; meta.appendChild(s); }
+        if (p.moq)      { const s = document.createElement('span'); s.className = 'font-semibold'; s.textContent = `MOQ: ${p.moq}`; meta.appendChild(s); }
+        if (p.category) { const s = document.createElement('span'); s.className = 'font-semibold'; s.textContent = `Category: ${p.category}`; meta.appendChild(s); }
+        card.appendChild(meta);
+
+        productsListContainer.appendChild(card);
+      });
+    }
+
+    async function deleteProduct(p) {
+      if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(p.id)}`, {
+          method: 'DELETE',
+          headers: { ...getAuthHeader() }
+        });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(j.error || 'HTTP ' + res.status);
+        }
+        toast(`Deleted: ${p.name}`, 'success');
+        loadProducts();
+      } catch (err) {
+        toast('Delete failed: ' + err.message, 'error');
+      }
+    }
+
+    // Image file -> upload to /api/upload/product-image -> store returned path
+    productImageFile.addEventListener('change', async () => {
+      const file = productImageFile.files[0];
+      if (!file) return;
+      if (file.size > 10 * 1024 * 1024) {
+        toast('Image too large (max 10MB)', 'error');
+        productImageFile.value = '';
+        return;
+      }
+
+      // Local preview while uploading
+      const localUrl = URL.createObjectURL(file);
+      productImagePreview.src = localUrl;
+      productImagePreview.style.display = 'block';
+      productImagePlaceholder.style.display = 'none';
+
+      const fd = new FormData();
+      fd.append('image', file);
+      fd.append('productId', productNameField.value || 'product');
+
+      try {
+        productSaveBtn.disabled = true;
+        toast('Uploading image...', 'info');
+        const res = await fetch('/api/upload/product-image', {
+          method: 'POST',
+          headers: { ...getAuthHeader() },
+          body: fd
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+        setProductImagePreview(data.path);
+        toast('Image uploaded & optimized', 'success');
+      } catch (err) {
+        toast('Upload failed: ' + err.message, 'error');
+        setProductImagePreview('');
+      } finally {
+        productSaveBtn.disabled = false;
+        productImageFile.value = '';
+      }
+    });
+
+    productImageClearBtn.addEventListener('click', () => setProductImagePreview(''));
+    productCancelEditBtn.addEventListener('click', resetProductForm);
+    productsRefreshBtn.addEventListener('click', loadProducts);
+
+    productForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const product = {
+        id: productIdField.value || undefined,
+        name: productNameField.value.trim(),
+        description: productDescField.value.trim(),
+        purity: productPurityField.value.trim(),
+        moq: productMoqField.value.trim(),
+        category: productCategoryField.value.trim() || 'General',
+        specs: productSpecsField.value.split('\n').map(s => s.trim()).filter(Boolean),
+        image: productImagePath.value || null
+      };
+
+      if (!product.name || !product.description) {
+        toast('Name and description are required', 'error');
+        return;
+      }
+
+      try {
+        productSaveBtn.disabled = true;
+        const res = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+          body: JSON.stringify({ product })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Save failed');
+        toast(productIdField.value ? 'Product updated' : 'Product added', 'success');
+        resetProductForm();
+        loadProducts();
+      } catch (err) {
+        toast('Save failed: ' + err.message, 'error');
+      } finally {
+        productSaveBtn.disabled = false;
+      }
+    });
+
+    // Load products on page-load and when Products tab is clicked
+    loadProducts();
+    if (tabButtons.products) {
+      tabButtons.products.addEventListener('click', loadProducts);
+    }
+  </script>
+</BaseLayout>

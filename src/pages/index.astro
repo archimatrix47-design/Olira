@@ -1,0 +1,517 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import ProductCard from '../components/ProductCard.astro';
+import FeatureCard from '../components/FeatureCard.astro';
+import Modal from '../components/Modal.astro';
+import ContactForm from '../components/ContactForm.astro';
+import Icon from '../components/Icons.astro';
+import Timeline from '../components/Timeline.astro';
+import CertificationShowcase from '../components/CertificationShowcase.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Read products from data file at build/SSR time.
+// Admin edits via /api/products write to this same file, so a rebuild
+// (or SSR request) picks them up. For instant freshness without rebuild,
+// the inline script below also re-fetches from /api/products on the client.
+let products: any[] = [];
+try {
+  const productsPath = path.join(process.cwd(), 'data', 'products.json');
+  if (fs.existsSync(productsPath)) {
+    products = JSON.parse(fs.readFileSync(productsPath, 'utf8'));
+  }
+} catch (err) {
+  console.error('Failed to read data/products.json:', err);
+}
+
+const features = [
+  {
+    icon: '/icons/quality.webp',
+    title: 'Quality Guaranteed',
+    description: 'ISO 22000 certified. Every batch tested for purity, moisture, and contaminants.'
+  },
+  {
+    icon: '/icons/global.webp',
+    title: 'Global Shipping',
+    description: 'Export-ready products. USA, EU, Middle East certified. Reliable logistics partners.'
+  },
+  {
+    icon: '/icons/trusted.webp',
+    title: 'Trusted Partner',
+    description: 'Since 2008. Consistent quality, on-time delivery, responsive support.'
+  },
+  {
+    icon: '/icons/organic.webp',
+    title: 'Organic Options',
+    description: 'Both conventional and certified organic available for all product lines.'
+  },
+  {
+    icon: '/icons/packaging.webp',
+    title: 'Custom Packaging',
+    description: 'Flexible packaging for bulk orders. 50 MT minimum for custom solutions.'
+  },
+  {
+    icon: '/icons/fair_price.webp',
+    title: 'Fair Pricing',
+    description: 'Direct from producer. Flexible payment terms. Volume discounts available.'
+  }
+];
+
+// Certifications are loaded client-side from /api/certifications
+// (see BaseLayout's loadCertificationsFromStorage). No server-render needed.
+---
+
+<BaseLayout
+  title="Olira Agro Industry - Premium Ethiopian Agricultural Exports"
+  description="Premium sesame seeds, pulses, spices, and coffee from Ethiopia. ISO 22000 certified. Trusted by 50+ countries. Since 2008."
+>
+  <Hero />
+
+  <!-- Products Section - Asymmetric Layout (Pattern A) -->
+  <section id="products" class="bg-white py-20 lg:py-24">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-20 lg:mb-24 animate-slideUp">
+        <span class="section-label">OUR COLLECTION</span>
+        <h2 class="heading-with-rule font-heading text-5xl lg:text-6xl font-bold text-primary-900 mb-8 leading-[1.05]">Selected<br/>and&nbsp;exacting</h2>
+        <p class="text-lg text-primary-900 max-w-3xl leading-relaxed">
+          Carefully selected and processed agricultural products meeting international quality standards. Trusted by importers and distributors worldwide.
+        </p>
+      </div>
+
+      <!-- Products Grid - All Equal Size -->
+      <!-- Initial render comes from data/products.json (frontmatter).
+           The script below re-fetches /api/products and re-renders if admin edits arrived
+           after the static build. This keeps initial paint fast (SSR) AND data fresh. -->
+      <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {products.map((product, i) => (
+          <div class="scroll-trigger" data-trigger-animation="slideUp" style={{ animationDelay: `${i * 0.1}s` }}>
+            <ProductCard {...product} cardIndex={i} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="py-20 lg:py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="w-full max-w-4xl animate-slideUp mb-24">
+        <span class="section-label">OUR STORY</span>
+        <h2 class="heading-with-rule font-heading text-5xl lg:text-6xl font-bold text-primary-900 mb-8 leading-[1.05]">Built on<br/>provenance</h2>
+        <p class="text-xl text-primary-900 leading-relaxed max-w-3xl">
+          Founded in 2008 by two Ethiopian professionals with over 50 years of combined expertise in agronomy and agricultural products processing, Olira Agro Industry has grown into a trusted partner for premium agricultural exports. Our commitment to quality and sustainability has made us a preferred supplier for importers in over 50 countries worldwide, while also supporting local Ethiopian markets.
+        </p>
+      </div>
+
+      <!-- Our Mission — 16+ box vertically centered against text via items-center -->
+      <div class="w-full grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-16 items-center mb-24">
+        <div class="animate-slideInLeft">
+          <h3 class="font-heading text-4xl lg:text-5xl font-bold text-primary-900 mb-8 leading-tight">Our Mission</h3>
+          <div class="space-y-6 text-primary-900">
+            <p class="leading-relaxed">
+              Olira Agro Industry was founded by two experienced Ethiopian professionals with deep expertise in agricultural processing and international trade. One founder brings over 30 years of specialized knowledge in pulses and oilseeds processing and marketing, while the other contributes more than 20 years of proven experience in agricultural products export and import business.
+            </p>
+            <p class="leading-relaxed">
+              Our evolution reflects our commitment to innovation and expanding impact. In 2011, we established our state-of-the-art processing facility in Burayu town, Oromia Region—just 15 km west of Addis Ababa—strategically located in the highlands for ideal food processing conditions. We commenced operations with advanced American and European sesame seed hulling and roasting technology, specifically the premium Humera variety with exceptional oil content and creamy color. Today, our facility processes up to 20 MT of sesame per day with 99.95% purity while maintaining ISO 22000 certification and organic standards.
+            </p>
+            <p class="leading-relaxed">
+              Every product combines traditional agricultural knowledge with modern processing techniques to meet the highest international standards. We believe in sustainable practices, fair trade, and supporting both global commerce and local food security. Olira serves as a bridge between Ethiopian farmers and the world, ensuring excellence reaches those who value it.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl p-12 h-80 flex flex-col items-center justify-center text-center animate-slideInRight">
+          <p class="font-heading text-7xl font-bold text-primary-900 mb-4">16+</p>
+          <p class="text-2xl font-bold text-primary-900">Years of Excellence</p>
+          <div class="mt-8 pt-8 border-t-2 border-primary-300 w-full">
+            <p class="text-primary-600 font-bold">Since 2008</p>
+            <p class="text-primary-900 text-sm">Serving global markets</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Core Values -->
+      <div class="mb-20">
+        <div class="text-center mb-16 animate-slideUp">
+          <h3 class="font-heading text-4xl font-bold text-primary-900 leading-[1.1]">What we refuse<br/>to&nbsp;compromise</h3>
+        </div>
+
+        <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div class="bg-gradient-card border border-gray-200 rounded-lg p-8 animate-slideUp hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <h4 class="font-heading text-2xl font-bold text-primary-900 mb-4">Quality First</h4>
+            <p class="text-primary-900">Every product undergoes rigorous quality control to meet international standards. We don't compromise on excellence.</p>
+          </div>
+          <div class="bg-gradient-card border border-gray-200 rounded-lg p-8 animate-slideUp hover:shadow-lg hover:-translate-y-1 transition-all duration-300" style={{ animationDelay: '0.1s' }}>
+            <h4 class="font-heading text-2xl font-bold text-primary-900 mb-4">Sustainability</h4>
+            <p class="text-primary-900">We're committed to sustainable farming practices that protect the environment for future generations.</p>
+          </div>
+          <div class="bg-gradient-card border border-gray-200 rounded-lg p-8 animate-slideUp hover:shadow-lg hover:-translate-y-1 transition-all duration-300" style={{ animationDelay: '0.2s' }}>
+            <h4 class="font-heading text-2xl font-bold text-primary-900 mb-4">Integrity</h4>
+            <p class="text-primary-900">Transparent dealings and honest communication form the foundation of all our business relationships.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Company Journey Timeline (Pattern B) -->
+      <div class="py-20 mb-20">
+        <Timeline
+          title="Sixteen years in motion"
+          items={[
+            {
+              year: 2008,
+              title: "Founded with Vision",
+              description: "Olira Agro Industry established by two experienced Ethiopian professionals with over 50 years combined expertise in agriculture and international trade.",
+              icon: "🌱"
+            },
+            {
+              year: 2011,
+              title: "State-of-the-Art Facility",
+              description: "Launched our processing facility in Burayu with advanced American and European technology, processing premium Humera sesame seeds.",
+              icon: "🏭"
+            },
+            {
+              year: 2015,
+              title: "Global Expansion",
+              description: "Expanded operations to serve importers and distributors across 50+ countries, establishing Olira as a trusted global brand.",
+              icon: "🌍"
+            },
+            {
+              year: 2024,
+              title: "Certified Excellence",
+              description: "Today, Olira delivers 20 MT of premium products daily with 99.95% purity, maintaining ISO 22000 certification and serving 10,000+ satisfied buyers worldwide.",
+              icon: "✓"
+            }
+          ]}
+        />
+      </div>
+
+      <!-- Facilities & Technology — AIR-style pinned scroll.
+           Section is tall; an inner panel pins (position: sticky) while the
+           right column swaps through capability slides as you scroll.
+           Native scroll preserved (no hijack) — accessible + SEO-safe. -->
+      <div class="pinned-fac" data-pinned-fac>
+        <div class="pinned-fac__sticky">
+          <div class="max-w-6xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <!-- Left: fixed heading + progress -->
+            <div>
+              <span class="section-label">FACILITIES &amp; TECHNOLOGY</span>
+              <h3 class="font-heading text-5xl lg:text-6xl font-bold text-primary-900 leading-[1.05] mb-6">
+                Precision<br/>by&nbsp;design
+              </h3>
+              <p class="text-primary-800 leading-relaxed max-w-md mb-10">
+                Burayu, Oromia Region — 15&nbsp;km west of Addis Ababa. Operating since 2011 on American and European processing technology.
+              </p>
+              <div class="flex items-baseline gap-3 font-heading mb-4">
+                <span class="text-4xl font-bold text-primary-900" data-pf-current>01</span>
+                <span class="text-lg text-primary-400">/ 04</span>
+              </div>
+              <div class="h-px w-full max-w-xs bg-primary-200 relative overflow-hidden">
+                <span class="absolute inset-y-0 left-0 bg-teal-accent transition-[width] duration-500 ease-out" style="width:25%" data-pf-bar></span>
+              </div>
+            </div>
+
+            <!-- Right: swapping capability slides -->
+            <div class="pinned-fac__stage">
+              <div class="pinned-fac__slide is-active" data-pf-slide="0">
+                <p class="font-heading font-bold text-primary-900 leading-none"><span class="text-7xl">20</span> <span class="text-2xl text-primary-600">MT&nbsp;/&nbsp;day</span></p>
+                <h4 class="font-heading text-2xl font-bold text-primary-900 mt-6 mb-3">Daily processing capacity</h4>
+                <p class="text-primary-800 leading-relaxed">State-of-the-art hulling and roasting lines run continuously, processing premium Humera sesame at industrial scale without compromising grade.</p>
+              </div>
+              <div class="pinned-fac__slide" data-pf-slide="1" aria-hidden="true">
+                <p class="font-heading font-bold text-primary-900 leading-none"><span class="text-7xl">99.95</span> <span class="text-2xl text-primary-600">% pure</span></p>
+                <h4 class="font-heading text-2xl font-bold text-primary-900 mt-6 mb-3">Measured, not claimed</h4>
+                <p class="text-primary-800 leading-relaxed">Every batch is tested for purity, moisture and contaminants. A lot either meets the 99.95% benchmark — or it does not ship.</p>
+              </div>
+              <div class="pinned-fac__slide" data-pf-slide="2" aria-hidden="true">
+                <p class="font-heading font-bold text-primary-900 leading-none"><span class="text-7xl">50</span> <span class="text-2xl text-primary-600">%+ oil</span></p>
+                <h4 class="font-heading text-2xl font-bold text-primary-900 mt-6 mb-3">Humera variety specialization</h4>
+                <p class="text-primary-800 leading-relaxed">We focus on the Humera variety — renowned for 50%+ oil content, creamy colour and a distinctive pleasant aroma prized by bakeries and oil mills.</p>
+              </div>
+              <div class="pinned-fac__slide" data-pf-slide="3" aria-hidden="true">
+                <p class="font-heading font-bold text-primary-900 leading-none"><span class="text-7xl">18</span> <span class="text-2xl text-primary-600">mo&nbsp;shelf</span></p>
+                <h4 class="font-heading text-2xl font-bold text-primary-900 mt-6 mb-3">Packaging &amp; traceability</h4>
+                <p class="text-primary-800 leading-relaxed">25&nbsp;kg paper or 50&nbsp;kg PP bags with full traceability labelling. ISO&nbsp;22000 certified, 18-month shelf life in cool, dry storage.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>
+        /* Tall scroll track — 4 slides ≈ one viewport each */
+        .pinned-fac { position: relative; height: 360vh; margin: 6rem 0; }
+        .pinned-fac__sticky {
+          position: sticky; top: 0; height: 100vh;
+          display: flex; align-items: center; overflow: hidden;
+        }
+        .pinned-fac__stage { position: relative; min-height: 340px; }
+        /* Non-active slides snap to hidden instantly (transition:none) so they
+           never paint on top of the incoming slide. Only the slide that
+           BECOMES active animates in. This kills the ghost/double-text
+           artifact from two slides cross-fading at once. */
+        .pinned-fac__slide {
+          position: absolute; inset: 0;
+          opacity: 0; visibility: hidden;
+          transform: translateY(24px);
+          transition: none;
+          pointer-events: none;
+          z-index: 1;
+        }
+        .pinned-fac__slide.is-active {
+          opacity: 1; visibility: visible;
+          transform: none;
+          pointer-events: auto;
+          z-index: 2;
+          transition: opacity .55s cubic-bezier(.22,1,.36,1),
+                      transform .55s cubic-bezier(.22,1,.36,1);
+        }
+        @media (max-width: 1023px) {
+          /* On small screens: don't pin — stack slides as normal flow */
+          .pinned-fac { height: auto; margin: 4rem 0; }
+          .pinned-fac__sticky { position: static; height: auto; display: block; }
+          .pinned-fac__stage { min-height: 0; }
+          .pinned-fac__slide {
+            position: static; opacity: 1; transform: none;
+            pointer-events: auto; margin-top: 3rem;
+          }
+          .pinned-fac__slide:first-child { margin-top: 2.5rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .pinned-fac__slide { transition: none; }
+        }
+      </style>
+
+      <script is:inline>
+        (function () {
+          const root = document.querySelector('[data-pinned-fac]');
+          if (!root) return;
+          const slides = root.querySelectorAll('[data-pf-slide]');
+          const counter = root.querySelector('[data-pf-current]');
+          const bar = root.querySelector('[data-pf-bar]');
+          const count = slides.length;
+          // Skip the pinned behavior on small screens (CSS already stacks them)
+          const mq = window.matchMedia('(min-width: 1024px)');
+          let active = -1, ticking = false;
+
+          function setActive(i) {
+            if (i === active) return;
+            active = i;
+            slides.forEach((s, idx) => {
+              const on = idx === i;
+              s.classList.toggle('is-active', on);
+              s.setAttribute('aria-hidden', on ? 'false' : 'true');
+            });
+            if (counter) counter.textContent = String(i + 1).padStart(2, '0');
+            if (bar) bar.style.width = (((i + 1) / count) * 100) + '%';
+          }
+
+          function update() {
+            ticking = false;
+            if (!mq.matches) { setActive(0); return; }
+            const rect = root.getBoundingClientRect();
+            const total = root.offsetHeight - window.innerHeight;
+            // progress 0→1 across the pinned track
+            const p = Math.min(1, Math.max(0, -rect.top / total));
+            const idx = Math.min(count - 1, Math.floor(p * count));
+            setActive(idx);
+          }
+
+          window.addEventListener('scroll', () => {
+            if (!ticking) { ticking = true; requestAnimationFrame(update); }
+          }, { passive: true });
+          window.addEventListener('resize', update);
+          update();
+        })();
+      </script>
+
+      <!-- Certifications Showcase (cards rendered client-side from /api/certifications) -->
+      <CertificationShowcase />
+    </div>
+  </section>
+
+  <!-- Why Choose Section -->
+  <section class="section-gradient-light py-20 lg:py-24">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-24 animate-slideUp">
+        <h2 class="heading-with-rule center-rule font-heading text-5xl lg:text-6xl font-bold text-primary-900 mb-8 leading-[1.05]">The case<br/>for&nbsp;Olira</h2>
+        <p class="w-full text-xl text-primary-900 max-w-3xl mx-auto leading-relaxed">
+          We combine expertise with innovation to deliver products that exceed international standards. Every order is backed by our commitment to excellence and customer satisfaction.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        {features.map((feature, i) => (
+          <div class="stagger-item animate-slideUp" style={{ animationDelay: `${i * 0.1}s` }}>
+            <FeatureCard {...feature} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16 animate-slideUp">
+        <span class="text-primary-600 font-heading font-bold text-sm tracking-widest">CONTACT US</span>
+        <h2 class="heading-with-rule center-rule font-heading text-5xl lg:text-6xl font-bold text-primary-900 mt-4 mb-6 leading-[1.05]">Begin<br/>a&nbsp;conversation</h2>
+        <p class="w-full text-xl text-primary-900 max-w-2xl mx-auto">
+          Our factory is located in Burayu Town, Oromia Region, 15 kilometres west of Addis Ababa in a prime highland location ideal for food processing. Since 2011, we've been processing premium agricultural products with state-of-the-art equipment. Contact us for inquiries about our products.
+        </p>
+      </div>
+
+      <!-- Contact Info Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+        <div class="text-center p-8 border-2 border-primary-200 hover:border-primary-600 transition animate-slideInLeft rounded-lg">
+          <div class="mb-6 flex justify-center">
+            <Icon name="phone" size={48} class="text-primary-900" />
+          </div>
+          <h3 class="font-heading text-xl font-bold text-primary-900 mb-3">CALL US</h3>
+          <p class="text-primary-600 text-sm mb-4 font-bold">Mon-Fri, 8 AM - 5 PM EAT</p>
+          <div class="space-y-2">
+            <p class="text-sm text-primary-900 font-medium">Phone, WhatsApp, Telegram</p>
+            <a href="tel:+251911223619" class="text-primary-900 font-bold text-lg hover:text-primary-600 transition block">
+              +251-911 22 36 19
+            </a>
+            <a href="tel:+251118963742" class="text-primary-900 font-bold text-lg hover:text-primary-600 transition block">
+              +251-118 96 37 42
+            </a>
+          </div>
+        </div>
+
+        <div class="text-center p-8 border-2 border-primary-200 hover:border-primary-600 transition animate-slideUp rounded-lg">
+          <div class="mb-6 flex justify-center">
+            <Icon name="email" size={48} class="text-primary-900" />
+          </div>
+          <h3 class="font-heading text-xl font-bold text-primary-900 mb-3">EMAIL US</h3>
+          <p class="text-primary-600 text-sm mb-4 font-bold">We respond within 24 hours</p>
+          <div class="space-y-2">
+            <a href="mailto:info@oliraagroindustry.com" class="text-primary-900 font-bold text-lg hover:text-primary-600 transition block">
+              info@oliraagroindustry.com
+            </a>
+            <a href="mailto:eliasgeneti@gmail.com" class="text-primary-900 font-bold text-lg hover:text-primary-600 transition block">
+              eliasgeneti@gmail.com
+            </a>
+          </div>
+        </div>
+
+        <div class="text-center p-8 border-2 border-primary-200 hover:border-primary-600 transition animate-slideInRight rounded-lg">
+          <div class="mb-6 flex justify-center">
+            <Icon name="location" size={48} class="text-primary-900" />
+          </div>
+          <h3 class="font-heading text-xl font-bold text-primary-900 mb-3">VISIT US</h3>
+          <p class="text-primary-900 font-medium text-sm leading-relaxed">
+            Lemi Kura Subcity, Woreda 08<br/>
+            Soreti Building, 2nd Floor, Room 214<br/>
+            P.O. Box 46325<br/>
+            Addis Ababa, Ethiopia<br/>
+            <span class="text-primary-600 font-bold mt-2 block">www.oliraagroindustry.com</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Form Heading -->
+      <div class="w-full text-center mb-12 max-w-6xl mx-auto">
+        <h3 class="font-heading text-4xl font-bold text-primary-900 mb-4">Send Product Inquiry</h3>
+        <p class="text-primary-900">Tell us about your product needs and requirements</p>
+      </div>
+
+      <!-- Contact Form and Maps Layout -->
+      <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20 max-w-6xl mx-auto items-end">
+        <!-- Contact Form (Left) -->
+        <div class="animate-slideInLeft">
+          <ContactForm />
+        </div>
+
+        <!-- Maps (Right) -->
+        <div class="flex flex-col gap-6 animate-slideInRight w-full">
+          <!-- Office Location Map -->
+          <div class="rounded-lg overflow-hidden shadow-lg">
+            <div class="h-56 w-full">
+              <iframe
+                src="https://www.google.com/maps?q=9.010410741253997,38.85021746658821&output=embed"
+                width="100%"
+                height="100%"
+                style="border:0;"
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Olira Office Location - Soreti Building"
+              ></iframe>
+            </div>
+            <div class="bg-white p-4">
+              <h4 class="font-heading text-lg font-bold text-primary-900 mb-2">Head Office</h4>
+              <p class="text-sm text-primary-600">Soreti Building<br/>Lemi Kura, Addis Ababa</p>
+            </div>
+          </div>
+
+          <!-- Factory Location Map -->
+          <div class="rounded-lg overflow-hidden shadow-lg">
+            <div class="h-56 w-full">
+              <iframe
+                src="https://www.google.com/maps?q=9.036639722121777,38.63643949629655&output=embed"
+                width="100%"
+                height="100%"
+                style="border:0;"
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Olira Factory Location - Burayu Town"
+              ></iframe>
+            </div>
+            <div class="bg-white p-4">
+              <h4 class="font-heading text-lg font-bold text-primary-900 mb-2">Processing Factory</h4>
+              <p class="text-sm text-primary-600">Burayu<br/>15 km West of Addis Ababa</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Modal -->
+  <Modal />
+</BaseLayout>
+
+<!-- Animate any element marked [data-counter] when it scrolls into view.
+     Preserves any non-digit prefix/suffix ("16+", "20 MT", "99.95%"). -->
+<script is:inline>
+  (function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    function animateCounter(el, finalText, duration) {
+      const match = finalText.trim().match(/^([^\d]*)([\d,.]+)([^\d]*)$/);
+      if (!match) return;
+      const prefix = match[1];
+      const suffix = match[3];
+      const isFloat = match[2].includes('.');
+      const target = parseFloat(match[2].replace(/,/g, ''));
+      let start = null;
+      const tick = (ts) => {
+        if (!start) start = ts;
+        const progress = Math.min((ts - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+        const current = isFloat ? (eased * target).toFixed(2) : Math.floor(eased * target);
+        el.textContent = `${prefix}${current}${suffix}`;
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+
+    document.querySelectorAll('[data-counter]').forEach((el) => {
+      if (el.dataset.animated) return;
+      const finalText = el.textContent;
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !el.dataset.animated) {
+            animateCounter(el, finalText, 1500);
+            el.dataset.animated = 'true';
+            obs.unobserve(el);
+          }
+        });
+      }, { threshold: 0.4 });
+      obs.observe(el);
+    });
+  })();
+</script>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" aria-hidden="true">
+  <!-- Hulled white seeds — clean cluster -->
+  <ellipse cx="200" cy="320" rx="150" ry="10" fill="#39572f" opacity="0.15"/>
+  <g stroke="#39572f" stroke-width="2.5" fill="#f4f9ed">
+    <ellipse cx="120" cy="265" rx="32" ry="18" transform="rotate(-12 120 265)"/>
+    <ellipse cx="195" cy="245" rx="36" ry="20" transform="rotate(-3 195 245)"/>
+    <ellipse cx="280" cy="265" rx="32" ry="18" transform="rotate(12 280 265)"/>
+    <ellipse cx="155" cy="305" rx="38" ry="22" transform="rotate(-6 155 305)"/>
+    <ellipse cx="245" cy="305" rx="38" ry="22" transform="rotate(6 245 305)"/>
+  </g>
+</svg>

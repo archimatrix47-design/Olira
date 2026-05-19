@@ -1,0 +1,297 @@
+---
+// ContactForm.astro - Modern inquiry form
+---
+
+<form id="contactForm" class="space-y-6 animate-slideUp">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <label for="name" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">FULL NAME *</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        required
+        placeholder="Your name"
+        autocomplete="name"
+        aria-required="true"
+        aria-describedby="nameDesc"
+        class="w-full px-4 py-3 border-b-2 border-primary-200 focus:border-primary-600 bg-transparent text-primary-900 placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
+      />
+      <span id="nameDesc" class="text-xs text-primary-600 mt-1">Required. Please enter your full name.</span>
+    </div>
+    <div>
+      <label for="email" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">EMAIL *</label>
+      <input
+        type="email"
+        id="email"
+        name="email"
+        required
+        placeholder="your@email.com"
+        autocomplete="email"
+        aria-required="true"
+        aria-describedby="emailDesc"
+        class="w-full px-4 py-3 border-b-2 border-primary-200 focus:border-primary-600 bg-transparent text-primary-900 placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
+      />
+      <span id="emailDesc" class="text-xs text-primary-600 mt-1">Required. We'll never share your email.</span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <label for="company" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">COMPANY</label>
+      <input
+        type="text"
+        id="company"
+        name="company"
+        placeholder="Your company name"
+        autocomplete="organization"
+        aria-describedby="companyDesc"
+        class="w-full px-4 py-3 border-b-2 border-primary-200 focus:border-primary-600 bg-transparent text-primary-900 placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
+      />
+      <span id="companyDesc" class="text-xs text-primary-600 mt-1">Optional. Your company name.</span>
+    </div>
+    <div>
+      <label for="phone" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PHONE</label>
+      <input
+        type="tel"
+        id="phone"
+        name="phone"
+        placeholder="+251 911 223619"
+        autocomplete="tel"
+        aria-describedby="phoneDesc"
+        class="w-full px-4 py-3 border-b-2 border-primary-200 focus:border-primary-600 bg-transparent text-primary-900 placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
+      />
+      <span id="phoneDesc" class="text-xs text-primary-600 mt-1">Optional. International format preferred.</span>
+    </div>
+  </div>
+
+  <div>
+    <label for="product" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">INTERESTED IN *</label>
+    <select
+      id="product"
+      name="product"
+      required
+      aria-required="true"
+      aria-describedby="productDesc"
+      class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 transition outline-none font-medium"
+    >
+      <option value="">Select a product</option>
+      <option value="sesame">Natural Sesame Seeds</option>
+      <option value="sesame-hulled">Mechanically Hulled Seeds</option>
+      <option value="pulses">Pulses & Legumes</option>
+      <option value="spices">Premium Spices</option>
+      <option value="coffee">Ethiopian Coffee</option>
+      <option value="other">Other Products</option>
+    </select>
+    <span id="productDesc" class="text-xs text-primary-600 mt-1">Required. Select the product you're interested in.</span>
+  </div>
+
+  <div>
+    <label for="message" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">MESSAGE</label>
+    <textarea
+      id="message"
+      name="message"
+      rows="8"
+      placeholder="Tell us about your requirements..."
+      required
+      aria-required="true"
+      aria-describedby="messageDesc"
+      class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 placeholder-primary-400 transition outline-none resize-none"
+    ></textarea>
+    <span id="messageDesc" class="text-xs text-primary-600 mt-1">Required. Please describe your product needs (max 2000 characters).</span>
+  </div>
+
+  <button
+    type="submit"
+    class="w-full bg-primary-900 hover:bg-primary-800 disabled:bg-primary-700 disabled:cursor-not-allowed text-white px-8 py-4 font-bold text-lg transition inline-flex items-center justify-center gap-3 min-h-[56px]"
+  >
+    <svg class="submit-spinner hidden animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
+      <path fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-3a7 7 0 0 0-7-7V2z"/>
+    </svg>
+    <span class="submit-label">SEND INQUIRY</span>
+  </button>
+
+  <div id="formMessage" class="hidden p-4 text-center font-bold rounded animate-success-bounce"></div>
+</form>
+
+<style>
+  /* Form field focus animation triggers */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--teal-accent);
+  }
+
+  /* Success message styling */
+  #formMessage.success {
+    background-color: #f0fdf4;
+    color: #166534;
+    border-left: 4px solid #22c55e;
+  }
+
+  #formMessage.error {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-left: 4px solid #ef4444;
+  }
+</style>
+
+<script>
+  const form = document.getElementById('contactForm') as HTMLFormElement;
+  const formMessage = document.getElementById('formMessage');
+  const submitBtn = form.querySelector('button[type="submit"]');
+
+  // Validation functions
+  function validateEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  }
+
+  function validateRequired(value: string): boolean {
+    return value.trim().length > 0;
+  }
+
+  function validatePhone(phone: string): boolean {
+    if (!phone) return true; // Phone is optional
+    const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+    return phone.trim().length >= 7 && phoneRegex.test(phone.trim());
+  }
+
+  function sanitizeText(text: string): string {
+    // Remove leading/trailing whitespace
+    return text.trim();
+  }
+
+  function showError(message: string) {
+    formMessage.className = 'error p-4 text-center font-bold rounded animate-success-bounce';
+    formMessage.textContent = `❌ ${message}`;
+    formMessage.classList.remove('hidden');
+    setTimeout(() => formMessage.classList.add('hidden'), 5000);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Clear previous messages
+    formMessage.classList.add('hidden');
+
+    // Validate form inputs
+    const nameInput = form.querySelector('#name') as HTMLInputElement;
+    const emailInput = form.querySelector('#email') as HTMLInputElement;
+    const phoneInput = form.querySelector('#phone') as HTMLInputElement;
+    const productInput = form.querySelector('#product') as HTMLSelectElement;
+    const messageInput = form.querySelector('#message') as HTMLTextAreaElement;
+
+    const name = sanitizeText(nameInput.value);
+    const email = sanitizeText(emailInput.value);
+    const phone = sanitizeText(phoneInput.value);
+    const product = sanitizeText(productInput.value);
+    const message = sanitizeText(messageInput.value);
+
+    // Validate required fields
+    if (!validateRequired(name)) {
+      showError('Please enter your full name.');
+      nameInput.focus();
+      return;
+    }
+
+    if (!validateRequired(email)) {
+      showError('Please enter your email address.');
+      emailInput.focus();
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      showError('Please enter a valid email address.');
+      emailInput.focus();
+      return;
+    }
+
+    if (!validateRequired(product)) {
+      showError('Please select a product.');
+      productInput.focus();
+      return;
+    }
+
+    if (!validateRequired(message)) {
+      showError('Please enter a message.');
+      messageInput.focus();
+      return;
+    }
+
+    if (phone && !validatePhone(phone)) {
+      showError('Please enter a valid phone number.');
+      phoneInput.focus();
+      return;
+    }
+
+    // Check field lengths for security
+    if (name.length > 100) {
+      showError('Name is too long (max 100 characters).');
+      return;
+    }
+
+    if (message.length > 2000) {
+      showError('Message is too long (max 2000 characters).');
+      return;
+    }
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+
+    // Disable submit button + show spinner
+    const submitLabel = submitBtn.querySelector('.submit-label');
+    const submitSpinner = submitBtn.querySelector('.submit-spinner');
+    const originalText = submitLabel ? submitLabel.textContent : submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitSpinner?.classList.remove('hidden');
+    if (submitLabel) submitLabel.textContent = 'SENDING…';
+
+    try {
+      const res = await fetch('/api/inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        // Track conversion for Google Ads
+        if (window.trackConversion) {
+          window.trackConversion({
+            product: product,
+            email: email,
+            company: data.company || 'Unknown'
+          });
+        }
+
+        // Track in Google Analytics
+        if (window.gtag) {
+          window.gtag('event', 'form_submission', {
+            'form_type': 'contact_inquiry',
+            'product_interest': product
+          });
+        }
+
+        formMessage.className = 'success p-4 text-center font-bold rounded animate-success-bounce';
+        formMessage.textContent = '✅ Thank you! We will contact you within 24 hours.';
+        formMessage.classList.remove('hidden');
+        form.reset();
+      } else {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to send');
+      }
+    } catch (error) {
+      console.error('Inquiry error:', error);
+      formMessage.className = 'bg-red-100 text-red-900 p-4 text-center font-bold rounded';
+      formMessage.textContent = '❌ Error sending message. Please check your connection and try again.';
+    } finally {
+      submitBtn.disabled = false;
+      submitSpinner?.classList.add('hidden');
+      if (submitLabel) submitLabel.textContent = originalText;
+    }
+
+    formMessage.classList.remove('hidden');
+    setTimeout(() => formMessage.classList.add('hidden'), 5000);
+  });
+</script>
