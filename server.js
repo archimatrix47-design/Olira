@@ -795,6 +795,7 @@ const productsPath = path.join(dataDir, 'products.json');
 const certsPath = path.join(dataDir, 'certifications.json');
 const contactsPath = path.join(dataDir, 'contact-details.json');
 const brandingPath = path.join(dataDir, 'branding.json');
+const socialPath = path.join(dataDir, 'social-links.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(dataDir)) {
@@ -989,6 +990,35 @@ app.post('/api/branding', adminAuth, (req, res) => {
     return res.status(500).json({ error: 'Failed to save branding' });
   }
   res.json({ success: true, data: next });
+});
+
+// ----- SOCIAL LINKS -----
+
+const SOCIAL_PLATFORMS = ['facebook', 'linkedin', 'x', 'youtube', 'telegram', 'whatsapp'];
+
+// Accept only empty string or a valid http(s) URL (≤300 chars) per platform.
+function sanitizeSocialUrl(v) {
+  if (typeof v !== 'string') return '';
+  const s = v.trim().slice(0, 300);
+  if (s === '') return '';
+  if (/^https?:\/\/[^\s]+$/i.test(s)) return s;
+  return ''; // reject anything that isn't a clean http(s) URL
+}
+
+app.get('/api/social-links', (req, res) => {
+  res.json(readJsonFile(socialPath, {}));
+});
+
+app.post('/api/social-links', adminAuth, (req, res) => {
+  const body = req.body || {};
+  const data = {};
+  for (const key of SOCIAL_PLATFORMS) {
+    data[key] = sanitizeSocialUrl(body[key]);
+  }
+  if (!writeJsonFile(socialPath, data)) {
+    return res.status(500).json({ error: 'Failed to save social links' });
+  }
+  res.json({ success: true, data });
 });
 
 // ----- FILE UPLOADS (multer) -----

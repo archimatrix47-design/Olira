@@ -85,6 +85,10 @@ import Icon from '../components/Icons.astro';
             <Icon name="edit" size={20} />
             CONTENT
           </button>
+          <button id="tabSocial" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
+            <Icon name="handshake" size={20} />
+            SOCIAL
+          </button>
         </div>
 
         <!-- PRODUCTS TAB -->
@@ -439,6 +443,48 @@ import Icon from '../components/Icons.astro';
           </div>
           </div>
         </div>
+
+        <!-- SOCIAL TAB -->
+        <div id="socialTab" class="hidden space-y-8">
+          <div>
+            <h3 class="font-heading text-2xl font-bold text-primary-900">Social Links</h3>
+            <p class="text-primary-600 text-sm mt-1">Paste the full URL for each platform. Leave a field blank to hide its icon in the footer.</p>
+          </div>
+
+          <form id="socialForm" class="bg-white border-2 border-primary-300 p-10 space-y-6 max-w-2xl">
+            <div>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">FACEBOOK</label>
+              <input type="url" id="socialFacebook" placeholder="https://facebook.com/oliraagroindustry" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">LINKEDIN</label>
+              <input type="url" id="socialLinkedin" placeholder="https://linkedin.com/company/olira-agro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">X (TWITTER)</label>
+              <input type="url" id="socialX" placeholder="https://x.com/oliraagro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">YOUTUBE</label>
+              <input type="url" id="socialYoutube" placeholder="https://youtube.com/@oliraagro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">TELEGRAM</label>
+              <input type="url" id="socialTelegram" placeholder="https://t.me/oliraagro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">WHATSAPP</label>
+              <input type="url" id="socialWhatsapp" placeholder="https://wa.me/251911223619" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
+              <p class="text-primary-600 text-xs mt-2">Use a wa.me link, e.g. https://wa.me/&lt;country+number&gt;</p>
+            </div>
+
+            <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2">
+              <Icon name="save" size={20} />
+              SAVE SOCIAL LINKS
+            </button>
+            <div id="socialStatus" class="hidden text-sm font-bold text-green-700"></div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -453,12 +499,14 @@ import Icon from '../components/Icons.astro';
       branding: document.getElementById('tabBranding'),
       email: document.getElementById('tabEmail'),
       content: document.getElementById('tabContent'),
+      social: document.getElementById('tabSocial'),
     };
     const tabs = {
       products: document.getElementById('productsTab'),
       branding: document.getElementById('brandingTab'),
       email: document.getElementById('emailTab'),
       content: document.getElementById('contentTab'),
+      social: document.getElementById('socialTab'),
     };
 
     // Login Handler — surfaces lockout (429) and rejection (401/403) messages
@@ -1135,6 +1183,65 @@ import Icon from '../components/Icons.astro';
         loadCertifications();
       });
     }
+
+    // ============================================
+    // SOCIAL LINKS
+    // ============================================
+    const socialForm = document.getElementById('socialForm');
+    const socialFields = {
+      facebook: document.getElementById('socialFacebook'),
+      linkedin: document.getElementById('socialLinkedin'),
+      x:        document.getElementById('socialX'),
+      youtube:  document.getElementById('socialYoutube'),
+      telegram: document.getElementById('socialTelegram'),
+      whatsapp: document.getElementById('socialWhatsapp'),
+    };
+
+    async function loadSocialLinks() {
+      try {
+        const res = await fetch('/api/social-links');
+        if (!res.ok) return;
+        const data = await res.json();
+        for (const key in socialFields) {
+          if (socialFields[key]) socialFields[key].value = data[key] || '';
+        }
+      } catch (e) { console.error('Error loading social links:', e); }
+    }
+
+    socialForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {};
+      for (const key in socialFields) {
+        payload[key] = socialFields[key] ? socialFields[key].value.trim() : '';
+      }
+      // Client-side: reject anything that isn't blank or http(s)
+      for (const key in payload) {
+        if (payload[key] && !/^https?:\/\//i.test(payload[key])) {
+          toast(`${key} must be a full URL starting with https://`, 'error');
+          return;
+        }
+      }
+      try {
+        const res = await fetch('/api/social-links', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          toast('Social links saved. Refresh the site to see the icons.', 'success');
+        } else if (res.status === 401) {
+          toast('Session expired — please log in again.', 'error');
+        } else {
+          toast('Failed to save social links.', 'error');
+        }
+      } catch (err) {
+        toast('Network error saving social links.', 'error');
+      }
+    });
+
+    // Load on page load + when the Social tab is opened
+    loadSocialLinks();
+    tabButtons.social?.addEventListener('click', loadSocialLinks);
 
     // ============================================
     // SHARED HELPERS — toast + auth header
