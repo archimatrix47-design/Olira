@@ -18,6 +18,46 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust the reverse proxy in front of us (Apache/Passenger on cPanel, Nginx,
+// Cloudflare, etc.) so `req.ip` resolves the real client IP from a
+// proxy-set X-Forwarded-For instead of the proxy's own address.
+//
+// SECURITY: this is why we must NEVER read the raw X-Forwarded-For header
+// ourselves — a client can forge it. With `trust proxy` set to the number of
+// hops we control, Express strips the untrusted portion and `req.ip` is
+// authoritative. Configure TRUST_PROXY to the hop count for your deployment
+// (default 1 = a single proxy directly in front of Node).
+app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
+
+// ------------------------------------------------------------------
+// Persistent storage locations (cPanel / container friendly).
+// On many hosts the app directory is overwritten on every deploy (and can be
+// read-only), which would wipe admin-managed content (products, certs,
+// contacts, branding, social) and uploaded images. Point DATA_DIR and
+// UPLOADS_DIR at a path OUTSIDE the deploy sync to make that content survive.
+// Defaults keep the in-repo paths so local dev is unchanged.
+// ------------------------------------------------------------------
+const REPO_DATA_DIR = path.join(__dirname, 'data');
+const dataDir = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : REPO_DATA_DIR;
+const uploadsDir = process.env.UPLOADS_DIR ? path.resolve(process.env.UPLOADS_DIR) : path.join(__dirname, 'public', 'uploads');
+const productImagesDir = path.join(uploadsDir, 'products');
+
+[dataDir, uploadsDir, productImagesDir].forEach((d) => {
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+});
+
+// First boot on a fresh persistent DATA_DIR: seed it from the repo defaults so
+// products/certs/etc. aren't empty. Never overwrites existing files.
+if (dataDir !== REPO_DATA_DIR && fs.existsSync(REPO_DATA_DIR)) {
+  for (const f of fs.readdirSync(REPO_DATA_DIR)) {
+    if (!f.endsWith('.json')) continue;
+    const dest = path.join(dataDir, f);
+    if (!fs.existsSync(dest)) {
+      try { fs.copyFileSync(path.join(REPO_DATA_DIR, f), dest); } catch {}
+    }
+  }
+}
+
 // Request counter for rate limiting
 const requestCounts = new Map();
 
@@ -270,8 +310,10 @@ setInterval(() => {
 }, 10 * 60 * 1000).unref();
 
 function clientIp(req) {
-  return (req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || 'unknown')
-    .toString().split(',')[0].trim();
+  // Use req.ip only — with `trust proxy` set (above) Express has already
+  // parsed X-Forwarded-For safely. Reading the raw header here would let a
+  // client spoof its IP and evade per-IP lockout / rate limits.
+  return (req.ip || req.connection?.remoteAddress || 'unknown').toString();
 }
 
 function ipHash(ip) {
@@ -284,7 +326,7 @@ function tokenHash(token) {
 
 // Append a single line to data/admin-audit.log. Best-effort, errors swallowed
 // so a failed log write never blocks a request.
-const auditLogPath = path.join(__dirname, 'data', 'admin-audit.log');
+const auditLogPath = path.join(dataDir, 'admin-audit.log');
 function audit(event, req, extra = {}) {
   try {
     const line = JSON.stringify({
@@ -790,17 +832,13 @@ app.post('/api/integrations/ads', rateLimit, (req, res) => {
 // CONTENT MANAGEMENT API (products, certs, contacts, branding)
 // ============================================
 
-const dataDir = path.join(__dirname, 'data');
+// dataDir + these dirs are declared/created near the top (persistent-storage
+// block) so they respect DATA_DIR / UPLOADS_DIR overrides.
 const productsPath = path.join(dataDir, 'products.json');
 const certsPath = path.join(dataDir, 'certifications.json');
 const contactsPath = path.join(dataDir, 'contact-details.json');
 const brandingPath = path.join(dataDir, 'branding.json');
 const socialPath = path.join(dataDir, 'social-links.json');
-
-// Ensure data directory exists
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
 
 // Generic JSON file helpers
 function readJsonFile(filePath, defaultValue) {
@@ -1022,14 +1060,8 @@ app.post('/api/social-links', adminAuth, (req, res) => {
 });
 
 // ----- FILE UPLOADS (multer) -----
-
-const uploadsDir = path.join(__dirname, 'public', 'uploads');
-const productImagesDir = path.join(uploadsDir, 'products');
-
-// Ensure upload dirs exist
-[uploadsDir, productImagesDir].forEach(dir => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
+// uploadsDir + productImagesDir declared/created in the persistent-storage
+// block near the top (respect UPLOADS_DIR override).
 
 // Use memory storage so we can pipe through sharp before writing to disk
 const memoryUpload = multer({
@@ -1164,8 +1196,9 @@ app.use((req, res, next) => {
 });
 
 // Serve uploaded files (logos, product images) — these live outside dist/
-// because they're created at runtime, not build time.
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// because they're created at runtime, not build time. Uses uploadsDir so a
+// persistent UPLOADS_DIR is served correctly.
+app.use('/uploads', express.static(uploadsDir));
 
 app.use(express.static(distPath));
 
