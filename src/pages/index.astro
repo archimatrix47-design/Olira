@@ -80,9 +80,10 @@ const features = [
       </div>
 
       <!-- Products Grid - All Equal Size -->
-      <!-- Initial render comes from data/products.json (frontmatter).
-           The script below re-fetches /api/products and re-renders if admin edits arrived
-           after the static build. This keeps initial paint fast (SSR) AND data fresh. -->
+      <!-- Initial render comes from data/products.json (frontmatter) for fast
+           first paint + SEO. The script at the bottom of this file re-fetches
+           /api/products and re-renders ONLY if the admin changed the data since
+           the last build — so admin edits go live without a rebuild. -->
       <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {products.map((product, i) => (
           <div class="scroll-trigger" data-trigger-animation="slideUp" style={{ animationDelay: `${i * 0.1}s` }}>
@@ -90,6 +91,11 @@ const features = [
           </div>
         ))}
       </div>
+
+      <!-- Snapshot of the build-time products so the client can detect drift
+           without a flash when nothing changed. `<` is escaped to keep the
+           JSON script tag from being closed early by any product text. -->
+      <script type="application/json" id="products-initial" is:inline set:html={JSON.stringify(products).replace(/</g, '\\u003c')}></script>
     </div>
   </section>
 
@@ -371,12 +377,14 @@ const features = [
           <p class="text-primary-600 text-sm mb-4 font-bold">Mon-Fri, 8 AM - 5 PM EAT</p>
           <div class="space-y-2">
             <p class="text-sm text-primary-900 font-medium">Phone, WhatsApp, Telegram</p>
-            <a href="tel:+251911223619" class="text-primary-900 font-bold text-lg hover:text-primary-600 transition block">
-              +251-911 22 36 19
-            </a>
-            <a href="tel:+251118963742" class="text-primary-900 font-bold text-lg hover:text-primary-600 transition block">
-              +251-118 96 37 42
-            </a>
+            <div id="contact-phones" class="space-y-2">
+              <a href="tel:+251911223619" class="text-primary-900 font-bold text-lg hover:text-primary-600 transition block">
+                +251-911 22 36 19
+              </a>
+              <a href="tel:+251118963742" class="text-primary-900 font-bold text-lg hover:text-primary-600 transition block">
+                +251-118 96 37 42
+              </a>
+            </div>
           </div>
         </div>
 
@@ -386,7 +394,7 @@ const features = [
           </div>
           <h3 class="font-heading text-xl font-bold text-primary-900 mb-3">EMAIL US</h3>
           <p class="text-primary-600 text-sm mb-4 font-bold">We respond within 24 hours</p>
-          <div class="space-y-2">
+          <div id="contact-emails" class="space-y-2">
             <a href="mailto:info@oliraagroindustry.com" class="text-primary-900 font-bold text-lg hover:text-primary-600 transition block">
               info@oliraagroindustry.com
             </a>
@@ -401,7 +409,7 @@ const features = [
             <Icon name="location" size={48} class="text-primary-900" />
           </div>
           <h3 class="font-heading text-xl font-bold text-primary-900 mb-3">VISIT US</h3>
-          <p class="text-primary-900 font-medium text-sm leading-relaxed">
+          <p id="contact-address" class="text-primary-900 font-medium text-sm leading-relaxed">
             Lemi Kura Subcity, Woreda 08<br/>
             Soreti Building, 2nd Floor, Room 214<br/>
             P.O. Box 46325<br/>
@@ -513,5 +521,181 @@ const features = [
       }, { threshold: 0.4 });
       obs.observe(el);
     });
+  })();
+</script>
+
+<!-- Products: (1) make the "Request quote" buttons work (they were dead — the
+     Modal only listened for data-action, not data-open-inquiry), and
+     (2) re-fetch /api/products and re-render the grid if the admin changed the
+     data since this page was built, so edits go live without a rebuild. -->
+<script is:inline>
+  (function () {
+    const grid = document.getElementById('products-grid');
+    if (!grid) return;
+
+    // (1) Delegated handler — works for build-time AND re-rendered cards.
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-open-inquiry]');
+      if (!btn) return;
+      if (typeof window.openContactModal === 'function') window.openContactModal();
+    });
+
+    // Build a single product card matching ProductCard.astro. Uses textContent
+    // and setAttribute only — never innerHTML with data — so product fields
+    // cannot inject markup.
+    function slug(name) { return String(name).toLowerCase().replace(/[^a-z0-9]/g, '-'); }
+
+    function buildCard(p, i) {
+      const wrap = document.createElement('div');
+      const article = document.createElement('article');
+      article.className = 'group bg-white border border-primary-200 hover:border-primary-600 transition-[border-color,transform,box-shadow] duration-300 ease-out h-full flex flex-col hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(10,20,7,0.45)]';
+
+      const frame = document.createElement('div');
+      frame.className = 'relative h-56 bg-primary-50 flex items-center justify-center overflow-hidden';
+      const cat = document.createElement('span');
+      cat.className = 'absolute top-4 left-4 z-10 font-sans text-[10px] uppercase tracking-[0.2em] text-white bg-primary-900/85 backdrop-blur-sm px-3 py-1.5 rounded-full';
+      cat.textContent = p.category || '';
+      frame.appendChild(cat);
+      if (p.image) {
+        const img = document.createElement('img');
+        img.src = p.image;
+        img.alt = `${p.name} — ${p.category || ''}`;
+        img.width = 800; img.height = 600;
+        img.loading = i < 4 ? 'eager' : 'lazy';
+        img.decoding = 'async';
+        img.className = 'absolute left-0 w-full h-[124%] -top-[12%] object-cover';
+        frame.appendChild(img);
+      } else {
+        const ph = document.createElement('p');
+        ph.className = 'text-primary-600 text-sm font-medium';
+        ph.textContent = 'Image coming soon';
+        frame.appendChild(ph);
+      }
+      article.appendChild(frame);
+
+      const body = document.createElement('div');
+      body.className = 'p-6 flex flex-col flex-grow';
+      const h3 = document.createElement('h3');
+      h3.className = 'font-heading text-2xl font-bold text-primary-900 mb-3 leading-tight min-h-[3.5rem]';
+      h3.textContent = p.name || '';
+      const desc = document.createElement('p');
+      desc.className = 'text-primary-800 text-sm leading-relaxed mb-6 min-h-[5rem]';
+      desc.textContent = p.description || '';
+      body.appendChild(h3); body.appendChild(desc);
+
+      if (p.purity || p.moq) {
+        const specGrid = document.createElement('div');
+        specGrid.className = 'grid grid-cols-2 gap-4 mb-5 pb-5 border-b border-primary-200';
+        [['Purity', p.purity], ['MOQ', p.moq]].forEach(([label, val]) => {
+          if (!val) return;
+          const cell = document.createElement('div');
+          const lab = document.createElement('span');
+          lab.className = 'text-[10px] text-primary-600 font-semibold tracking-[0.18em] uppercase';
+          lab.textContent = label;
+          const v = document.createElement('p');
+          v.className = 'font-bold text-primary-900 text-base mt-1';
+          v.textContent = val;
+          cell.appendChild(lab); cell.appendChild(v); specGrid.appendChild(cell);
+        });
+        body.appendChild(specGrid);
+      }
+
+      if (Array.isArray(p.specs) && p.specs.length) {
+        const ul = document.createElement('ul');
+        ul.className = 'space-y-2 mb-6 flex-grow';
+        p.specs.forEach((s) => {
+          const li = document.createElement('li');
+          li.className = 'text-sm text-primary-800 flex items-start gap-2';
+          const dot = document.createElement('span');
+          dot.className = 'text-primary-600 mt-0.5'; dot.setAttribute('aria-hidden', 'true'); dot.textContent = '·';
+          const txt = document.createElement('span'); txt.textContent = s;
+          li.appendChild(dot); li.appendChild(txt); ul.appendChild(li);
+        });
+        body.appendChild(ul);
+      }
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('data-open-inquiry', slug(p.name || 'product'));
+      btn.className = 'w-full bg-primary-900 hover:bg-primary-800 active:bg-primary-700 active:scale-[0.97] text-white px-6 py-3 font-semibold text-sm tracking-wide transition-[colors,transform] duration-200 cursor-pointer mt-auto min-h-[44px]';
+      btn.textContent = 'Request quote';
+      body.appendChild(btn);
+
+      article.appendChild(body);
+      wrap.appendChild(article);
+      return wrap;
+    }
+
+    // (2) Freshness check — only re-render when the API differs from build data.
+    let initial = [];
+    try { initial = JSON.parse(document.getElementById('products-initial')?.textContent || '[]'); } catch {}
+
+    fetch('/api/products')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((live) => {
+        if (!Array.isArray(live)) return;
+        if (JSON.stringify(live) === JSON.stringify(initial)) return; // no change → keep SSR cards
+        grid.replaceChildren(...live.map((p, i) => buildCard(p, i)));
+      })
+      .catch(() => { /* keep build-time cards on failure */ });
+  })();
+</script>
+
+<!-- Contact section: override the hardcoded phone/email/address with whatever
+     the admin saved in /api/contact-details. The hardcoded markup stays as a
+     no-JS / SEO fallback and is only replaced when real data is present. -->
+<script is:inline>
+  (function () {
+    fetch('/api/contact-details')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+
+        const linkClass = 'text-primary-900 font-bold text-lg hover:text-primary-600 transition block';
+
+        // Phones — tel: uses digits and a leading + only.
+        if (Array.isArray(d.phones) && d.phones.length) {
+          const el = document.getElementById('contact-phones');
+          if (el) {
+            el.replaceChildren(...d.phones.map((p) => {
+              const a = document.createElement('a');
+              a.href = 'tel:' + String(p).replace(/[^\d+]/g, '');
+              a.className = linkClass;
+              a.textContent = p;
+              return a;
+            }));
+          }
+        }
+
+        // Emails
+        if (Array.isArray(d.emails) && d.emails.length) {
+          const el = document.getElementById('contact-emails');
+          if (el) {
+            el.replaceChildren(...d.emails.map((m) => {
+              const a = document.createElement('a');
+              a.href = 'mailto:' + m;
+              a.className = linkClass;
+              a.textContent = m;
+              return a;
+            }));
+          }
+        }
+
+        // Address — rebuild lines, keep the website line at the bottom.
+        if (d.address && typeof d.address === 'object') {
+          const el = document.getElementById('contact-address');
+          if (el) {
+            const a = d.address;
+            const lines = [a.line1, a.line2, a.poBox, [a.city, a.country].filter(Boolean).join(', ')].filter(Boolean);
+            el.replaceChildren();
+            lines.forEach((line) => { el.append(line); el.append(document.createElement('br')); });
+            const site = document.createElement('span');
+            site.className = 'text-primary-600 font-bold mt-2 block';
+            site.textContent = 'www.oliraagroindustry.com';
+            el.appendChild(site);
+          }
+        }
+      })
+      .catch(() => { /* keep hardcoded fallback */ });
   })();
 </script>
