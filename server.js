@@ -9,7 +9,6 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import sharp from 'sharp';
-import { convertTreeToWebp } from './scripts/convert-to-webp.mjs';
 
 // Load environment variables from .env file (if it exists)
 dotenv.config();
@@ -58,30 +57,37 @@ if (dataDir !== REPO_DATA_DIR && fs.existsSync(REPO_DATA_DIR)) {
   }
 }
 
-// Request counter for rate limiting
-const requestCounts = new Map();
+// Per-limiter request buckets. Each limiter gets its OWN Map so limits on,
+// say, /api/inquiry never consume the budget for /api/admin/login (they used
+// to share one Map and entangle counters).
+function makeRateLimiter(maxPerMinute, label) {
+  const buckets = new Map(); // ip → [timestamps]
+  // Periodic cleanup so idle IPs don't accumulate forever.
+  setInterval(() => {
+    const cutoff = Date.now() - 60000;
+    for (const [ip, ts] of buckets) {
+      const kept = ts.filter((t) => t > cutoff);
+      if (kept.length) buckets.set(ip, kept); else buckets.delete(ip);
+    }
+  }, 5 * 60 * 1000).unref();
 
-// Rate limiting middleware (5 requests per minute per IP)
-const rateLimit = (req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress;
-  const now = Date.now();
-  const windowStart = now - 60000; // 1 minute window
+  return (req, res, next) => {
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    const now = Date.now();
+    const windowStart = now - 60000;
+    const timestamps = (buckets.get(ip) || []).filter((t) => t > windowStart);
+    if (timestamps.length >= maxPerMinute) {
+      console.warn(`Rate limit exceeded (${label}) for IP: ${ip}`);
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+    timestamps.push(now);
+    buckets.set(ip, timestamps);
+    next();
+  };
+}
 
-  if (!requestCounts.has(ip)) {
-    requestCounts.set(ip, []);
-  }
-
-  const timestamps = requestCounts.get(ip).filter(t => t > windowStart);
-
-  if (timestamps.length >= 5) {
-    console.warn(`Rate limit exceeded for IP: ${ip}`);
-    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
-  }
-
-  timestamps.push(now);
-  requestCounts.set(ip, timestamps);
-  next();
-};
+// General endpoints: 5/min. Admin login gets its own stricter 3/min limiter.
+const rateLimit = makeRateLimiter(5, 'general');
 
 // Request logging middleware
 const requestLogger = (req, res, next) => {
@@ -164,27 +170,9 @@ app.disable('x-powered-by');
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 
-// Stronger rate limiting for admin login (3 requests per minute per IP)
-const adminRateLimit = (req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress;
-  const now = Date.now();
-  const windowStart = now - 60000; // 1 minute window
-
-  if (!requestCounts.has(ip)) {
-    requestCounts.set(ip, []);
-  }
-
-  const timestamps = requestCounts.get(ip).filter(t => t > windowStart);
-
-  if (timestamps.length >= 3) {
-    console.warn(`Admin login rate limit exceeded for IP: ${ip}`);
-    return res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
-  }
-
-  timestamps.push(now);
-  requestCounts.set(ip, timestamps);
-  next();
-};
+// Stronger rate limiting for admin login (3 requests per minute per IP), on its
+// own bucket so it can't be consumed by other endpoints.
+const adminRateLimit = makeRateLimiter(3, 'admin-login');
 
 // Rate limiting on API endpoints
 app.use('/api/admin/login', adminRateLimit);
@@ -600,7 +588,16 @@ function sanitizeHtml(text) {
 
 // Submit product inquiry
 app.post('/api/inquiry', async (req, res) => {
-  const { name, email, company, message, product, phone } = req.body;
+  const { name, email, company, message, product, phone, website } = req.body;
+
+  // Honeypot: the hidden `website` field is invisible to humans. If it's
+  // filled, this is almost certainly a bot — return success so the bot sees no
+  // signal to adapt, but send nothing. This blocks the confirmation-email
+  // amplification vector without adding friction for real users.
+  if (typeof website === 'string' && website.trim() !== '') {
+    audit('inquiry_honeypot', req);
+    return res.json({ success: true, message: 'Inquiry sent successfully' });
+  }
 
   // Validate required fields
   if (!name || !email || !message) {
@@ -1076,26 +1073,30 @@ const memoryUpload = multer({
 
 /**
  * Process an uploaded image buffer:
- *   - SVG passes through unchanged (already vector-scalable, tiny files)
- *   - Raster images are resized to a max width and converted to WebP
- *   - Optionally writes a thumbnail at 480px wide
+ *   - Everything (including SVG) is rasterized + resized + converted to WebP.
+ *     SVGs are rasterized rather than stored verbatim to remove any embedded
+ *     scripting (stored-XSS protection).
+ *   - Optionally writes a thumbnail at 480px wide.
  *
  * Returns { fullPath, thumbPath } as public-relative URLs.
  */
 async function processAndSaveImage(buffer, mimeType, outputDir, baseName, options = {}) {
   const { maxWidth = 1200, thumbWidth = 480, makeThumb = true, quality = 82 } = options;
 
-  // SVG: write as-is (sharp can rasterize SVG but keeping vector preserves quality + saves CPU)
-  if (mimeType === 'image/svg+xml') {
-    const filename = `${baseName}.svg`;
-    fs.writeFileSync(path.join(outputDir, filename), buffer);
-    return { fullPath: filename, thumbPath: filename };
-  }
+  // SECURITY: never store an uploaded SVG verbatim. An SVG can embed
+  // <script>/on* handlers, and when opened directly at its /uploads URL it
+  // executes in our origin (the page CSP doesn't govern a directly-viewed
+  // SVG) — a stored-XSS vector. Rasterizing through sharp discards all
+  // scripting and yields a safe WebP. `density` keeps small vector logos crisp.
+  // (Falls through to the raster path below with the same output as any image.)
 
-  // Raster: resize + convert to WebP
+  // Raster (and rasterized SVG): resize + convert to WebP. Higher density on
+  // SVG input so vector logos rasterize crisply rather than blurry.
+  const isSvg = mimeType === 'image/svg+xml';
+  const sharpOpts = isSvg ? { density: 300 } : {};
   const fullName = `${baseName}.webp`;
   const fullOut = path.join(outputDir, fullName);
-  await sharp(buffer)
+  await sharp(buffer, sharpOpts)
     .rotate() // honor EXIF orientation
     .resize({ width: maxWidth, withoutEnlargement: true })
     .webp({ quality })
@@ -1104,7 +1105,7 @@ async function processAndSaveImage(buffer, mimeType, outputDir, baseName, option
   let thumbName = fullName;
   if (makeThumb) {
     thumbName = `${baseName}-thumb.webp`;
-    await sharp(buffer)
+    await sharp(buffer, sharpOpts)
       .rotate()
       .resize({ width: thumbWidth, withoutEnlargement: true })
       .webp({ quality: 75 })
@@ -1202,15 +1203,16 @@ app.use('/uploads', express.static(uploadsDir));
 
 app.use(express.static(distPath));
 
-// SPA fallback - serve index.html for all non-API routes
-// This catches all remaining GET requests and serves the single page app
+// Fallback for unmatched routes. express.static above already served every
+// real page (/, /admin/, etc.), so anything reaching here is genuinely not
+// found: serve the custom 404 page with a real 404 status (not a soft-404
+// that returns the homepage with 200 and hurts SEO).
 app.get('*', (req, res) => {
-  const indexPath = path.join(distPath, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(404).send('Not found');
+  const notFoundPath = path.join(distPath, '404.html');
+  if (fs.existsSync(notFoundPath)) {
+    return res.status(404).sendFile(notFoundPath);
   }
+  res.status(404).send('Not found');
 });
 
 // Startup validation — fails closed in production for any weak admin secret.
@@ -1265,17 +1267,10 @@ function validateStartup() {
 validateStartup();
 initializeEmailConfig();
 
-// Auto-convert any PNG/JPEG in public/ to WebP companions on every server boot.
-// Skips files that already have a .webp twin and the runtime upload pipeline's
-// uploads/ directory (those are processed inline by sharp at upload time).
-const publicDir = path.join(__dirname, 'public');
-convertTreeToWebp(publicDir, { quality: 82 })
-  .then((stats) => {
-    if (stats.converted > 0) {
-      console.log(`🌿 WebP pass: converted=${stats.converted} skipped=${stats.skipped} failed=${stats.failed}`);
-    }
-  })
-  .catch((err) => console.warn('WebP startup pass failed:', err.message));
+// NOTE: WebP conversion of public/ assets is a BUILD step (see package.json
+// `build`), not a per-boot task. Running it on every boot cost startup time and
+// wrote into public/ — which is read-only on some hosts (cPanel/containers).
+// Runtime uploads are still converted inline by the sharp pipeline above.
 
 app.listen(PORT, () => {
   console.log(`\n🌿 Olira Agro API Server running on http://localhost:${PORT}`);

@@ -101,6 +101,14 @@
     <span id="messageDesc" class="text-xs text-primary-600 mt-1">Required. Please describe your product needs (max 2000 characters).</span>
   </div>
 
+  <!-- Honeypot: hidden from humans (off-screen, no tab stop, not announced).
+       Real users leave it empty; bots fill every field. Server silently
+       discards any submission where this is non-empty. -->
+  <div aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;height:0;width:0;overflow:hidden;">
+    <label for="website">Leave this field empty</label>
+    <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+  </div>
+
   <button
     type="submit"
     class="w-full bg-primary-900 hover:bg-primary-800 disabled:bg-primary-700 disabled:cursor-not-allowed text-white px-8 py-4 font-bold text-lg transition inline-flex items-center justify-center gap-3 min-h-[56px]"
