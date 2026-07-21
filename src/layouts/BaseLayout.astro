@@ -47,8 +47,9 @@ const {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Google Fonts - Lora (heading) + Sora (body) -->
-    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Google Fonts — Lora (headings, only 400/700 used) + Sora (body).
+         Trimmed Lora's 500/600 weights (unused) to cut two font files. -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
     <!-- Dynamic Google Analytics & Ads Integration Loader -->
     <script is:inline>
@@ -129,8 +130,10 @@ const {
       }
     </script>
 
-    <!-- Fallback Google Ads script (optional, loaded only if needed) -->
-    <script async src="https://www.googleadservices.com/pagead/conversion.js" data-skip-if-loaded="true"></script>
+    <!-- Note: no unconditional Google Ads script here. Conversion tracking is
+         set up dynamically in loadIntegrations() above only when a Conversion
+         ID is configured — avoiding a third-party request (and its privacy
+         cost) on every page for sites that don't run ads. -->
 
     <!-- Title and Favicon -->
     <title>{title} | Olira Agro Industry</title>
