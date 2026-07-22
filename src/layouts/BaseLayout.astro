@@ -84,9 +84,9 @@ const {
               page_path: window.location.pathname
             });
 
-            console.log('✅ Google Analytics configured:', measurementId);
+            console.log('Google Analytics configured:', measurementId);
           } else {
-            console.warn('⚠️ Google Analytics Measurement ID not configured. Go to /admin-integrations to set it up.');
+            console.warn('Google Analytics Measurement ID not configured. Go to /admin-integrations to set it up.');
             window.gtag = () => {}; // Stub function
           }
 
@@ -97,9 +97,9 @@ const {
             window.google_conversion_format = "3";
             window.google_conversion_color = "ffffff";
             window.google_remarketing_only = false;
-            console.log('✅ Google Ads conversion tracking configured:', conversionId);
+            console.log('Google Ads conversion tracking configured:', conversionId);
           } else {
-            console.warn('⚠️ Google Ads Conversion ID not configured. Go to /admin-integrations to set it up.');
+            console.warn('Google Ads Conversion ID not configured. Go to /admin-integrations to set it up.');
             window.google_conversion_id = 0;
           }
 
@@ -223,6 +223,25 @@ const {
         <path d="M12 19V5M5 12l7-7 7 7"/>
       </svg>
     </button>
+
+    <!-- First-party analytics beacon. No cookies, no third party, no IDs sent:
+         the server derives a daily-rotating salted hash for unique counting.
+         Admin pages are never tracked. -->
+    <script is:inline>
+      (function () {
+        try {
+          if (location.pathname.startsWith('/admin')) return;
+          const body = JSON.stringify({ path: location.pathname, referrer: document.referrer || '' });
+          // keepalive so the request survives a fast navigation away.
+          fetch('/api/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            keepalive: true
+          }).catch(() => {});
+        } catch {}
+      })();
+    </script>
 
     <!-- Lightweight parallax image-move (AIR's `parallax-image-move`).
          Each [data-parallax-img] sits in an overflow-hidden frame and is
