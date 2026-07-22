@@ -1,8 +1,11 @@
 # Dependencies
 node_modules/
 pnpm-lock.yaml
-package-lock.json
 yarn.lock
+# package-lock.json is deliberately COMMITTED. The server installs with
+# `npm ci`, which requires it and installs the exact versions tested here.
+# Without it, a deploy resolves fresh versions of everything — including
+# sharp, a native binary — so production would run untested dependencies.
 
 # Environment variables (sensitive configuration)
 .env

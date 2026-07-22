@@ -1,0 +1,43 @@
+---
+# cPanel Git Version Control - deployment tasks
+#
+# Runs on the server when you click "Deploy HEAD Commit" in
+# cPanel > Git Version Control > Manage.
+#
+# This assumes the repository was cloned directly into the Node.js
+# application root, so there is no copying step - git updates the files in
+# place and these tasks just rebuild and restart. Fewer moving parts, and
+# nothing can be copied to the wrong directory.
+#
+# ---------------------------------------------------------------------
+# EDIT THE TWO LINES MARKED "EDIT ME" BELOW, THEN COMMIT AND PUSH.
+# ---------------------------------------------------------------------
+deployment:
+  tasks:
+    # EDIT ME - your cPanel username (the one in /home/<username>)
+    - export CPUSER=your_cpanel_username
+    # EDIT ME - Node version selected in cPanel > Setup Node.js App (e.g. 20)
+    - export NODEVER=20
+
+    # Application root = where cPanel cloned this repo.
+    - export APP_DIR=/home/$CPUSER/olira
+    - export ACTIVATE=/home/$CPUSER/nodevenv/olira/$NODEVER/bin/activate
+
+    # Every task below re-activates the environment and re-enters the app
+    # directory. cPanel may run each task in its own shell, in which case an
+    # export or cd from a previous line would not carry over - and node/npm
+    # are not on PATH at all until the nodevenv is activated.
+
+    # Install the exact versions from package-lock.json.
+    # Do NOT add --omit=dev: the build needs tailwindcss, postcss,
+    # autoprefixer and terser, which are devDependencies.
+    - source $ACTIVATE && cd $APP_DIR && npm ci
+
+    # Astro writes the static site to dist/, which server.js serves.
+    - source $ACTIVATE && cd $APP_DIR && npm run build
+
+    # Passenger restarts the app when this file's timestamp changes.
+    # Without this the old process keeps serving and the deploy looks
+    # successful while nothing has actually changed.
+    - /bin/mkdir -p $APP_DIR/tmp
+    - /bin/touch $APP_DIR/tmp/restart.txt
