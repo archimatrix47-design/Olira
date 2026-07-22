@@ -1,6 +1,7 @@
 ---
 // admin-integrations.astro - Marketing Integrations Dashboard
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icons.astro';
 ---
 
 <BaseLayout title="Admin - Marketing Integrations" description="Manage Google Analytics and Google Ads tracking">
@@ -39,7 +40,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <h2 class="text-2xl font-bold text-primary-900 mb-6">Google Analytics 4 Setup</h2>
 
         <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-          <p class="text-blue-900"><strong>ℹ️ How to find your Measurement ID:</strong></p>
+          <p class="text-blue-900 flex items-center gap-2"><Icon name="info" size={18} class="text-blue-700 flex-shrink-0" /><strong>How to find your Measurement ID:</strong></p>
           <ol class="list-decimal list-inside text-blue-800 mt-2">
             <li>Go to <a href="https://analytics.google.com" target="_blank" class="underline">Google Analytics</a></li>
             <li>Click <strong>Admin</strong> → <strong>Data Streams</strong></li>
@@ -104,7 +105,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <h2 class="text-2xl font-bold text-primary-900 mb-6">Google Ads Conversion Tracking</h2>
 
         <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-          <p class="text-blue-900"><strong>ℹ️ How to find your Conversion ID:</strong></p>
+          <p class="text-blue-900 flex items-center gap-2"><Icon name="info" size={18} class="text-blue-700 flex-shrink-0" /><strong>How to find your Conversion ID:</strong></p>
           <ol class="list-decimal list-inside text-blue-800 mt-2">
             <li>Go to <a href="https://ads.google.com" target="_blank" class="underline">Google Ads</a></li>
             <li>Click <strong>Tools</strong> → <strong>Conversions</strong></li>
@@ -237,7 +238,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       <!-- Help Section -->
       <div class="bg-primary-50 rounded-lg p-8 border-2 border-primary-200">
-        <h3 class="text-xl font-bold text-primary-900 mb-4">📚 Need Help?</h3>
+        <h3 class="text-xl font-bold text-primary-900 mb-4 flex items-center gap-2">
+          <Icon name="info" size={20} class="text-primary-600" />
+          Need Help?
+        </h3>
         <ul class="space-y-3 text-primary-900">
           <li>
             <strong>Google Analytics Setup:</strong>
@@ -373,7 +377,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const result = await response.json();
 
       messageDiv.className = 'bg-green-100 text-green-900 p-4 rounded-lg border-l-4 border-green-500';
-      messageDiv.textContent = '✅ Analytics configuration saved successfully!';
+      messageDiv.textContent = 'Analytics configuration saved successfully!';
       messageDiv.classList.remove('hidden');
 
       updateConnectionStatus();
@@ -381,7 +385,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       setTimeout(() => messageDiv.classList.add('hidden'), 5000);
     } catch (error) {
       messageDiv.className = 'bg-red-100 text-red-900 p-4 rounded-lg border-l-4 border-red-500';
-      messageDiv.textContent = `❌ Error: ${error.message}`;
+      messageDiv.textContent = `Error: ${error.message}`;
       messageDiv.classList.remove('hidden');
     }
   });
@@ -407,7 +411,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const result = await response.json();
 
       messageDiv.className = 'bg-green-100 text-green-900 p-4 rounded-lg border-l-4 border-green-500';
-      messageDiv.textContent = '✅ Ads configuration saved successfully!';
+      messageDiv.textContent = 'Ads configuration saved successfully!';
       messageDiv.classList.remove('hidden');
 
       updateConnectionStatus();
@@ -415,7 +419,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       setTimeout(() => messageDiv.classList.add('hidden'), 5000);
     } catch (error) {
       messageDiv.className = 'bg-red-100 text-red-900 p-4 rounded-lg border-l-4 border-red-500';
-      messageDiv.textContent = `❌ Error: ${error.message}`;
+      messageDiv.textContent = `Error: ${error.message}`;
       messageDiv.classList.remove('hidden');
     }
   });
@@ -439,7 +443,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       const messageDiv = document.getElementById('analyticsMessage');
       messageDiv.className = 'bg-green-100 text-green-900 p-4 rounded-lg border-l-4 border-green-500';
-      messageDiv.textContent = '✅ Measurement ID format is valid! Tracking should work.';
+      messageDiv.textContent = 'Measurement ID format is valid! Tracking should work.';
       messageDiv.classList.remove('hidden');
 
       setTimeout(() => messageDiv.classList.add('hidden'), 5000);
@@ -470,7 +474,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       const messageDiv = document.getElementById('adsMessage');
       messageDiv.className = 'bg-green-100 text-green-900 p-4 rounded-lg border-l-4 border-green-500';
-      messageDiv.textContent = '✅ Conversion ID format is valid! Tracking should work.';
+      messageDiv.textContent = 'Conversion ID format is valid! Tracking should work.';
       messageDiv.classList.remove('hidden');
 
       setTimeout(() => messageDiv.classList.add('hidden'), 5000);
@@ -497,7 +501,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       document.getElementById('analyticsMeasurementId').textContent = analyticsMeasurementId;
       document.getElementById('analyticsProperty').textContent = analyticsProperty;
-      document.getElementById('analyticsStatus').textContent = analyticsConfigured ? '✅ Connected' : '⚠️ Not Connected';
+      document.getElementById('analyticsStatus').textContent = analyticsConfigured ? 'Connected' : 'Not Connected';
       document.getElementById('analyticsStatus').className = analyticsConfigured
         ? 'px-3 py-1 bg-green-200 text-green-900 rounded-full text-sm font-semibold'
         : 'px-3 py-1 bg-yellow-200 text-yellow-900 rounded-full text-sm font-semibold';
@@ -512,7 +516,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       document.getElementById('adsConversionId').textContent = adsConversionId;
       document.getElementById('adsValue').textContent = adsValue;
-      document.getElementById('adsStatus').textContent = adsConfigured ? '✅ Connected' : '⚠️ Not Connected';
+      document.getElementById('adsStatus').textContent = adsConfigured ? 'Connected' : 'Not Connected';
       document.getElementById('adsStatus').className = adsConfigured
         ? 'px-3 py-1 bg-green-200 text-green-900 rounded-full text-sm font-semibold'
         : 'px-3 py-1 bg-yellow-200 text-yellow-900 rounded-full text-sm font-semibold';
