@@ -15,7 +15,14 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 3000;
+// `--port N` wins over the PORT env var. In dev, the tooling that launches the
+// Astro dev server exports PORT for *its* port, and npm passes that down to
+// this process too — so the API would steal Astro's port and serve the stale
+// built site instead. An explicit flag can't be clobbered that way.
+// Production (cPanel/Passenger) sets PORT and passes no flag, so it still wins.
+const portFlagIndex = process.argv.indexOf('--port');
+const portFlag = portFlagIndex !== -1 ? Number(process.argv[portFlagIndex + 1]) : NaN;
+const PORT = Number.isInteger(portFlag) && portFlag > 0 ? portFlag : (process.env.PORT || 3000);
 
 // Trust the reverse proxy in front of us (Apache/Passenger on cPanel, Nginx,
 // Cloudflare, etc.) so `req.ip` resolves the real client IP from a
@@ -622,7 +629,9 @@ app.post('/api/inquiry', async (req, res) => {
     return res.status(400).json({ error: 'Invalid company field' });
   }
 
-  if (product && (typeof product !== 'string' || product.length > 50)) {
+  // 200 matches the cap the products API applies to a product name, since the
+  // dropdown now submits the product name itself rather than a short slug.
+  if (product && (typeof product !== 'string' || product.length > 200)) {
     return res.status(400).json({ error: 'Invalid product field' });
   }
 
@@ -694,7 +703,7 @@ app.post('/api/inquiry', async (req, res) => {
 
     await sendEmail(sanitizedEmail, 'Thank You - Olira Agro Industry Inquiry', confirmationHtml);
 
-    recordInquiry(); // count as a conversion in the analytics dashboard
+    recordInquiry(product); // count as a conversion, attributed to the product
     res.json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
     console.error('Email send error:', error);
@@ -1092,7 +1101,15 @@ function deviceFromUa(ua = '') {
 }
 
 function emptyDay() {
-  return { views: 0, visitors: {}, pages: {}, referrers: {}, devices: { desktop: 0, mobile: 0, tablet: 0 }, inquiries: 0 };
+  return {
+    views: 0, visitors: {}, pages: {}, referrers: {},
+    devices: { desktop: 0, mobile: 0, tablet: 0 },
+    inquiries: 0,
+    // Per-product interest:
+    //   products        → "Request quote" clicks on a product card
+    //   inquiryProducts → product chosen on an inquiry that was actually sent
+    products: {}, inquiryProducts: {}
+  };
 }
 
 function getDay(key) {
@@ -1101,6 +1118,7 @@ function getDay(key) {
   // Defensive: older/partial records
   d.visitors ||= {}; d.pages ||= {}; d.referrers ||= {};
   d.devices ||= { desktop: 0, mobile: 0, tablet: 0 };
+  d.products ||= {}; d.inquiryProducts ||= {};
   d.views ||= 0; d.inquiries ||= 0;
   return d;
 }
@@ -1123,8 +1141,13 @@ process.on('SIGINT', () => { flushAnalytics(); process.exit(0); });
 process.on('SIGTERM', () => { flushAnalytics(); process.exit(0); });
 
 // Record a conversion (an inquiry actually sent). Called from /api/inquiry.
-function recordInquiry() {
-  getDay(todayKey()).inquiries++;
+// `product` is the option the visitor picked, so the dashboard can show which
+// products actually convert — not just which ones get clicked.
+function recordInquiry(product) {
+  const day = getDay(todayKey());
+  day.inquiries++;
+  const name = typeof product === 'string' && product.trim() ? product.trim().slice(0, 80) : 'Not specified';
+  day.inquiryProducts[name] = (day.inquiryProducts[name] || 0) + 1;
   analyticsDirty = true;
 }
 
@@ -1135,12 +1158,24 @@ app.post('/api/track', makeRateLimiter(60, 'track'), (req, res) => {
   // Never count bots/monitors, and never track the admin area.
   if (BOT_RE.test(ua)) return res.status(204).end();
 
+  const dayKey = todayKey();
+
+  // Product-interest event: a "Request quote" click on a specific product
+  // card. Counted separately from pageviews so it doesn't inflate traffic.
+  if (req.body?.event === 'product') {
+    const name = typeof req.body.product === 'string' ? req.body.product.trim().slice(0, 80) : '';
+    if (!name) return res.status(204).end();
+    const d = getDay(dayKey);
+    d.products[name] = (d.products[name] || 0) + 1;
+    analyticsDirty = true;
+    return res.status(204).end();
+  }
+
   let rawPath = typeof req.body?.path === 'string' ? req.body.path : '/';
   if (!rawPath.startsWith('/')) rawPath = '/';
   rawPath = rawPath.split('?')[0].split('#')[0].slice(0, 120) || '/';
   if (rawPath.startsWith('/admin')) return res.status(204).end();
 
-  const dayKey = todayKey();
   const day = getDay(dayKey);
 
   day.views++;
@@ -1177,6 +1212,8 @@ app.get('/api/analytics', adminAuth, (req, res) => {
   const pages = {};
   const referrers = {};
   const devices = { desktop: 0, mobile: 0, tablet: 0 };
+  const productClicks = {};
+  const productInquiries = {};
   let totalViews = 0, totalUniques = 0, totalInquiries = 0;
 
   for (let i = days - 1; i >= 0; i--) {
@@ -1193,10 +1230,19 @@ app.get('/api/analytics', adminAuth, (req, res) => {
       for (const [k, v] of Object.entries(d.pages || {})) pages[k] = (pages[k] || 0) + v;
       for (const [k, v] of Object.entries(d.referrers || {})) referrers[k] = (referrers[k] || 0) + v;
       for (const k of ['desktop', 'mobile', 'tablet']) devices[k] += d.devices?.[k] || 0;
+      for (const [k, v] of Object.entries(d.products || {})) productClicks[k] = (productClicks[k] || 0) + v;
+      for (const [k, v] of Object.entries(d.inquiryProducts || {})) productInquiries[k] = (productInquiries[k] || 0) + v;
     }
   }
 
   const top = (obj, n = 8) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n).map(([name, count]) => ({ name, count }));
+
+  // One row per product the visitor showed interest in, so the admin can see
+  // clicks and actual inquiries side by side rather than in two lists.
+  const products = [...new Set([...Object.keys(productClicks), ...Object.keys(productInquiries)])]
+    .map((name) => ({ name, clicks: productClicks[name] || 0, inquiries: productInquiries[name] || 0 }))
+    .sort((a, b) => (b.clicks - a.clicks) || (b.inquiries - a.inquiries))
+    .slice(0, 12);
 
   res.json({
     range: days,
@@ -1210,7 +1256,8 @@ app.get('/api/analytics', adminAuth, (req, res) => {
     series,
     topPages: top(pages),
     topReferrers: top(referrers),
-    devices
+    devices,
+    products
   });
 });
 

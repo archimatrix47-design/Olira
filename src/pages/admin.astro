@@ -165,6 +165,20 @@ import Icon from '../components/Icons.astro';
             </div>
           </div>
 
+          <!-- Product interest: which products visitors actually click on, and
+               how many of those turned into a sent inquiry. -->
+          <div class="bg-white border-2 border-primary-200 p-6 mt-6">
+            <div class="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+              <h4 class="font-bold text-primary-900">Product interest</h4>
+              <div class="flex items-center gap-4 text-xs text-primary-600">
+                <span class="flex items-center gap-2"><span class="inline-block w-3 h-3 bg-primary-600"></span>Quote clicks</span>
+                <span class="flex items-center gap-2"><span class="inline-block w-3 h-3 bg-teal-accent"></span>Inquiries sent</span>
+              </div>
+            </div>
+            <p class="text-xs text-primary-500 mb-4">How often each product card's "Request quote" button was clicked, and how many inquiries named that product.</p>
+            <div id="analyticsProducts" class="space-y-3 text-sm text-primary-800"></div>
+          </div>
+
           <p id="analyticsEmpty" class="hidden text-center text-primary-600 py-8">
             No traffic recorded yet for this range. Visit the public site in another tab and refresh this page.
           </p>
@@ -1414,6 +1428,51 @@ import Icon from '../components/Icons.astro';
       });
     }
 
+    // Product interest: one row per product showing quote clicks alongside the
+    // inquiries that actually named it, so the gap between the two is visible
+    // (lots of clicks but no inquiries = people look, then don't ask).
+    // Product names are admin-supplied, so use textContent, never innerHTML.
+    function renderProductList(el, items) {
+      if (!el) return;
+      el.replaceChildren();
+      if (!items || !items.length) {
+        const p = document.createElement('p');
+        p.className = 'text-primary-400 text-sm';
+        p.textContent = 'No product interest recorded yet. Clicks on a "Request quote" button will appear here.';
+        el.appendChild(p);
+        return;
+      }
+      // Scale both bars against the same max so their lengths are comparable.
+      const max = Math.max(...items.map((i) => Math.max(i.clicks, i.inquiries)), 1);
+      items.forEach((item) => {
+        const row = document.createElement('div');
+
+        const head = document.createElement('div');
+        head.className = 'flex justify-between gap-3 mb-1';
+        const name = document.createElement('span');
+        name.className = 'truncate font-medium';
+        name.title = item.name;
+        name.textContent = item.name;
+        const count = document.createElement('span');
+        count.className = 'flex-shrink-0 text-xs text-primary-600';
+        count.textContent = `${item.clicks} click${item.clicks === 1 ? '' : 's'} · ${item.inquiries} inquir${item.inquiries === 1 ? 'y' : 'ies'}`;
+        head.appendChild(name); head.appendChild(count);
+        row.appendChild(head);
+
+        [['bg-primary-600', item.clicks], ['bg-teal-accent', item.inquiries]].forEach(([color, value]) => {
+          const track = document.createElement('div');
+          track.className = 'h-1.5 bg-primary-100 mb-0.5';
+          const fill = document.createElement('div');
+          fill.className = `h-full ${color}`;
+          fill.style.width = Math.round((value / max) * 100) + '%';
+          track.appendChild(fill);
+          row.appendChild(track);
+        });
+
+        el.appendChild(row);
+      });
+    }
+
     // Grouped bar chart (views + unique visitors per day). All values here are
     // server-generated numbers / ISO dates, so an SVG string is safe.
     function renderChart(series) {
@@ -1471,6 +1530,7 @@ import Icon from '../components/Icons.astro';
           { name: 'Mobile', count: d.devices.mobile },
           { name: 'Tablet', count: d.devices.tablet }
         ].filter((x) => x.count > 0), 'No device data yet');
+        renderProductList(document.getElementById('analyticsProducts'), d.products);
 
         analyticsEmpty?.classList.toggle('hidden', d.totals.views > 0);
       } catch (err) {
