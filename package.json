@@ -3,6 +3,9 @@
   "version": "2.0.0",
   "description": "Olira Agro website with self-hosted infrastructure",
   "type": "module",
+  "engines": {
+    "node": ">=18.17.0"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev:astro\" \"npm run dev:api\"",
     "dev:astro": "astro dev",
