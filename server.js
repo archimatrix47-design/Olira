@@ -694,6 +694,7 @@ app.post('/api/inquiry', async (req, res) => {
 
     await sendEmail(sanitizedEmail, 'Thank You - Olira Agro Industry Inquiry', confirmationHtml);
 
+    recordInquiry(); // count as a conversion in the analytics dashboard
     res.json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
     console.error('Email send error:', error);
@@ -1054,6 +1055,163 @@ app.post('/api/social-links', adminAuth, (req, res) => {
     return res.status(500).json({ error: 'Failed to save social links' });
   }
   res.json({ success: true, data });
+});
+
+// ============================================
+// FIRST-PARTY ANALYTICS
+// ============================================
+// Privacy-preserving, no third party, no cookies. We never store an IP or any
+// raw identifier: a visitor is counted via sha256(ip + UA + date + secret)
+// truncated, and because the date is in the hash the value rotates every day —
+// so visitors cannot be correlated across days. Only aggregates are persisted.
+
+const analyticsPath = path.join(dataDir, 'analytics.json');
+const ANALYTICS_RETENTION_DAYS = 90;
+const MAX_VISITOR_HASHES_PER_DAY = 20000; // bound memory on a traffic spike
+
+const BOT_RE = /bot|crawler|spider|crawling|slurp|bingpreview|headless|lighthouse|pingdom|uptime|curl|wget|python-requests|axios|monitor|preview/i;
+
+// Loaded once, mutated in memory, flushed on a timer so a burst of pageviews
+// doesn't hammer the disk.
+let analytics = readJsonFile(analyticsPath, { days: {} });
+if (!analytics || typeof analytics !== 'object' || !analytics.days) analytics = { days: {} };
+let analyticsDirty = false;
+
+function todayKey(d = new Date()) {
+  return d.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+}
+
+function visitorHash(ip, ua, dayKey) {
+  return crypto.createHash('sha256').update(`${ip}|${ua}|${dayKey}|${JWT_SECRET}`).digest('base64url').slice(0, 16);
+}
+
+function deviceFromUa(ua = '') {
+  if (/tablet|ipad/i.test(ua)) return 'tablet';
+  if (/mobi|android|iphone/i.test(ua)) return 'mobile';
+  return 'desktop';
+}
+
+function emptyDay() {
+  return { views: 0, visitors: {}, pages: {}, referrers: {}, devices: { desktop: 0, mobile: 0, tablet: 0 }, inquiries: 0 };
+}
+
+function getDay(key) {
+  if (!analytics.days[key]) analytics.days[key] = emptyDay();
+  const d = analytics.days[key];
+  // Defensive: older/partial records
+  d.visitors ||= {}; d.pages ||= {}; d.referrers ||= {};
+  d.devices ||= { desktop: 0, mobile: 0, tablet: 0 };
+  d.views ||= 0; d.inquiries ||= 0;
+  return d;
+}
+
+function pruneAnalytics() {
+  const cutoff = new Date(Date.now() - ANALYTICS_RETENTION_DAYS * 86400000);
+  const cutoffKey = todayKey(cutoff);
+  for (const key of Object.keys(analytics.days)) {
+    if (key < cutoffKey) delete analytics.days[key];
+  }
+}
+
+function flushAnalytics() {
+  if (!analyticsDirty) return;
+  pruneAnalytics();
+  if (writeJsonFile(analyticsPath, analytics)) analyticsDirty = false;
+}
+setInterval(flushAnalytics, 10000).unref();
+process.on('SIGINT', () => { flushAnalytics(); process.exit(0); });
+process.on('SIGTERM', () => { flushAnalytics(); process.exit(0); });
+
+// Record a conversion (an inquiry actually sent). Called from /api/inquiry.
+function recordInquiry() {
+  getDay(todayKey()).inquiries++;
+  analyticsDirty = true;
+}
+
+// POST /api/track — public beacon fired by the client on page view.
+// Rate-limited so it can't be used to inflate numbers cheaply.
+app.post('/api/track', makeRateLimiter(60, 'track'), (req, res) => {
+  const ua = String(req.headers['user-agent'] || '');
+  // Never count bots/monitors, and never track the admin area.
+  if (BOT_RE.test(ua)) return res.status(204).end();
+
+  let rawPath = typeof req.body?.path === 'string' ? req.body.path : '/';
+  if (!rawPath.startsWith('/')) rawPath = '/';
+  rawPath = rawPath.split('?')[0].split('#')[0].slice(0, 120) || '/';
+  if (rawPath.startsWith('/admin')) return res.status(204).end();
+
+  const dayKey = todayKey();
+  const day = getDay(dayKey);
+
+  day.views++;
+  day.devices[deviceFromUa(ua)]++;
+  day.pages[rawPath] = (day.pages[rawPath] || 0) + 1;
+
+  // Referrer: store hostname only (aggregate + privacy). Self-referrals and
+  // empty referrers collapse to "direct".
+  let refHost = 'direct';
+  const ref = typeof req.body?.referrer === 'string' ? req.body.referrer : '';
+  if (ref) {
+    try {
+      const h = new URL(ref).hostname.replace(/^www\./, '');
+      const selfHost = String(req.headers.host || '').split(':')[0].replace(/^www\./, '');
+      refHost = h && h !== selfHost ? h.slice(0, 100) : 'direct';
+    } catch { refHost = 'direct'; }
+  }
+  day.referrers[refHost] = (day.referrers[refHost] || 0) + 1;
+
+  // Unique visitor (daily-rotating hash, never an IP).
+  const h = visitorHash(clientIp(req), ua, dayKey);
+  if (Object.keys(day.visitors).length < MAX_VISITOR_HASHES_PER_DAY) day.visitors[h] = 1;
+
+  analyticsDirty = true;
+  res.status(204).end();
+});
+
+// GET /api/analytics?days=30 (admin) — aggregated summary. Visitor hashes are
+// counted server-side and never returned.
+app.get('/api/analytics', adminAuth, (req, res) => {
+  const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), ANALYTICS_RETENTION_DAYS);
+
+  const series = [];
+  const pages = {};
+  const referrers = {};
+  const devices = { desktop: 0, mobile: 0, tablet: 0 };
+  let totalViews = 0, totalUniques = 0, totalInquiries = 0;
+
+  for (let i = days - 1; i >= 0; i--) {
+    const key = todayKey(new Date(Date.now() - i * 86400000));
+    const d = analytics.days[key];
+    const views = d?.views || 0;
+    const uniques = d?.visitors ? Object.keys(d.visitors).length : 0;
+    const inquiries = d?.inquiries || 0;
+
+    series.push({ date: key, views, uniques, inquiries });
+    totalViews += views; totalUniques += uniques; totalInquiries += inquiries;
+
+    if (d) {
+      for (const [k, v] of Object.entries(d.pages || {})) pages[k] = (pages[k] || 0) + v;
+      for (const [k, v] of Object.entries(d.referrers || {})) referrers[k] = (referrers[k] || 0) + v;
+      for (const k of ['desktop', 'mobile', 'tablet']) devices[k] += d.devices?.[k] || 0;
+    }
+  }
+
+  const top = (obj, n = 8) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n).map(([name, count]) => ({ name, count }));
+
+  res.json({
+    range: days,
+    totals: {
+      views: totalViews,
+      // Sum of daily uniques (a returning visitor counts once per day).
+      uniques: totalUniques,
+      inquiries: totalInquiries,
+      conversionRate: totalViews ? +((totalInquiries / totalViews) * 100).toFixed(2) : 0
+    },
+    series,
+    topPages: top(pages),
+    topReferrers: top(referrers),
+    devices
+  });
 });
 
 // ----- FILE UPLOADS (multer) -----

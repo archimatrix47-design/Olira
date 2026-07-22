@@ -45,3 +45,6 @@ temp/
 # Claude Code working files
 CLAUDE.md
 .claude/
+
+# Runtime analytics data (regenerated constantly; not source)
+data/analytics.json

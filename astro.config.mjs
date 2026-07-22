@@ -35,9 +35,13 @@ export default defineConfig({
     }
   },
 
-  // Server config
+  // Dev server config.
+  // Port 4321 (Astro's default) deliberately — NOT 3000, which is the Express
+  // API (server.js). They collided before, so Astro silently auto-incremented
+  // to 3001/3002/… and the frontend URL changed between runs. The `/api` proxy
+  // above still points at the API on :3000.
   server: {
     host: true,
-    port: 3000,
+    port: 4321,
   },
 });
