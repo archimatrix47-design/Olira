@@ -537,6 +537,33 @@ const features = [
     document.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-open-inquiry]');
       if (!btn) return;
+
+      const name = btn.getAttribute('data-product-name') || '';
+
+      // Tell the analytics dashboard which product drew the interest. Fire and
+      // forget — tracking must never block or break the modal.
+      if (name) {
+        try {
+          fetch('/api/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event: 'product', product: name }),
+            keepalive: true
+          }).catch(() => {});
+        } catch (_) { /* ignore */ }
+      }
+
+      // Preselect the product in the form. The visitor clicked a specific card,
+      // so making them pick it again from a dropdown is needless friction — and
+      // it means the inquiry is attributed to the right product.
+      const select = document.getElementById('product');
+      if (select && name) {
+        const match = [...select.options].find(
+          (o) => o.value.toLowerCase() === name.toLowerCase() || o.text.toLowerCase() === name.toLowerCase()
+        );
+        if (match) select.value = match.value;
+      }
+
       if (typeof window.openContactModal === 'function') window.openContactModal();
     });
 
@@ -617,6 +644,7 @@ const features = [
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.setAttribute('data-open-inquiry', slug(p.name || 'product'));
+      btn.setAttribute('data-product-name', p.name || 'Product');
       btn.className = 'w-full bg-primary-900 hover:bg-primary-800 active:bg-primary-700 active:scale-[0.97] text-white px-6 py-3 font-semibold text-sm tracking-wide transition-[colors,transform] duration-200 cursor-pointer mt-auto min-h-[44px]';
       btn.textContent = 'Request quote';
       body.appendChild(btn);
