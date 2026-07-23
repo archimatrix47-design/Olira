@@ -14,9 +14,8 @@
 # ---------------------------------------------------------------------
 deployment:
   tasks:
-    # EDIT ME - your cPanel username (the one in /home/<username>)
-    - export CPUSER=your_cpanel_username
-    # EDIT ME - Node version selected in cPanel > Setup Node.js App (e.g. 20)
+    - export CPUSER=oliraagr
+    # Must match the Node version selected in cPanel > Setup Node.js App.
     - export NODEVER=20
 
     # Application root = where cPanel cloned this repo.
