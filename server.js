@@ -734,7 +734,7 @@ function initializeIntegrationsConfig() {
       lastUpdated: null
     };
     fs.writeFileSync(integrationsConfigPath, JSON.stringify(defaultConfig, null, 2));
-    console.log('✅ Integrations config initialized');
+    console.log('Integrations config initialized');
   }
 }
 
@@ -763,7 +763,7 @@ function saveIntegrationsConfig(config) {
   try {
     config.lastUpdated = new Date().toISOString();
     fs.writeFileSync(integrationsConfigPath, JSON.stringify(config, null, 2));
-    console.log('✅ Integrations config saved');
+    console.log('Integrations config saved');
     return true;
   } catch (error) {
     console.error('Error saving integrations config:', error);
@@ -1154,6 +1154,10 @@ function recordInquiry(product) {
 // POST /api/track — public beacon fired by the client on page view.
 // Rate-limited so it can't be used to inflate numbers cheaply.
 app.post('/api/track', makeRateLimiter(60, 'track'), (req, res) => {
+  // Analytics is non-critical: a failure here must never surface an error to
+  // the visitor's browser. On any unexpected problem, log it server-side and
+  // quietly no-op (204) instead of returning 500.
+  try {
   const ua = String(req.headers['user-agent'] || '');
   // Never count bots/monitors, and never track the admin area.
   if (BOT_RE.test(ua)) return res.status(204).end();
@@ -1201,6 +1205,10 @@ app.post('/api/track', makeRateLimiter(60, 'track'), (req, res) => {
 
   analyticsDirty = true;
   res.status(204).end();
+  } catch (err) {
+    console.error('track error:', (err && err.stack) || err);
+    if (!res.headersSent) res.status(204).end();
+  }
 });
 
 // GET /api/analytics?days=30 (admin) — aggregated summary. Visitor hashes are
@@ -1428,41 +1436,41 @@ function validateStartup() {
 
   // Build artifacts (only required in production, dev runs from src)
   if (isProd) {
-    if (!fs.existsSync(distPath)) errors.push('❌ dist directory not found. Run "npm run build" first.');
-    if (!fs.existsSync(path.join(distPath, 'index.html'))) errors.push('❌ dist/index.html not found.');
+    if (!fs.existsSync(distPath)) errors.push('dist directory not found. Run "npm run build" first.');
+    if (!fs.existsSync(path.join(distPath, 'index.html'))) errors.push('dist/index.html not found.');
   }
 
   // JWT secret — hard fail in production, warn in dev
   const jwtDefault = !process.env.JWT_SECRET || process.env.JWT_SECRET === 'default_secret_change_in_production';
   const jwtWeak = process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32;
   if (jwtDefault) (isProd ? errors : warnings).push(
-    `${isProd ? '❌' : '⚠️ '} JWT_SECRET ${isProd ? 'must' : 'should'} be set to a strong random value (≥32 chars).`
+    `${isProd ? 'ERROR:' : 'WARNING:'} JWT_SECRET ${isProd ? 'must' : 'should'} be set to a strong random value (>=32 chars).`
   );
-  if (jwtWeak) warnings.push('⚠️  JWT_SECRET is shorter than 32 chars — increase entropy.');
+  if (jwtWeak) warnings.push('WARNING: JWT_SECRET is shorter than 32 chars - increase entropy.');
 
   // Admin password — hard fail in production
   const pwDefault = !process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'change_me_in_production';
   const pwWeak = process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.length < 12;
   if (pwDefault) (isProd ? errors : warnings).push(
-    `${isProd ? '❌' : '⚠️ '} ADMIN_PASSWORD ${isProd ? 'must' : 'should'} be set to a strong password (≥12 chars).`
+    `${isProd ? 'ERROR:' : 'WARNING:'} ADMIN_PASSWORD ${isProd ? 'must' : 'should'} be set to a strong password (>=12 chars).`
   );
   if (pwWeak) (isProd ? errors : warnings).push(
-    `${isProd ? '❌' : '⚠️ '} ADMIN_PASSWORD is shorter than 12 chars — strengthen it.`
+    `${isProd ? 'ERROR:' : 'WARNING:'} ADMIN_PASSWORD is shorter than 12 chars - strengthen it.`
   );
 
   // SMTP (warning only — site runs without email)
   if (isProd && (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD)) {
-    warnings.push('⚠️  SMTP not configured. Email features (contact form) will not work.');
+    warnings.push('WARNING: SMTP not configured. Email features (contact form) will not work.');
   }
 
   if (errors.length > 0) {
-    console.error('\n❌ STARTUP VALIDATION FAILED');
+    console.error('\nSTARTUP VALIDATION FAILED');
     errors.forEach(err => console.error('  ' + err));
     console.error('\nFix the above and restart. In production these are hard failures by design.');
     process.exit(1);
   }
   if (warnings.length > 0) {
-    console.warn('\n⚠️  STARTUP WARNINGS');
+    console.warn('\nSTARTUP WARNINGS');
     warnings.forEach(warn => console.warn('  ' + warn));
   }
   return true;
@@ -1478,14 +1486,14 @@ initializeEmailConfig();
 // Runtime uploads are still converted inline by the sharp pipeline above.
 
 app.listen(PORT, () => {
-  console.log(`\n🌿 Olira Agro API Server running on http://localhost:${PORT}`);
-  console.log(`📧 Email configuration: ${process.env.SMTP_USER ? 'Environment variables' : 'File-based'}`);
-  console.log(`🔐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`\n⚡ API endpoints:`);
+  console.log(`\nOlira Agro API Server running on http://localhost:${PORT}`);
+  console.log(`Email configuration: ${process.env.SMTP_USER ? 'Environment variables' : 'File-based'}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`\nAPI endpoints:`);
   console.log(`   GET  /api/health`);
   console.log(`   POST /api/admin/login`);
   console.log(`   GET  /api/email-config (admin)`);
   console.log(`   POST /api/email-config (admin)`);
   console.log(`   POST /api/inquiry`);
-  console.log(`\n📍 Static files: ${fs.existsSync(distPath) ? '✓ Found' : '✗ Not found'}\n`);
+  console.log(`\nStatic files: ${fs.existsSync(distPath) ? 'Found' : 'Not found'}\n`);
 });
