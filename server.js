@@ -129,8 +129,12 @@ const corsOptions = {
       // In production or for non-localhost, use strict allowlist
       callback(null, true);
     } else {
+      // Reject by declining CORS headers, NOT by throwing — a thrown error
+      // here becomes a 500 for the caller. The browser still blocks a truly
+      // cross-origin response because no CORS headers are sent; we just don't
+      // want a rejected origin to surface as a server error.
       console.warn(`CORS rejected origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      callback(null, false);
     }
   },
   credentials: true,
