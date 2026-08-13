@@ -387,6 +387,10 @@ const {
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
+    /* Clip horizontal overflow at the root too — the document's scroll width is
+       measured here, so clipping only on body isn't enough. `clip` (not hidden)
+       preserves position: sticky and doesn't create a scroll container. */
+    overflow-x: clip;
   }
 
   body {
@@ -396,6 +400,14 @@ const {
     /* Body grid pattern removed — let whitespace breathe and let
        individual sections (e.g. the topographical map in
        .section-gradient-light) carry the visual texture. */
+    /* Scroll-reveal elements start translated off their final position
+       (e.g. slideInRight begins at translateX(44px)) and only settle once
+       scrolled into view. Off-screen ones push past the right edge and create
+       a page-wide horizontal scrollbar. `overflow-x: clip` removes that without
+       creating a scroll container, so the pinned Facilities section's
+       `position: sticky` keeps working — `overflow: hidden` would break it.
+       overflow-y stays visible (the spec exempts `clip` from forcing it to auto). */
+    overflow-x: clip;
   }
 
   a {
