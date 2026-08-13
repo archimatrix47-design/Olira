@@ -201,37 +201,37 @@ import Icon from '../components/Icons.astro';
               <input type="hidden" id="productId" />
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PRODUCT NAME *</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productName">PRODUCT NAME *</label>
                 <input id="productName" type="text" required placeholder="e.g., Natural Sesame Seeds" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
               </div>
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">DESCRIPTION *</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productDescription">DESCRIPTION *</label>
                 <textarea id="productDescription" rows="4" required placeholder="Describe the product..." class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none resize-none"></textarea>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PURITY</label>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productPurity">PURITY</label>
                   <input id="productPurity" type="text" placeholder="99.95%" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">MOQ</label>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productMoq">MOQ</label>
                   <input id="productMoq" type="text" placeholder="10 MT" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">CATEGORY</label>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productCategory">CATEGORY</label>
                   <input id="productCategory" type="text" placeholder="Sesame" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
                 </div>
               </div>
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">SPECS (one per line, max 20)</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productSpecs">SPECS (one per line, max 20)</label>
                 <textarea id="productSpecs" rows="4" placeholder="Humera variety&#10;High oil content (50%+)&#10;Creamy color&#10;ISO 22000 certified" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none resize-none"></textarea>
               </div>
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PRODUCT IMAGE (optional, auto-resized to 1200px WebP)</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="smtpHost">PRODUCT IMAGE (optional, auto-resized to 1200px WebP)</label>
                 <div class="flex items-start gap-4">
                   <div class="flex-shrink-0 w-32 h-32 bg-primary-50 border-2 border-primary-200 rounded flex items-center justify-center overflow-hidden">
                     <img id="productImagePreview" src="" alt="" class="max-w-full max-h-full object-contain" style="display:none;" />
@@ -338,31 +338,31 @@ import Icon from '../components/Icons.astro';
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">SMTP PORT *</label>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="smtpPort">SMTP PORT *</label>
                   <input type="number" id="smtpPort" name="smtpPort" placeholder="587 or 465" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
                   <p class="text-primary-600 text-xs mt-2">587 = TLS, 465 = SSL</p>
                 </div>
 
                 <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">FROM NAME</label>
+                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="fromName">FROM NAME</label>
                   <input type="text" id="fromName" name="fromName" placeholder="Olira Agro Industry" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
                 </div>
               </div>
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">SMTP EMAIL ADDRESS *</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="smtpUser">SMTP EMAIL ADDRESS *</label>
                 <input type="email" id="smtpUser" name="smtpUser" placeholder="your-email@gmail.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
                 <p class="text-primary-600 text-xs mt-2">The email address used to send inquiries</p>
               </div>
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">SMTP PASSWORD *</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="smtpPassword">SMTP PASSWORD *</label>
                 <input type="password" id="smtpPassword" name="smtpPassword" placeholder="••••••••" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
                 <p class="text-primary-600 text-xs mt-2">For Gmail: Use an App Password (not your regular password)</p>
               </div>
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">RECIPIENT EMAIL ADDRESS *</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="recipientEmail">RECIPIENT EMAIL ADDRESS *</label>
                 <input type="email" id="recipientEmail" name="recipientEmail" placeholder="info@oliraagroindustry.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
                 <p class="text-primary-600 text-xs mt-2">Where product inquiries will be sent</p>
               </div>
@@ -419,7 +419,7 @@ import Icon from '../components/Icons.astro';
             </h4>
             <form class="space-y-6">
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">COMPANY TAGLINE</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="phoneNumbers">COMPANY TAGLINE</label>
                 <input type="text" value="Producing, processing and packaging high quality agricultural products for export" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
               </div>
 
@@ -460,7 +460,7 @@ import Icon from '../components/Icons.astro';
               </div>
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">EMAIL ADDRESSES (One per line)</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="emailAddresses">EMAIL ADDRESSES (One per line)</label>
                 <textarea id="emailAddresses" name="emailAddresses" rows="3" placeholder="info@oliraagroindustry.com&#10;sales@oliraagroindustry.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 transition outline-none resize-none"></textarea>
                 <p class="text-primary-600 text-xs mt-2">Enter each email on a separate line. These will appear in the contact modal.</p>
               </div>
@@ -502,17 +502,17 @@ import Icon from '../components/Icons.astro';
               <h5 class="font-bold text-primary-900">Add New Certification</h5>
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">CERTIFICATION NAME *</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="certName">CERTIFICATION NAME *</label>
                 <input type="text" id="certName" placeholder="e.g., ISO 22000:2018" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
               </div>
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">DESCRIPTION *</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="certDescription">DESCRIPTION *</label>
                 <input type="text" id="certDescription" placeholder="e.g., Food Safety Management System" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
               </div>
 
               <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">UPLOAD IMAGE/ICON (Optional)</label>
+                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="socialFacebook">UPLOAD IMAGE/ICON (Optional)</label>
                 <div class="border-2 border-dashed border-primary-300 rounded p-6 text-center hover:border-primary-600 transition cursor-pointer">
                   <Icon name="upload" size={24} class="text-primary-600 mx-auto mb-2" />
                   <p class="text-primary-900 font-bold text-sm mb-1">Click to upload or drag and drop</p>
@@ -559,23 +559,23 @@ import Icon from '../components/Icons.astro';
               <input type="url" id="socialFacebook" placeholder="https://facebook.com/oliraagroindustry" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
             </div>
             <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">LINKEDIN</label>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider" for="socialLinkedin">LINKEDIN</label>
               <input type="url" id="socialLinkedin" placeholder="https://linkedin.com/company/olira-agro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
             </div>
             <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">X (TWITTER)</label>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider" for="socialX">X (TWITTER)</label>
               <input type="url" id="socialX" placeholder="https://x.com/oliraagro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
             </div>
             <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">YOUTUBE</label>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider" for="socialYoutube">YOUTUBE</label>
               <input type="url" id="socialYoutube" placeholder="https://youtube.com/@oliraagro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
             </div>
             <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">TELEGRAM</label>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider" for="socialTelegram">TELEGRAM</label>
               <input type="url" id="socialTelegram" placeholder="https://t.me/oliraagro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
             </div>
             <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">WHATSAPP</label>
+              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider" for="socialWhatsapp">WHATSAPP</label>
               <input type="url" id="socialWhatsapp" placeholder="https://wa.me/251911223619" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
               <p class="text-primary-600 text-xs mt-2">Use a wa.me link, e.g. https://wa.me/&lt;country+number&gt;</p>
             </div>
