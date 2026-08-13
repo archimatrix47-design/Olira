@@ -1,0 +1,67 @@
+---
+// ContourMotif.astro — the signature graphic of the "terroir" direction.
+// Topographic contour lines: the literal shape of the Ethiopian highlands where
+// Olira's sesame and coffee grow. Used as a quiet, recurring fingerprint that
+// ties the site together and roots the brand in its specific land — something no
+// competitor's template has, and grounded in the subject rather than decoration.
+//
+// The rings are GENERATED (deterministic organic noise), so they read as real
+// elevation lines, not perfect circles. currentColor + low opacity: it whispers.
+export interface Props {
+  rings?: number;      // number of contour lines
+  size?: number;       // viewBox size
+  class?: string;
+  opacity?: number;
+}
+const { rings = 9, size = 420, class: className = '', opacity = 0.5 } = Astro.props;
+
+const cx = size / 2;
+const cy = size / 2;
+const points = 72;
+
+// One smooth organic closed path per ring. Radius wobbles with a couple of
+// sines (deterministic) and each ring rotates slightly so they nest like terrain.
+function ringPath(baseR: number, seed: number): string {
+  const coords: string[] = [];
+  for (let i = 0; i <= points; i++) {
+    const t = (i / points) * Math.PI * 2;
+    const wobble =
+      1 +
+      0.06 * Math.sin(3 * t + seed) +
+      0.035 * Math.sin(5 * t - seed * 1.7) +
+      0.02 * Math.sin(2 * t + seed * 0.5);
+    const r = baseR * wobble;
+    const x = cx + r * Math.cos(t + seed * 0.15);
+    const y = cy + r * Math.sin(t + seed * 0.15) * 0.86; // slight vertical squash
+    coords.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  return 'M' + coords.join(' L') + ' Z';
+}
+
+const minR = size * 0.07;
+const maxR = size * 0.46;
+const paths = Array.from({ length: rings }, (_, i) => {
+  const baseR = minR + ((maxR - minR) * i) / (rings - 1);
+  return ringPath(baseR, i * 0.8 + 0.3);
+});
+---
+
+<svg
+  class:list={["contour-motif", className]}
+  viewBox={`0 0 ${size} ${size}`}
+  width={size}
+  height={size}
+  fill="none"
+  aria-hidden="true"
+  style={`opacity:${opacity}`}
+>
+  {paths.map((d, i) => (
+    <path
+      d={d}
+      stroke="currentColor"
+      stroke-width={i === 0 ? 1.4 : 1}
+      stroke-opacity={0.35 + (i / rings) * 0.4}
+      vector-effect="non-scaling-stroke"
+    />
+  ))}
+</svg>

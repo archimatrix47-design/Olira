@@ -129,7 +129,7 @@ const features = [
         </div>
 
         <div class="bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl p-12 h-80 flex flex-col items-center justify-center text-center animate-slideInRight">
-          <p class="font-heading text-7xl font-bold text-primary-900 mb-4">16+</p>
+          <p class="font-heading text-7xl font-bold text-primary-900 mb-4">18+</p>
           <p class="text-2xl font-bold text-primary-900">Years of Excellence</p>
           <div class="mt-8 pt-8 border-t-2 border-primary-300 w-full">
             <p class="text-primary-600 font-bold">Since 2008</p>
@@ -489,46 +489,14 @@ const features = [
   <Modal />
 </BaseLayout>
 
-<!-- Animate any element marked [data-counter] when it scrolls into view.
-     Preserves any non-digit prefix/suffix ("16+", "20 MT", "99.95%"). -->
+<!-- Stats are shown at their final value — no count-up animation. A count-up
+     spends its first frames displaying misleading low numbers ("2+" on the way
+     to "16+"), which undercuts the credibility the numbers are meant to convey.
+     [data-counter] is left on the elements as a harmless hook in case a future,
+     value-accurate reveal is wanted. -->
 <script is:inline>
-  (function () {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    function animateCounter(el, finalText, duration) {
-      const match = finalText.trim().match(/^([^\d]*)([\d,.]+)([^\d]*)$/);
-      if (!match) return;
-      const prefix = match[1];
-      const suffix = match[3];
-      const isFloat = match[2].includes('.');
-      const target = parseFloat(match[2].replace(/,/g, ''));
-      let start = null;
-      const tick = (ts) => {
-        if (!start) start = ts;
-        const progress = Math.min((ts - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
-        const current = isFloat ? (eased * target).toFixed(2) : Math.floor(eased * target);
-        el.textContent = `${prefix}${current}${suffix}`;
-        if (progress < 1) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    }
-
-    document.querySelectorAll('[data-counter]').forEach((el) => {
-      if (el.dataset.animated) return;
-      const finalText = el.textContent;
-      const obs = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !el.dataset.animated) {
-            animateCounter(el, finalText, 1500);
-            el.dataset.animated = 'true';
-            obs.unobserve(el);
-          }
-        });
-      }, { threshold: 0.4 });
-      obs.observe(el);
-    });
-  })();
+  // Reveal the stat row with a single quiet fade (via the existing scroll-reveal
+  // system if the element opts in); the numbers themselves never tick.
 </script>
 
 <!-- Products: (1) make the "Request quote" buttons work (they were dead — the
