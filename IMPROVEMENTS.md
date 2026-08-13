@@ -13,35 +13,50 @@ The strongest evidence is what already broke during launch:
 
 ---
 
+## Status (this pass)
+
+Done: **F1, F2, F3, F4, F5, F6, F9, F10, F13, F15** (backend hardening + tests +
+CI), **F18/F19 partial** (UI audit: fixed page-wide horizontal scroll; verified
+a11y/contrast/images clean). All committed. **NOT yet deployed to the live
+server** — see "Deploying these changes" at the bottom.
+
+New cleanup items found while working:
+- [ ] **C1 · `src/styles/global.css` is dead code** — imported nowhere; the
+  active global styles live in `BaseLayout.astro`'s `<style is:global>`. Confusing
+  (it duplicates reveal rules). Verify and delete, or wire it up intentionally.
+- [ ] **C2 · Admin form inputs** — audit the ~29 inputs in `admin.astro` for
+  proper labels (many may use placeholders or wrapping labels; confirm each has an
+  accessible name). Internal tool, lower priority than the public site.
+
 ## P0 — Reliability & resilience (do first)
 
-- [ ] **F1 · Global error handler.** No `app.use((err,req,res,next))` in `server.js`.
+- [x] **F1 · Global error handler.** No `app.use((err,req,res,next))` in `server.js`.
   Add error-handling middleware last: log stack + request context (method, path,
   correlation id), return clean JSON, never leak internals. Add
   `process.on('unhandledRejection'|'uncaughtException')` logging.
-- [ ] **F2 · Persisted structured logging.** Logging is `console.*` only and was
+- [x] **F2 · Persisted structured logging.** Logging is `console.*` only and was
   unreachable on LiteSpeed. Write errors + key events (login, deploy, flush
   failures) to a rotating file under `DATA_DIR/logs/`, one JSON line per event.
   Document the path.
-- [ ] **F3 · Decouple admin-auth failure from the public site.** `server.js` ~1458
+- [x] **F3 · Decouple admin-auth failure from the public site.** `server.js` ~1458
   calls `process.exit(1)` on weak `ADMIN_PASSWORD`, darkening the whole storefront.
   Keep hard-failing on unsafe JWT secret, but on admin-auth weakness start the
   server, serve the public site + read-only APIs, and 503 only `/api/admin/*`.
-- [ ] **F4 · Atomic JSON writes.** `writeJsonFile()` does a bare `writeFileSync`;
+- [x] **F4 · Atomic JSON writes.** `writeJsonFile()` does a bare `writeFileSync`;
   a crash/concurrent write corrupts `products.json` etc. Write to `path.tmp` then
   `renameSync`; serialize writes through a small queue.
-- [ ] **F5 · Real health check.** `/api/health` returns OK unconditionally. Make it
+- [x] **F5 · Real health check.** `/api/health` returns OK unconditionally. Make it
   verify DATA_DIR/uploads writable, analytics parseable, dist present; 503 with
   reasons otherwise. Point an uptime monitor at it.
 
 ## P1 — Architecture, testability & data integrity
 
-- [ ] **F6 · Split app/listen.** `app.listen()` runs at import, so `server.js` is
+- [x] **F6 · Split app/listen.** `app.listen()` runs at import, so `server.js` is
   untestable. Extract `app.js` (exports app, no listen) + `server.js` (listen).
 - [ ] **F7 · Replace flat-file store.** JSON files, no locking/schema/migrations.
   Migrate to `better-sqlite3` (single file, synchronous, transactional); keep JSON
   as seed/import. Validate at the API boundary (e.g. `zod`).
-- [ ] **F9 · Add tests.** Zero exist. After F6, `supertest` for: admin login +
+- [x] **F9 · Add tests.** Zero exist. After F6, `supertest` for: admin login +
   lockout, CORS accept/reject, `/api/track` shapes, inquiry validation + honeypot,
   analytics aggregation math. Playwright smoke for homepage + admin login.
 - [ ] **F11 · Split `admin.astro` (1,866 lines).** Extract per-tab components; move
@@ -53,12 +68,12 @@ The strongest evidence is what already broke during launch:
   (repositories/Olira → ~/olira) is committed but never run. Do one real
   `Deploy HEAD Commit`; confirm sync + rebuild + restart. Passenger ignored
   `tmp/restart.txt` on LiteSpeed — script an explicit restart if needed.
-- [ ] **F10 · CI.** No workflow. On push run `npm ci`, `npm run build`, tests (F9),
+- [x] **F10 · CI.** No workflow. On push run `npm ci`, `npm run build`, tests (F9),
   `npm audit`. Red build blocks deploy.
 - [ ] **F12 · Automated backups.** `~/olira-data` + `~/olira-uploads` are the only
   copies and are outside git. Daily cron tar to a dated archive, prune old, ideally
   copy off-server.
-- [ ] **F13 · Config guardrails.** Fat-finger surface (`DATA-DIR` hyphen, short
+- [x] **F13 · Config guardrails.** Fat-finger surface (`DATA-DIR` hyphen, short
   password, unset `CORS_ORIGINS` all happened). At startup log a masked config
   summary (set/missing/malformed); warn on unknown `*_DIR` spellings; ship a
   `config-check` script.
@@ -97,3 +112,21 @@ The strongest evidence is what already broke during launch:
 5. Fix pipeline: **F8 → F13**
 6. Deeper integrity: **F7 → F14**
 7. Refactor & polish: **F11/F17 → F16 → F15/F18/F19/F20**
+
+---
+
+## Deploying these changes to the live server
+
+All backend + UI work is committed and pushed, but the live app runs from
+`~/olira` (manual copy), so it is NOT live until deployed. To deploy in Terminal:
+
+```
+cd ~/repositories/Olira && git pull
+rsync -a --delete --exclude='.git' --exclude='node_modules' --exclude='tmp' --exclude='dist' ~/repositories/Olira/ ~/olira/
+source /home/oliraagr/nodevenv/olira/20/bin/activate && cd ~/olira
+npm install && npm run build
+touch tmp/restart.txt
+```
+
+Then restart the app from cPanel > Setup Node.js App (LiteSpeed ignores
+tmp/restart.txt), and check `GET /api/health` returns 200.
