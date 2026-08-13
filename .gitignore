@@ -51,3 +51,4 @@ CLAUDE.md
 
 # Runtime analytics data (regenerated constantly; not source)
 data/analytics.json
+src/data/burayu-grid.cache.json
