@@ -8,6 +8,7 @@ import ContactForm from '../components/ContactForm.astro';
 import Icon from '../components/Icons.astro';
 import Timeline from '../components/Timeline.astro';
 import CertificationShowcase from '../components/CertificationShowcase.astro';
+import SocialLinks from '../components/SocialLinks.astro';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -417,6 +418,12 @@ const features = [
             <span class="text-primary-600 font-bold mt-2 block">www.oliraagroindustry.com</span>
           </p>
         </div>
+      </div>
+
+      <!-- Follow us — clickable social icons (hidden until URLs are set in the
+           admin Social tab). Same shared component as the footer. -->
+      <div class="w-full flex justify-center mb-16">
+        <SocialLinks theme="light" label="Follow us" class="justify-center" />
       </div>
 
       <!-- Form Heading -->
