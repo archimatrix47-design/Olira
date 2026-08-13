@@ -301,6 +301,13 @@ const TOKEN_TTL_SECONDS = 24 * 60 * 60;
 const failedAttempts = new Map();    // ip → { count, firstFailAt, lockedUntil }
 const tokenBlocklist = new Map();    // tokenHash → expiresAt (timestamp ms)
 
+// F3: when admin secrets are weak/missing in production, we DISABLE the admin
+// login instead of killing the whole process. /api/admin/login returns 503, but
+// the public storefront and read-only APIs keep serving. A weak ADMIN_PASSWORD
+// should lock the admin door, not take the business site offline (which is
+// exactly what happened during launch when a short password hit process.exit).
+let adminLoginDisabled = false;
+
 // Cleanup blocklist every 10 min so it doesn't grow unbounded
 setInterval(() => {
   const now = Date.now();
@@ -337,6 +344,26 @@ function audit(event, req, extra = {}) {
     }) + '\n';
     fs.appendFile(auditLogPath, line, () => {});
   } catch {}
+}
+
+// F2: persistent error/event log. One JSON line per entry to DATA_DIR/logs/
+// error.log, so production failures leave a durable, findable record — console
+// output is effectively unreachable under LiteSpeed/Passenger, which is why the
+// CORS 500s took hours to diagnose. Best-effort; a failed log never blocks a
+// request. Also echoes to stderr for local/dev.
+const logsDir = path.join(dataDir, 'logs');
+try { if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true }); } catch {}
+const errorLogPath = path.join(logsDir, 'error.log');
+function logError(context, err, extra = {}) {
+  const entry = {
+    t: new Date().toISOString(),
+    context,
+    message: (err && err.message) ? err.message : String(err),
+    stack: (err && err.stack) ? String(err.stack).split('\n').slice(0, 6).join(' | ') : undefined,
+    ...extra
+  };
+  try { fs.appendFile(errorLogPath, JSON.stringify(entry) + '\n', () => {}); } catch {}
+  console.error(`[${entry.t}] ${context}: ${entry.message}`);
 }
 
 // Constant-time string comparison (prevents timing attacks)
@@ -461,6 +488,12 @@ function verifyToken(token, ip) {
 //   • Audit log for every attempt
 app.post('/api/admin/login', (req, res) => {
   const ip = clientIp(req);
+
+  // F3: admin login disabled due to weak/missing secrets — fail here, not at boot.
+  if (adminLoginDisabled) {
+    audit('login_disabled', req);
+    return res.status(503).json({ error: 'Admin login is temporarily unavailable. Contact the site administrator.' });
+  }
 
   if (!checkOrigin(req)) {
     audit('login_origin_rejected', req);
@@ -858,17 +891,40 @@ function readJsonFile(filePath, defaultValue) {
       return JSON.parse(fs.readFileSync(filePath, 'utf8'));
     }
   } catch (error) {
-    console.error(`Error reading ${filePath}:`, error);
+    // A corrupt file must not crash a read — return the default and log loudly
+    // so the health check / logs surface it rather than the whole endpoint 500ing.
+    logError('json_read_failed', error, { file: path.basename(filePath) });
   }
   return defaultValue;
 }
 
+// F4: atomic write. Writing directly with writeFileSync means a crash or a
+// concurrent write mid-write leaves a truncated, unparseable file — and this is
+// the live source of truth for products/contacts/etc. Instead write to a temp
+// file in the same directory, fsync it, then rename() over the target (atomic on
+// the same filesystem). A rejected write leaves the previous good file intact.
+function atomicWriteFileSync(filePath, contents) {
+  const tmp = `${filePath}.tmp-${process.pid}-${Date.now()}`;
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeSync(fd, contents);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(tmp, filePath);
+}
+
+// Synchronous + atomic. writeFileSync is blocking, so within this single-process
+// server two writes cannot interleave; the atomic temp+rename covers the
+// crash-mid-write and multi-worker cases. Keeps the boolean contract callers use
+// (a false return still becomes a 500 for the admin, so a real failure is seen).
 function writeJsonFile(filePath, data) {
   try {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    atomicWriteFileSync(filePath, JSON.stringify(data, null, 2));
     return true;
   } catch (error) {
-    console.error(`Error writing ${filePath}:`, error);
+    logError('json_write_failed', error, { file: path.basename(filePath) });
     return false;
   }
 }
@@ -1389,8 +1445,41 @@ app.post('/api/upload/logo', adminAuth, (req, res) => {
 });
 
 // Health check
+// F5: a health check that actually checks health. Verifies the things that have
+// silently broken in production — data/uploads writable, analytics parseable,
+// build present, admin login state. Returns 503 (with reasons) when degraded so
+// an uptime monitor has something real to watch.
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'API running', timestamp: new Date().toISOString() });
+  const checks = {};
+  const canWrite = (dir) => {
+    try {
+      const probe = path.join(dir, `.health-${process.pid}`);
+      fs.writeFileSync(probe, 'ok');
+      fs.unlinkSync(probe);
+      return true;
+    } catch { return false; }
+  };
+
+  checks.dataDirWritable = canWrite(dataDir);
+  checks.uploadsDirWritable = canWrite(uploadsDir);
+  checks.distPresent = !process.env.NODE_ENV || process.env.NODE_ENV !== 'production' || fs.existsSync(path.join(distPath, 'index.html'));
+  try { JSON.parse(fs.readFileSync(analyticsPath, 'utf8')); checks.analyticsParseable = true; }
+  catch (e) { checks.analyticsParseable = !fs.existsSync(analyticsPath); } // absent is fine (fresh)
+  checks.adminLoginEnabled = !adminLoginDisabled;
+
+  // adminLoginEnabled is informational, not a failure condition (the public site
+  // is healthy even when admin login is intentionally disabled).
+  const failing = Object.entries(checks)
+    .filter(([k, v]) => v === false && k !== 'adminLoginEnabled')
+    .map(([k]) => k);
+
+  const healthy = failing.length === 0;
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? 'ok' : 'degraded',
+    checks,
+    failing,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Serve static files from dist directory (Astro build output)
@@ -1432,72 +1521,130 @@ app.get('*', (req, res) => {
   res.status(404).send('Not found');
 });
 
-// Startup validation — fails closed in production for any weak admin secret.
+// F1: global error handler — MUST be last. Any error thrown or passed to
+// next(err) anywhere lands here instead of leaking a generic HTML 500 with no
+// server-side record (which is exactly how the CORS bug hid for hours). Logs the
+// full error with a short correlation id that's also returned to the client, so
+// a user-reported failure can be matched to a log line. Never leaks internals.
+app.use((err, req, res, next) => {
+  const id = crypto.randomBytes(5).toString('hex');
+  logError('unhandled_request_error', err, { id, method: req.method, path: req.path });
+  if (res.headersSent) return next(err);
+  res.status(err.status && err.status >= 400 && err.status < 600 ? err.status : 500)
+    .json({ error: 'Internal server error', id });
+});
+
+// F13: masked config summary — logged at startup so a misconfiguration is
+// visible immediately instead of surfacing as a mysterious failure later.
+// Never prints secret VALUES, only whether each is set and looks sane.
+function logConfigSummary() {
+  const isProd = process.env.NODE_ENV === 'production';
+  const mask = (v) => (v ? `set (${v.length} chars)` : 'MISSING');
+  const rows = [
+    ['NODE_ENV', process.env.NODE_ENV || 'development'],
+    ['PORT', String(PORT)],
+    ['JWT_SECRET', mask(process.env.JWT_SECRET)],
+    ['ADMIN_PASSWORD', mask(process.env.ADMIN_PASSWORD)],
+    ['DATA_DIR', dataDir],
+    ['UPLOADS_DIR', uploadsDir],
+    ['CORS_ORIGINS', process.env.CORS_ORIGINS || (isProd ? 'MISSING (same-origin still allowed)' : 'dev: localhost allowed')],
+    ['SMTP', (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) ? 'configured' : 'not configured (email disabled)'],
+  ];
+  console.log('\nConfiguration:');
+  for (const [k, v] of rows) console.log(`   ${k.padEnd(15)} ${v}`);
+
+  // Catch a common fat-finger: env var names with hyphens instead of underscores
+  // (DATA-DIR vs DATA_DIR) are silently ignored by the code — surface them.
+  const suspects = Object.keys(process.env).filter((k) => /-(DIR|SECRET|PASSWORD|ORIGINS|HOST|USER|PORT)$/i.test(k) || /^(DATA|UPLOADS|JWT|ADMIN|SMTP|CORS)-/i.test(k));
+  if (suspects.length) {
+    console.warn(`   WARNING: env vars with hyphens look like typos (use underscores): ${suspects.join(', ')}`);
+  }
+}
+
+// Startup validation.
+// F3: weak/missing ADMIN secrets DISABLE admin login but do NOT stop the server
+// — the public storefront must stay up. Only conditions that make the app unable
+// to serve at all are surfaced as errors (and even those no longer exit, so a
+// deploy always comes up and the /api/health check can report what's wrong).
 function validateStartup() {
-  const errors = [];
   const warnings = [];
+  const adminIssues = [];
   const isProd = process.env.NODE_ENV === 'production';
 
   // Build artifacts (only required in production, dev runs from src)
   if (isProd) {
-    if (!fs.existsSync(distPath)) errors.push('dist directory not found. Run "npm run build" first.');
-    if (!fs.existsSync(path.join(distPath, 'index.html'))) errors.push('dist/index.html not found.');
+    if (!fs.existsSync(distPath)) warnings.push('dist directory not found — run "npm run build". Static site will 404 until built.');
+    else if (!fs.existsSync(path.join(distPath, 'index.html'))) warnings.push('dist/index.html not found — build is incomplete.');
   }
 
-  // JWT secret — hard fail in production, warn in dev
+  // Admin secrets — weakness disables admin login, never kills the site.
   const jwtDefault = !process.env.JWT_SECRET || process.env.JWT_SECRET === 'default_secret_change_in_production';
   const jwtWeak = process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32;
-  if (jwtDefault) (isProd ? errors : warnings).push(
-    `${isProd ? 'ERROR:' : 'WARNING:'} JWT_SECRET ${isProd ? 'must' : 'should'} be set to a strong random value (>=32 chars).`
-  );
-  if (jwtWeak) warnings.push('WARNING: JWT_SECRET is shorter than 32 chars - increase entropy.');
+  if (jwtDefault) adminIssues.push('JWT_SECRET is missing or default');
+  else if (jwtWeak) adminIssues.push('JWT_SECRET is shorter than 32 chars');
 
-  // Admin password — hard fail in production
   const pwDefault = !process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'change_me_in_production';
   const pwWeak = process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.length < 12;
-  if (pwDefault) (isProd ? errors : warnings).push(
-    `${isProd ? 'ERROR:' : 'WARNING:'} ADMIN_PASSWORD ${isProd ? 'must' : 'should'} be set to a strong password (>=12 chars).`
-  );
-  if (pwWeak) (isProd ? errors : warnings).push(
-    `${isProd ? 'ERROR:' : 'WARNING:'} ADMIN_PASSWORD is shorter than 12 chars - strengthen it.`
-  );
+  if (pwDefault) adminIssues.push('ADMIN_PASSWORD is missing or default');
+  else if (pwWeak) adminIssues.push('ADMIN_PASSWORD is shorter than 12 chars');
 
-  // SMTP (warning only — site runs without email)
+  // In production, unsafe admin secrets lock the admin door. In dev they're only
+  // a warning (localhost convenience).
+  if (isProd && adminIssues.length) {
+    adminLoginDisabled = true;
+  }
+
   if (isProd && (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD)) {
-    warnings.push('WARNING: SMTP not configured. Email features (contact form) will not work.');
+    warnings.push('SMTP not configured — the contact form cannot send email.');
   }
 
-  if (errors.length > 0) {
-    console.error('\nSTARTUP VALIDATION FAILED');
-    errors.forEach(err => console.error('  ' + err));
-    console.error('\nFix the above and restart. In production these are hard failures by design.');
-    process.exit(1);
+  if (adminIssues.length) {
+    (isProd ? console.error : console.warn)(
+      `\n${isProd ? 'ADMIN LOGIN DISABLED' : 'ADMIN WARNINGS (dev)'}: ${adminIssues.join('; ')}.`
+    );
+    if (isProd) console.error('  The public site is serving normally; fix these and restart to re-enable /admin.');
   }
-  if (warnings.length > 0) {
+  if (warnings.length) {
     console.warn('\nSTARTUP WARNINGS');
-    warnings.forEach(warn => console.warn('  ' + warn));
+    warnings.forEach((w) => console.warn('  ' + w));
   }
   return true;
 }
-
-// Initialize and start server
-validateStartup();
-initializeEmailConfig();
 
 // NOTE: WebP conversion of public/ assets is a BUILD step (see package.json
 // `build`), not a per-boot task. Running it on every boot cost startup time and
 // wrote into public/ — which is read-only on some hosts (cPanel/containers).
 // Runtime uploads are still converted inline by the sharp pipeline above.
 
-app.listen(PORT, () => {
-  console.log(`\nOlira Agro API Server running on http://localhost:${PORT}`);
-  console.log(`Email configuration: ${process.env.SMTP_USER ? 'Environment variables' : 'File-based'}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`\nAPI endpoints:`);
-  console.log(`   GET  /api/health`);
-  console.log(`   POST /api/admin/login`);
-  console.log(`   GET  /api/email-config (admin)`);
-  console.log(`   POST /api/email-config (admin)`);
-  console.log(`   POST /api/inquiry`);
-  console.log(`\nStatic files: ${fs.existsSync(distPath) ? 'Found' : 'Not found'}\n`);
-});
+// Only run startup side effects (validation, email init, listen) when this file
+// is executed directly — NOT when it's imported (e.g. by the test suite). This
+// is what makes the app testable: `import { app } from './server.js'` builds the
+// Express app without binding a port or exiting the process.
+const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+function startServer() {
+  logConfigSummary();
+  validateStartup();
+  initializeEmailConfig();
+
+  // F1 backstops. These catch errors that escape the request lifecycle (stray
+  // async rejections, etc.). We log but do NOT exit: a single stray error should
+  // not take the whole storefront down. Registered only when actually serving,
+  // so the test runner's own error handling is left untouched.
+  process.on('unhandledRejection', (reason) => logError('unhandledRejection', reason));
+  process.on('uncaughtException', (err) => logError('uncaughtException', err));
+
+  return app.listen(PORT, () => {
+    console.log(`\nOlira Agro API Server running on http://localhost:${PORT}`);
+    console.log(`Email configuration: ${process.env.SMTP_USER ? 'Environment variables' : 'File-based'}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Admin login: ${adminLoginDisabled ? 'DISABLED (weak/missing ADMIN_PASSWORD)' : 'enabled'}`);
+    console.log(`\nStatic files: ${fs.existsSync(distPath) ? 'Found' : 'Not found'}\n`);
+  });
+}
+
+if (isMainModule) {
+  startServer();
+}
+
+export { app, startServer };
