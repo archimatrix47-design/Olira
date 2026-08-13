@@ -70,7 +70,7 @@ New cleanup items found while working:
   `tmp/restart.txt` on LiteSpeed — script an explicit restart if needed.
 - [x] **F10 · CI.** No workflow. On push run `npm ci`, `npm run build`, tests (F9),
   `npm audit`. Red build blocks deploy.
-- [ ] **F12 · Automated backups.** `~/olira-data` + `~/olira-uploads` are the only
+- [x] **F12 · Automated backups.** `~/olira-data` + `~/olira-uploads` are the only
   copies and are outside git. Daily cron tar to a dated archive, prune old, ideally
   copy off-server.
 - [x] **F13 · Config guardrails.** Fat-finger surface (`DATA-DIR` hyphen, short
