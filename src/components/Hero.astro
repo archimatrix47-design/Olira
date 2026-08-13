@@ -1,6 +1,7 @@
 ---
 // Hero.astro — confident, concrete, B2B-tuned.
 // Keeps trust signals (stats above the fold) but drops decorative ornaments.
+import ContourMotif from './ContourMotif.astro';
 interface Props {
   backgroundImage?: string;
 }
@@ -14,6 +15,14 @@ const { backgroundImage } = Astro.props;
     : 'background: linear-gradient(180deg, #f4f9ed 0%, #ffffff 70%);'}
 >
   {backgroundImage && <div class="absolute inset-0 bg-black/40 z-0" />}
+
+  {/* Signature terroir motif — highland contour lines bleeding off the right,
+      behind the content. The land, made visible. */}
+  {!backgroundImage && (
+    <div class="pointer-events-none absolute top-1/2 right-[-8%] -translate-y-1/2 z-0 hidden lg:block text-primary-300" aria-hidden="true">
+      <ContourMotif size={640} rings={12} opacity={0.55} />
+    </div>
+  )}
 
   <div class="max-w-6xl mx-auto px-6 py-24 w-full relative z-10">
     <div class="animate-hero-fade-in max-w-3xl">
@@ -33,7 +42,7 @@ const { backgroundImage } = Astro.props;
       <!-- Trust signals: numbers count up when scrolled into view. -->
       <div class="grid grid-cols-3 gap-8 max-w-xl pt-10">
         <div class={`pt-4 border-t-2 stat-tile ${backgroundImage ? 'border-white/40' : 'border-primary-600'}`} style="animation-delay: 0.1s;">
-          <div data-counter class={`font-heading text-5xl font-bold ${backgroundImage ? 'text-white' : 'text-primary-900'}`}>16+</div>
+          <div data-counter class={`font-heading text-5xl font-bold ${backgroundImage ? 'text-white' : 'text-primary-900'}`}>18+</div>
           <p class={`text-xs mt-2 uppercase tracking-[0.18em] font-semibold ${backgroundImage ? 'text-primary-50' : 'text-primary-600'}`}>Years</p>
         </div>
         <div class={`pt-4 border-t-2 stat-tile ${backgroundImage ? 'border-white/40' : 'border-primary-600'}`} style="animation-delay: 0.25s;">
