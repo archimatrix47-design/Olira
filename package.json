@@ -11,6 +11,7 @@
     "dev:astro": "astro dev",
     "dev:api": "node server.js --port 3000",
     "build": "astro build && node scripts/convert-to-webp.mjs public",
+    "test": "node --test",
     "preview": "astro preview",
     "check": "astro check",
     "astro": "astro",
