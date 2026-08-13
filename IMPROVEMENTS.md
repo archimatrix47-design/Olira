@@ -67,8 +67,15 @@ The strongest evidence is what already broke during launch:
 
 ## P3 — Security, frontend & accessibility
 
-- [ ] **F15 · Dependency vulns.** `npm audit`: 5 (1 mod, 4 high), mostly build chain.
-  Triage, upgrade what's safe, document accepted risk, add audit to CI.
+- [x] **F15 · Dependency vulns.** Triaged. `npm audit fix` patched multer (2.2.0);
+  sharp upgraded to 0.35.x. CI gates on **critical** prod vulns (`--omit=dev`).
+  Deferred as low practical risk / needs integration testing, tracked here:
+  - **nodemailer** 6→9 (major): advisories are header/envelope injection via
+    fields we never populate from user input (inquiry data goes in the body).
+    Upgrade + test email delivery before bumping.
+  - **express** 4→5, **astro** major: framework majors; upgrade deliberately with
+    full build+test, not as a security auto-fix.
+  - Build-chain (dev) advisories don't ship to the server; report-only in CI.
 - [ ] **F16 · Tighten CSP.** Remove `'unsafe-inline'` from script-src after F17.
 - [ ] **F17 · Extract inline frontend scripts.** 5 inline blocks in `index.astro` +
   `BaseLayout.astro`; move to `src/scripts/`, unit-test the render/diff logic.

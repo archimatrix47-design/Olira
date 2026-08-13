@@ -1,0 +1,42 @@
+name: CI
+
+# Build, test, and audit on every push and PR so breakage is caught here —
+# not on the server mid-deploy, which is exactly where it surfaced during launch.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Exact, reproducible install — the same npm ci the server runs. Fails fast
+      # if package-lock.json is missing or out of sync.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      # Block the build only on CRITICAL vulnerabilities in PRODUCTION deps.
+      # Known high advisories (nodemailer major, astro/express majors) are
+      # triaged in IMPROVEMENTS.md as low practical risk / deferred; the full
+      # report below keeps them visible without blocking every deploy.
+      - name: Audit production dependencies (block on critical)
+        run: npm audit --omit=dev --audit-level=critical
+
+      - name: Audit all dependencies (report only)
+        run: npm audit || true
