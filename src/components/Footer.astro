@@ -5,10 +5,17 @@ import Icon from './Icons.astro';
 import { Image } from 'astro:assets';
 import logo from '../assets/logo.png';
 import SocialLinks from './SocialLinks.astro';
+import ContourMotif from './ContourMotif.astro';
 ---
 
-<footer class="bg-primary-900 text-white pt-20 pb-10">
-  <div class="max-w-6xl mx-auto px-6">
+<footer class="relative overflow-hidden bg-primary-900 text-white pt-20 pb-10">
+  {/* Terroir watermark — the same Burayu contours as the hero, bleeding out of
+      the bottom-left, closing the page where it opened. Very faint on the dark. */}
+  <div class="pointer-events-none absolute -bottom-32 -left-24 z-0 hidden md:block text-primary-700" aria-hidden="true">
+    <ContourMotif size={560} opacity={0.4} />
+  </div>
+
+  <div class="max-w-6xl mx-auto px-6 relative z-10">
     <!-- Brand block -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16 pb-16 border-b border-primary-800">
       <!-- Logo + statement -->
