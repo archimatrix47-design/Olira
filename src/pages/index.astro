@@ -246,6 +246,22 @@ const features = [
       </div>
 
       <style>
+        /* Google Maps embeds ship in loud default colours that fight the calm
+           green palette. Basic embeds can't take a style JSON (that needs a paid
+           API key), so tint them with a CSS filter into a muted, brand-green map.
+           On hover the filter lifts so the map returns to full colour and stays
+           genuinely usable when someone engages with it. */
+        .map-embed {
+          filter: grayscale(1) sepia(0.55) hue-rotate(78deg) saturate(1.1) brightness(1.04) contrast(0.9);
+          transition: filter 0.4s ease;
+        }
+        .map-embed:hover {
+          filter: grayscale(0.15) saturate(0.95);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .map-embed { transition: none; }
+        }
+
         /* Tall scroll track — 4 slides ≈ one viewport each */
         .pinned-fac { position: relative; height: 360vh; margin: 6rem 0; }
         .pinned-fac__sticky {
@@ -448,6 +464,7 @@ const features = [
                 src="https://www.google.com/maps?q=9.010410741253997,38.85021746658821&output=embed"
                 width="100%"
                 height="100%"
+                class="map-embed"
                 style="border:0;"
                 allowFullScreen=""
                 loading="lazy"
@@ -468,6 +485,7 @@ const features = [
                 src="https://www.google.com/maps?q=9.036639722121777,38.63643949629655&output=embed"
                 width="100%"
                 height="100%"
+                class="map-embed"
                 style="border:0;"
                 allowFullScreen=""
                 loading="lazy"
