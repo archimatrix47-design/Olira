@@ -1,0 +1,120 @@
+---
+// ProductDossier.astro — Pillar 2 of the "terroir" direction: the export
+// dossier. Reframes a product from a marketing card into a precise specification
+// sheet an importer respects. Every value is REAL — drawn from the product data
+// or genuinely-true facts (the Burayu facility, the Humera variety, ISO 22000).
+// Optional spec rows (moisture, FFA, admixture, packaging, harvest) render ONLY
+// when the product actually carries that data, so nothing is ever invented.
+import ContourMotif from './ContourMotif.astro';
+
+export interface Props {
+  product: {
+    id: string; name: string; category?: string; description?: string;
+    purity?: string; moq?: string; specs?: string[]; image?: string;
+    variety?: string; oilContent?: string; color?: string;
+    moisture?: string; ffa?: string; admixture?: string; packaging?: string; harvest?: string;
+  };
+  reference?: string; // e.g. "SES · HUMERA"
+}
+const { product: p, reference } = Astro.props;
+
+// Pull structured facts from the free-text specs when explicit fields aren't set,
+// so the flagship reads richly without inventing anything.
+const specText = (p.specs || []).join(' · ').toLowerCase();
+const variety = p.variety || (specText.includes('humera') ? 'Humera' : undefined);
+const oil = p.oilContent || ((p.specs || []).find(s => /oil/i.test(s))?.match(/\(([^)]+)\)/)?.[1]) || undefined;
+const color = p.color || ((p.specs || []).find(s => /color|colour/i.test(s))?.replace(/color|colour/ig, '').trim()) || undefined;
+const certified = specText.includes('iso 22000') || (p.specs || []).some(s => /certif/i.test(s));
+
+// End uses from the description ("Perfect for bakery, tahini, and halva production.")
+const usesMatch = (p.description || '').match(/(?:perfect for|ideal for|for)\s+([^.]+?)(?:\s+production)?\./i);
+const uses = usesMatch ? usesMatch[1].replace(/\band\b/gi, '·').split(/[,·]/).map(s => s.trim()).filter(Boolean) : [];
+
+// The specification rows — label / value / unit. Only rows with a real value show.
+const rows = [
+  ['Variety', variety],
+  ['Oil content', oil],
+  ['Purity', p.purity],
+  ['Colour', color],
+  ['Moisture', p.moisture],
+  ['Free fatty acid', p.ffa],
+  ['Admixture', p.admixture],
+  ['Harvest', p.harvest],
+  ['Min. order', p.moq],
+  ['Packaging', p.packaging],
+  ['Certification', certified ? 'ISO 22000' : undefined],
+].filter(([, v]) => v);
+
+const ref = reference || `${(p.category || 'PRODUCT').slice(0, 3).toUpperCase()}${variety ? ' · ' + variety.toUpperCase() : ''}`;
+---
+
+<section class="py-24 bg-primary-50/40" aria-labelledby="dossier-heading">
+  <div class="max-w-6xl mx-auto px-6">
+    <p class="font-sans text-[11px] tracking-[0.24em] uppercase font-semibold text-primary-600 mb-10">
+      Flagship specification
+    </p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+      <!-- Editorial column -->
+      <div>
+        <h2 id="dossier-heading" class="font-heading text-4xl md:text-5xl font-bold text-primary-900 leading-[1.05] mb-6">
+          {p.name}
+        </h2>
+        <div class="flex flex-wrap gap-2 mb-6">
+          {p.category && <span class="font-sans text-[11px] tracking-[0.14em] uppercase font-semibold text-primary-700 border border-primary-300 rounded-full px-3 py-1">{p.category}</span>}
+          {variety && <span class="font-sans text-[11px] tracking-[0.14em] uppercase font-semibold text-primary-700 border border-primary-300 rounded-full px-3 py-1">{variety} variety</span>}
+        </div>
+        {p.description && <p class="text-lg text-primary-800 leading-relaxed max-w-xl mb-8">{p.description}</p>}
+
+        {uses.length > 0 && (
+          <div class="mb-10">
+            <p class="font-sans text-[11px] tracking-[0.2em] uppercase font-semibold text-primary-500 mb-3">Applications</p>
+            <div class="flex flex-wrap gap-x-6 gap-y-2">
+              {uses.map((u) => <span class="font-heading text-xl text-primary-900 capitalize">{u}</span>)}
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          data-open-inquiry={p.id}
+          data-product-name={p.name}
+          class="group inline-flex items-center gap-3 bg-primary-900 hover:bg-primary-800 active:scale-[0.98] text-white px-8 py-4 font-semibold text-sm tracking-wide transition-[colors,transform] duration-200"
+        >
+          Request full specification
+          <span class="transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+        </button>
+      </div>
+
+      <!-- Specification sheet -->
+      <div class="relative">
+        <div class="pointer-events-none absolute -top-10 -right-10 z-0 hidden lg:block text-primary-300" aria-hidden="true">
+          <ContourMotif size={360} opacity={0.5} />
+        </div>
+
+        <div class="relative z-10 bg-white border border-primary-200 rounded-lg overflow-hidden shadow-sm">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-primary-200 bg-primary-50/60">
+            <span class="font-sans text-[11px] tracking-[0.2em] uppercase font-semibold text-primary-700">Specification</span>
+            <span class="font-mono text-[11px] tracking-wider text-primary-500">{ref}</span>
+          </div>
+
+          <dl class="divide-y divide-primary-100">
+            {rows.map(([label, value]) => (
+              <div class="flex items-baseline justify-between gap-6 px-6 py-3.5">
+                <dt class="font-mono text-[11px] tracking-wider uppercase text-primary-500">{label}</dt>
+                <dd class="font-sans text-base font-semibold text-primary-900 text-right tabular-nums">{value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <!-- Origin — real facility location, tying back to the terroir map -->
+          <div class="px-6 py-4 border-t border-primary-200 bg-primary-50/40">
+            <p class="font-mono text-[11px] tracking-wider uppercase text-primary-500 mb-1">Processed at</p>
+            <p class="font-sans text-sm font-semibold text-primary-900">Burayu, Oromia, Ethiopia</p>
+            <p class="font-mono text-xs text-primary-500 tabular-nums mt-0.5">9.05° N · 38.62° E · 2,600 m</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

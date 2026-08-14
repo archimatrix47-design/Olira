@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import ProductCard from '../components/ProductCard.astro';
+import ProductDossier from '../components/ProductDossier.astro';
 import FeatureCard from '../components/FeatureCard.astro';
 import Modal from '../components/Modal.astro';
 import ContactForm from '../components/ContactForm.astro';
@@ -99,6 +100,10 @@ const features = [
       <script type="application/json" id="products-initial" is:inline set:html={JSON.stringify(products).replace(/</g, '\\u003c')}></script>
     </div>
   </section>
+
+  {/* Pillar 2 — export dossier: a closer, spec-sheet look at the flagship product.
+      Uses only real data; extra spec rows appear as the admin adds them. */}
+  {products[0] && <ProductDossier product={products[0]} />}
 
   <!-- About Section -->
   <section id="about" class="py-20 lg:py-24 bg-white">
