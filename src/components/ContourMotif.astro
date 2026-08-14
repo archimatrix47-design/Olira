@@ -40,3 +40,20 @@ const VB = contours.size; // 1000
     />
   ))}
 </svg>
+
+<style>
+  /* Contour lines run to the edge of the sampled terrain. Rather than let them
+     hard-stop where that edge falls in view, fade a band around all four edges
+     so lines dissolve softly — reading as terrain continuing beyond the frame,
+     not a line cut off. Two crossed gradients give an even border fade. */
+  .contour-motif {
+    -webkit-mask-image:
+      linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 15%, #000 85%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 15%, #000 85%, transparent 100%);
+    mask-composite: intersect;
+  }
+</style>
