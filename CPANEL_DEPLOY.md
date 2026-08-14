@@ -233,3 +233,18 @@ Precedence: `auth.json` override → else the `ADMIN_PASSWORD` env var. The env 
 remains the fallback for a fresh deploy.
 
 The admin-login flood guard is now `ADMIN_LOGIN_RATE_PER_MIN` (default 10).
+
+---
+
+## Reliably restarting the app (this host)
+
+The cPanel Restart button, Stop/Start, cloudlinux-selector, and tmp/restart.txt
+do NOT reliably cycle the process on this host — a worker once ran 20+ days
+ignoring every restart, which caused an outage and a password that never updated.
+The process serving requests is a LiteSpeed worker named lsnode:/home/oliraagr/olira/
+(not server.js). To force a real restart after any deploy or env-var change:
+
+
+
+Then load the site once to trigger a fresh spawn, and check /api/health. The
+Deploy HEAD Commit flow runs this automatically now.
