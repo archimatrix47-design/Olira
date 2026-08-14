@@ -19,6 +19,7 @@ process.env.DATA_DIR = tmp;
 process.env.UPLOADS_DIR = path.join(tmp, 'uploads');
 process.env.JWT_SECRET = 'test_secret_that_is_at_least_32_chars_long';
 process.env.ADMIN_PASSWORD = 'test_admin_password_123';
+process.env.ADMIN_LOGIN_RATE_PER_MIN = '1000'; // headroom: the suite makes many logins
 delete process.env.CORS_ORIGINS;
 
 const { app } = await import('../server.js');
@@ -123,6 +124,31 @@ test('GET /api/analytics accepts a valid token', async () => {
   assert.equal(r.status, 200);
   const b = await r.json();
   assert.ok(b.totals && typeof b.totals.views === 'number');
+});
+
+// ---- Restart-free admin credentials ----
+test('admin can change the password from the panel, effective immediately (no restart)', async () => {
+  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
+  const chg = await post('/api/admin/change-password', { newPassword: 'panel_new_password_1' }, { Authorization: `Bearer ${token}` });
+  assert.equal(chg.status, 200);
+  // old password now rejected, new one works — with no process restart
+  assert.equal((await post('/api/admin/login', { password: 'test_admin_password_123' })).status, 401);
+  assert.equal((await post('/api/admin/login', { password: 'panel_new_password_1' })).status, 200);
+});
+
+test('change-password rejects a too-short password', async () => {
+  const { token } = await (await post('/api/admin/login', { password: 'panel_new_password_1' })).json();
+  const r = await post('/api/admin/change-password', { newPassword: 'short' }, { Authorization: `Bearer ${token}` });
+  assert.equal(r.status, 400);
+});
+
+test('REGRESSION: reset file recovers admin login without a restart', async () => {
+  // The real outage: password unknown / locked out, and restarts don't work on
+  // the host. Dropping DATA_DIR/admin-reset.txt must recover login live.
+  fs.writeFileSync(path.join(tmp, 'admin-reset.txt'), 'file_recovered_pw_9');
+  const r = await post('/api/admin/login', { password: 'file_recovered_pw_9' });
+  assert.equal(r.status, 200);
+  assert.equal(fs.existsSync(path.join(tmp, 'admin-reset.txt')), false); // consumed after use
 });
 
 // ---- Lockout (runs last: it trips the per-IP counter) ----

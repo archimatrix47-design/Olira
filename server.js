@@ -183,7 +183,11 @@ app.use(express.json({ limit: '10mb' }));
 
 // Stronger rate limiting for admin login (3 requests per minute per IP), on its
 // own bucket so it can't be consumed by other endpoints.
-const adminRateLimit = makeRateLimiter(3, 'admin-login');
+// Coarse flood guard on the login endpoint. The progressive lockout (3 FAILED
+// attempts) is the real brute-force defense; this just caps request rate. The
+// old value of 3/min was so tight that a few legitimate typos locked you out —
+// tunable now, default 10/min.
+const adminRateLimit = makeRateLimiter(Number(process.env.ADMIN_LOGIN_RATE_PER_MIN) || 10, 'admin-login');
 
 // Rate limiting on API endpoints
 app.use('/api/admin/login', adminRateLimit);
@@ -375,6 +379,69 @@ function safeCompare(a, b) {
   return crypto.timingSafeEqual(ab, bb);
 }
 
+// ------------------------------------------------------------------
+// Restart-free admin credentials.
+// This host's process manager does not reliably restart the app, so changing
+// ADMIN_PASSWORD via env var can silently never take effect — that caused a long
+// lockout/outage. These make the admin password changeable AND recoverable
+// WITHOUT a restart, by reading from DATA_DIR (always writable, re-read live):
+//   • DATA_DIR/auth.json       {passwordSha256} — overrides the env var, written
+//                              by the in-panel "change password" endpoint.
+//   • DATA_DIR/admin-reset.txt — drop a plaintext new password here (via cPanel
+//                              File Manager, no restart). It's adopted into
+//                              auth.json on the next login, the plaintext file is
+//                              deleted, lockouts cleared, and login re-enabled.
+// The env ADMIN_PASSWORD stays the fallback when no override file exists.
+// ------------------------------------------------------------------
+const authPath = path.join(dataDir, 'auth.json');
+const resetPath = path.join(dataDir, 'admin-reset.txt');
+
+function hashPassword(pw) {
+  return crypto.createHash('sha256').update(`${pw}|${JWT_SECRET}`).digest('hex');
+}
+
+function readAuthOverride() {
+  try {
+    if (fs.existsSync(authPath)) {
+      const a = JSON.parse(fs.readFileSync(authPath, 'utf8'));
+      if (a && typeof a.passwordSha256 === 'string' && a.passwordSha256.length === 64) return a.passwordSha256;
+    }
+  } catch (e) { logError('auth_json_read_failed', e); }
+  return null;
+}
+
+// Restart-free recovery: if someone dropped DATA_DIR/admin-reset.txt, adopt it.
+function adoptResetIfPresent() {
+  try {
+    if (!fs.existsSync(resetPath)) return;
+    const pw = fs.readFileSync(resetPath, 'utf8').trim();
+    if (pw.length >= 12) {
+      writeJsonFile(authPath, { passwordSha256: hashPassword(pw), updatedAt: new Date().toISOString(), source: 'admin-reset.txt' });
+      adminLoginDisabled = false;
+      failedAttempts.clear();
+      logError('admin_reset_adopted', 'admin-reset.txt adopted; login re-enabled, lockouts cleared', {});
+    } else {
+      logError('admin_reset_rejected', 'admin-reset.txt ignored (needs >= 12 chars)', {});
+    }
+    try { fs.unlinkSync(resetPath); } catch {}
+  } catch (e) { logError('admin_reset_failed', e); }
+}
+
+// Timing-safe check of a submitted password against the active credential
+// (auth.json override if present, else the env ADMIN_PASSWORD).
+function checkAdminPassword(submitted) {
+  const active = readAuthOverride() || (process.env.ADMIN_PASSWORD ? hashPassword(process.env.ADMIN_PASSWORD) : null);
+  if (!active) return false;
+  return safeCompare(hashPassword(submitted), active);
+}
+
+// Whether any usable admin credential exists (drives adminLoginDisabled).
+function hasUsableAdminCredential() {
+  if (readAuthOverride()) return true;
+  const pw = process.env.ADMIN_PASSWORD;
+  return !!pw && pw !== 'change_me_in_production' && pw.length >= 12;
+}
+
 // Progressive lockout. Returns null if allowed, or { lockedUntil } if locked.
 function checkLockout(ip) {
   const rec = failedAttempts.get(ip);
@@ -489,6 +556,11 @@ function verifyToken(token, ip) {
 app.post('/api/admin/login', (req, res) => {
   const ip = clientIp(req);
 
+  // Restart-free recovery: adopt DATA_DIR/admin-reset.txt if present. This runs
+  // BEFORE the disabled check so dropping a reset file re-enables login without a
+  // process restart (which this host can't reliably do).
+  adoptResetIfPresent();
+
   // F3: admin login disabled due to weak/missing secrets — fail here, not at boot.
   if (adminLoginDisabled) {
     audit('login_disabled', req);
@@ -516,7 +588,7 @@ app.post('/api/admin/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
-  const ok = safeCompare(password, ADMIN_PASSWORD);
+  const ok = checkAdminPassword(password);
   if (!ok) {
     const rec = recordFailedAttempt(ip);
     audit('login_failed', req, { attempts: rec.count });
@@ -573,6 +645,25 @@ app.get('/api/admin/verify', (req, res) => {
   const result = verifyTokenDetailed(token, ip);
   if (!result.valid) return res.status(401).json({ valid: false });
   res.json({ valid: true });
+});
+
+// Change the admin password from the panel — takes effect IMMEDIATELY, no
+// restart. Writes a hashed override to DATA_DIR/auth.json, so it survives and
+// supersedes the env var. This is the routine, restart-free way to rotate the
+// password (the env var / reset file are for recovery).
+app.post('/api/admin/change-password', adminAuth, (req, res) => {
+  const { newPassword } = req.body || {};
+  if (typeof newPassword !== 'string' || newPassword.length < 12 || newPassword.length > 256) {
+    return res.status(400).json({ error: 'New password must be 12–256 characters.' });
+  }
+  const ok = writeJsonFile(authPath, {
+    passwordSha256: hashPassword(newPassword),
+    updatedAt: new Date().toISOString(),
+    source: 'panel'
+  });
+  if (!ok) return res.status(500).json({ error: 'Failed to save the new password.' });
+  audit('admin_password_changed', req);
+  res.json({ success: true, message: 'Password updated. Use it on your next login.' });
 });
 
 // Get email configuration (admin only)
@@ -1577,16 +1668,22 @@ function validateStartup() {
     else if (!fs.existsSync(path.join(distPath, 'index.html'))) warnings.push('dist/index.html not found — build is incomplete.');
   }
 
+  // Adopt a dropped reset file at boot too (restart-free recovery also works the
+  // moment the app does start).
+  adoptResetIfPresent();
+
   // Admin secrets — weakness disables admin login, never kills the site.
   const jwtDefault = !process.env.JWT_SECRET || process.env.JWT_SECRET === 'default_secret_change_in_production';
   const jwtWeak = process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32;
   if (jwtDefault) adminIssues.push('JWT_SECRET is missing or default');
   else if (jwtWeak) adminIssues.push('JWT_SECRET is shorter than 32 chars');
 
-  const pwDefault = !process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'change_me_in_production';
-  const pwWeak = process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.length < 12;
-  if (pwDefault) adminIssues.push('ADMIN_PASSWORD is missing or default');
-  else if (pwWeak) adminIssues.push('ADMIN_PASSWORD is shorter than 12 chars');
+  // A DATA_DIR/auth.json override (set via the panel or a reset file) is a valid
+  // 12+ char credential and keeps login enabled even if the env var is weak.
+  if (!hasUsableAdminCredential()) {
+    const pwDefault = !process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'change_me_in_production';
+    adminIssues.push(pwDefault ? 'no usable admin credential (ADMIN_PASSWORD missing/default and no auth.json)' : 'ADMIN_PASSWORD is shorter than 12 chars and no auth.json override');
+  }
 
   // In production, unsafe admin secrets lock the admin door. In dev they're only
   // a warning (localhost convenience).
