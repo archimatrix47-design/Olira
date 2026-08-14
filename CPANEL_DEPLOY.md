@@ -208,3 +208,28 @@ are not in git, so nothing else holds a copy.
 | App will not start | Missing `JWT_SECRET` / `ADMIN_PASSWORD`, or startup file is not `server.js` |
 | Admin edits reverted after deploy | `DATA_DIR` is pointing inside the repo |
 | 503 / "Application error" | App crashed on boot — read the app log, usually a missing env var |
+
+---
+
+## Restart-free admin password recovery
+
+This host's LiteSpeed/CloudLinux setup does not reliably restart the Node app, so
+changing `ADMIN_PASSWORD` via the env var can silently never take effect (this
+caused a long lockout). The app now supports changing/recovering the admin
+password **without any restart**, by reading from `DATA_DIR` live:
+
+**Routine change (logged in):** `POST /api/admin/change-password` with
+`{ "newPassword": "…" }` and your admin token. Writes `DATA_DIR/auth.json` (a
+hash); effective on the next login. (A form for this can be added to the admin panel.)
+
+**Recovery (locked out or password unknown):**
+1. cPanel → **File Manager** → go to your `DATA_DIR` (`/home/oliraagr/olira-data`).
+2. Create a file named **`admin-reset.txt`** containing only the new password
+   (12+ characters), no quotes, no trailing spaces.
+3. Go to `/admin` and log in with that new password. The app adopts it, deletes
+   `admin-reset.txt`, clears any lockout, and re-enables login — **no restart**.
+
+Precedence: `auth.json` override → else the `ADMIN_PASSWORD` env var. The env var
+remains the fallback for a fresh deploy.
+
+The admin-login flood guard is now `ADMIN_LOGIN_RATE_PER_MIN` (default 10).
