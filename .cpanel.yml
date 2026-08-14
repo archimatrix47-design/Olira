@@ -30,6 +30,7 @@ deployment:
     # Astro writes the static site to dist/, which server.js serves.
     - source $ACTIVATE && cd $APP && npm run build
 
-    # Passenger restarts the app when this file's mtime changes.
-    - /bin/mkdir -p $APP/tmp
-    - /bin/touch $APP/tmp/restart.txt
+    # Reliable restart. touch tmp/restart.txt alone does NOT cycle the process on
+    # this host (a worker once ran 20+ days ignoring every restart). The script
+    # kills the LiteSpeed lsnode worker so a fresh one spawns with the new code.
+    - /bin/sh $APP/scripts/restart-app.sh $APP
