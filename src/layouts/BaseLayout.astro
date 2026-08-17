@@ -479,6 +479,42 @@ const {
   @media (prefers-reduced-motion: reduce) {
     .scroll-trigger { opacity: 1 !important; transform: none !important; transition: none !important; }
   }
+
+  /* Signature styles referenced across the homepage + Hero that were never
+     defined — so eyebrows rendered as plain 16px black text, heading rules and
+     the section gradient didn't ship at all. Restoring the intended design. */
+  .section-label {
+    display: inline-block;
+    font-family: 'Sora', system-ui, sans-serif;
+    font-size: 0.75rem;        /* 12px kicker */
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #39572f;            /* primary-600 */
+  }
+
+  /* Short terroir "rule" above a heading — a small green bar, echoing the
+     contour lines. Centered variant for centered sections. */
+  .heading-with-rule::before {
+    content: "";
+    display: block;
+    width: 44px;
+    height: 3px;
+    border-radius: 2px;
+    margin: 0 0 1.5rem 0;
+    background: linear-gradient(90deg, #39572f, #76944c); /* primary-600 → 400 */
+  }
+  .heading-with-rule.center-rule::before,
+  .center-rule::before {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Light section ground — a faint green wash so consecutive white sections
+     don't run together. */
+  .section-gradient-light {
+    background: linear-gradient(180deg, #f4f9ed 0%, #ffffff 55%);
+  }
 </style>
 
 <script is:inline>
