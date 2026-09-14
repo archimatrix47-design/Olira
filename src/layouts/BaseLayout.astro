@@ -1,7 +1,7 @@
 ---
-// BaseLayout.astro - Modern layout with SEO
-import Navigation from '../components/Navigation.astro';
-import Footer from '../components/Footer.astro';
+// BaseLayout.astro - layout for the admin pages (Tailwind). The public pages
+// use SiteLayout.astro.
+import '../styles/tailwind.css';
 
 interface Props {
   title: string;
@@ -225,11 +225,15 @@ const {
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-primary-900 focus:text-white focus:px-4 focus:py-2 focus:font-semibold focus:rounded">
       Skip to main content
     </a>
-    <Navigation />
+    <header class="border-b border-line bg-surface">
+      <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <a href="/" aria-label="Olira Agro Industry, home"><img id="header-logo" src="/logo.png" alt="Olira" width="80" height="38" class="h-10 w-auto" /></a>
+        <a href="/" class="text-sm font-semibold text-primary-700 hover:text-primary-900">View website</a>
+      </div>
+    </header>
     <main id="main" tabindex="-1">
       <slot />
     </main>
-    <Footer />
 
     <!-- Floating back-to-top button: appears once user scrolls past viewport height. -->
     <button

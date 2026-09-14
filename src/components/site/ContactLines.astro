@@ -1,0 +1,12 @@
+---
+import { contact } from '../../lib/site-data';
+interface Props { officePhone?: boolean }
+const { officePhone = false } = Astro.props;
+---
+<address class="lines">
+  <a href={contact.phoneHref} data-contact="phone"><span>Phone</span><span class="nums">{contact.phone}</span></a>
+  <a href={contact.whatsappHref} target="_blank" rel="noopener" data-contact="whatsapp"><span>WhatsApp</span><span class="nums">{contact.phone}</span></a>
+  {officePhone && contact.officePhone && <a href={contact.officePhoneHref} data-contact="office-phone"><span>Office</span><span class="nums">{contact.officePhone}</span></a>}
+  <a href={`mailto:${contact.email}`} data-contact="email"><span>Email</span><span>{contact.email}</span></a>
+  <div data-contact="address"><span>Address</span><span>{contact.addressLines[0]}<br>{contact.addressLines[1]}</span></div>
+</address>

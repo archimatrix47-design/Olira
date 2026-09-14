@@ -1,83 +1,22 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteLayout from '../layouts/SiteLayout.astro';
+import SiteNav from '../components/site/SiteNav.astro';
+import SiteFooter from '../components/site/SiteFooter.astro';
 ---
-
-<BaseLayout title="Page Not Found - Olira Agro Industry" description="The page you're looking for could not be found.">
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-white">
-    <div class="text-center px-6 max-w-2xl mx-auto">
-      <!-- Error Code -->
-      <div class="text-8xl font-bold text-ink mb-4">404</div>
-
-      <!-- Error Message -->
-      <h1 class="font-heading text-4xl font-bold text-ink mb-4">Page Not Found</h1>
-      <p class="text-lg text-ink mb-8">
-        Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.
-      </p>
-
-      <!-- Navigation Links -->
-      <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-        <a
-          href="/"
-          class="inline-block bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 font-bold rounded transition transform hover:scale-105"
-        >
-          Go Home
-        </a>
-        <a
-          href="/#products"
-          class="inline-block border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white px-8 py-3 font-bold rounded transition"
-        >
-          View Products
-        </a>
-        <a
-          href="/#contact"
-          class="inline-block border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white px-8 py-3 font-bold rounded transition"
-        >
-          Contact Us
-        </a>
+<SiteLayout title="Page not found, Olira Agro Industry" description="The page you are looking for could not be found." noindex>
+  <SiteNav links={[{ href: '/agriculture/', label: 'Agriculture' }, { href: '/packaging/', label: 'Packaging' }]} cta={{ href: '/agriculture/#contact', label: 'Talk to sales' }} />
+  <main id="main">
+    <section class="container page-hero" style="min-height: 56svh">
+      <span class="line-label">404</span>
+      <h1>We could not find that page</h1>
+      <p class="lede">The link may be old, or the page has moved. Choose where you want to go.</p>
+      <div class="row" style="--gap:10px;margin-top:28px;flex-wrap:wrap">
+        <a class="btn btn-lg btn-primary" href="/agriculture/">Agricultural exports</a>
+        <a class="btn btn-lg btn-secondary" href="/packaging/">Kraft paper bags</a>
+        <a class="btn btn-lg btn-secondary" href="/">Home</a>
       </div>
-
-      <!-- Helpful Information -->
-      <div class="bg-surface-2 border-l-4 border-primary-600 p-6 text-left rounded">
-        <h2 class="font-bold text-ink mb-2">What can you do?</h2>
-        <ul class="text-ink space-y-2 text-sm">
-          <li>✓ Check if the URL is correct</li>
-          <li>✓ Return to the home page and navigate using the menu</li>
-          <li>✓ Use the search function if available</li>
-          <li>✓ Contact us if you believe this is an error</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</BaseLayout>
-
-<style>
-  @media (prefers-reduced-motion: no-preference) {
-    h1 {
-      animation: slideUp 0.8s ease-out;
-    }
-
-    .bg-surface-2 {
-      animation: fadeIn 0.8s ease-out 0.2s backwards;
-    }
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-</style>
+    </section>
+  </main>
+  <SiteFooter note="Olira Agro Industry, Addis Ababa." />
+  <script>import '../scripts/common.js';</script>
+</SiteLayout>

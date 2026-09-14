@@ -1,0 +1,75 @@
+---
+// Enquiry form. Without JavaScript it falls back to the visitor's mail app.
+// With JavaScript (src/scripts/common.js) it validates field by field, posts to
+// /api/inquiry, and if sending fails keeps the text and offers WhatsApp, email
+// and phone with the message already written.
+import { contact } from '../../lib/site-data';
+
+interface Props {
+  prefix: string;            // unique id prefix for this page's fields
+  line: string;              // product line recorded with the lead
+  labelledBy: string;
+  extra: 'port' | 'qty';
+  messagePlaceholder: string;
+  messageRequired: string;
+  submitLabel: string;
+  noun: string;              // "enquiry" or "request"
+  team: string;              // "export team" or "packaging team"
+}
+const { prefix: p, line, labelledBy, extra, messagePlaceholder, messageRequired, submitLabel, noun, team } = Astro.props;
+---
+<form class="sheet form" id="inquiry" action={`mailto:${contact.email}`} method="post" enctype="text/plain" data-endpoint="/api/inquiry" data-line={line} aria-labelledby={labelledBy}>
+  <p class="note" style="margin:0">Fields marked <span class="req" aria-hidden="true">*</span><span class="sr-only">with an asterisk</span> are required.</p>
+  <div class="two">
+    <div class="field">
+      <label for={`${p}-name`}>Name <span class="req" aria-hidden="true">*</span></label>
+      <input id={`${p}-name`} name="name" required maxlength="100" autocomplete="name" aria-describedby={`${p}-name-error`} data-msg-required="Enter your name.">
+      <p class="field-error" id={`${p}-name-error`} hidden></p>
+    </div>
+    <div class="field">
+      <label for={`${p}-company`}>Company</label>
+      <input id={`${p}-company`} name="company" maxlength="100" autocomplete="organization">
+    </div>
+  </div>
+  <div class="two">
+    <div class="field">
+      <label for={`${p}-email`}>Email <span class="req" aria-hidden="true">*</span></label>
+      <input id={`${p}-email`} name="email" type="email" required maxlength="200" autocomplete="email" inputmode="email" aria-describedby={`${p}-email-error`} data-msg-required="Enter your email so we can reply.">
+      <p class="field-error" id={`${p}-email-error`} hidden></p>
+    </div>
+    <div class="field">
+      <label for={`${p}-phone`}>Phone or WhatsApp</label>
+      <input id={`${p}-phone`} name="phone" type="tel" maxlength="20" autocomplete="tel" placeholder={extra === 'qty' ? '+251 91 123 4567' : '+971 50 123 4567'} aria-describedby={`${p}-phone-error`}>
+      <p class="field-error" id={`${p}-phone-error`} hidden></p>
+    </div>
+  </div>
+  {extra === 'port' ? (
+    <div class="field">
+      <label for={`${p}-port`}>Destination port</label>
+      <input id={`${p}-port`} name="port" maxlength="80" placeholder="For example Rotterdam" autocomplete="off">
+    </div>
+  ) : (
+    <div class="field">
+      <label for={`${p}-qty`}>Quantity in bags</label>
+      <input id={`${p}-qty`} name="qty" maxlength="40" inputmode="numeric" autocomplete="off" placeholder="For example 20000" aria-describedby={`${p}-qty-hint`}>
+      <p class="note" id={`${p}-qty-hint`} style="margin:0;font-weight:400">An estimate is fine.</p>
+    </div>
+  )}
+  <div class="field">
+    <label for="message">Message <span class="req" aria-hidden="true">*</span></label>
+    <textarea id="message" name="message" required maxlength="1800" placeholder={messagePlaceholder} aria-describedby="message-error" data-msg-required={messageRequired}></textarea>
+    <p class="field-error" id="message-error" hidden></p>
+  </div>
+  <div class="hp" aria-hidden="true"><label for={`${p}-website`}>Website</label><input id={`${p}-website`} name="website" tabindex="-1" autocomplete="off"></div>
+  <button class="btn btn-lg btn-primary" type="submit">{submitLabel}</button>
+  <p class="form-status" role="status" aria-live="polite"></p>
+  <div class="form-fail" hidden>
+    <strong>Your {noun} was not sent</strong>
+    Reach the {team} directly and your message comes with you.
+    <div class="row">
+      <a class="btn btn-secondary" data-fail="wa" href={contact.whatsappHref} target="_blank" rel="noopener">Send on WhatsApp</a>
+      <a class="btn btn-secondary" data-fail="mail" href={`mailto:${contact.email}`}>Send by email</a>
+      <a class="btn btn-secondary" data-fail="tel" href={contact.phoneHref}>Call <span data-contact-text="phone">{contact.phone}</span></a>
+    </div>
+  </div>
+</form>

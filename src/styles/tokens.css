@@ -1,0 +1,183 @@
+/* ambient-ui — token layer
+   Light values live on bare :root. Dark values are redefined twice:
+   once under prefers-color-scheme (guarded so an explicit light choice wins)
+   and once under [data-theme="dark"] (so an explicit dark choice wins).
+   Never give a color its only definition inside a media query. */
+
+:root {
+  color-scheme: light dark;
+
+  /* ---- Warm ink scale (measured: manus.im) ---- */
+  --canvas:      #F8F8F7;
+  --surface:     #FFFFFF;
+  --surface-2:   #F2F2F0;
+  --ink:         #34322D;
+  --ink-2:       #5E5E5B;
+  --ink-3:       #858481;
+  --ink-invert:  #FFFFFF;
+
+  --fill-1: rgba(55, 53, 47, .04);
+  --fill-2: rgba(55, 53, 47, .08);
+  --fill-3: rgba(55, 53, 47, .12);
+
+  --line:        rgba(0, 0, 0, .06);
+  --line-strong: rgba(0, 0, 0, .12);
+
+  /* ---- Structural neutral ramp (measured: ui.watermelon.sh, oklch → hex) ---- */
+  --neutral-50:  #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-400: #a1a1a1;
+  --neutral-500: #737373;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-850: #171717;
+  --neutral-900: #0a0a0a;
+
+  /* ---- Accent. Change --accent-h to rehue the whole system. ---- */
+  --accent-h: 130.85;
+  --accent-subtle: oklch(96%   0.03 var(--accent-h));
+  --accent-muted:  oklch(88%   0.09 var(--accent-h));
+  --accent:        oklch(76.8% 0.19 var(--accent-h));
+  --accent-hover:  oklch(71%   0.20 var(--accent-h));
+  --accent-ink:    oklch(28%   0.09 var(--accent-h));
+  --on-accent:     #1b2e00;              /* text on --accent; flip to #fff below L70 */
+
+  --danger:  #ff6467;
+  --warning: #ff9500;
+  --success: #3fae5a;
+
+  /* ---- Sequential data ramp (measured: ui.watermelon.sh) ---- */
+  --chart-1: #ffb86a;
+  --chart-2: #ff6900;
+  --chart-3: #f54900;
+  --chart-4: #ca3500;
+  --chart-5: #9f2d00;
+
+  /* ---- Type ---- */
+  --font-display: "Libre Baskerville", "Instrument Serif", Newsreader, Georgia,
+                  Cambria, ui-serif, "Times New Roman", Times, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display",
+               "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+               "Liberation Mono", "Courier New", monospace;
+
+  --t-display: clamp(2.25rem, 1.4rem + 3.6vw, 3.5rem);
+  --t-h1: clamp(1.75rem, 1.35rem + 1.7vw, 2.25rem);
+  --t-h2: clamp(1.5rem, 1.3rem + .85vw, 1.75rem);
+  --t-h3: 1.25rem;
+  --t-body: 1rem;
+  --t-small: .875rem;
+  --t-caption: .75rem;
+
+  --lh-display: 1.08;
+  --lh-h1: 1.2;
+  --lh-h2: 1.25;
+  --lh-h3: 1.35;
+  --lh-body: 1.5;
+
+  --tr-display: -.02em;
+  --tr-h1: -.0125em;
+  --tr-h2: -.01em;
+  --tr-h3: -.005em;
+
+  /* ---- Space (measured base: manus.im) ---- */
+  --s-1: 2px;   --s-2: 4px;   --s-3: 6px;   --s-4: 8px;   --s-5: 12px;
+  --s-6: 16px;  --s-7: 20px;  --s-8: 24px;  --s-9: 32px;  --s-10: 40px;
+  --s-11: 56px; --s-12: 72px; --s-13: 96px; --s-14: 128px;
+
+  --container: 1200px;
+  --measure: 68ch;
+  --gutter: var(--s-8);
+
+  /* ---- Radius ---- */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 22px; --r-full: 9999px;
+
+  /* ---- Control heights ---- */
+  --h-sm: 28px; --h-md: 36px; --h-lg: 44px;
+
+  /* ---- Elevation (measured: manus.im) ---- */
+  --e-0: none;
+  --e-1: 0 0 0 1px rgba(0,0,0,.06),
+         0 1px 2px -1px rgba(0,0,0,.04);
+  --e-2: 0 0 0 1px rgba(0,0,0,.06),
+         0 3px 3px -1.5px rgba(0,0,0,.06),
+         0 10px 20px 1px rgba(0,0,0,.04),
+         0 24px 24px -12px rgba(0,0,0,.04);
+  --e-3: 0 0 0 1px rgba(0,0,0,.06),
+         0 12px 32px 0 rgba(0,0,0,.02),
+         0 24px 48px -12px rgba(0,0,0,.08);
+  --e-4: 0 0 0 1px rgba(0,0,0,.08),
+         0 32px 64px -16px rgba(0,0,0,.16);
+
+  /* ---- Motion (measured: manus.im) ---- */
+  --dur-micro: 150ms;
+  --dur-ui: 300ms;
+  --dur-slow: 500ms;
+  --ease-standard: cubic-bezier(.4, 0, .2, 1);
+  --ease-out: cubic-bezier(0, 0, .2, 1);
+  --ease-in: cubic-bezier(.4, 0, 1, 1);
+
+  --z-base: 0; --z-sticky: 100; --z-overlay: 200; --z-modal: 300; --z-toast: 400;
+}
+
+/* ---- Dark: system preference, unless an explicit light choice is set ---- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas:    #1A1A19;
+    --surface:   #232320;
+    --surface-2: #2C2C28;
+    --ink:       #EDECE8;
+    --ink-2:     #A8A7A2;
+    --ink-3:     #7C7B77;
+    --ink-invert:#1A1A19;
+
+    --fill-1: rgba(255,255,255,.05);
+    --fill-2: rgba(255,255,255,.09);
+    --fill-3: rgba(255,255,255,.14);
+
+    --line:        rgba(255,255,255,.09);
+    --line-strong: rgba(255,255,255,.16);
+
+    --accent-subtle: oklch(24% 0.05 var(--accent-h));
+    --accent-muted:  oklch(38% 0.10 var(--accent-h));
+    --accent-ink:    oklch(88% 0.10 var(--accent-h));
+
+    /* Dark elevation is carried by surface lightness; shadows only deepen the ring. */
+    --e-1: 0 0 0 1px rgba(255,255,255,.09);
+    --e-2: 0 0 0 1px rgba(255,255,255,.09), 0 8px 24px -8px rgba(0,0,0,.6);
+    --e-3: 0 0 0 1px rgba(255,255,255,.11), 0 16px 40px -12px rgba(0,0,0,.7);
+    --e-4: 0 0 0 1px rgba(255,255,255,.13), 0 32px 64px -16px rgba(0,0,0,.8);
+  }
+}
+
+/* ---- Dark: explicit choice, wins in both directions ---- */
+:root[data-theme="dark"] {
+  --canvas:    #1A1A19;
+  --surface:   #232320;
+  --surface-2: #2C2C28;
+  --ink:       #EDECE8;
+  --ink-2:     #A8A7A2;
+  --ink-3:     #7C7B77;
+  --ink-invert:#1A1A19;
+
+  --fill-1: rgba(255,255,255,.05);
+  --fill-2: rgba(255,255,255,.09);
+  --fill-3: rgba(255,255,255,.14);
+
+  --line:        rgba(255,255,255,.09);
+  --line-strong: rgba(255,255,255,.16);
+
+  --accent-subtle: oklch(24% 0.05 var(--accent-h));
+  --accent-muted:  oklch(38% 0.10 var(--accent-h));
+  --accent-ink:    oklch(88% 0.10 var(--accent-h));
+
+  --e-1: 0 0 0 1px rgba(255,255,255,.09);
+  --e-2: 0 0 0 1px rgba(255,255,255,.09), 0 8px 24px -8px rgba(0,0,0,.6);
+  --e-3: 0 0 0 1px rgba(255,255,255,.11), 0 16px 40px -12px rgba(0,0,0,.7);
+  --e-4: 0 0 0 1px rgba(255,255,255,.13), 0 32px 64px -16px rgba(0,0,0,.8);
+}
+
+@media (max-width: 767px) {
+  :root { --gutter: var(--s-6); }
+}
