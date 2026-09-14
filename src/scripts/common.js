@@ -55,6 +55,17 @@ if (svgs.length) {
    the admin changed since, so no rebuild is needed. */
 const SALES = { phone: '', email: '', whatsapp: '' };
 const digits = (s) => String(s).replace(/[^\d+]/g, '');
+// same rules as src/lib/site-data.ts, which renders the first version at build time
+function whatsappLabel(url, mainPhone) {
+  if (!url) return mainPhone;
+  const m = url.match(/wa\.me\/(\d{8,15})/);
+  if (!m) return 'Chat on WhatsApp';
+  return digits(mainPhone).replace('+', '') === m[1] ? mainPhone : `+${m[1]}`;
+}
+function telegramLabel(url) {
+  const m = url.match(/(?:t|telegram)\.me\/([A-Za-z0-9_]{4,})/);
+  return m ? `@${m[1]}` : 'Open Telegram';
+}
 function readSalesFromPage() {
   SALES.phone = digits($('[data-contact="phone"]')?.getAttribute('href')?.slice(4) || '+251911223619');
   SALES.email = ($('[data-contact="email"]')?.getAttribute('href') || 'mailto:info@oliraagroindustry.com').slice(7);
@@ -86,10 +97,17 @@ Promise.all([getJSON('/api/contact-details'), getJSON('/api/social-links')]).the
     }
     if (d.office) $$('[data-contact="office-short"]').forEach((n) => { n.textContent = [d.office.name, d.office.city].filter(Boolean).join(', '); });
   }
+  const mainPhone = d?.phones?.[0] || $('[data-contact="phone"] span:last-child')?.textContent || '';
   const wa = social?.whatsapp || (d?.phones?.[0] ? `https://wa.me/${digits(d.phones[0]).replace('+', '')}` : null);
-  if (wa) setLink('[data-contact="whatsapp"]', wa, d?.phones?.[0] || null);
+  // the label names the number the link opens, not always the main phone
+  if (wa) setLink('[data-contact="whatsapp"]', wa, whatsappLabel(social?.whatsapp || '', mainPhone));
   if (social) {
-    const labels = { facebook: 'Facebook', linkedin: 'LinkedIn', x: 'X', youtube: 'YouTube', telegram: 'Telegram' };
+    const tg = /^https:\/\/\S+$/.test(social.telegram || '') ? social.telegram : '';
+    for (const a of $$('[data-contact="telegram"]')) {
+      a.hidden = !tg;
+      if (tg) { a.href = tg; a.querySelector('span:last-child').textContent = telegramLabel(tg); }
+    }
+    const labels = { facebook: 'Facebook', linkedin: 'LinkedIn', x: 'X', youtube: 'YouTube' };
     const links = Object.entries(labels).filter(([k]) => /^https?:\/\//.test(social[k] || ''));
     for (const navEl of $$('[data-social]')) {
       navEl.replaceChildren(...links.map(([k, label]) => h('a', { href: social[k], target: '_blank', rel: 'noopener' }, label)));
@@ -169,8 +187,9 @@ for (const form of $$('form[data-endpoint]')) {
       try { window.gtag('event', 'form_submission', { form_name: 'inquiry', product: payload.product }); window.trackConversion({ product: payload.product }); } catch (err) {}
     } catch (err) {
       const body = `${payload.product} enquiry from ${payload.name}${payload.company ? ', ' + payload.company : ''}\n\n${payload.message}`;
-      const wa = new URL(SALES.whatsapp); wa.searchParams.set('text', body);
-      $('[data-fail="wa"]', fail).href = wa.href;
+      // WhatsApp documents %20-style encoding for text=; URLSearchParams would write + for spaces
+      const wa = new URL(SALES.whatsapp); wa.search = '';
+      $('[data-fail="wa"]', fail).href = `${wa.href}?text=${encodeURIComponent(body)}`;
       $('[data-fail="mail"]', fail).href = `mailto:${SALES.email}?subject=${encodeURIComponent(payload.product + ' enquiry')}&body=${encodeURIComponent(body)}`;
       $('[data-fail="tel"]', fail).href = `tel:${SALES.phone}`;
       fail.hidden = false;
