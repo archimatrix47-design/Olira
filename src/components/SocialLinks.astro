@@ -13,8 +13,8 @@ export interface Props {
 const { label = 'Connect', theme = 'light', class: className = '' } = Astro.props;
 
 const iconClasses = theme === 'dark'
-  ? 'border-primary-700 text-white hover:bg-white hover:text-primary-900'
-  : 'border-primary-200 text-primary-700 hover:bg-primary-900 hover:text-white hover:border-primary-900';
+  ? 'border-primary-700 text-white hover:bg-surface hover:text-ink'
+  : 'border-line text-ink hover:bg-primary-900 hover:text-white hover:border-primary-900';
 const labelClasses = theme === 'dark' ? 'text-primary-300' : 'text-primary-500';
 
 // Official brand marks (single-path SVGs, currentColor so they inherit theme).

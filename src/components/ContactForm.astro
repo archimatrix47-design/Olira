@@ -13,7 +13,7 @@ const productOptions = productsData.map((p: { name: string }) => p.name);
 <form id="contactForm" class="space-y-6 animate-slideUp">
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <div>
-      <label for="name" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">FULL NAME *</label>
+      <label for="name" class="block text-sm font-bold text-ink mb-3 tracking-wider">FULL NAME *</label>
       <input
         type="text"
         id="name"
@@ -23,12 +23,12 @@ const productOptions = productsData.map((p: { name: string }) => p.name);
         autocomplete="name"
         aria-required="true"
         aria-describedby="nameDesc"
-        class="w-full px-4 py-3 border-b-2 border-primary-200 focus:border-primary-600 bg-transparent text-primary-900 placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
+        class="w-full px-4 py-3 border-b-2 border-line focus:border-primary-600 bg-transparent text-ink placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
       />
       <span id="nameDesc" class="text-xs text-primary-600 mt-1">Required. Please enter your full name.</span>
     </div>
     <div>
-      <label for="email" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">EMAIL *</label>
+      <label for="email" class="block text-sm font-bold text-ink mb-3 tracking-wider">EMAIL *</label>
       <input
         type="email"
         id="email"
@@ -38,7 +38,7 @@ const productOptions = productsData.map((p: { name: string }) => p.name);
         autocomplete="email"
         aria-required="true"
         aria-describedby="emailDesc"
-        class="w-full px-4 py-3 border-b-2 border-primary-200 focus:border-primary-600 bg-transparent text-primary-900 placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
+        class="w-full px-4 py-3 border-b-2 border-line focus:border-primary-600 bg-transparent text-ink placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
       />
       <span id="emailDesc" class="text-xs text-primary-600 mt-1">Required. We'll never share your email.</span>
     </div>
@@ -46,7 +46,7 @@ const productOptions = productsData.map((p: { name: string }) => p.name);
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <div>
-      <label for="company" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">COMPANY</label>
+      <label for="company" class="block text-sm font-bold text-ink mb-3 tracking-wider">COMPANY</label>
       <input
         type="text"
         id="company"
@@ -54,12 +54,12 @@ const productOptions = productsData.map((p: { name: string }) => p.name);
         placeholder="Your company name"
         autocomplete="organization"
         aria-describedby="companyDesc"
-        class="w-full px-4 py-3 border-b-2 border-primary-200 focus:border-primary-600 bg-transparent text-primary-900 placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
+        class="w-full px-4 py-3 border-b-2 border-line focus:border-primary-600 bg-transparent text-ink placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
       />
       <span id="companyDesc" class="text-xs text-primary-600 mt-1">Optional. Your company name.</span>
     </div>
     <div>
-      <label for="phone" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PHONE</label>
+      <label for="phone" class="block text-sm font-bold text-ink mb-3 tracking-wider">PHONE</label>
       <input
         type="tel"
         id="phone"
@@ -67,21 +67,21 @@ const productOptions = productsData.map((p: { name: string }) => p.name);
         placeholder="+251 911 223619"
         autocomplete="tel"
         aria-describedby="phoneDesc"
-        class="w-full px-4 py-3 border-b-2 border-primary-200 focus:border-primary-600 bg-transparent text-primary-900 placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
+        class="w-full px-4 py-3 border-b-2 border-line focus:border-primary-600 bg-transparent text-ink placeholder-primary-400 transition-all duration-300 outline-none focus:shadow-sm focus:shadow-primary-200"
       />
       <span id="phoneDesc" class="text-xs text-primary-600 mt-1">Optional. International format preferred.</span>
     </div>
   </div>
 
   <div>
-    <label for="product" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">INTERESTED IN *</label>
+    <label for="product" class="block text-sm font-bold text-ink mb-3 tracking-wider">INTERESTED IN *</label>
     <select
       id="product"
       name="product"
       required
       aria-required="true"
       aria-describedby="productDesc"
-      class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 transition outline-none font-medium"
+      class="w-full px-4 py-3 border-2 border-line focus:border-primary-600 bg-surface text-ink transition outline-none font-medium"
     >
       <option value="">Select a product</option>
       {productOptions.map((name) => <option value={name}>{name}</option>)}
@@ -91,7 +91,7 @@ const productOptions = productsData.map((p: { name: string }) => p.name);
   </div>
 
   <div>
-    <label for="message" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">MESSAGE</label>
+    <label for="message" class="block text-sm font-bold text-ink mb-3 tracking-wider">MESSAGE</label>
     <textarea
       id="message"
       name="message"
@@ -100,7 +100,7 @@ const productOptions = productsData.map((p: { name: string }) => p.name);
       required
       aria-required="true"
       aria-describedby="messageDesc"
-      class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 placeholder-primary-400 transition outline-none resize-none"
+      class="w-full px-4 py-3 border-2 border-line focus:border-primary-600 bg-surface text-ink placeholder-primary-400 transition outline-none resize-none"
     ></textarea>
     <span id="messageDesc" class="text-xs text-primary-600 mt-1">Required. Please describe your product needs (max 2000 characters).</span>
   </div>

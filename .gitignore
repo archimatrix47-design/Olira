@@ -51,4 +51,6 @@ CLAUDE.md
 
 # Runtime analytics data (regenerated constantly; not source)
 data/analytics.json
+# Customer inquiry leads — contains PII, must never be committed
+data/inquiries.json
 src/data/burayu-grid.cache.json

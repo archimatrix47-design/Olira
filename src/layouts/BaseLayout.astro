@@ -7,24 +7,44 @@ interface Props {
   title: string;
   description?: string;
   keywords?: string;
+  /** Admin/utility pages opt out of the public dark-mode theming. */
+  forceLight?: boolean;
 }
 
 const {
   title,
   description = 'Premium agricultural exports from Ethiopia - Sesame, pulses, spices, and coffee. ISO 22000 certified. Trusted by 50+ countries.',
-  keywords = 'sesame seeds, agricultural exports, Ethiopia, pulses, spices, coffee, ISO 22000'
+  keywords = 'sesame seeds, agricultural exports, Ethiopia, pulses, spices, coffee, ISO 22000',
+  forceLight = false
 } = Astro.props;
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme={forceLight ? 'light' : undefined} data-force-light={forceLight ? 'true' : undefined}>
   <head>
     <!-- Essential Meta Tags -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Theme: set data-theme BEFORE first paint so there is no flash. Honors a
+         saved preference, otherwise follows the OS via prefers-color-scheme.
+         Admin pages ship data-theme="light" + data-force-light and are skipped. -->
+    <script is:inline>
+      (function () {
+        try {
+          var root = document.documentElement;
+          if (root.getAttribute('data-force-light') === 'true') return;
+          var saved = localStorage.getItem('olira-theme');
+          var dark = saved ? saved === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          root.setAttribute('data-theme', dark ? 'dark' : 'light');
+        } catch (e) {}
+      })();
+    </script>
     <meta name="description" content={description} />
     <meta name="keywords" content={keywords} />
-    <meta name="theme-color" content="#39572f" />
+    <meta name="theme-color" content="#186078" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#141818" media="(prefers-color-scheme: dark)" />
     <meta name="language" content="English" />
     <meta name="author" content="Olira Agro Industry" />
 
@@ -200,7 +220,7 @@ const {
     <meta property="og:image:height" content="630" />
     <meta name="twitter:image" content="https://oliraagroindustry.com/og-image.png" />
   </head>
-  <body class="font-sans text-primary-900">
+  <body class="font-sans text-ink bg-canvas">
     <!-- Skip-to-main link for keyboard users (WCAG 2.4.1) -->
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-primary-900 focus:text-white focus:px-4 focus:py-2 focus:font-semibold focus:rounded">
       Skip to main content
@@ -378,6 +398,78 @@ const {
 </html>
 
 <style is:global>
+  /* ================================================================
+     TOKENS — the single source of truth for colour. Light values live
+     on :root; dark values are redefined under an explicit
+     [data-theme="dark"] and (when the visitor hasn't chosen) under
+     prefers-color-scheme. Tailwind consumes these via rgb(var(--x)).
+     RGB channels are space-separated so Tailwind's <alpha-value> works.
+     ================================================================ */
+  :root {
+    /* Brand teal (logo wordmark #186078) — the one accent. */
+    --p-50:  238 244 246;
+    --p-100: 215 230 234;
+    --p-200: 177 206 215;
+    --p-300: 132 177 190;
+    --p-400: 79 140 158;
+    --p-500: 43 114 133;
+    --p-600: 24 96 120;
+    --p-700: 20 79 98;
+    --p-800: 18 63 78;
+    --p-900: 13 43 52;
+
+    /* Warm-cool neutrals — paper canvas, charcoal ink. */
+    --canvas:    248 249 247;
+    --surface:   255 255 255;
+    --surface-2: 240 244 242;
+    --ink:   28 37 37;
+    --ink-2: 86 96 96;
+    --ink-3: 133 143 141;
+    --line: 15 43 49;      /* teal-black, used at low alpha */
+    --line-a: 0.10;
+
+    color-scheme: light;
+  }
+
+  :root[data-theme="dark"] {
+    /* Accent hue holds; mid/dark tones lift so they read on a dark canvas. */
+    --p-50:  238 244 246;
+    --p-100: 210 227 232;
+    --p-200: 150 194 206;
+    --p-300: 120 178 194;
+    --p-400: 108 194 214;
+    --p-500: 79 176 201;
+    --p-600: 63 160 186;
+    --p-700: 42 127 150;
+    --p-800: 24 96 120;
+    --p-900: 18 65 77;
+
+    --canvas:    20 24 24;
+    --surface:   29 35 35;
+    --surface-2: 38 46 46;
+    --ink:   233 236 234;
+    --ink-2: 165 172 170;
+    --ink-3: 117 125 123;
+    --line: 255 255 255;
+    --line-a: 0.13;
+
+    color-scheme: dark;
+  }
+
+  /* Unset preference follows the OS — but never on a force-light page. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-force-light="true"]) {
+      --p-50:  238 244 246;  --p-100: 210 227 232; --p-200: 150 194 206;
+      --p-300: 120 178 194;  --p-400: 108 194 214; --p-500: 79 176 201;
+      --p-600: 63 160 186;   --p-700: 42 127 150;  --p-800: 24 96 120;
+      --p-900: 18 65 77;
+      --canvas: 20 24 24;    --surface: 29 35 35;  --surface-2: 38 46 46;
+      --ink: 233 236 234;    --ink-2: 165 172 170; --ink-3: 117 125 123;
+      --line: 255 255 255;   --line-a: 0.13;
+      color-scheme: dark;
+    }
+  }
+
   * {
     margin: 0;
     padding: 0;
@@ -395,8 +487,8 @@ const {
 
   body {
     line-height: 1.6;
-    background-color: #ffffff;
-    color: #21341a;
+    background-color: rgb(var(--canvas));
+    color: rgb(var(--ink));
     /* Body grid pattern removed — let whitespace breathe and let
        individual sections (e.g. the topographical map in
        .section-gradient-light) carry the visual texture. */
@@ -429,7 +521,7 @@ const {
 
   /* Selection styling */
   ::selection {
-    background-color: #39572f;
+    background-color: rgb(var(--p-600));
     color: #ffffff;
   }
 
@@ -439,16 +531,28 @@ const {
   }
 
   ::-webkit-scrollbar-track {
-    background: #f0f0f0;
+    background: rgb(var(--surface-2));
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #70a45e;
+    background: rgb(var(--p-400));
     border-radius: 5px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #547d46;
+    background: rgb(var(--p-600));
+  }
+
+  /* Dim media and generated art in dark mode so nothing glares (ambient-ui §7). */
+  :root[data-theme="dark"] img:not([src$=".svg"]),
+  :root[data-theme="dark"] iframe {
+    filter: brightness(.9) contrast(1.02);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-force-light="true"]) img:not([src$=".svg"]),
+    :root:not([data-theme="light"]):not([data-force-light="true"]) iframe {
+      filter: brightness(.9) contrast(1.02);
+    }
   }
 
   /* Scroll-triggered reveals.
@@ -490,11 +594,12 @@ const {
     font-weight: 600;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: #39572f;            /* primary-600 */
+    color: rgb(var(--p-600));  /* brand teal */
   }
 
-  /* Short terroir "rule" above a heading — a small green bar, echoing the
-     contour lines. Centered variant for centered sections. */
+  /* Short terroir "rule" above a heading — a small teal→olive bar, echoing the
+     contour lines and the two halves of the logo leaf. Centered variant for
+     centered sections. */
   .heading-with-rule::before {
     content: "";
     display: block;
@@ -502,7 +607,7 @@ const {
     height: 3px;
     border-radius: 2px;
     margin: 0 0 1.5rem 0;
-    background: linear-gradient(90deg, #39572f, #76944c); /* primary-600 → 400 */
+    background: linear-gradient(90deg, rgb(var(--p-600)), #8ba03f); /* teal → olive */
   }
   .heading-with-rule.center-rule::before,
   .center-rule::before {
@@ -510,10 +615,17 @@ const {
     margin-right: auto;
   }
 
-  /* Light section ground — a faint green wash so consecutive white sections
-     don't run together. */
+  /* Light section ground — a faint wash so consecutive surface sections don't
+     run together. Tokenised so it inverts cleanly in dark mode. */
   .section-gradient-light {
-    background: linear-gradient(180deg, #f4f9ed 0%, #ffffff 55%);
+    background: linear-gradient(180deg, rgb(var(--surface-2)) 0%, rgb(var(--canvas)) 55%);
+  }
+
+  /* Focus ring — visible, accent-coloured, never removed (ambient-ui §10). */
+  :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    outline: 2px solid rgb(var(--p-600));
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 </style>
 

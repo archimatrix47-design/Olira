@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Icon from '../components/Icons.astro';
 ---
 
-<BaseLayout title="Admin Dashboard | Olira Agro Industry">
+<BaseLayout title="Admin Dashboard | Olira Agro Industry" forceLight={true}>
   <div class="pt-32 pb-20 bg-gray-50 min-h-screen">
     <div class="container mx-auto">
       <!-- Admin Header with Navigation -->
@@ -72,6 +72,11 @@ import Icon from '../components/Icons.astro';
           <button id="tabAnalytics" class="px-6 py-4 font-bold text-primary-900 border-b-4 border-primary-900 whitespace-nowrap flex items-center gap-2 transition">
             <Icon name="chart" size={20} />
             ANALYTICS
+          </button>
+          <button id="tabInquiries" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
+            <Icon name="email" size={20} />
+            INQUIRIES
+            <span id="inqBadge" class="hidden ml-1 min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center text-[11px] font-bold text-white bg-primary-600 rounded-full"></span>
           </button>
           <button id="tabProducts" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
             <Icon name="package" size={20} />
@@ -587,6 +592,40 @@ import Icon from '../components/Icons.astro';
             <div id="socialStatus" class="hidden text-sm font-bold text-green-700"></div>
           </form>
         </div>
+
+        <!-- INQUIRIES TAB — inbox of leads submitted through the site. Rows are
+             rendered client-side (textContent only) from /api/admin/inquiries. -->
+        <div id="inquiriesTab" class="hidden space-y-8">
+          <div class="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h3 class="font-heading text-2xl font-bold text-primary-900">Inquiries</h3>
+              <p class="text-primary-600 text-sm mt-1 max-w-xl">
+                Leads submitted through the site's contact and product forms. Captured here even if the notification email fails, so nothing is lost.
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <label for="inqFilter" class="text-xs font-bold tracking-wider text-primary-600 uppercase">Show</label>
+              <select id="inqFilter" class="px-3 py-2 border-2 border-primary-200 focus:border-primary-600 bg-white font-medium outline-none rounded">
+                <option value="all">All</option>
+                <option value="new" selected>New</option>
+                <option value="read">Read</option>
+                <option value="archived">Archived</option>
+              </select>
+              <button id="inqRefresh" type="button" class="px-4 py-2 border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-bold text-sm transition rounded">
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <div id="inqCounts" class="flex flex-wrap gap-2 text-sm"></div>
+
+          <div id="inquiriesList" class="space-y-4"></div>
+
+          <div id="inqEmpty" class="hidden text-center py-16">
+            <p class="font-heading font-bold text-lg text-primary-900 mb-1">Nothing here yet</p>
+            <p class="text-sm text-primary-600">When a visitor sends a product inquiry, it lands in this inbox.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -598,6 +637,7 @@ import Icon from '../components/Icons.astro';
     const logoutBtn = document.getElementById('logoutBtn');
     const tabButtons = {
       analytics: document.getElementById('tabAnalytics'),
+      inquiries: document.getElementById('tabInquiries'),
       products: document.getElementById('tabProducts'),
       branding: document.getElementById('tabBranding'),
       email: document.getElementById('tabEmail'),
@@ -606,6 +646,7 @@ import Icon from '../components/Icons.astro';
     };
     const tabs = {
       analytics: document.getElementById('analyticsTab'),
+      inquiries: document.getElementById('inquiriesTab'),
       products: document.getElementById('productsTab'),
       branding: document.getElementById('brandingTab'),
       email: document.getElementById('emailTab'),
@@ -1862,5 +1903,186 @@ import Icon from '../components/Icons.astro';
     if (tabButtons.products) {
       tabButtons.products.addEventListener('click', loadProducts);
     }
+
+    // ============================================
+    // INQUIRIES INBOX — list, triage, reply, delete
+    // ============================================
+    const inqFilterEl = document.getElementById('inqFilter');
+    const inqListEl   = document.getElementById('inquiriesList');
+    const inqEmptyEl  = document.getElementById('inqEmpty');
+    const inqCountsEl = document.getElementById('inqCounts');
+    const inqBadge    = document.getElementById('inqBadge');
+    const inqRefresh  = document.getElementById('inqRefresh');
+    let inquiriesCache = [];
+
+    function inqFmtDate(iso) {
+      try { return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); }
+      catch (e) { return iso || ''; }
+    }
+
+    async function loadInquiries() {
+      try {
+        const res = await fetch('/api/admin/inquiries', { headers: getAuthHeader() });
+        if (res.status === 401) return; // session handled elsewhere
+        if (!res.ok) throw new Error('load failed');
+        const data = await res.json();
+        inquiriesCache = Array.isArray(data.inquiries) ? data.inquiries : [];
+        renderInqCounts(data.counts || {});
+        renderInquiries();
+      } catch (e) {
+        toast('Failed to load inquiries', 'error');
+      }
+    }
+
+    function renderInqCounts(counts) {
+      // Tab badge shows the count of NEW (un-triaged) leads.
+      const nw = counts.new || 0;
+      if (inqBadge) {
+        if (nw > 0) { inqBadge.textContent = String(nw); inqBadge.classList.remove('hidden'); inqBadge.classList.add('inline-flex'); }
+        else { inqBadge.classList.add('hidden'); inqBadge.classList.remove('inline-flex'); }
+      }
+      if (!inqCountsEl) return;
+      inqCountsEl.replaceChildren();
+      [['All', counts.total || 0], ['New', counts.new || 0], ['Read', counts.read || 0], ['Archived', counts.archived || 0]]
+        .forEach(([label, n]) => {
+          const chip = document.createElement('span');
+          chip.className = 'px-3 py-1 rounded-full bg-primary-50 text-primary-700 font-semibold';
+          chip.textContent = label + ': ' + n;
+          inqCountsEl.appendChild(chip);
+        });
+    }
+
+    function renderInquiries() {
+      if (!inqListEl) return;
+      const filter = inqFilterEl ? inqFilterEl.value : 'all';
+      const items = inquiriesCache.filter((i) => filter === 'all' ? true : i.status === filter);
+      inqListEl.replaceChildren();
+      if (!items.length) { inqEmptyEl?.classList.remove('hidden'); return; }
+      inqEmptyEl?.classList.add('hidden');
+      items.forEach((it) => inqListEl.appendChild(buildInquiryCard(it)));
+    }
+
+    // Build a lead card with textContent only — inquiry fields are visitor input
+    // and must never be interpreted as markup.
+    function buildInquiryCard(it) {
+      const isNew = it.status === 'new';
+      const card = document.createElement('div');
+      card.className = 'rounded-lg p-6 bg-white border-2 ' + (isNew ? 'border-primary-600' : 'border-primary-200');
+
+      // Header row: name + company, status pill, date
+      const head = document.createElement('div');
+      head.className = 'flex flex-wrap items-start justify-between gap-3 mb-4';
+      const who = document.createElement('div');
+      const nameEl = document.createElement('p');
+      nameEl.className = 'font-heading text-lg font-bold text-primary-900';
+      nameEl.textContent = it.name || 'Unknown';
+      who.appendChild(nameEl);
+      if (it.company) {
+        const co = document.createElement('p');
+        co.className = 'text-sm text-primary-600';
+        co.textContent = it.company;
+        who.appendChild(co);
+      }
+      const meta = document.createElement('div');
+      meta.className = 'text-right';
+      const pill = document.createElement('span');
+      const pillColor = isNew ? 'bg-primary-600 text-white' : (it.status === 'archived' ? 'bg-gray-200 text-gray-600' : 'bg-primary-100 text-primary-700');
+      pill.className = 'inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide ' + pillColor;
+      pill.textContent = it.status || 'new';
+      const date = document.createElement('p');
+      date.className = 'text-xs text-gray-500 mt-1';
+      date.textContent = inqFmtDate(it.createdAt);
+      meta.appendChild(pill); meta.appendChild(date);
+      head.appendChild(who); head.appendChild(meta);
+      card.appendChild(head);
+
+      // Contact + product facts
+      const facts = document.createElement('div');
+      facts.className = 'grid sm:grid-cols-2 gap-x-6 gap-y-2 mb-4 text-sm';
+      const addFact = (label, value, href) => {
+        if (!value) return;
+        const row = document.createElement('div');
+        const lab = document.createElement('span');
+        lab.className = 'text-[10px] uppercase tracking-[0.15em] text-primary-600 font-bold block';
+        lab.textContent = label;
+        let val;
+        if (href) { val = document.createElement('a'); val.href = href; val.className = 'text-primary-900 font-semibold hover:text-primary-600 break-all'; }
+        else { val = document.createElement('span'); val.className = 'text-primary-900 font-semibold break-all'; }
+        val.textContent = value;
+        row.appendChild(lab); row.appendChild(val); facts.appendChild(row);
+      };
+      addFact('Email', it.email, it.email ? 'mailto:' + it.email : null);
+      addFact('Phone', it.phone, it.phone ? 'tel:' + String(it.phone).replace(/[^\d+]/g, '') : null);
+      addFact('Product', it.product, null);
+      addFact('Delivery', it.emailed ? 'Email sent' : 'Email NOT sent (saved anyway)', null);
+      card.appendChild(facts);
+
+      // Message
+      if (it.message) {
+        const msg = document.createElement('p');
+        msg.className = 'text-primary-900 leading-relaxed whitespace-pre-wrap border-t border-primary-200 pt-4 mb-4';
+        msg.textContent = it.message;
+        card.appendChild(msg);
+      }
+
+      // Actions
+      const actions = document.createElement('div');
+      actions.className = 'flex flex-wrap gap-2';
+      const mkBtn = (label, cls, fn) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'px-4 py-2 text-sm font-bold rounded transition ' + cls;
+        b.textContent = label;
+        b.addEventListener('click', fn);
+        return b;
+      };
+      if (it.email) {
+        const reply = document.createElement('a');
+        reply.href = 'mailto:' + it.email + '?subject=' + encodeURIComponent('Re: your inquiry' + (it.product ? ' — ' + it.product : '')) ;
+        reply.className = 'px-4 py-2 text-sm font-bold rounded transition bg-primary-900 hover:bg-primary-800 text-white';
+        reply.textContent = 'Reply by email';
+        // Opening the mail client is the admin acting on the lead — mark it read.
+        reply.addEventListener('click', () => { if (it.status === 'new') setInquiryStatus(it.id, 'read'); });
+        actions.appendChild(reply);
+      }
+      if (it.status !== 'read')     actions.appendChild(mkBtn('Mark read', 'border-2 border-primary-600 text-primary-600 hover:bg-primary-50', () => setInquiryStatus(it.id, 'read')));
+      if (it.status === 'read')     actions.appendChild(mkBtn('Mark new', 'border-2 border-primary-600 text-primary-600 hover:bg-primary-50', () => setInquiryStatus(it.id, 'new')));
+      if (it.status !== 'archived') actions.appendChild(mkBtn('Archive', 'border-2 border-primary-200 text-primary-600 hover:bg-primary-50', () => setInquiryStatus(it.id, 'archived')));
+      actions.appendChild(mkBtn('Delete', 'border-2 border-red-500 text-red-600 hover:bg-red-50', () => deleteInquiry(it.id)));
+      card.appendChild(actions);
+
+      return card;
+    }
+
+    async function setInquiryStatus(id, status) {
+      try {
+        const res = await fetch('/api/admin/inquiries/' + encodeURIComponent(id), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+          body: JSON.stringify({ status })
+        });
+        if (!res.ok) throw new Error('update failed');
+        loadInquiries();
+      } catch (e) { toast('Update failed', 'error'); }
+    }
+
+    async function deleteInquiry(id) {
+      if (!window.confirm('Delete this inquiry permanently? This cannot be undone.')) return;
+      try {
+        const res = await fetch('/api/admin/inquiries/' + encodeURIComponent(id), {
+          method: 'DELETE',
+          headers: getAuthHeader()
+        });
+        if (!res.ok) throw new Error('delete failed');
+        toast('Inquiry deleted', 'success');
+        loadInquiries();
+      } catch (e) { toast('Delete failed', 'error'); }
+    }
+
+    inqFilterEl?.addEventListener('change', renderInquiries);
+    inqRefresh?.addEventListener('click', loadInquiries);
+    tabButtons.inquiries?.addEventListener('click', loadInquiries);
+    // Populate the badge as soon as the panel is authenticated.
+    if (localStorage.getItem('adminToken')) loadInquiries();
   </script>
 </BaseLayout>

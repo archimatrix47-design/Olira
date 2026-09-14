@@ -666,6 +666,49 @@ app.post('/api/admin/change-password', adminAuth, (req, res) => {
   res.json({ success: true, message: 'Password updated. Use it on your next login.' });
 });
 
+// ----- INQUIRIES INBOX (admin) -----
+// The public /api/inquiry handler persists every lead to inquiries.json. These
+// endpoints let the admin review, triage (new → read → archived), and remove
+// them from the panel, so inquiries are no longer email-only.
+
+// List all inquiries, newest first, with per-status counts for the UI badges.
+app.get('/api/admin/inquiries', adminAuth, (req, res) => {
+  const list = readJsonFile(inquiriesPath, []);
+  const arr = Array.isArray(list) ? list : [];
+  const counts = { total: arr.length, new: 0, read: 0, archived: 0 };
+  for (const i of arr) {
+    if (counts[i.status] === undefined) counts[i.status] = 0;
+    counts[i.status]++;
+  }
+  res.json({ inquiries: arr, counts });
+});
+
+// Update one inquiry's triage status.
+app.post('/api/admin/inquiries/:id', adminAuth, (req, res) => {
+  const { status } = req.body || {};
+  if (!['new', 'read', 'archived'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status. Use new, read or archived.' });
+  }
+  const list = readJsonFile(inquiriesPath, []);
+  if (!Array.isArray(list)) return res.status(500).json({ error: 'Inquiry store unreadable.' });
+  const rec = list.find((i) => i.id === req.params.id);
+  if (!rec) return res.status(404).json({ error: 'Inquiry not found.' });
+  rec.status = status;
+  if (!writeJsonFile(inquiriesPath, list)) return res.status(500).json({ error: 'Failed to save.' });
+  res.json({ success: true });
+});
+
+// Delete one inquiry.
+app.delete('/api/admin/inquiries/:id', adminAuth, (req, res) => {
+  const list = readJsonFile(inquiriesPath, []);
+  if (!Array.isArray(list)) return res.status(500).json({ error: 'Inquiry store unreadable.' });
+  const next = list.filter((i) => i.id !== req.params.id);
+  if (next.length === list.length) return res.status(404).json({ error: 'Inquiry not found.' });
+  if (!writeJsonFile(inquiriesPath, next)) return res.status(500).json({ error: 'Failed to delete.' });
+  audit('inquiry_deleted', req, { id: req.params.id });
+  res.json({ success: true });
+});
+
 // Get email configuration (admin only)
 app.get('/api/email-config', adminAuth, (req, res) => {
   const config = loadEmailConfig();
@@ -769,6 +812,9 @@ app.post('/api/inquiry', async (req, res) => {
 
   const config = loadEmailConfig();
   if (!config || !config.recipientEmail) {
+    // Still capture the lead so a mail-config gap never loses a customer; the
+    // admin can see it (flagged un-emailed) in the Inquiries inbox.
+    recordInquiryRecord({ name, email, company, message, product, phone }, false);
     return res.status(500).json({ error: 'Email not configured' });
   }
 
@@ -831,10 +877,14 @@ app.post('/api/inquiry', async (req, res) => {
 
     await sendEmail(sanitizedEmail, 'Thank You - Olira Agro Industry Inquiry', confirmationHtml);
 
+    recordInquiryRecord({ name, email, company, message, product, phone }, true); // save the lead for the admin inbox
     recordInquiry(product); // count as a conversion, attributed to the product
     res.json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
     console.error('Email send error:', error);
+    // Email delivery failed, but the lead is real — persist it so it can still
+    // be actioned from the admin panel rather than lost.
+    recordInquiryRecord({ name, email, company, message, product, phone }, false);
     res.status(500).json({ error: 'Failed to send inquiry. Please try again.' });
   }
 });
@@ -974,6 +1024,8 @@ const certsPath = path.join(dataDir, 'certifications.json');
 const contactsPath = path.join(dataDir, 'contact-details.json');
 const brandingPath = path.join(dataDir, 'branding.json');
 const socialPath = path.join(dataDir, 'social-links.json');
+const inquiriesPath = path.join(dataDir, 'inquiries.json');
+const MAX_INQUIRIES = 1000;
 
 // Generic JSON file helpers
 function readJsonFile(filePath, defaultValue) {
@@ -1017,6 +1069,37 @@ function writeJsonFile(filePath, data) {
   } catch (error) {
     logError('json_write_failed', error, { file: path.basename(filePath) });
     return false;
+  }
+}
+
+// Persist a submitted inquiry so it's reviewable in the admin "Inquiries" tab.
+// The lead is captured here regardless of whether the notification email is
+// delivered, so an SMTP outage never silently loses a customer. Newest first,
+// capped at MAX_INQUIRIES so the file can't grow unbounded. Values are stored
+// raw (not HTML) — the admin UI renders them as text content, never as markup.
+function recordInquiryRecord(data, emailed) {
+  try {
+    const list = readJsonFile(inquiriesPath, []);
+    if (!Array.isArray(list)) return null;
+    const rec = {
+      id: `inq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: new Date().toISOString(),
+      name: String(data.name || '').trim().slice(0, 100),
+      email: String(data.email || '').trim().slice(0, 200),
+      company: String(data.company || '').trim().slice(0, 100),
+      product: String(data.product || '').trim().slice(0, 200),
+      phone: String(data.phone || '').trim().slice(0, 40),
+      message: String(data.message || '').trim().slice(0, 2000),
+      emailed: !!emailed,
+      status: 'new'
+    };
+    list.unshift(rec);
+    if (list.length > MAX_INQUIRIES) list.length = MAX_INQUIRIES;
+    writeJsonFile(inquiriesPath, list);
+    return rec;
+  } catch (err) {
+    logError('inquiry_record_failed', err);
+    return null;
   }
 }
 
