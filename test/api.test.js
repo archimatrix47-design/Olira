@@ -126,6 +126,46 @@ test('GET /api/analytics accepts a valid token', async () => {
   assert.ok(b.totals && typeof b.totals.views === 'number');
 });
 
+// ---- Admin rebuild (2026-09) ----
+test('SECURITY: integrations writes require an admin session', async () => {
+  assert.equal((await post('/api/integrations/analytics', { measurementId: 'G-ABCDEFGHIJ' })).status, 401);
+  assert.equal((await post('/api/integrations/ads', { conversionId: '1234567890' })).status, 401);
+});
+
+test('admin can save integrations with a token', async () => {
+  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
+  const r = await post('/api/integrations/analytics', { measurementId: 'G-ABCDEFGHIJ', propertyId: '' }, { Authorization: `Bearer ${token}` });
+  assert.equal(r.status, 200);
+  assert.equal((await (await get('/api/integrations')).json()).analytics.measurementId, 'G-ABCDEFGHIJ');
+});
+
+test('products can be reordered without dropping or inventing items', async () => {
+  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
+  const auth = { Authorization: `Bearer ${token}` };
+  await post('/api/products', { products: [{ id: 'a', name: 'A', description: 'a' }, { id: 'b', name: 'B', description: 'b' }, { id: 'c', name: 'C', description: 'c' }] }, auth);
+  assert.equal((await post('/api/products/order', { ids: ['a'] })).status, 401);
+  const r = await post('/api/products/order', { ids: ['c', 'ghost', 'a', 'c'] }, auth);
+  assert.equal(r.status, 200);
+  assert.deepEqual((await (await get('/api/products')).json()).map((p) => p.id), ['c', 'a', 'b']);
+  assert.equal((await post('/api/products/order', { ids: 'c' }, auth)).status, 400);
+});
+
+test('contact details keep only clean place fields and numeric coordinates', async () => {
+  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
+  const r = await post('/api/contact-details', {
+    phones: ['+251 911 223 619'], emails: ['info@example.com'],
+    address: { line1: ' Lemi Kura ', city: 'Addis Ababa', evil: { x: 1 } },
+    factory: { name: 'Burayu', lat: '9.0366', lng: 'not a number' },
+    office: 'nope'
+  }, { Authorization: `Bearer ${token}` });
+  assert.equal(r.status, 200);
+  const d = await (await get('/api/contact-details')).json();
+  assert.deepEqual(d.address, { line1: 'Lemi Kura', city: 'Addis Ababa' });
+  assert.deepEqual(d.factory, { name: 'Burayu', lat: 9.0366 });
+  assert.equal(d.office, null);
+});
+
+
 // ---- Restart-free admin credentials ----
 test('admin can change the password from the panel, effective immediately (no restart)', async () => {
   const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
@@ -160,3 +200,4 @@ test('progressive lockout returns 429 after repeated failures', async () => {
   }
   assert.equal(sawLockout, true);
 });
+

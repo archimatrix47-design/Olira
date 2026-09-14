@@ -1,2088 +1,466 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Icon from '../components/Icons.astro';
+// Admin panel. One page; each section is a view picked from the URL hash
+// (#overview, #enquiries, ...). All data comes from the same API the website
+// reads, so changes here show on the site without a rebuild.
+import '../styles/tokens.css';
+import '../styles/ambient.css';
+import '../styles/site.css';
+import '../styles/admin.css';
+import ThemeButton from '../components/site/ThemeButton.astro';
+
+const icon: Record<string, string> = {
+  overview: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
+  enquiries: '<path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/>',
+  products: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+  company: '<path d="M4 21V5l8-2v18M12 8l8 3v10M8 9h.01M8 13h.01M8 17h.01M16 14h.01M16 18h.01"/>',
+  certifications: '<circle cx="12" cy="9" r="5"/><path d="M9 13.5L8 21l4-2 4 2-1-7.5"/>',
+  logo: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
+  social: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>',
+  email: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  marketing: '<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',
+  security: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 118 0v3"/>',
+};
+const nav = [
+  { label: 'Daily', items: [['overview', 'Overview'], ['enquiries', 'Enquiries']] },
+  { label: 'Website', items: [['products', 'Products'], ['company', 'Company details'], ['certifications', 'Certifications'], ['logo', 'Logo'], ['social', 'Social links']] },
+  { label: 'Settings', items: [['email', 'Email delivery'], ['marketing', 'Marketing tags'], ['security', 'Password']] },
+];
+const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon[name]}</svg>`;
 ---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<script is:inline>(function(){try{var s=localStorage.getItem('olira-theme');if(s==='dark'||s==='light')document.documentElement.setAttribute('data-theme',s);}catch(e){}})();</script>
+<title>Admin, Olira Agro Industry</title>
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+</head>
+<body class="admin-body">
+<a class="skip" href="#adminMain">Skip to content</a>
 
-<BaseLayout title="Admin Dashboard | Olira Agro Industry" forceLight={true}>
-  <div class="pt-32 pb-20 bg-gray-50 min-h-screen">
-    <div class="container mx-auto">
-      <!-- Admin Header with Navigation -->
-      <div class="mb-12 animate-slideUp">
-        <div class="flex items-center justify-between mb-6">
-          <a href="/" class="inline-flex items-center gap-3 hover:opacity-75 transition">
-            <div class="w-10 h-10 bg-primary-900 rounded flex items-center justify-center">
-              <Icon name="home" size={20} class="text-white" />
-            </div>
-            <span class="font-heading text-lg font-bold text-primary-900">Back to Home</span>
-          </a>
-          <a href="/admin-integrations" class="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary-300 text-primary-900 font-bold rounded-lg hover:bg-primary-50 transition">
-            <Icon name="chart" size={18} />
-            <span>Marketing Integrations</span>
-          </a>
-        </div>
-        <h1 class="font-heading text-5xl font-bold text-primary-900 mb-3">Admin Dashboard</h1>
-        <p class="text-xl text-primary-900">Manage website content, products, and images</p>
-      </div>
-
-      <!-- Login Section (if not authenticated) -->
-      <div id="loginSection" class="max-w-md mx-auto mb-12">
-        <div class="bg-white border-2 border-primary-300 p-10 shadow-lg">
-          <div class="flex items-center justify-center w-12 h-12 bg-gradient-green rounded-xl mx-auto mb-8">
-            <Icon name="certified" size={24} class="text-white" />
-          </div>
-
-          <h2 class="font-heading text-2xl font-bold text-primary-900 mb-2 text-center">Admin Access</h2>
-          <p class="text-primary-900 text-center text-sm mb-8">Enter password to access dashboard</p>
-
-          <form id="loginForm" class="space-y-6">
-            <div>
-              <label for="password" class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PASSWORD</label>
-              <input
-                type="password"
-                id="password"
-                placeholder="••••••••"
-                class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 placeholder-primary-400 transition outline-none"
-              />
-              <p class="text-primary-600 text-xs mt-2">Contact administrator for credentials</p>
-            </div>
-            <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
-              <Icon name="checkmark" size={20} />
-              LOGIN
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Admin Panel (hidden by default) -->
-      <div id="adminPanel" class="hidden space-y-12">
-        <!-- Header with Logout -->
-        <div class="flex justify-between items-center mb-8 pb-8 border-b-2 border-primary-200">
-          <div>
-            <h2 class="font-heading text-3xl font-bold text-primary-900">Dashboard</h2>
-            <p class="text-primary-600 text-sm">Welcome back! Manage your website content</p>
-          </div>
-          <button id="logoutBtn" class="flex items-center gap-2 px-6 py-3 border-2 border-red-600 text-red-600 font-bold hover:bg-red-50 transition">
-            <Icon name="close" size={20} />
-            LOGOUT
-          </button>
-        </div>
-
-        <!-- Tab Navigation -->
-        <div class="flex gap-2 border-b-2 border-primary-200 mb-12 overflow-x-auto">
-          <button id="tabAnalytics" class="px-6 py-4 font-bold text-primary-900 border-b-4 border-primary-900 whitespace-nowrap flex items-center gap-2 transition">
-            <Icon name="chart" size={20} />
-            ANALYTICS
-          </button>
-          <button id="tabInquiries" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
-            <Icon name="email" size={20} />
-            INQUIRIES
-            <span id="inqBadge" class="hidden ml-1 min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center text-[11px] font-bold text-white bg-primary-600 rounded-full"></span>
-          </button>
-          <button id="tabProducts" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
-            <Icon name="package" size={20} />
-            PRODUCTS
-          </button>
-          <button id="tabBranding" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
-            <Icon name="upload" size={20} />
-            BRANDING
-          </button>
-          <button id="tabEmail" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
-            <Icon name="email" size={20} />
-            EMAIL
-          </button>
-          <button id="tabContent" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
-            <Icon name="edit" size={20} />
-            CONTENT
-          </button>
-          <button id="tabSocial" class="px-6 py-4 font-bold text-primary-600 hover:text-primary-900 whitespace-nowrap flex items-center gap-2 transition">
-            <Icon name="handshake" size={20} />
-            SOCIAL
-          </button>
-        </div>
-
-        <!-- ANALYTICS TAB (default view) -->
-        <div id="analyticsTab" class="space-y-10">
-          <div class="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h3 class="font-heading text-2xl font-bold text-primary-900">Website Analytics</h3>
-              <p class="text-primary-600 text-sm mt-1">
-                First-party, cookie-free. No IP addresses or personal data are stored — visitors are counted with a daily-rotating anonymous hash.
-              </p>
-            </div>
-            <div class="flex items-center gap-2">
-              <label for="analyticsRange" class="text-xs font-bold tracking-wider text-primary-600 uppercase">Range</label>
-              <select id="analyticsRange" class="px-3 py-2 border-2 border-primary-200 focus:border-primary-600 bg-white font-medium outline-none">
-                <option value="7">Last 7 days</option>
-                <option value="30" selected>Last 30 days</option>
-                <option value="90">Last 90 days</option>
-              </select>
-              <button id="analyticsRefresh" type="button" class="px-4 py-2 border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-bold text-sm transition">
-                Refresh
-              </button>
-            </div>
-          </div>
-
-          <!-- KPI cards -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white border-2 border-primary-200 p-6">
-              <p class="text-[10px] font-bold tracking-[0.18em] uppercase text-primary-600">Page views</p>
-              <p id="kpiViews" class="font-heading text-4xl font-bold text-primary-900 mt-2">–</p>
-            </div>
-            <div class="bg-white border-2 border-primary-200 p-6">
-              <p class="text-[10px] font-bold tracking-[0.18em] uppercase text-primary-600">Visitors</p>
-              <p id="kpiUniques" class="font-heading text-4xl font-bold text-primary-900 mt-2">–</p>
-            </div>
-            <div class="bg-white border-2 border-primary-200 p-6">
-              <p class="text-[10px] font-bold tracking-[0.18em] uppercase text-primary-600">Inquiries</p>
-              <p id="kpiInquiries" class="font-heading text-4xl font-bold text-primary-900 mt-2">–</p>
-            </div>
-            <div class="bg-white border-2 border-primary-200 p-6">
-              <p class="text-[10px] font-bold tracking-[0.18em] uppercase text-primary-600">Conversion</p>
-              <p id="kpiConversion" class="font-heading text-4xl font-bold text-primary-900 mt-2">–</p>
-            </div>
-          </div>
-
-          <!-- Daily chart -->
-          <div class="bg-white border-2 border-primary-200 p-6">
-            <div class="flex items-center justify-between mb-6">
-              <h4 class="font-bold text-primary-900">Daily traffic</h4>
-              <div class="flex items-center gap-4 text-xs text-primary-600">
-                <span class="flex items-center gap-2"><span class="inline-block w-3 h-3 bg-primary-600"></span>Views</span>
-                <span class="flex items-center gap-2"><span class="inline-block w-3 h-3 bg-teal-accent"></span>Visitors</span>
-              </div>
-            </div>
-            <div id="analyticsChart" class="w-full overflow-x-auto"></div>
-          </div>
-
-          <!-- Breakdown tables -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="bg-white border-2 border-primary-200 p-6">
-              <h4 class="font-bold text-primary-900 mb-4">Top pages</h4>
-              <div id="analyticsPages" class="space-y-2 text-sm text-primary-800"></div>
-            </div>
-            <div class="bg-white border-2 border-primary-200 p-6">
-              <h4 class="font-bold text-primary-900 mb-4">Top referrers</h4>
-              <div id="analyticsReferrers" class="space-y-2 text-sm text-primary-800"></div>
-            </div>
-            <div class="bg-white border-2 border-primary-200 p-6">
-              <h4 class="font-bold text-primary-900 mb-4">Devices</h4>
-              <div id="analyticsDevices" class="space-y-2 text-sm text-primary-800"></div>
-            </div>
-          </div>
-
-          <!-- Product interest: which products visitors actually click on, and
-               how many of those turned into a sent inquiry. -->
-          <div class="bg-white border-2 border-primary-200 p-6 mt-6">
-            <div class="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-              <h4 class="font-bold text-primary-900">Product interest</h4>
-              <div class="flex items-center gap-4 text-xs text-primary-600">
-                <span class="flex items-center gap-2"><span class="inline-block w-3 h-3 bg-primary-600"></span>Quote clicks</span>
-                <span class="flex items-center gap-2"><span class="inline-block w-3 h-3 bg-teal-accent"></span>Inquiries sent</span>
-              </div>
-            </div>
-            <p class="text-xs text-primary-500 mb-4">How often each product card's "Request quote" button was clicked, and how many inquiries named that product.</p>
-            <div id="analyticsProducts" class="space-y-3 text-sm text-primary-800"></div>
-          </div>
-
-          <p id="analyticsEmpty" class="hidden text-center text-primary-600 py-8">
-            No traffic recorded yet for this range. Visit the public site in another tab and refresh this page.
-          </p>
-        </div>
-
-        <!-- PRODUCTS TAB -->
-        <div id="productsTab" class="hidden space-y-12">
-          <div class="flex items-center justify-between">
-            <h3 class="font-heading text-2xl font-bold text-primary-900">Manage Products</h3>
-            <button id="productsRefreshBtn" type="button" class="text-sm text-primary-600 hover:text-primary-900 underline">Refresh</button>
-          </div>
-
-          <!-- Add / Edit Product Form -->
-          <div class="bg-white border-2 border-primary-300 p-10">
-            <h4 id="productFormTitle" class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
-              <Icon name="save" size={24} />
-              Add Product
-            </h4>
-            <form id="productForm" class="space-y-6">
-              <input type="hidden" id="productId" />
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productName">PRODUCT NAME *</label>
-                <input id="productName" type="text" required placeholder="e.g., Natural Sesame Seeds" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productDescription">DESCRIPTION *</label>
-                <textarea id="productDescription" rows="4" required placeholder="Describe the product..." class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none resize-none"></textarea>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productPurity">PURITY</label>
-                  <input id="productPurity" type="text" placeholder="99.95%" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                </div>
-                <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productMoq">MOQ</label>
-                  <input id="productMoq" type="text" placeholder="10 MT" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                </div>
-                <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productCategory">CATEGORY</label>
-                  <input id="productCategory" type="text" placeholder="Sesame" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="productSpecs">SPECS (one per line, max 20)</label>
-                <textarea id="productSpecs" rows="4" placeholder="Humera variety&#10;High oil content (50%+)&#10;Creamy color&#10;ISO 22000 certified" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none resize-none"></textarea>
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="smtpHost">PRODUCT IMAGE (optional, auto-resized to 1200px WebP)</label>
-                <div class="flex items-start gap-4">
-                  <div class="flex-shrink-0 w-32 h-32 bg-primary-50 border-2 border-primary-200 rounded flex items-center justify-center overflow-hidden">
-                    <img id="productImagePreview" src="" alt="" class="max-w-full max-h-full object-contain" style="display:none;" />
-                    <span id="productImagePlaceholder" class="text-primary-400 text-xs text-center px-2">No image</span>
-                  </div>
-                  <div class="flex-1">
-                    <input type="file" id="productImageFile" accept="image/jpeg,image/png,image/webp,image/svg+xml" class="block text-sm" />
-                    <p class="text-primary-600 text-xs mt-2">JPG / PNG / WebP / SVG. Max 10MB. Auto-converted to WebP @ 1200px wide.</p>
-                    <button type="button" id="productImageClearBtn" class="mt-2 text-xs text-red-600 hover:underline" style="display:none;">Remove image</button>
-                  </div>
-                </div>
-                <input type="hidden" id="productImagePath" />
-              </div>
-
-              <div class="flex gap-3">
-                <button type="submit" id="productSaveBtn" class="flex-1 bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <Icon name="save" size={20} />
-                  <span id="productSaveBtnLabel">SAVE PRODUCT</span>
-                </button>
-                <button type="button" id="productCancelEditBtn" class="px-6 py-4 border-2 border-primary-300 text-primary-900 font-bold hover:bg-primary-50 transition" style="display:none;">CANCEL</button>
-              </div>
-            </form>
-          </div>
-
-          <!-- Products List -->
-          <div>
-            <h4 class="font-heading text-xl font-bold text-primary-900 mb-6">
-              Current Products (<span id="productCountLabel">0</span>)
-            </h4>
-            <div id="productsListContainer" class="space-y-4">
-              <p class="text-primary-600 text-sm">Loading products...</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- BRANDING TAB -->
-        <div id="brandingTab" class="hidden space-y-12">
-          <h3 class="font-heading text-2xl font-bold text-primary-900">Manage Branding</h3>
-
-          <!-- Logo Upload -->
-          <div class="bg-white border-2 border-primary-300 p-10">
-            <h4 class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
-              <Icon name="upload" size={24} />
-              Company Logo
-            </h4>
-            <p class="text-primary-600 text-sm mb-8">Upload your company logo. It will appear in both the header and footer of your website.</p>
-
-            <form id="logoForm" class="space-y-6">
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">UPLOAD LOGO *</label>
-                <div class="border-2 border-dashed border-primary-300 rounded p-8 text-center hover:border-primary-600 transition cursor-pointer">
-                  <Icon name="upload" size={32} class="text-primary-600 mx-auto mb-3" />
-                  <p class="text-primary-900 font-bold mb-1">Click to upload or drag and drop</p>
-                  <p class="text-primary-600 text-sm">PNG, SVG, JPG (Max 2MB)</p>
-                </div>
-                <input type="file" id="logoInput" accept="image/*" class="w-full mt-4 px-4 py-3 border-2 border-primary-200" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PREVIEW</label>
-                <div class="w-full h-40 bg-primary-50 rounded border-2 border-primary-200 flex items-center justify-center p-4">
-                  <img id="logoPreview" src="" alt="Logo Preview" class="max-h-full max-w-full object-contain" style="display:none;" />
-                  <p id="logoPlaceholder" class="text-primary-600 text-sm">Logo preview will appear here</p>
-                </div>
-              </div>
-
-              <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2">
-                <Icon name="save" size={20} />
-                SAVE LOGO
-              </button>
-            </form>
-          </div>
-
-          <!-- Current Logo Display -->
-          <div class="bg-white border-2 border-primary-200 p-6">
-            <h5 class="font-bold text-primary-900 mb-4">Current Logo</h5>
-            <div class="w-full h-32 bg-primary-50 rounded border-2 border-primary-200 flex items-center justify-center p-4 mb-4">
-              <img id="logoDisplay" src="" alt="Current Logo" class="max-h-full max-w-full object-contain" style="display:none;" />
-              <p id="logoDisplayPlaceholder" class="text-primary-600 text-sm">No logo uploaded</p>
-            </div>
-            <button id="clearLogoBtn" class="w-full p-2 border-2 border-red-600 text-red-600 hover:bg-red-50 font-bold text-sm transition flex items-center justify-center gap-1" style="display:none;">
-              <Icon name="delete" size={16} />
-              CLEAR LOGO
-            </button>
-          </div>
-        </div>
-
-        <!-- EMAIL TAB -->
-        <div id="emailTab" class="hidden space-y-12">
-          <h3 class="font-heading text-2xl font-bold text-primary-900">Email Configuration</h3>
-
-          <!-- SMTP Configuration -->
-          <div class="bg-white border-2 border-primary-300 p-10">
-            <h4 class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
-              <Icon name="email" size={24} />
-              SMTP Settings
-            </h4>
-            <form id="emailConfigForm" class="space-y-6">
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">SMTP HOST *</label>
-                <input type="text" id="smtpHost" name="smtpHost" placeholder="e.g., smtp.gmail.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                <p class="text-primary-600 text-xs mt-2">For Gmail: smtp.gmail.com | For Outlook: smtp-mail.outlook.com</p>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="smtpPort">SMTP PORT *</label>
-                  <input type="number" id="smtpPort" name="smtpPort" placeholder="587 or 465" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                  <p class="text-primary-600 text-xs mt-2">587 = TLS, 465 = SSL</p>
-                </div>
-
-                <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="fromName">FROM NAME</label>
-                  <input type="text" id="fromName" name="fromName" placeholder="Olira Agro Industry" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="smtpUser">SMTP EMAIL ADDRESS *</label>
-                <input type="email" id="smtpUser" name="smtpUser" placeholder="your-email@gmail.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                <p class="text-primary-600 text-xs mt-2">The email address used to send inquiries</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="smtpPassword">SMTP PASSWORD *</label>
-                <input type="password" id="smtpPassword" name="smtpPassword" placeholder="••••••••" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                <p class="text-primary-600 text-xs mt-2">For Gmail: Use an App Password (not your regular password)</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="recipientEmail">RECIPIENT EMAIL ADDRESS *</label>
-                <input type="email" id="recipientEmail" name="recipientEmail" placeholder="info@oliraagroindustry.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                <p class="text-primary-600 text-xs mt-2">Where product inquiries will be sent</p>
-              </div>
-
-              <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2">
-                <Icon name="save" size={20} />
-                SAVE EMAIL CONFIGURATION
-              </button>
-            </form>
-          </div>
-
-          <!-- Email Test -->
-          <div class="bg-primary-50 border-2 border-primary-200 p-8 rounded-lg">
-            <h4 class="font-heading text-lg font-bold text-primary-900 mb-4 flex items-center gap-2">
-              <Icon name="info" size={20} class="text-primary-600" />
-              Gmail Setup Guide
-            </h4>
-            <ol class="text-primary-900 text-sm space-y-2 ml-5 list-decimal">
-              <li>Enable 2-Step Verification in your Google Account</li>
-              <li>Go to myaccount.google.com/apppasswords</li>
-              <li>Select "Mail" and "Windows Computer"</li>
-              <li>Copy the generated 16-character password</li>
-              <li>Paste it in the SMTP PASSWORD field above</li>
-            </ol>
-          </div>
-
-          <!-- Configuration Status -->
-          <div id="emailStatus" class="bg-green-50 border-2 border-green-200 p-6 rounded-lg hidden">
-            <p class="text-green-900 font-bold flex items-center gap-2">
-              <Icon name="checkmark" size={20} class="text-green-700" />
-              Email configuration is active
-            </p>
-            <p class="text-green-700 text-sm mt-2">Inquiries will be sent to: <span id="statusEmail" class="font-mono"></span></p>
-          </div>
-
-          <div id="emailErrorStatus" class="bg-red-50 border-2 border-red-200 p-6 rounded-lg hidden">
-            <p class="text-red-900 font-bold flex items-center gap-2">
-              <Icon name="alert" size={20} class="text-red-700" />
-              Email configuration incomplete
-            </p>
-            <p class="text-red-700 text-sm mt-2">Please configure SMTP settings above</p>
-          </div>
-        </div>
-
-        <!-- CONTENT TAB -->
-        <div id="contentTab" class="hidden space-y-12">
-          <h3 class="font-heading text-2xl font-bold text-primary-900">Manage Website Content</h3>
-
-          <!-- Company Info -->
-          <div class="bg-white border-2 border-primary-300 p-10">
-            <h4 class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
-              <Icon name="edit" size={24} />
-              Company Information
-            </h4>
-            <form class="space-y-6">
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="phoneNumbers">COMPANY TAGLINE</label>
-                <input type="text" value="Producing, processing and packaging high quality agricultural products for export" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PHONE</label>
-                  <input type="text" value="+251-911 223619" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                </div>
-                <div>
-                  <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">EMAIL</label>
-                  <input type="email" value="info@oliraagroindustry.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">LOCATION</label>
-                <input type="text" value="Summit Feyel Bet, Addis Ababa, Ethiopia" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-              </div>
-
-              <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2">
-                <Icon name="save" size={20} />
-                SAVE CHANGES
-              </button>
-            </form>
-          </div>
-
-          <!-- Contact Details Management -->
-          <div class="bg-white border-2 border-primary-300 p-10">
-            <h4 class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
-              <Icon name="phone" size={24} />
-              Contact Details for Modal
-            </h4>
-            <form id="contactDetailsForm" class="space-y-6">
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider">PHONE NUMBERS (One per line)</label>
-                <textarea id="phoneNumbers" name="phoneNumbers" rows="3" placeholder="+251 911 223619&#10;+251 912 334455" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 transition outline-none resize-none"></textarea>
-                <p class="text-primary-600 text-xs mt-2">Enter each phone number on a separate line. These will appear in the contact modal.</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="emailAddresses">EMAIL ADDRESSES (One per line)</label>
-                <textarea id="emailAddresses" name="emailAddresses" rows="3" placeholder="info@oliraagroindustry.com&#10;sales@oliraagroindustry.com" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white text-primary-900 transition outline-none resize-none"></textarea>
-                <p class="text-primary-600 text-xs mt-2">Enter each email on a separate line. These will appear in the contact modal.</p>
-              </div>
-
-              <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2">
-                <Icon name="save" size={20} />
-                SAVE CONTACT DETAILS
-              </button>
-            </form>
-
-            <!-- Current Contact Details -->
-            <div class="mt-8 pt-8 border-t border-primary-200">
-              <h5 class="font-bold text-primary-900 mb-4">Current Contact Information:</h5>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <p class="text-sm font-bold text-primary-600 mb-2">Phones</p>
-                  <div id="currentPhones" class="space-y-1 text-sm text-primary-900">
-                    <p class="text-primary-400">No phones configured</p>
-                  </div>
-                </div>
-                <div>
-                  <p class="text-sm font-bold text-primary-600 mb-2">Emails</p>
-                  <div id="currentEmails" class="space-y-1 text-sm text-primary-900">
-                    <p class="text-primary-400">No emails configured</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          <!-- Certifications & Standards Management -->
-          <div class="bg-white border-2 border-primary-300 p-10 mt-8">
-            <h4 class="font-heading text-xl font-bold text-primary-900 mb-8 flex items-center gap-3">
-              <Icon name="certified" size={24} />
-              Certifications & Standards
-            </h4>
-
-            <!-- Add Certification Form -->
-            <form id="certificationForm" class="space-y-6 mb-8 p-8 border-2 border-primary-200 rounded-lg">
-              <h5 class="font-bold text-primary-900">Add New Certification</h5>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="certName">CERTIFICATION NAME *</label>
-                <input type="text" id="certName" placeholder="e.g., ISO 22000:2018" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="certDescription">DESCRIPTION *</label>
-                <input type="text" id="certDescription" placeholder="e.g., Food Safety Management System" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3 tracking-wider" for="socialFacebook">UPLOAD IMAGE/ICON (Optional)</label>
-                <div class="border-2 border-dashed border-primary-300 rounded p-6 text-center hover:border-primary-600 transition cursor-pointer">
-                  <Icon name="upload" size={24} class="text-primary-600 mx-auto mb-2" />
-                  <p class="text-primary-900 font-bold text-sm mb-1">Click to upload or drag and drop</p>
-                  <p class="text-primary-600 text-xs">PNG, SVG, JPG (Max 2MB)</p>
-                </div>
-                <input type="file" id="certImageInput" accept="image/*" class="w-full mt-3 px-4 py-3 border-2 border-primary-200 text-sm" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-bold text-primary-900 mb-3">IMAGE PREVIEW</label>
-                <div class="w-full h-24 bg-primary-50 rounded border-2 border-primary-200 flex items-center justify-center p-3">
-                  <img id="certImagePreview" src="" alt="Certification Preview" class="max-h-full max-w-full object-contain" style="display:none;" />
-                  <p id="certImagePlaceholder" class="text-primary-600 text-xs text-center">Image preview will appear here</p>
-                </div>
-              </div>
-
-              <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-3 font-bold transition flex items-center justify-center gap-2 text-sm">
-                <Icon name="save" size={18} />
-                ADD CERTIFICATION
-              </button>
-            </form>
-
-            <!-- Current Certifications List -->
-            <div>
-              <h5 class="font-bold text-primary-900 mb-4">Current Certifications</h5>
-              <div id="certificationsList" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <p class="text-primary-600 text-sm col-span-full">No certifications added yet</p>
-              </div>
-            </div>
-          </div>
-          </div>
-        </div>
-
-        <!-- SOCIAL TAB -->
-        <div id="socialTab" class="hidden space-y-8">
-          <div>
-            <h3 class="font-heading text-2xl font-bold text-primary-900">Social Links</h3>
-            <p class="text-primary-600 text-sm mt-1">Paste the full URL for each platform. Leave a field blank to hide its icon in the footer.</p>
-          </div>
-
-          <form id="socialForm" class="bg-white border-2 border-primary-300 p-10 space-y-6 max-w-2xl">
-            <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider">FACEBOOK</label>
-              <input type="url" id="socialFacebook" placeholder="https://facebook.com/oliraagroindustry" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider" for="socialLinkedin">LINKEDIN</label>
-              <input type="url" id="socialLinkedin" placeholder="https://linkedin.com/company/olira-agro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider" for="socialX">X (TWITTER)</label>
-              <input type="url" id="socialX" placeholder="https://x.com/oliraagro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider" for="socialYoutube">YOUTUBE</label>
-              <input type="url" id="socialYoutube" placeholder="https://youtube.com/@oliraagro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider" for="socialTelegram">TELEGRAM</label>
-              <input type="url" id="socialTelegram" placeholder="https://t.me/oliraagro" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-primary-900 mb-2 tracking-wider" for="socialWhatsapp">WHATSAPP</label>
-              <input type="url" id="socialWhatsapp" placeholder="https://wa.me/251911223619" class="w-full px-4 py-3 border-2 border-primary-200 focus:border-primary-600 bg-white transition outline-none" />
-              <p class="text-primary-600 text-xs mt-2">Use a wa.me link, e.g. https://wa.me/&lt;country+number&gt;</p>
-            </div>
-
-            <button type="submit" class="w-full bg-primary-900 hover:bg-primary-800 text-white px-8 py-4 font-bold transition flex items-center justify-center gap-2">
-              <Icon name="save" size={20} />
-              SAVE SOCIAL LINKS
-            </button>
-            <div id="socialStatus" class="hidden text-sm font-bold text-green-700"></div>
-          </form>
-        </div>
-
-        <!-- INQUIRIES TAB — inbox of leads submitted through the site. Rows are
-             rendered client-side (textContent only) from /api/admin/inquiries. -->
-        <div id="inquiriesTab" class="hidden space-y-8">
-          <div class="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h3 class="font-heading text-2xl font-bold text-primary-900">Inquiries</h3>
-              <p class="text-primary-600 text-sm mt-1 max-w-xl">
-                Leads submitted through the site's contact and product forms. Captured here even if the notification email fails, so nothing is lost.
-              </p>
-            </div>
-            <div class="flex items-center gap-2">
-              <label for="inqFilter" class="text-xs font-bold tracking-wider text-primary-600 uppercase">Show</label>
-              <select id="inqFilter" class="px-3 py-2 border-2 border-primary-200 focus:border-primary-600 bg-white font-medium outline-none rounded">
-                <option value="all">All</option>
-                <option value="new" selected>New</option>
-                <option value="read">Read</option>
-                <option value="archived">Archived</option>
-              </select>
-              <button id="inqRefresh" type="button" class="px-4 py-2 border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-bold text-sm transition rounded">
-                Refresh
-              </button>
-            </div>
-          </div>
-
-          <div id="inqCounts" class="flex flex-wrap gap-2 text-sm"></div>
-
-          <div id="inquiriesList" class="space-y-4"></div>
-
-          <div id="inqEmpty" class="hidden text-center py-16">
-            <p class="font-heading font-bold text-lg text-primary-900 mb-1">Nothing here yet</p>
-            <p class="text-sm text-primary-600">When a visitor sends a product inquiry, it lands in this inbox.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+<header class="a-top">
+  <a class="a-brand" href="/admin/"><img src="/logo.png" alt="Olira Agro Industry" width="68" height="32" data-brand-logo><span>Admin</span></a>
+  <div class="a-top-actions">
+    <a class="btn btn-ghost a-hide-sm" href="/" target="_blank" rel="noopener">View website</a>
+    <ThemeButton />
+    <button class="btn btn-secondary" type="button" id="signOut" hidden>Sign out</button>
   </div>
-
-  <script define:vars={{}}>
-    const loginSection = document.getElementById('loginSection');
-    const adminPanel = document.getElementById('adminPanel');
-    const loginForm = document.getElementById('loginForm');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const tabButtons = {
-      analytics: document.getElementById('tabAnalytics'),
-      inquiries: document.getElementById('tabInquiries'),
-      products: document.getElementById('tabProducts'),
-      branding: document.getElementById('tabBranding'),
-      email: document.getElementById('tabEmail'),
-      content: document.getElementById('tabContent'),
-      social: document.getElementById('tabSocial'),
-    };
-    const tabs = {
-      analytics: document.getElementById('analyticsTab'),
-      inquiries: document.getElementById('inquiriesTab'),
-      products: document.getElementById('productsTab'),
-      branding: document.getElementById('brandingTab'),
-      email: document.getElementById('emailTab'),
-      content: document.getElementById('contentTab'),
-      social: document.getElementById('socialTab'),
-    };
-
-    // Login Handler — surfaces lockout (429) and rejection (401/403) messages
-    // from the hardened server.
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const passwordEl = document.getElementById('password');
-      const password = passwordEl.value;
-
-      try {
-        const response = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (response.ok) {
-          localStorage.setItem('adminLoggedIn', 'true');
-          localStorage.setItem('adminToken', data.token);
-          loginSection.style.display = 'none';
-          adminPanel.style.display = 'block';
-          // The dashboard is the default tab, but its initial load ran before
-          // we had a token (401). Load it now that we're authenticated.
-          loadAnalytics();
-        } else if (response.status === 429) {
-          toast(data.error || 'Too many attempts. Try again later.', 'warn');
-          passwordEl.value = '';
-        } else if (response.status === 403) {
-          toast('Request blocked (origin check failed).', 'error');
-          passwordEl.value = '';
-        } else {
-          toast('Incorrect password', 'error');
-          passwordEl.value = '';
-        }
-      } catch (error) {
-        toast('Login failed: ' + error.message, 'error');
-        passwordEl.value = '';
-      }
-    });
-
-    // Logout Handler — server-side revocation via /api/admin/logout so the
-    // token is added to the blocklist and can't be replayed even if the
-    // attacker has already extracted it from localStorage.
-    logoutBtn.addEventListener('click', async () => {
-      const token = localStorage.getItem('adminToken');
-      if (token) {
-        try {
-          await fetch('/api/admin/logout', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-        } catch {}
-      }
-      localStorage.removeItem('adminLoggedIn');
-      localStorage.removeItem('adminToken');
-      loginSection.style.display = 'block';
-      adminPanel.style.display = 'none';
-      const pw = document.getElementById('password');
-      if (pw) pw.value = '';
-    });
-
-    // Tab Switching
-    Object.keys(tabButtons).forEach((key) => {
-      tabButtons[key].addEventListener('click', () => {
-        // Hide all tabs
-        Object.values(tabs).forEach((tab) => {
-          tab.style.display = 'none';
-        });
-
-        // Remove active styling
-        Object.values(tabButtons).forEach((btn) => {
-          btn.style.borderBottomWidth = '0';
-          btn.style.color = '#70a45e';
-        });
-
-        // Show selected tab
-        tabs[key].style.display = 'block';
-        tabButtons[key].style.borderBottomWidth = '4px';
-        tabButtons[key].style.borderBottomColor = '#39572f';
-        tabButtons[key].style.color = '#39572f';
-      });
-    });
-
-    // Verify session against the server. The previous localStorage flag was
-    // a fake gate — set it manually in DevTools and you'd skip the password.
-    // Now we ask the server to validate the token (which checks both
-    // signature and 24h expiry). If invalid/expired/missing, show login.
-    (async function checkSession() {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        loginSection.style.display = 'block';
-        adminPanel.style.display = 'none';
-        return;
-      }
-      try {
-        const res = await fetch('/api/admin/verify', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          loginSection.style.display = 'none';
-          adminPanel.style.display = 'block';
-          loadAnalytics(); // session restored — populate the default dashboard
-        } else {
-          // Token invalid or expired — clear stale state and show login
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminLoggedIn');
-          loginSection.style.display = 'block';
-          adminPanel.style.display = 'none';
-        }
-      } catch (err) {
-        // Network error — fall back to showing login (safe default)
-        loginSection.style.display = 'block';
-        adminPanel.style.display = 'none';
-      }
-    })();
-
-    // ============================================
-    // LOGO — API-driven (was localStorage). Uses /api/upload/logo (multer + sharp)
-    // and persists path in branding.json so all pages can read it.
-    // ============================================
-    const logoForm = document.getElementById('logoForm');
-    const logoInput = document.getElementById('logoInput');
-    const logoPreview = document.getElementById('logoPreview');
-    const logoPlaceholder = document.getElementById('logoPlaceholder');
-    const logoDisplay = document.getElementById('logoDisplay');
-    const logoDisplayPlaceholder = document.getElementById('logoDisplayPlaceholder');
-    const clearLogoBtn = document.getElementById('clearLogoBtn');
-
-    async function loadLogo() {
-      try {
-        const res = await fetch('/api/branding');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.logo) {
-          logoDisplay.src = data.logo;
-          logoDisplay.style.display = 'block';
-          logoDisplayPlaceholder.style.display = 'none';
-          clearLogoBtn.style.display = 'flex';
-        } else {
-          logoDisplay.style.display = 'none';
-          logoDisplayPlaceholder.style.display = 'block';
-          clearLogoBtn.style.display = 'none';
-        }
-      } catch (err) {
-        console.error('Failed to load logo:', err);
-      }
-    }
-
-    // Logo preview on file input change
-    logoInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file && file.size <= 2 * 1024 * 1024) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          logoPreview.src = event.target.result;
-          logoPreview.style.display = 'block';
-          logoPlaceholder.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-      } else {
-        alert('File must be under 2MB');
-      }
-    });
-
-    // Helper function for drag and drop
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    // Drag and drop for logo
-    const logoDragZone = document.querySelector('[id="logoForm"] .border-dashed');
-    if (logoDragZone) {
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        logoDragZone.addEventListener(eventName, preventDefaults, false);
-      });
-
-      ['dragenter', 'dragover'].forEach(eventName => {
-        logoDragZone.addEventListener(eventName, () => {
-          logoDragZone.style.borderColor = '#39572f';
-          logoDragZone.style.backgroundColor = '#f0f5eb';
-        }, false);
-      });
-
-      ['dragleave', 'drop'].forEach(eventName => {
-        logoDragZone.addEventListener(eventName, () => {
-          logoDragZone.style.borderColor = '#c8d4c1';
-          logoDragZone.style.backgroundColor = 'transparent';
-        }, false);
-      });
-
-      logoDragZone.addEventListener('drop', (e) => {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        if (files.length > 0) {
-          logoInput.files = files;
-          const event = new Event('change', { bubbles: true });
-          logoInput.dispatchEvent(event);
-        }
-      }, false);
-    }
-
-    // Logo form submission — uploads to /api/upload/logo (server resizes + saves to /public/uploads)
-    logoForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const file = logoInput.files[0];
-      if (!file) {
-        toast('Choose a logo file first', 'warn');
-        return;
-      }
-
-      const fd = new FormData();
-      fd.append('logo', file);
-
-      try {
-        const res = await fetch('/api/upload/logo', {
-          method: 'POST',
-          headers: { ...getAuthHeader() },
-          body: fd
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Upload failed');
-
-        logoDisplay.src = data.path + '?t=' + Date.now(); // cache-bust
-        logoDisplay.style.display = 'block';
-        logoDisplayPlaceholder.style.display = 'none';
-        clearLogoBtn.style.display = 'flex';
-
-        toast('Logo saved (auto-resized & optimized)', 'success');
-        logoInput.value = '';
-        logoPreview.style.display = 'none';
-        logoPlaceholder.style.display = 'block';
-      } catch (err) {
-        toast('Logo upload failed: ' + err.message, 'error');
-      }
-    });
-
-    // Clear logo — POST empty branding update
-    clearLogoBtn.addEventListener('click', async () => {
-      if (!confirm('Remove the logo from header and footer?')) return;
-      try {
-        const res = await fetch('/api/branding', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-          body: JSON.stringify({ logo: null })
-        });
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
-          throw new Error(j.error || 'HTTP ' + res.status);
-        }
-        logoDisplay.src = '';
-        logoDisplay.style.display = 'none';
-        logoDisplayPlaceholder.style.display = 'block';
-        clearLogoBtn.style.display = 'none';
-        toast('Logo removed', 'success');
-      } catch (err) {
-        toast('Failed to remove logo: ' + err.message, 'error');
-      }
-    });
-
-    // Load logo on page load
-    loadLogo();
-
-    // Email Configuration Handler
-    const emailConfigForm = document.getElementById('emailConfigForm');
-    const emailStatus = document.getElementById('emailStatus');
-    const emailErrorStatus = document.getElementById('emailErrorStatus');
-    const statusEmail = document.getElementById('statusEmail');
-
-    // Load email config on page load
-    async function loadEmailConfig() {
-      try {
-        const response = await fetch('/api/email-config', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-          }
-        });
-        if (response.ok) {
-          const config = await response.json();
-          document.getElementById('smtpHost').value = config.smtpHost || '';
-          document.getElementById('smtpPort').value = config.smtpPort || '';
-          document.getElementById('smtpUser').value = config.smtpUser || '';
-          document.getElementById('recipientEmail').value = config.recipientEmail || '';
-          document.getElementById('fromName').value = config.fromName || 'Olira Agro Industry';
-
-          // Show status
-          if (config.smtpUser && config.recipientEmail) {
-            emailStatus.classList.remove('hidden');
-            emailErrorStatus.classList.add('hidden');
-            statusEmail.textContent = config.recipientEmail;
-          } else {
-            emailStatus.classList.add('hidden');
-            emailErrorStatus.classList.remove('hidden');
-          }
-        }
-      } catch (error) {
-        console.error('Error loading email config:', error);
-        emailErrorStatus.classList.remove('hidden');
-      }
-    }
-
-    // Save email config
-    emailConfigForm?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const config = {
-        smtpHost: document.getElementById('smtpHost').value,
-        smtpPort: document.getElementById('smtpPort').value,
-        smtpUser: document.getElementById('smtpUser').value,
-        smtpPassword: document.getElementById('smtpPassword').value,
-        recipientEmail: document.getElementById('recipientEmail').value,
-        fromName: document.getElementById('fromName').value
-      };
-
-      // Validate
-      if (!config.smtpHost || !config.smtpPort || !config.smtpUser || !config.smtpPassword || !config.recipientEmail) {
-        toast('Please fill in all required fields', 'error');
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/email-config', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-          },
-          body: JSON.stringify(config)
-        });
-
-        if (response.ok) {
-          toast('Email configuration saved successfully', 'success');
-          // Clear password field and reload
-          document.getElementById('smtpPassword').value = '';
-          loadEmailConfig();
-        } else {
-          const error = await response.json();
-          toast(error.error || 'Failed to save email configuration', 'error');
-        }
-      } catch (error) {
-        console.error('Error saving email config:', error);
-        toast('Failed to save email configuration. Make sure the API server is running.', 'error');
-      }
-    });
-
-    // Load email config when email tab is displayed
-    if (tabButtons.email) {
-      tabButtons.email.addEventListener('click', () => {
-        loadEmailConfig();
-      });
-    }
-
-    // Initial load of email config
-    loadEmailConfig();
-
-    // ============================================
-    // CONTACT DETAILS — API-driven (was localStorage)
-    // ============================================
-    const contactDetailsForm = document.getElementById('contactDetailsForm');
-    const phoneNumbersInput = document.getElementById('phoneNumbers');
-    const emailAddressesInput = document.getElementById('emailAddresses');
-    const currentPhonesDiv = document.getElementById('currentPhones');
-    const currentEmailsDiv = document.getElementById('currentEmails');
-
-    async function loadContactDetails() {
-      try {
-        const res = await fetch('/api/contact-details');
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        phoneNumbersInput.value = (data.phones || []).join('\n');
-        emailAddressesInput.value = (data.emails || []).join('\n');
-        displayCurrentContacts(data);
-      } catch (err) {
-        console.error('Failed to load contact details:', err);
-      }
-    }
-
-    // Build an inline SVG icon element (stroke-based, matches Icons.astro).
-    // Used where markup is created in JS and an <Icon> component isn't available.
-    const ICON_PATHS = {
-      phone: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
-      email: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
-      edit: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
-      delete: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
-    };
-    function makeIcon(name, size = 16, className = '') {
-      const ns = 'http://www.w3.org/2000/svg';
-      const svg = document.createElementNS(ns, 'svg');
-      svg.setAttribute('width', size);
-      svg.setAttribute('height', size);
-      svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('fill', 'none');
-      svg.setAttribute('stroke', 'currentColor');
-      svg.setAttribute('stroke-width', '2');
-      svg.setAttribute('stroke-linecap', 'round');
-      svg.setAttribute('stroke-linejoin', 'round');
-      svg.setAttribute('aria-hidden', 'true');
-      if (className) svg.setAttribute('class', className);
-      const p = document.createElementNS(ns, 'path');
-      p.setAttribute('d', ICON_PATHS[name] || '');
-      svg.appendChild(p);
-      return svg;
-    }
-
-    // Display current contact details
-    function displayCurrentContacts(data) {
-      // Clear previous content safely
-      while (currentPhonesDiv.firstChild) {
-        currentPhonesDiv.removeChild(currentPhonesDiv.firstChild);
-      }
-      while (currentEmailsDiv.firstChild) {
-        currentEmailsDiv.removeChild(currentEmailsDiv.firstChild);
-      }
-
-      if (data.phones && data.phones.length > 0) {
-        data.phones.forEach(phone => {
-          const p = document.createElement('p');
-          p.className = 'flex items-center gap-2';
-          p.appendChild(makeIcon('phone', 16, 'text-primary-600 flex-shrink-0'));
-          p.appendChild(document.createTextNode(phone));
-          currentPhonesDiv.appendChild(p);
-        });
-      } else {
-        const p = document.createElement('p');
-        p.className = 'text-primary-400';
-        p.textContent = 'No phones configured';
-        currentPhonesDiv.appendChild(p);
-      }
-
-      if (data.emails && data.emails.length > 0) {
-        data.emails.forEach(email => {
-          const p = document.createElement('p');
-          p.className = 'flex items-center gap-2';
-          p.appendChild(makeIcon('email', 16, 'text-primary-600 flex-shrink-0'));
-          p.appendChild(document.createTextNode(email));
-          currentEmailsDiv.appendChild(p);
-        });
-      } else {
-        const p = document.createElement('p');
-        p.className = 'text-primary-400';
-        p.textContent = 'No emails configured';
-        currentEmailsDiv.appendChild(p);
-      }
-    }
-
-    // Save contact details — POST to /api/contact-details
-    contactDetailsForm?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const phones = phoneNumbersInput.value
-        .split('\n')
-        .map(p => p.trim())
-        .filter(p => p.length > 0);
-
-      const emails = emailAddressesInput.value
-        .split('\n')
-        .map(e => e.trim())
-        .filter(e => e.length > 0);
-
-      if (phones.length === 0 && emails.length === 0) {
-        toast('Add at least one phone number or email', 'error');
-        return;
-      }
-
-      try {
-        // Preserve other fields (address/office/factory) by reading current state first
-        const currentRes = await fetch('/api/contact-details');
-        const current = currentRes.ok ? await currentRes.json() : {};
-
-        const res = await fetch('/api/contact-details', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-          body: JSON.stringify({
-            phones,
-            emails,
-            address: current.address || null,
-            office: current.office || null,
-            factory: current.factory || null
-          })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Save failed');
-        displayCurrentContacts({ phones, emails });
-        toast('Contact details saved', 'success');
-      } catch (err) {
-        toast('Save failed: ' + err.message, 'error');
-      }
-    });
-
-    // Load contact details on page load and when content tab is clicked
-    loadContactDetails();
-    if (tabButtons.content) {
-      tabButtons.content.addEventListener('click', () => {
-        loadContactDetails();
-      });
-    }
-
-    // ============================================
-    // CERTIFICATIONS — API-driven (was localStorage)
-    // ============================================
-    const certificationForm = document.getElementById('certificationForm');
-    const certNameInput = document.getElementById('certName');
-    const certDescriptionInput = document.getElementById('certDescription');
-    const certImageInput = document.getElementById('certImageInput');
-    const certImagePreview = document.getElementById('certImagePreview');
-    const certImagePlaceholder = document.getElementById('certImagePlaceholder');
-    const certificationsList = document.getElementById('certificationsList');
-
-    async function loadCertifications() {
-      try {
-        const res = await fetch('/api/certifications');
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const certifications = await res.json();
-        renderCertifications(certifications);
-      } catch (err) {
-        console.error('Failed to load certifications:', err);
-        while (certificationsList.firstChild) certificationsList.removeChild(certificationsList.firstChild);
-        const p = document.createElement('p');
-        p.className = 'text-red-600 text-sm col-span-full';
-        p.textContent = 'Failed to load certifications. Is the API server running?';
-        certificationsList.appendChild(p);
-      }
-    }
-
-    function renderCertifications(certifications) {
-      while (certificationsList.firstChild) {
-        certificationsList.removeChild(certificationsList.firstChild);
-      }
-
-      if (certifications.length === 0) {
-        const p = document.createElement('p');
-        p.className = 'text-primary-600 text-sm col-span-full';
-        p.textContent = 'No certifications added yet';
-        certificationsList.appendChild(p);
-        return;
-      }
-
-      certifications.forEach((cert) => {
-        const div = document.createElement('div');
-        div.className = 'bg-gradient-green text-white p-6 rounded-lg flex flex-col items-center justify-center';
-
-        if (cert.image) {
-          const img = document.createElement('img');
-          img.src = cert.image;
-          img.alt = cert.name;
-          img.className = 'w-16 h-16 mb-3 object-contain';
-          img.loading = 'lazy';
-          div.appendChild(img);
-        }
-
-        const title = document.createElement('h5');
-        title.className = 'font-heading text-lg font-bold text-center mb-1';
-        title.textContent = cert.name;
-        div.appendChild(title);
-
-        const desc = document.createElement('p');
-        desc.className = 'text-sm text-center text-white/90 mb-4';
-        desc.textContent = cert.description;
-        div.appendChild(desc);
-
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'w-full p-2 bg-white/20 hover:bg-white/30 text-white font-bold text-xs rounded transition';
-        btn.textContent = 'DELETE';
-        btn.addEventListener('click', async (e) => {
-          e.preventDefault();
-          if (!confirm(`Delete "${cert.name}"?`)) return;
-          try {
-            const res = await fetch(`/api/certifications/${encodeURIComponent(cert.id)}`, {
-              method: 'DELETE',
-              headers: { ...getAuthHeader() }
-            });
-            if (!res.ok) {
-              const j = await res.json().catch(() => ({}));
-              throw new Error(j.error || 'HTTP ' + res.status);
-            }
-            toast('Certification deleted', 'success');
-            loadCertifications();
-          } catch (err) {
-            toast('Delete failed: ' + err.message, 'error');
-          }
-        });
-        div.appendChild(btn);
-
-        certificationsList.appendChild(div);
-      });
-    }
-
-    // Image preview on file input change
-    certImageInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file && file.size <= 2 * 1024 * 1024) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          certImagePreview.src = event.target.result;
-          certImagePreview.style.display = 'block';
-          certImagePlaceholder.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-      } else {
-        alert('File must be under 2MB');
-      }
-    });
-
-    // Drag and drop for certification image
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    const certDragZone = document.querySelector('[id="certificationForm"] .border-dashed');
-    if (certDragZone) {
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        certDragZone.addEventListener(eventName, preventDefaults, false);
-      });
-
-      ['dragenter', 'dragover'].forEach(eventName => {
-        certDragZone.addEventListener(eventName, () => {
-          certDragZone.style.borderColor = '#39572f';
-          certDragZone.style.backgroundColor = '#f0f5eb';
-        }, false);
-      });
-
-      ['dragleave', 'drop'].forEach(eventName => {
-        certDragZone.addEventListener(eventName, () => {
-          certDragZone.style.borderColor = '#c8d4c1';
-          certDragZone.style.backgroundColor = 'transparent';
-        }, false);
-      });
-
-      certDragZone.addEventListener('drop', (e) => {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        if (files.length > 0) {
-          certImageInput.files = files;
-          const event = new Event('change', { bubbles: true });
-          certImageInput.dispatchEvent(event);
-        }
-      }, false);
-    }
-
-    // Form submission — POST to /api/certifications
-    certificationForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const name = certNameInput.value.trim();
-      const description = certDescriptionInput.value.trim();
-
-      if (!name || !description) {
-        toast('Certification name and description are required', 'error');
-        return;
-      }
-
-      // Image: if user selected a new file, upload it first; else keep base64 inline (legacy fallback)
-      let imagePath = null;
-      const file = certImageInput.files[0];
-      if (file) {
-        try {
-          const fd = new FormData();
-          fd.append('image', file);
-          fd.append('productId', 'cert-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-          const res = await fetch('/api/upload/product-image', {
-            method: 'POST',
-            headers: { ...getAuthHeader() },
-            body: fd
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Upload failed');
-          imagePath = data.path;
-        } catch (err) {
-          toast('Image upload failed: ' + err.message, 'error');
-          return;
-        }
-      } else if (certImagePreview.src && certImagePreview.style.display !== 'none') {
-        // Preview is showing a previously-set image (data URL or path)
-        imagePath = certImagePreview.src.startsWith('data:') ? certImagePreview.src : new URL(certImagePreview.src, window.location.origin).pathname;
-      }
-
-      try {
-        const res = await fetch('/api/certifications', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-          body: JSON.stringify({ certification: { name, description, image: imagePath } })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Save failed');
-        toast('Certification added', 'success');
-      } catch (err) {
-        toast('Save failed: ' + err.message, 'error');
-        return;
-      }
-
-      certNameInput.value = '';
-      certDescriptionInput.value = '';
-      certImageInput.value = '';
-      certImagePreview.src = '';
-      certImagePreview.style.display = 'none';
-      certImagePlaceholder.style.display = 'block';
-
-      loadCertifications();
-    });
-
-    // Load certifications on page load and when content tab is clicked
-    loadCertifications();
-    if (tabButtons.content) {
-      const originalContentListener = tabButtons.content.onclick;
-      tabButtons.content.addEventListener('click', () => {
-        loadCertifications();
-      });
-    }
-
-    // ============================================
-    // SOCIAL LINKS
-    // ============================================
-    const socialForm = document.getElementById('socialForm');
-    const socialFields = {
-      facebook: document.getElementById('socialFacebook'),
-      linkedin: document.getElementById('socialLinkedin'),
-      x:        document.getElementById('socialX'),
-      youtube:  document.getElementById('socialYoutube'),
-      telegram: document.getElementById('socialTelegram'),
-      whatsapp: document.getElementById('socialWhatsapp'),
-    };
-
-    async function loadSocialLinks() {
-      try {
-        const res = await fetch('/api/social-links');
-        if (!res.ok) return;
-        const data = await res.json();
-        for (const key in socialFields) {
-          if (socialFields[key]) socialFields[key].value = data[key] || '';
-        }
-      } catch (e) { console.error('Error loading social links:', e); }
-    }
-
-    socialForm?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const payload = {};
-      for (const key in socialFields) {
-        payload[key] = socialFields[key] ? socialFields[key].value.trim() : '';
-      }
-      // Client-side: reject anything that isn't blank or http(s)
-      for (const key in payload) {
-        if (payload[key] && !/^https?:\/\//i.test(payload[key])) {
-          toast(`${key} must be a full URL starting with https://`, 'error');
-          return;
-        }
-      }
-      try {
-        const res = await fetch('/api/social-links', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          toast('Social links saved. Refresh the site to see the icons.', 'success');
-        } else if (res.status === 401) {
-          toast('Session expired — please log in again.', 'error');
-        } else {
-          toast('Failed to save social links.', 'error');
-        }
-      } catch (err) {
-        toast('Network error saving social links.', 'error');
-      }
-    });
-
-    // Load on page load + when the Social tab is opened
-    loadSocialLinks();
-    tabButtons.social?.addEventListener('click', loadSocialLinks);
-
-    // ============================================
-    // ANALYTICS DASHBOARD
-    // ============================================
-    const analyticsRange = document.getElementById('analyticsRange');
-    const analyticsEmpty = document.getElementById('analyticsEmpty');
-
-    // Horizontal bar list used for pages / referrers / devices.
-    // Labels come from visitor-supplied data (paths, referrer hosts) so they are
-    // rendered with textContent — never innerHTML.
-    function renderBarList(el, items, emptyLabel) {
-      if (!el) return;
-      el.replaceChildren();
-      if (!items || !items.length) {
-        const p = document.createElement('p');
-        p.className = 'text-primary-400 text-sm';
-        p.textContent = emptyLabel;
-        el.appendChild(p);
-        return;
-      }
-      const max = Math.max(...items.map((i) => i.count), 1);
-      items.forEach((item) => {
-        const row = document.createElement('div');
-
-        const head = document.createElement('div');
-        head.className = 'flex justify-between gap-3 mb-1';
-        const name = document.createElement('span');
-        name.className = 'truncate';
-        name.title = item.name;
-        name.textContent = item.name;
-        const count = document.createElement('span');
-        count.className = 'font-bold text-primary-900 flex-shrink-0';
-        count.textContent = item.count;
-        head.appendChild(name); head.appendChild(count);
-
-        const track = document.createElement('div');
-        track.className = 'h-1.5 bg-primary-100';
-        const fill = document.createElement('div');
-        fill.className = 'h-full bg-primary-600';
-        fill.style.width = Math.round((item.count / max) * 100) + '%';
-        track.appendChild(fill);
-
-        row.appendChild(head); row.appendChild(track);
-        el.appendChild(row);
-      });
-    }
-
-    // Product interest: one row per product showing quote clicks alongside the
-    // inquiries that actually named it, so the gap between the two is visible
-    // (lots of clicks but no inquiries = people look, then don't ask).
-    // Product names are admin-supplied, so use textContent, never innerHTML.
-    function renderProductList(el, items) {
-      if (!el) return;
-      el.replaceChildren();
-      if (!items || !items.length) {
-        const p = document.createElement('p');
-        p.className = 'text-primary-400 text-sm';
-        p.textContent = 'No product interest recorded yet. Clicks on a "Request quote" button will appear here.';
-        el.appendChild(p);
-        return;
-      }
-      // Scale both bars against the same max so their lengths are comparable.
-      const max = Math.max(...items.map((i) => Math.max(i.clicks, i.inquiries)), 1);
-      items.forEach((item) => {
-        const row = document.createElement('div');
-
-        const head = document.createElement('div');
-        head.className = 'flex justify-between gap-3 mb-1';
-        const name = document.createElement('span');
-        name.className = 'truncate font-medium';
-        name.title = item.name;
-        name.textContent = item.name;
-        const count = document.createElement('span');
-        count.className = 'flex-shrink-0 text-xs text-primary-600';
-        count.textContent = `${item.clicks} click${item.clicks === 1 ? '' : 's'} · ${item.inquiries} inquir${item.inquiries === 1 ? 'y' : 'ies'}`;
-        head.appendChild(name); head.appendChild(count);
-        row.appendChild(head);
-
-        [['bg-primary-600', item.clicks], ['bg-teal-accent', item.inquiries]].forEach(([color, value]) => {
-          const track = document.createElement('div');
-          track.className = 'h-1.5 bg-primary-100 mb-0.5';
-          const fill = document.createElement('div');
-          fill.className = `h-full ${color}`;
-          fill.style.width = Math.round((value / max) * 100) + '%';
-          track.appendChild(fill);
-          row.appendChild(track);
-        });
-
-        el.appendChild(row);
-      });
-    }
-
-    // Grouped bar chart (views + unique visitors per day). All values here are
-    // server-generated numbers / ISO dates, so an SVG string is safe.
-    function renderChart(series) {
-      const host = document.getElementById('analyticsChart');
-      if (!host) return;
-      const H = 180, PAD_B = 26, GROUP = 14, BAR = 5;
-      const max = Math.max(1, ...series.map((d) => Math.max(d.views, d.uniques)));
-      const W = Math.max(series.length * GROUP + 10, 320);
-
-      const bars = series.map((d, i) => {
-        const x = 5 + i * GROUP;
-        const vh = Math.round(((H - PAD_B) * d.views) / max);
-        const uh = Math.round(((H - PAD_B) * d.uniques) / max);
-        const label = `${d.date}: ${d.views} views, ${d.uniques} visitors, ${d.inquiries} inquiries`;
-        return `<g><title>${label}</title>` +
-          `<rect x="${x}" y="${H - PAD_B - vh}" width="${BAR}" height="${vh}" fill="#39572f"/>` +
-          `<rect x="${x + BAR + 1}" y="${H - PAD_B - uh}" width="${BAR}" height="${uh}" fill="#2c7a7b"/>` +
-          `</g>`;
-      }).join('');
-
-      // Show first / middle / last date so the axis stays readable at 90 days.
-      const tickIdx = [0, Math.floor(series.length / 2), series.length - 1];
-      const ticks = tickIdx.map((i) => {
-        const d = series[i];
-        if (!d) return '';
-        const x = 5 + i * GROUP;
-        const anchor = i === 0 ? 'start' : i === series.length - 1 ? 'end' : 'middle';
-        return `<text x="${x + BAR}" y="${H - 8}" font-size="10" fill="#547d46" text-anchor="${anchor}">${d.date.slice(5)}</text>`;
-      }).join('');
-
-      host.innerHTML =
-        `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily views and visitors">` +
-        `<line x1="0" y1="${H - PAD_B}" x2="${W}" y2="${H - PAD_B}" stroke="#c8dba3" stroke-width="1"/>` +
-        bars + ticks + `</svg>`;
-    }
-
-    async function loadAnalytics() {
-      const days = analyticsRange ? analyticsRange.value : 30;
-      try {
-        const res = await fetch(`/api/analytics?days=${days}`, { headers: getAuthHeader() });
-        if (res.status === 401) { toast('Session expired — please log in again.', 'error'); return; }
-        if (!res.ok) { toast('Could not load analytics.', 'error'); return; }
-        const d = await res.json();
-
-        document.getElementById('kpiViews').textContent = d.totals.views.toLocaleString();
-        document.getElementById('kpiUniques').textContent = d.totals.uniques.toLocaleString();
-        document.getElementById('kpiInquiries').textContent = d.totals.inquiries.toLocaleString();
-        document.getElementById('kpiConversion').textContent = d.totals.conversionRate + '%';
-
-        renderChart(d.series);
-        renderBarList(document.getElementById('analyticsPages'), d.topPages, 'No page views yet');
-        renderBarList(document.getElementById('analyticsReferrers'), d.topReferrers, 'No referrers yet');
-        renderBarList(document.getElementById('analyticsDevices'), [
-          { name: 'Desktop', count: d.devices.desktop },
-          { name: 'Mobile', count: d.devices.mobile },
-          { name: 'Tablet', count: d.devices.tablet }
-        ].filter((x) => x.count > 0), 'No device data yet');
-        renderProductList(document.getElementById('analyticsProducts'), d.products);
-
-        analyticsEmpty?.classList.toggle('hidden', d.totals.views > 0);
-      } catch (err) {
-        toast('Network error loading analytics.', 'error');
-      }
-    }
-
-    analyticsRange?.addEventListener('change', loadAnalytics);
-    document.getElementById('analyticsRefresh')?.addEventListener('click', loadAnalytics);
-    tabButtons.analytics?.addEventListener('click', loadAnalytics);
-    // Only auto-load if a token already exists; otherwise checkSession/login
-    // will trigger it. (Calling it unauthenticated produced a spurious
-    // "Session expired" toast on the login screen.)
-    if (localStorage.getItem('adminToken')) loadAnalytics();
-
-    // ============================================
-    // SHARED HELPERS — toast + auth header
-    // ============================================
-    function getAuthHeader() {
-      const token = localStorage.getItem('adminToken');
-      return token ? { 'Authorization': `Bearer ${token}` } : {};
-    }
-
-    // Lightweight toast — replaces alert() for non-blocking feedback
-    function toast(message, type = 'info') {
-      let host = document.getElementById('admin-toast-host');
-      if (!host) {
-        host = document.createElement('div');
-        host.id = 'admin-toast-host';
-        host.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
-        document.body.appendChild(host);
-      }
-      const el = document.createElement('div');
-      const colors = {
-        info:    { bg: '#39572f', border: '#21341a' },
-        success: { bg: '#2c7a7b', border: '#1f5759' },
-        error:   { bg: '#b91c1c', border: '#7f1d1d' },
-        warn:    { bg: '#b45309', border: '#78350f' }
-      };
-      const c = colors[type] || colors.info;
-      el.style.cssText = `background:${c.bg};color:white;padding:14px 20px;border-radius:8px;border-left:4px solid ${c.border};box-shadow:0 4px 16px rgba(0,0,0,.15);font-weight:500;font-size:14px;max-width:380px;pointer-events:auto;animation:slideInRightToast .3s ease-out;`;
-      el.textContent = message;
-      host.appendChild(el);
-      setTimeout(() => {
-        el.style.transition = 'all .3s ease';
-        el.style.opacity = '0';
-        el.style.transform = 'translateX(20px)';
-        setTimeout(() => el.remove(), 300);
-      }, 3500);
-    }
-
-    // Toast slide-in keyframes (injected once)
-    if (!document.getElementById('admin-toast-style')) {
-      const style = document.createElement('style');
-      style.id = 'admin-toast-style';
-      style.textContent = '@keyframes slideInRightToast{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}';
-      document.head.appendChild(style);
-    }
-
-    // ============================================
-    // PRODUCTS — API-driven CRUD
-    // ============================================
-    const productForm           = document.getElementById('productForm');
-    const productFormTitle      = document.getElementById('productFormTitle');
-    const productIdField        = document.getElementById('productId');
-    const productNameField      = document.getElementById('productName');
-    const productDescField      = document.getElementById('productDescription');
-    const productPurityField    = document.getElementById('productPurity');
-    const productMoqField       = document.getElementById('productMoq');
-    const productCategoryField  = document.getElementById('productCategory');
-    const productSpecsField     = document.getElementById('productSpecs');
-    const productImageFile      = document.getElementById('productImageFile');
-    const productImagePreview   = document.getElementById('productImagePreview');
-    const productImagePlaceholder = document.getElementById('productImagePlaceholder');
-    const productImagePath      = document.getElementById('productImagePath');
-    const productImageClearBtn  = document.getElementById('productImageClearBtn');
-    const productSaveBtn        = document.getElementById('productSaveBtn');
-    const productSaveBtnLabel   = document.getElementById('productSaveBtnLabel');
-    const productCancelEditBtn  = document.getElementById('productCancelEditBtn');
-    const productsListContainer = document.getElementById('productsListContainer');
-    const productCountLabel     = document.getElementById('productCountLabel');
-    const productsRefreshBtn    = document.getElementById('productsRefreshBtn');
-
-    function setProductImagePreview(url) {
-      if (url) {
-        productImagePreview.src = url;
-        productImagePreview.style.display = 'block';
-        productImagePlaceholder.style.display = 'none';
-        productImageClearBtn.style.display = 'inline';
-        productImagePath.value = url;
-      } else {
-        productImagePreview.src = '';
-        productImagePreview.style.display = 'none';
-        productImagePlaceholder.style.display = 'block';
-        productImageClearBtn.style.display = 'none';
-        productImagePath.value = '';
-      }
-    }
-
-    function resetProductForm() {
-      productForm.reset();
-      productIdField.value = '';
-      setProductImagePreview('');
-      productFormTitle.innerHTML = productFormTitle.innerHTML.replace('Edit Product', 'Add Product');
-      productSaveBtnLabel.textContent = 'SAVE PRODUCT';
-      productCancelEditBtn.style.display = 'none';
-    }
-
-    function fillProductForm(p) {
-      productIdField.value = p.id || '';
-      productNameField.value = p.name || '';
-      productDescField.value = p.description || '';
-      productPurityField.value = p.purity || '';
-      productMoqField.value = p.moq || '';
-      productCategoryField.value = p.category || '';
-      productSpecsField.value = (p.specs || []).join('\n');
-      setProductImagePreview(p.image || '');
-      productFormTitle.innerHTML = productFormTitle.innerHTML.replace('Add Product', 'Edit Product');
-      productSaveBtnLabel.textContent = 'UPDATE PRODUCT';
-      productCancelEditBtn.style.display = 'inline-block';
-      productForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    async function loadProducts() {
-      productsListContainer.textContent = '';
-      const loading = document.createElement('p');
-      loading.className = 'text-primary-600 text-sm';
-      loading.textContent = 'Loading products...';
-      productsListContainer.appendChild(loading);
-
-      try {
-        const res = await fetch('/api/products');
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const products = await res.json();
-        renderProducts(products);
-      } catch (err) {
-        console.error('Failed to load products:', err);
-        productsListContainer.textContent = '';
-        const errMsg = document.createElement('p');
-        errMsg.className = 'text-red-600 text-sm';
-        errMsg.textContent = 'Failed to load products. Is the API server running?';
-        productsListContainer.appendChild(errMsg);
-        productCountLabel.textContent = '0';
-      }
-    }
-
-    function renderProducts(products) {
-      productsListContainer.textContent = '';
-      productCountLabel.textContent = products.length;
-
-      if (products.length === 0) {
-        const empty = document.createElement('p');
-        empty.className = 'text-primary-600 text-sm';
-        empty.textContent = 'No products yet. Add your first one above.';
-        productsListContainer.appendChild(empty);
-        return;
-      }
-
-      products.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'bg-white border-2 border-primary-200 p-6 hover:border-primary-600 transition';
-
-        const top = document.createElement('div');
-        top.className = 'flex justify-between items-start gap-4 mb-4';
-
-        const left = document.createElement('div');
-        left.className = 'flex gap-4 items-start flex-1 min-w-0';
-
-        if (p.image) {
-          const img = document.createElement('img');
-          img.src = p.image;
-          img.alt = p.name;
-          img.className = 'w-20 h-20 object-cover rounded border border-primary-200 flex-shrink-0';
-          img.loading = 'lazy';
-          left.appendChild(img);
-        }
-
-        const info = document.createElement('div');
-        info.className = 'min-w-0';
-        const h5 = document.createElement('h5');
-        h5.className = 'font-bold text-lg text-primary-900 truncate';
-        h5.textContent = p.name;
-        info.appendChild(h5);
-        const desc = document.createElement('p');
-        desc.className = 'text-primary-900 text-sm mt-1 line-clamp-2';
-        desc.textContent = p.description;
-        info.appendChild(desc);
-        left.appendChild(info);
-        top.appendChild(left);
-
-        const actions = document.createElement('div');
-        actions.className = 'flex gap-2 flex-shrink-0';
-
-        const editBtn = document.createElement('button');
-        editBtn.type = 'button';
-        editBtn.className = 'p-2 border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition';
-        editBtn.title = 'Edit';
-        editBtn.setAttribute('aria-label', `Edit ${p.name}`);
-        editBtn.appendChild(makeIcon('edit', 18));
-        editBtn.addEventListener('click', () => fillProductForm(p));
-        actions.appendChild(editBtn);
-
-        const delBtn = document.createElement('button');
-        delBtn.type = 'button';
-        delBtn.className = 'p-2 border-2 border-red-600 text-red-600 hover:bg-red-50 transition';
-        delBtn.title = 'Delete';
-        delBtn.setAttribute('aria-label', `Delete ${p.name}`);
-        delBtn.appendChild(makeIcon('delete', 18));
-        delBtn.addEventListener('click', () => deleteProduct(p));
-        actions.appendChild(delBtn);
-
-        top.appendChild(actions);
-        card.appendChild(top);
-
-        const meta = document.createElement('div');
-        meta.className = 'flex flex-wrap gap-x-6 gap-y-2 text-sm text-primary-600';
-        if (p.purity)   { const s = document.createElement('span'); s.className = 'font-semibold'; s.textContent = `Purity: ${p.purity}`; meta.appendChild(s); }
-        if (p.moq)      { const s = document.createElement('span'); s.className = 'font-semibold'; s.textContent = `MOQ: ${p.moq}`; meta.appendChild(s); }
-        if (p.category) { const s = document.createElement('span'); s.className = 'font-semibold'; s.textContent = `Category: ${p.category}`; meta.appendChild(s); }
-        card.appendChild(meta);
-
-        productsListContainer.appendChild(card);
-      });
-    }
-
-    async function deleteProduct(p) {
-      if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
-      try {
-        const res = await fetch(`/api/products/${encodeURIComponent(p.id)}`, {
-          method: 'DELETE',
-          headers: { ...getAuthHeader() }
-        });
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
-          throw new Error(j.error || 'HTTP ' + res.status);
-        }
-        toast(`Deleted: ${p.name}`, 'success');
-        loadProducts();
-      } catch (err) {
-        toast('Delete failed: ' + err.message, 'error');
-      }
-    }
-
-    // Image file -> upload to /api/upload/product-image -> store returned path
-    productImageFile.addEventListener('change', async () => {
-      const file = productImageFile.files[0];
-      if (!file) return;
-      if (file.size > 10 * 1024 * 1024) {
-        toast('Image too large (max 10MB)', 'error');
-        productImageFile.value = '';
-        return;
-      }
-
-      // Local preview while uploading
-      const localUrl = URL.createObjectURL(file);
-      productImagePreview.src = localUrl;
-      productImagePreview.style.display = 'block';
-      productImagePlaceholder.style.display = 'none';
-
-      const fd = new FormData();
-      fd.append('image', file);
-      fd.append('productId', productNameField.value || 'product');
-
-      try {
-        productSaveBtn.disabled = true;
-        toast('Uploading image...', 'info');
-        const res = await fetch('/api/upload/product-image', {
-          method: 'POST',
-          headers: { ...getAuthHeader() },
-          body: fd
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Upload failed');
-        setProductImagePreview(data.path);
-        toast('Image uploaded & optimized', 'success');
-      } catch (err) {
-        toast('Upload failed: ' + err.message, 'error');
-        setProductImagePreview('');
-      } finally {
-        productSaveBtn.disabled = false;
-        productImageFile.value = '';
-      }
-    });
-
-    productImageClearBtn.addEventListener('click', () => setProductImagePreview(''));
-    productCancelEditBtn.addEventListener('click', resetProductForm);
-    productsRefreshBtn.addEventListener('click', loadProducts);
-
-    productForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const product = {
-        id: productIdField.value || undefined,
-        name: productNameField.value.trim(),
-        description: productDescField.value.trim(),
-        purity: productPurityField.value.trim(),
-        moq: productMoqField.value.trim(),
-        category: productCategoryField.value.trim() || 'General',
-        specs: productSpecsField.value.split('\n').map(s => s.trim()).filter(Boolean),
-        image: productImagePath.value || null
-      };
-
-      if (!product.name || !product.description) {
-        toast('Name and description are required', 'error');
-        return;
-      }
-
-      try {
-        productSaveBtn.disabled = true;
-        const res = await fetch('/api/products', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-          body: JSON.stringify({ product })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Save failed');
-        toast(productIdField.value ? 'Product updated' : 'Product added', 'success');
-        resetProductForm();
-        loadProducts();
-      } catch (err) {
-        toast('Save failed: ' + err.message, 'error');
-      } finally {
-        productSaveBtn.disabled = false;
-      }
-    });
-
-    // Load products on page-load and when Products tab is clicked
-    loadProducts();
-    if (tabButtons.products) {
-      tabButtons.products.addEventListener('click', loadProducts);
-    }
-
-    // ============================================
-    // INQUIRIES INBOX — list, triage, reply, delete
-    // ============================================
-    const inqFilterEl = document.getElementById('inqFilter');
-    const inqListEl   = document.getElementById('inquiriesList');
-    const inqEmptyEl  = document.getElementById('inqEmpty');
-    const inqCountsEl = document.getElementById('inqCounts');
-    const inqBadge    = document.getElementById('inqBadge');
-    const inqRefresh  = document.getElementById('inqRefresh');
-    let inquiriesCache = [];
-
-    function inqFmtDate(iso) {
-      try { return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); }
-      catch (e) { return iso || ''; }
-    }
-
-    async function loadInquiries() {
-      try {
-        const res = await fetch('/api/admin/inquiries', { headers: getAuthHeader() });
-        if (res.status === 401) return; // session handled elsewhere
-        if (!res.ok) throw new Error('load failed');
-        const data = await res.json();
-        inquiriesCache = Array.isArray(data.inquiries) ? data.inquiries : [];
-        renderInqCounts(data.counts || {});
-        renderInquiries();
-      } catch (e) {
-        toast('Failed to load inquiries', 'error');
-      }
-    }
-
-    function renderInqCounts(counts) {
-      // Tab badge shows the count of NEW (un-triaged) leads.
-      const nw = counts.new || 0;
-      if (inqBadge) {
-        if (nw > 0) { inqBadge.textContent = String(nw); inqBadge.classList.remove('hidden'); inqBadge.classList.add('inline-flex'); }
-        else { inqBadge.classList.add('hidden'); inqBadge.classList.remove('inline-flex'); }
-      }
-      if (!inqCountsEl) return;
-      inqCountsEl.replaceChildren();
-      [['All', counts.total || 0], ['New', counts.new || 0], ['Read', counts.read || 0], ['Archived', counts.archived || 0]]
-        .forEach(([label, n]) => {
-          const chip = document.createElement('span');
-          chip.className = 'px-3 py-1 rounded-full bg-primary-50 text-primary-700 font-semibold';
-          chip.textContent = label + ': ' + n;
-          inqCountsEl.appendChild(chip);
-        });
-    }
-
-    function renderInquiries() {
-      if (!inqListEl) return;
-      const filter = inqFilterEl ? inqFilterEl.value : 'all';
-      const items = inquiriesCache.filter((i) => filter === 'all' ? true : i.status === filter);
-      inqListEl.replaceChildren();
-      if (!items.length) { inqEmptyEl?.classList.remove('hidden'); return; }
-      inqEmptyEl?.classList.add('hidden');
-      items.forEach((it) => inqListEl.appendChild(buildInquiryCard(it)));
-    }
-
-    // Build a lead card with textContent only — inquiry fields are visitor input
-    // and must never be interpreted as markup.
-    function buildInquiryCard(it) {
-      const isNew = it.status === 'new';
-      const card = document.createElement('div');
-      card.className = 'rounded-lg p-6 bg-white border-2 ' + (isNew ? 'border-primary-600' : 'border-primary-200');
-
-      // Header row: name + company, status pill, date
-      const head = document.createElement('div');
-      head.className = 'flex flex-wrap items-start justify-between gap-3 mb-4';
-      const who = document.createElement('div');
-      const nameEl = document.createElement('p');
-      nameEl.className = 'font-heading text-lg font-bold text-primary-900';
-      nameEl.textContent = it.name || 'Unknown';
-      who.appendChild(nameEl);
-      if (it.company) {
-        const co = document.createElement('p');
-        co.className = 'text-sm text-primary-600';
-        co.textContent = it.company;
-        who.appendChild(co);
-      }
-      const meta = document.createElement('div');
-      meta.className = 'text-right';
-      const pill = document.createElement('span');
-      const pillColor = isNew ? 'bg-primary-600 text-white' : (it.status === 'archived' ? 'bg-gray-200 text-gray-600' : 'bg-primary-100 text-primary-700');
-      pill.className = 'inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide ' + pillColor;
-      pill.textContent = it.status || 'new';
-      const date = document.createElement('p');
-      date.className = 'text-xs text-gray-500 mt-1';
-      date.textContent = inqFmtDate(it.createdAt);
-      meta.appendChild(pill); meta.appendChild(date);
-      head.appendChild(who); head.appendChild(meta);
-      card.appendChild(head);
-
-      // Contact + product facts
-      const facts = document.createElement('div');
-      facts.className = 'grid sm:grid-cols-2 gap-x-6 gap-y-2 mb-4 text-sm';
-      const addFact = (label, value, href) => {
-        if (!value) return;
-        const row = document.createElement('div');
-        const lab = document.createElement('span');
-        lab.className = 'text-[10px] uppercase tracking-[0.15em] text-primary-600 font-bold block';
-        lab.textContent = label;
-        let val;
-        if (href) { val = document.createElement('a'); val.href = href; val.className = 'text-primary-900 font-semibold hover:text-primary-600 break-all'; }
-        else { val = document.createElement('span'); val.className = 'text-primary-900 font-semibold break-all'; }
-        val.textContent = value;
-        row.appendChild(lab); row.appendChild(val); facts.appendChild(row);
-      };
-      addFact('Email', it.email, it.email ? 'mailto:' + it.email : null);
-      addFact('Phone', it.phone, it.phone ? 'tel:' + String(it.phone).replace(/[^\d+]/g, '') : null);
-      addFact('Product', it.product, null);
-      addFact('Delivery', it.emailed ? 'Email sent' : 'Email NOT sent (saved anyway)', null);
-      card.appendChild(facts);
-
-      // Message
-      if (it.message) {
-        const msg = document.createElement('p');
-        msg.className = 'text-primary-900 leading-relaxed whitespace-pre-wrap border-t border-primary-200 pt-4 mb-4';
-        msg.textContent = it.message;
-        card.appendChild(msg);
-      }
-
-      // Actions
-      const actions = document.createElement('div');
-      actions.className = 'flex flex-wrap gap-2';
-      const mkBtn = (label, cls, fn) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'px-4 py-2 text-sm font-bold rounded transition ' + cls;
-        b.textContent = label;
-        b.addEventListener('click', fn);
-        return b;
-      };
-      if (it.email) {
-        const reply = document.createElement('a');
-        reply.href = 'mailto:' + it.email + '?subject=' + encodeURIComponent('Re: your inquiry' + (it.product ? ' — ' + it.product : '')) ;
-        reply.className = 'px-4 py-2 text-sm font-bold rounded transition bg-primary-900 hover:bg-primary-800 text-white';
-        reply.textContent = 'Reply by email';
-        // Opening the mail client is the admin acting on the lead — mark it read.
-        reply.addEventListener('click', () => { if (it.status === 'new') setInquiryStatus(it.id, 'read'); });
-        actions.appendChild(reply);
-      }
-      if (it.status !== 'read')     actions.appendChild(mkBtn('Mark read', 'border-2 border-primary-600 text-primary-600 hover:bg-primary-50', () => setInquiryStatus(it.id, 'read')));
-      if (it.status === 'read')     actions.appendChild(mkBtn('Mark new', 'border-2 border-primary-600 text-primary-600 hover:bg-primary-50', () => setInquiryStatus(it.id, 'new')));
-      if (it.status !== 'archived') actions.appendChild(mkBtn('Archive', 'border-2 border-primary-200 text-primary-600 hover:bg-primary-50', () => setInquiryStatus(it.id, 'archived')));
-      actions.appendChild(mkBtn('Delete', 'border-2 border-red-500 text-red-600 hover:bg-red-50', () => deleteInquiry(it.id)));
-      card.appendChild(actions);
-
-      return card;
-    }
-
-    async function setInquiryStatus(id, status) {
-      try {
-        const res = await fetch('/api/admin/inquiries/' + encodeURIComponent(id), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-          body: JSON.stringify({ status })
-        });
-        if (!res.ok) throw new Error('update failed');
-        loadInquiries();
-      } catch (e) { toast('Update failed', 'error'); }
-    }
-
-    async function deleteInquiry(id) {
-      if (!window.confirm('Delete this inquiry permanently? This cannot be undone.')) return;
-      try {
-        const res = await fetch('/api/admin/inquiries/' + encodeURIComponent(id), {
-          method: 'DELETE',
-          headers: getAuthHeader()
-        });
-        if (!res.ok) throw new Error('delete failed');
-        toast('Inquiry deleted', 'success');
-        loadInquiries();
-      } catch (e) { toast('Delete failed', 'error'); }
-    }
-
-    inqFilterEl?.addEventListener('change', renderInquiries);
-    inqRefresh?.addEventListener('click', loadInquiries);
-    tabButtons.inquiries?.addEventListener('click', loadInquiries);
-    // Populate the badge as soon as the panel is authenticated.
-    if (localStorage.getItem('adminToken')) loadInquiries();
-  </script>
-</BaseLayout>
+</header>
+
+<!-- sign in -->
+<main class="a-login" id="loginView" hidden>
+  <form class="a-card a-login-card" id="loginForm" novalidate>
+    <div>
+      <h1>Sign in</h1>
+      <p>Manage enquiries, products and company details for oliraagroindustry.com.</p>
+    </div>
+    <div class="a-field">
+      <label for="password">Admin password</label>
+      <div class="a-pass">
+        <input class="input" id="password" name="password" type="password" autocomplete="current-password" required aria-describedby="loginError">
+        <button class="btn btn-ghost btn-sm" type="button" id="togglePass" aria-pressed="false">Show</button>
+      </div>
+      <p class="err" id="loginError" role="alert" hidden></p>
+    </div>
+    <button class="btn btn-primary btn-lg" type="submit">Sign in</button>
+    <p class="a-note">Forgotten the password? The site administrator can reset it on the server with an admin-reset.txt file.</p>
+  </form>
+</main>
+
+<!-- panel -->
+<div class="a-shell" id="panel" hidden>
+  <nav class="a-side" aria-label="Admin sections">
+    {nav.map((g) => (
+      <div class="a-side-group">
+        <p>{g.label}</p>
+        {g.items.map(([id, label]) => (
+          <a class="a-nav-link" href={`#${id}`} data-nav={id}>
+            <Fragment set:html={Svg(id)} />{label}
+            {id === 'enquiries' && <span class="a-count" id="newCount" hidden></span>}
+          </a>
+        ))}
+      </div>
+    ))}
+  </nav>
+
+  <main id="adminMain" tabindex="-1">
+
+    <!-- OVERVIEW -->
+    <section class="a-view" data-view="overview" aria-labelledby="h-overview" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-overview">Overview</h1>
+          <p>Visits and enquiries from the website. Counted without cookies; no IP addresses are stored.</p>
+        </div>
+        <label class="a-field" style="gap:4px">
+          <span class="a-label sr-only">Period</span>
+          <select class="input" id="range" style="height:40px;width:auto">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+          </select>
+        </label>
+      </div>
+      <div class="a-callout" id="newCallout" hidden>
+        <span id="newCalloutText"></span>
+        <a class="btn btn-primary btn-sm" href="#enquiries">Open enquiries</a>
+      </div>
+      <div class="a-kpis">
+        <div class="a-card a-kpi"><p>Page views</p><strong id="kViews">0</strong></div>
+        <div class="a-card a-kpi"><p>Visitors</p><strong id="kVisitors">0</strong></div>
+        <div class="a-card a-kpi"><p>Enquiries</p><strong id="kEnquiries">0</strong></div>
+        <div class="a-card a-kpi"><p>Enquiries per 100 views</p><strong id="kRate">0</strong></div>
+      </div>
+      <div class="a-card">
+        <div class="row-between" style="flex-wrap:wrap">
+          <h2 style="font-size:1.375rem">Daily visits</h2>
+          <div class="a-legend" aria-hidden="true"><span><i style="background:var(--accent)"></i>Page views</span><span><i style="background:var(--leaf)"></i>Visitors</span></div>
+        </div>
+        <div id="chart" style="margin-top:14px"></div>
+      </div>
+      <div class="a-three">
+        <div class="a-card"><h2>Pages</h2><div class="a-bars" id="topPages"></div></div>
+        <div class="a-card"><h2>Where visitors came from</h2><div class="a-bars" id="topRefs"></div></div>
+        <div class="a-card"><h2>Devices</h2><div class="a-bars" id="devices"></div></div>
+      </div>
+      <div class="a-card">
+        <h2>Product interest</h2>
+        <p>How often visitors opened each product's details, and how many enquiries named it.</p>
+        <div id="productInterest"></div>
+      </div>
+    </section>
+
+    <!-- ENQUIRIES -->
+    <section class="a-view" data-view="enquiries" aria-labelledby="h-enquiries" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-enquiries">Enquiries</h1>
+          <p>Every message sent from the website forms, kept here even when the notification email fails.</p>
+        </div>
+        <div class="row" style="--gap:8px">
+          <button class="btn btn-secondary" type="button" id="leadsCsv">Download CSV</button>
+          <button class="btn btn-secondary" type="button" id="leadsRefresh">Refresh</button>
+        </div>
+      </div>
+      <div class="a-filters">
+        <fieldset class="a-seg" id="leadStatus" style="border:0;margin:0">
+          <legend class="sr-only">Status</legend>
+          <label><input type="radio" name="leadStatus" value="new" checked><span>New <b data-count="new">0</b></span></label>
+          <label><input type="radio" name="leadStatus" value="read"><span>Read <b data-count="read">0</b></span></label>
+          <label><input type="radio" name="leadStatus" value="archived"><span>Archived <b data-count="archived">0</b></span></label>
+          <label><input type="radio" name="leadStatus" value="all"><span>All <b data-count="total">0</b></span></label>
+        </fieldset>
+        <label class="sr-only" for="leadLine">Business line</label>
+        <select class="input" id="leadLine">
+          <option value="all">Both business lines</option>
+          <option value="agri">Agriculture</option>
+          <option value="pack">Packaging</option>
+        </select>
+        <label class="sr-only" for="leadSearch">Search enquiries</label>
+        <input class="input grow" id="leadSearch" type="search" placeholder="Search name, company, email or message">
+      </div>
+      <p class="sr-only" id="leadsLive" role="status" aria-live="polite"></p>
+      <div class="a-leads" id="leads"></div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section class="a-view" data-view="products" aria-labelledby="h-products" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-products">Products</h1>
+          <p>The agricultural products in the stack on the agriculture page, in this order. The first product is the card in front.</p>
+        </div>
+        <button class="btn btn-primary" type="button" id="productNew">Add product</button>
+      </div>
+      <div class="a-products">
+        <div class="a-card">
+          <h2>Order on the website</h2>
+          <p>Home page links open the first product whose category is Sesame, Pulses, Spices or Coffee, so keep those category names.</p>
+          <ol class="a-plist" id="productList"></ol>
+          <p class="sr-only" id="productLive" role="status" aria-live="polite"></p>
+        </div>
+        <div class="a-card a-editor">
+          <h2 id="editorTitle">Add product</h2>
+          <form class="a-form" id="productForm" novalidate>
+            <input type="hidden" name="id">
+            <div class="a-field">
+              <label for="pName">Name</label>
+              <input class="input" id="pName" name="name" required maxlength="200" aria-describedby="pNameErr">
+              <p class="err" id="pNameErr" hidden></p>
+            </div>
+            <div class="a-two">
+              <div class="a-field">
+                <label for="pCategory">Category</label>
+                <input class="input" id="pCategory" name="category" maxlength="50" list="categoryList">
+                <datalist id="categoryList"><option value="Sesame"></option><option value="Pulses"></option><option value="Spices"></option><option value="Coffee"></option><option value="Specialty"></option></datalist>
+              </div>
+              <div class="a-field">
+                <label for="pPurity">Purity</label>
+                <input class="input" id="pPurity" name="purity" maxlength="50" placeholder="99.95%">
+              </div>
+            </div>
+            <div class="a-field">
+              <label for="pMoq">Minimum order</label>
+              <input class="input" id="pMoq" name="moq" maxlength="50" placeholder="10 MT">
+            </div>
+            <div class="a-field">
+              <label for="pDesc">Description</label>
+              <textarea class="input" id="pDesc" name="description" required maxlength="2000" aria-describedby="pDescErr"></textarea>
+              <p class="err" id="pDescErr" hidden></p>
+            </div>
+            <div class="a-field">
+              <label for="pSpecs">Key points</label>
+              <textarea class="input" id="pSpecs" name="specs" aria-describedby="pSpecsHint" style="min-height:96px"></textarea>
+              <p class="hint" id="pSpecsHint">One per line, up to 20. Shown as a list in the product details.</p>
+            </div>
+            <div class="a-field">
+              <span class="a-label" id="pImageLabel">Photo</span>
+              <div class="a-image-row">
+                <figure class="a-preview" id="pPreview" aria-hidden="true">
+                  <img alt="" hidden>
+                  <span class="ph">No photo</span>
+                  <figcaption><em style="font-style:normal" data-preview-name>Product name</em><span data-preview-cat>Category</span></figcaption>
+                </figure>
+                <div>
+                  <label class="a-drop" id="pDrop">
+                    <input type="file" id="pImage" accept="image/jpeg,image/png,image/webp" aria-labelledby="pImageLabel" aria-describedby="pImageHint">
+                    <strong>Upload a photo</strong>
+                    <span id="pImageHint">JPG, PNG or WebP up to 10 MB. Saved at 1200 px. The card shows the centre in portrait.</span>
+                  </label>
+                  <button class="btn btn-ghost btn-sm" type="button" id="pImageClear" hidden>Remove photo</button>
+                  <input type="hidden" name="image">
+                </div>
+              </div>
+            </div>
+            <div class="a-actions">
+              <button class="btn btn-primary btn-lg" type="submit" id="productSave">Save product</button>
+              <button class="btn btn-ghost btn-lg" type="button" id="productCancel" hidden>Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPANY -->
+    <section class="a-view" data-view="company" aria-labelledby="h-company" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-company">Company details</h1>
+          <p>Phone numbers, email and addresses shown on every page of the website and used by the enquiry forms.</p>
+        </div>
+      </div>
+      <form class="a-form" id="companyForm" novalidate>
+        <div class="a-card a-form">
+          <h2>Phone and email</h2>
+          <div class="a-two">
+            <div class="a-field">
+              <label for="cPhones">Phone numbers</label>
+              <textarea class="input" id="cPhones" name="phones" aria-describedby="cPhonesHint" style="min-height:96px"></textarea>
+              <p class="hint" id="cPhonesHint">One per line. The first is the main sales number, also used for WhatsApp unless a WhatsApp link is set in Social links. The second is shown as the office line.</p>
+            </div>
+            <div class="a-field">
+              <label for="cEmails">Email addresses</label>
+              <textarea class="input" id="cEmails" name="emails" aria-describedby="cEmailsHint" style="min-height:96px"></textarea>
+              <p class="hint" id="cEmailsHint">One per line. The first is shown on the website.</p>
+            </div>
+          </div>
+        </div>
+        <div class="a-card a-form">
+          <h2>Head office address</h2>
+          <div class="a-two">
+            <div class="a-field"><label for="aLine2">Building and room</label><input class="input" id="aLine2" name="address.line2" placeholder="Soreti Building, 2nd Floor, Room 214"></div>
+            <div class="a-field"><label for="aLine1">Area</label><input class="input" id="aLine1" name="address.line1" placeholder="Lemi Kura Subcity, Woreda 08"></div>
+            <div class="a-field"><label for="aPo">P.O. Box</label><input class="input" id="aPo" name="address.poBox" placeholder="P.O. Box 46325"></div>
+            <div class="a-field"><label for="aCity">City</label><input class="input" id="aCity" name="address.city" placeholder="Addis Ababa"></div>
+            <div class="a-field"><label for="aCountry">Country</label><input class="input" id="aCountry" name="address.country" placeholder="Ethiopia"></div>
+          </div>
+          <div class="a-two">
+            <div class="a-field"><label for="oName">Short office name</label><input class="input" id="oName" name="office.name" placeholder="Soreti Building"></div>
+            <div class="a-field"><label for="oCity">Short office area</label><input class="input" id="oCity" name="office.city" placeholder="Lemi Kura, Addis Ababa"></div>
+          </div>
+          <p class="a-note">The short name and area appear together in the home page footer.</p>
+        </div>
+        <div class="a-card a-form">
+          <h2>Processing facility</h2>
+          <div class="a-two">
+            <div class="a-field"><label for="fName">Name</label><input class="input" id="fName" name="factory.name" placeholder="Burayu"></div>
+            <div class="a-field"><label for="fCity">Location</label><input class="input" id="fCity" name="factory.city" placeholder="15 km West of Addis Ababa"></div>
+            <div class="a-field"><label for="fLat">Latitude</label><input class="input" id="fLat" name="factory.lat" inputmode="decimal" placeholder="9.0366"></div>
+            <div class="a-field"><label for="fLng">Longitude</label><input class="input" id="fLng" name="factory.lng" inputmode="decimal" placeholder="38.6364"></div>
+          </div>
+          <p class="a-note">The coordinates are printed on the home page. New coordinates appear after the next deploy; phone, email and addresses update straight away.</p>
+        </div>
+        <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Save company details</button></div>
+      </form>
+    </section>
+
+    <!-- CERTIFICATIONS -->
+    <section class="a-view" data-view="certifications" aria-labelledby="h-certs" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-certs">Certifications</h1>
+          <p>Listed under the key facts on the agriculture page.</p>
+        </div>
+      </div>
+      <div class="a-two" style="align-items:start">
+        <div class="a-card">
+          <h2>Current certifications</h2>
+          <ul class="a-rows" id="certList"></ul>
+        </div>
+        <div class="a-card">
+          <h2>Add a certification</h2>
+          <form class="a-form" id="certForm" novalidate>
+            <div class="a-field"><label for="certName">Name</label><input class="input" id="certName" name="name" required maxlength="200" placeholder="ISO 22000:2018"></div>
+            <div class="a-field"><label for="certDesc">Description</label><input class="input" id="certDesc" name="description" required maxlength="500" placeholder="Food Safety Management System"></div>
+            <div class="a-field">
+              <label for="certImage">Badge image (optional)</label>
+              <input class="input" id="certImage" type="file" accept="image/jpeg,image/png,image/webp" style="padding-top:9px">
+            </div>
+            <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Add certification</button></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOGO -->
+    <section class="a-view" data-view="logo" aria-labelledby="h-logo" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-logo">Logo</h1>
+          <p>Shown in the header and footer of every page. Transparent PNG works best.</p>
+        </div>
+      </div>
+      <div class="a-two" style="align-items:start">
+        <div class="a-card">
+          <h2>Current logo</h2>
+          <div class="a-logo-box" style="margin-top:16px"><img id="logoCurrent" src="/logo.png" alt="Current logo"></div>
+          <p class="a-note" id="logoSource" style="margin-top:10px"></p>
+          <div class="a-actions"><button class="btn btn-danger-quiet" type="button" id="logoReset" hidden>Use the original logo</button></div>
+        </div>
+        <div class="a-card">
+          <h2>Upload a new logo</h2>
+          <form class="a-form" id="logoForm" novalidate>
+            <label class="a-drop" id="logoDrop">
+              <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" aria-describedby="logoHint">
+              <strong id="logoDropTitle">Choose or drop a file</strong>
+              <span id="logoHint">PNG, JPG, WebP or SVG. Saved as WebP, up to 600 px wide.</span>
+            </label>
+            <div class="a-logo-box" id="logoPreviewBox" hidden><img id="logoPreview" alt="New logo preview"></div>
+            <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Save logo</button></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOCIAL -->
+    <section class="a-view" data-view="social" aria-labelledby="h-social" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-social">Social links</h1>
+          <p>Paste the full address of each profile. Blank ones are hidden on the website.</p>
+        </div>
+      </div>
+      <form class="a-card a-form" id="socialForm" novalidate style="max-width:720px">
+        <div class="a-two">
+          <div class="a-field"><label for="sFacebook">Facebook</label><input class="input" id="sFacebook" name="facebook" type="url" placeholder="https://facebook.com/..."></div>
+          <div class="a-field"><label for="sLinkedin">LinkedIn</label><input class="input" id="sLinkedin" name="linkedin" type="url" placeholder="https://linkedin.com/company/..."></div>
+          <div class="a-field"><label for="sX">X</label><input class="input" id="sX" name="x" type="url" placeholder="https://x.com/..."></div>
+          <div class="a-field"><label for="sYoutube">YouTube</label><input class="input" id="sYoutube" name="youtube" type="url" placeholder="https://youtube.com/@..."></div>
+          <div class="a-field"><label for="sTelegram">Telegram</label><input class="input" id="sTelegram" name="telegram" type="url" placeholder="https://t.me/..."></div>
+          <div class="a-field">
+            <label for="sWhatsapp">WhatsApp</label>
+            <input class="input" id="sWhatsapp" name="whatsapp" type="url" placeholder="https://wa.me/251911223619" aria-describedby="sWaHint">
+            <p class="hint" id="sWaHint">Used by every WhatsApp button. Leave blank to use the main phone number.</p>
+          </div>
+        </div>
+        <p class="err" id="socialErr" role="alert" hidden></p>
+        <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Save social links</button></div>
+      </form>
+    </section>
+
+    <!-- EMAIL -->
+    <section class="a-view" data-view="email" aria-labelledby="h-email" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-email">Email delivery</h1>
+          <p>The mail account that sends enquiry notifications to your team and a confirmation to the visitor.</p>
+        </div>
+        <span class="a-status" id="emailState">Checking</span>
+      </div>
+      <form class="a-card a-form" id="emailForm" novalidate style="max-width:720px">
+        <div class="a-two">
+          <div class="a-field"><label for="eHost">SMTP server</label><input class="input" id="eHost" name="smtpHost" required placeholder="smtp.gmail.com" autocomplete="off"></div>
+          <div class="a-field"><label for="ePort">Port</label><input class="input" id="ePort" name="smtpPort" required inputmode="numeric" placeholder="587" aria-describedby="ePortHint"><p class="hint" id="ePortHint">587 for TLS, 465 for SSL.</p></div>
+          <div class="a-field"><label for="eUser">Sending account</label><input class="input" id="eUser" name="smtpUser" type="email" required autocomplete="off" placeholder="notifications@gmail.com"></div>
+          <div class="a-field"><label for="ePass">Password or app password</label><input class="input" id="ePass" name="smtpPassword" type="password" autocomplete="new-password" aria-describedby="ePassHint"><p class="hint" id="ePassHint">Leave blank to keep the saved password. For Gmail, create an app password at myaccount.google.com/apppasswords.</p></div>
+          <div class="a-field"><label for="eTo">Send enquiries to</label><input class="input" id="eTo" name="recipientEmail" type="email" required placeholder="info@oliraagroindustry.com"></div>
+          <div class="a-field"><label for="eFrom">Sender name</label><input class="input" id="eFrom" name="fromName" placeholder="Olira Agro Industry"></div>
+        </div>
+        <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Save email settings</button></div>
+      </form>
+    </section>
+
+    <!-- MARKETING -->
+    <section class="a-view" data-view="marketing" aria-labelledby="h-marketing" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-marketing">Marketing tags</h1>
+          <p>Optional Google tools. Nothing from Google loads on the website until an ID is saved here.</p>
+        </div>
+      </div>
+      <div class="a-two" style="align-items:start">
+        <form class="a-card a-form" id="gaForm" novalidate>
+          <h2>Google Analytics 4</h2>
+          <span class="a-status" id="gaState">Not set</span>
+          <div class="a-field"><label for="gaId">Measurement ID</label><input class="input" id="gaId" name="measurementId" placeholder="G-XXXXXXXXXX" pattern="G-[A-Z0-9]{10}" aria-describedby="gaHint"><p class="hint" id="gaHint">Google Analytics, Admin, Data streams, your web stream. Leave blank to turn it off.</p></div>
+          <div class="a-field"><label for="gaProp">Property ID (optional)</label><input class="input" id="gaProp" name="propertyId" inputmode="numeric"></div>
+          <div class="a-actions"><button class="btn btn-primary" type="submit">Save analytics</button></div>
+        </form>
+        <form class="a-card a-form" id="adsForm" novalidate>
+          <h2>Google Ads conversions</h2>
+          <span class="a-status" id="adsState">Not set</span>
+          <div class="a-field"><label for="adsId">Conversion ID</label><input class="input" id="adsId" name="conversionId" inputmode="numeric" placeholder="10 digits" pattern="[0-9]{10}"></div>
+          <div class="a-field"><label for="adsLabel">Conversion label</label><input class="input" id="adsLabel" name="conversionLabel"></div>
+          <div class="a-field"><label for="adsValue">Value per enquiry (USD)</label><input class="input" id="adsValue" name="conversionValue" inputmode="decimal" placeholder="10"></div>
+          <div class="a-actions"><button class="btn btn-primary" type="submit">Save conversions</button></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section class="a-view" data-view="security" aria-labelledby="h-security" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-security">Password</h1>
+          <p>Change the admin password. It works straight away; you stay signed in on this device.</p>
+        </div>
+      </div>
+      <form class="a-card a-form" id="passForm" novalidate style="max-width:520px">
+        <div class="a-field"><label for="newPass">New password</label><input class="input" id="newPass" type="password" autocomplete="new-password" minlength="12" required aria-describedby="newPassHint"><p class="hint" id="newPassHint">At least 12 characters. A short sentence is easy to remember and hard to guess.</p></div>
+        <div class="a-field"><label for="newPass2">Type it again</label><input class="input" id="newPass2" type="password" autocomplete="new-password" required aria-describedby="passErr"><p class="err" id="passErr" role="alert" hidden></p></div>
+        <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Change password</button></div>
+      </form>
+    </section>
+  </main>
+</div>
+
+<div class="a-toasts" id="toasts" role="status" aria-live="polite"></div>
+<dialog class="a-dialog" id="confirmDialog" aria-labelledby="confirmTitle">
+  <form method="dialog">
+    <h2 id="confirmTitle"></h2>
+    <p id="confirmBody"></p>
+    <div class="a-actions">
+      <button class="btn btn-secondary" value="cancel">Cancel</button>
+      <button class="btn btn-danger" value="ok" id="confirmOk">Delete</button>
+    </div>
+  </form>
+</dialog>
+
+<script>import '../scripts/admin/main.js';</script>
+</body>
+</html>
