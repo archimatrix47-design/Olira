@@ -119,7 +119,8 @@ const jsonLd = {
   <footer class="split-contact">
     <address class="items">
       <a href={contact.phoneHref} data-contact="phone"><span class="k">Phone</span><span>{contact.phone}</span></a>
-      <a href={contact.whatsappHref} target="_blank" rel="noopener" data-contact="whatsapp"><span class="k">WhatsApp</span><span>{contact.phone}</span></a>
+      <a href={contact.whatsappHref} target="_blank" rel="noopener" data-contact="whatsapp"><span class="k">WhatsApp</span><span>{contact.whatsappLabel}</span></a>
+      <a href={contact.telegramHref || '#'} target="_blank" rel="noopener" data-contact="telegram" hidden={!contact.telegramHref}><span class="k">Telegram</span><span>{contact.telegramLabel}</span></a>
       <a href={`mailto:${contact.email}`} data-contact="email"><span class="k">Email</span><span>{contact.email}</span></a>
       <span><span class="k">Office</span><span data-contact="office-short">{contact.officeShort}</span></span>
     </address>
