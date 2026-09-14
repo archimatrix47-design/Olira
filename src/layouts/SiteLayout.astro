@@ -1,0 +1,90 @@
+---
+// Public site layout (home, agriculture, packaging, 404). The admin pages keep
+// BaseLayout + Tailwind; this layout ships its own small stylesheet instead.
+import '../styles/tokens.css';
+import '../styles/ambient.css';
+import '../styles/site.css';
+import { SITE } from '../lib/site-data';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Social preview image in /public, e.g. "/og-home.jpg". */
+  ogImage?: string;
+  ogImageAlt?: string;
+  bodyClass?: string;
+  /** One or more schema.org objects. */
+  jsonLd?: object | object[];
+  noindex?: boolean;
+}
+const { title, description, ogImage = '/og-home.jpg', ogImageAlt = 'Olira Agro Industry', bodyClass, jsonLd, noindex = false } = Astro.props;
+const url = `${SITE}${Astro.url.pathname}`;
+const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script is:inline>(function(){try{var s=localStorage.getItem('olira-theme');if(s==='dark'||s==='light')document.documentElement.setAttribute('data-theme',s);}catch(e){}})();</script>
+<title>{title}</title>
+<meta name="description" content={description}>
+{noindex ? <meta name="robots" content="noindex"> : <link rel="canonical" href={url}>}
+<meta name="theme-color" content="#F5F1E8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111412" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Olira Agro Industry">
+<meta property="og:title" content={title}>
+<meta property="og:description" content={description}>
+<meta property="og:url" content={url}>
+<meta property="og:image" content={`${SITE}${ogImage}`}>
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content={ogImageAlt}>
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content={title}>
+<meta name="twitter:description" content={description}>
+<meta name="twitter:image" content={`${SITE}${ogImage}`}>
+{ld.map((obj) => <script type="application/ld+json" set:html={JSON.stringify(obj).replace(/</g, '\\u003c')} />)}
+<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<link rel="icon" type="image/png" href="/logo.png">
+<slot name="head" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<script is:inline>
+  // Google Analytics / Ads, only when an ID is saved in /admin-integrations.
+  // No third-party request is made otherwise.
+  window.gtag = window.gtag || function () {};
+  window.trackConversion = window.trackConversion || function () {};
+  fetch('/api/integrations').then(function (r) { return r.ok ? r.json() : null; }).then(function (c) {
+    if (!c) return;
+    var id = c.analytics && c.analytics.measurementId;
+    if (id && /^G-[A-Z0-9]{10}$/.test(id)) {
+      var s = document.createElement('script'); s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + id; document.head.appendChild(s);
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      gtag('js', new Date()); gtag('config', id);
+    }
+    if (c.ads && c.ads.conversionId) {
+      window.google_conversion_id = parseInt(c.ads.conversionId, 10);
+      window.trackConversion = function (data) {
+        gtag('event', 'conversion', Object.assign({ value: 1.0, currency: 'USD', transaction_id: 'inquiry_' + Date.now() }, data || {}));
+      };
+    }
+  }).catch(function () {});
+</script>
+</head>
+<body class={bodyClass}>
+<a class="skip" href="#main">Skip to content</a>
+<slot />
+<script is:inline>
+  // First-party page-view beacon: no cookies, no third party. The server derives
+  // a daily rotating salted hash for unique counts.
+  try {
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: location.pathname, referrer: document.referrer || '' }), keepalive: true }).catch(function () {});
+  } catch (e) {}
+</script>
+</body>
+</html>

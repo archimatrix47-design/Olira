@@ -1,0 +1,16 @@
+---
+import { socialLinks } from '../../lib/site-data';
+interface Props { note: string }
+const { note } = Astro.props;
+const year = new Date().getFullYear();
+---
+<footer class="foot">
+  <div class="container foot-grid">
+    <a href="/"><img src="/logo.png" alt="Olira Agro Industry, home" width="72" height="34" style="height:34px;width:auto" loading="lazy" data-brand-logo></a>
+    <span>{note}</span>
+    <nav class="foot-social" aria-label="Social media" data-social hidden={socialLinks.length === 0}>
+      {socialLinks.map((s) => <a href={s.url} target="_blank" rel="noopener">{s.label}</a>)}
+    </nav>
+    <span>© <span data-year>{year}</span> Olira Agro Industry</span>
+  </div>
+</footer>

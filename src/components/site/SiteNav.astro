@@ -1,0 +1,17 @@
+---
+import ThemeButton from './ThemeButton.astro';
+interface Props { links: { href: string; label: string }[]; cta: { href: string; label: string } }
+const { links, cta } = Astro.props;
+---
+<header class="nav">
+  <div class="container row-between nav-inner">
+    <a class="brand" href="/"><img src="/logo.png" alt="Olira Agro Industry, home" width="80" height="38" data-brand-logo></a>
+    <nav class="nav-links" aria-label="Primary">
+      {links.map((l) => <a href={l.href}>{l.label}</a>)}
+    </nav>
+    <div class="row" style="--gap:10px">
+      <ThemeButton />
+      <a class="btn btn-primary" href={cta.href}>{cta.label}</a>
+    </div>
+  </div>
+</header>
