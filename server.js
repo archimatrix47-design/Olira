@@ -150,7 +150,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "fonts.googleapis.com"],
+      // googletagmanager.com: the optional Analytics/Ads tag set in the admin panel
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "fonts.googleapis.com", "https://www.googletagmanager.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       fontSrc: ["'self'", "fonts.googleapis.com", "fonts.gstatic.com"],
@@ -959,7 +960,9 @@ app.get('/api/integrations', (req, res) => {
 });
 
 // POST /api/integrations/analytics - Update Google Analytics settings
-app.post('/api/integrations/analytics', rateLimit, (req, res) => {
+// Writes require an admin session: an open endpoint let anyone point the site's
+// analytics or ads tags at their own Google account.
+app.post('/api/integrations/analytics', rateLimit, adminAuth, (req, res) => {
   try {
     const { measurementId, propertyId } = req.body;
 
@@ -986,7 +989,7 @@ app.post('/api/integrations/analytics', rateLimit, (req, res) => {
 });
 
 // POST /api/integrations/ads - Update Google Ads settings
-app.post('/api/integrations/ads', rateLimit, (req, res) => {
+app.post('/api/integrations/ads', rateLimit, adminAuth, (req, res) => {
   try {
     const { conversionId, conversionLabel, conversionValue } = req.body;
 
@@ -1163,6 +1166,29 @@ app.post('/api/products', adminAuth, (req, res) => {
   res.status(400).json({ error: 'Body must contain either { products: [...] } or { product: {...} }' });
 });
 
+// POST /api/products/order (admin) — body { ids: [...] }. Reorders the existing
+// products only (unknown ids are ignored, missing ones keep their relative order
+// at the end), so a stale admin tab can never drop or invent a product. The
+// first product is the front card of the agriculture page's stack.
+app.post('/api/products/order', adminAuth, (req, res) => {
+  const { ids } = req.body || {};
+  if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string')) {
+    return res.status(400).json({ error: 'Body must be { ids: [string, ...] }' });
+  }
+  const list = readJsonFile(productsPath, []);
+  const byId = new Map(list.map((p) => [p.id, p]));
+  const seen = new Set();
+  const ordered = [];
+  for (const id of ids) {
+    if (byId.has(id) && !seen.has(id)) { ordered.push(byId.get(id)); seen.add(id); }
+  }
+  for (const p of list) if (!seen.has(p.id)) ordered.push(p);
+  if (!writeJsonFile(productsPath, ordered)) {
+    return res.status(500).json({ error: 'Failed to save order' });
+  }
+  res.json({ success: true, ids: ordered.map((p) => p.id) });
+});
+
 // DELETE /api/products/:id (admin)
 app.delete('/api/products/:id', adminAuth, (req, res) => {
   const list = readJsonFile(productsPath, []);
@@ -1235,15 +1261,29 @@ app.get('/api/contact-details', (req, res) => {
   res.json(readJsonFile(contactsPath, { phones: [], emails: [] }));
 });
 
+// Keep only known text fields (trimmed, capped) plus numeric coordinates. The
+// public pages print these at build time, so a stray object or a non-numeric
+// latitude must never reach them.
+function cleanPlace(obj, keys) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+  const out = {};
+  for (const k of keys) if (typeof obj[k] === 'string' && obj[k].trim()) out[k] = obj[k].trim().slice(0, 120);
+  for (const [k, lim] of [['lat', 90], ['lng', 180]]) {
+    const v = typeof obj[k] === 'string' ? Number(obj[k]) : obj[k];
+    if (typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= lim) out[k] = v;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 app.post('/api/contact-details', adminAuth, (req, res) => {
   const { phones, emails, address, office, factory } = req.body;
 
   const data = {
     phones: Array.isArray(phones) ? phones.slice(0, 20).map(p => String(p).slice(0, 50)) : [],
     emails: Array.isArray(emails) ? emails.slice(0, 20).map(e => String(e).slice(0, 200)) : [],
-    address: address && typeof address === 'object' ? address : null,
-    office: office && typeof office === 'object' ? office : null,
-    factory: factory && typeof factory === 'object' ? factory : null
+    address: cleanPlace(address, ['line1', 'line2', 'poBox', 'city', 'country']),
+    office: cleanPlace(office, ['label', 'name', 'city']),
+    factory: cleanPlace(factory, ['label', 'name', 'city'])
   };
 
   if (!writeJsonFile(contactsPath, data)) {

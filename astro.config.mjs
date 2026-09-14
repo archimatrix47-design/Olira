@@ -1,10 +1,6 @@
 import { defineConfig } from 'astro/config';
-import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
-  // Tailwind is used by the admin pages only (BaseLayout imports src/styles/tailwind.css).
-  // The public pages ship their own stylesheet, so Tailwind's global reset is not injected.
-  integrations: [tailwind({ applyBaseStyles: false })],
   output: 'static',
 
   // Image optimization

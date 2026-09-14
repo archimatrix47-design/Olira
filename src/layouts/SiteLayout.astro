@@ -1,6 +1,6 @@
 ---
-// Public site layout (home, agriculture, packaging, 404). The admin pages keep
-// BaseLayout + Tailwind; this layout ships its own small stylesheet instead.
+// Public site layout (home, agriculture, packaging, 404). The admin panel
+// (src/pages/admin.astro) uses the same stylesheets plus admin.css.
 import '../styles/tokens.css';
 import '../styles/ambient.css';
 import '../styles/site.css';
@@ -53,24 +53,29 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
 <script is:inline>
-  // Google Analytics / Ads, only when an ID is saved in /admin-integrations.
-  // No third-party request is made otherwise.
+  // Google Analytics and Google Ads, only when an ID is saved in the admin panel
+  // (Marketing tags). No third-party request is made otherwise.
   window.gtag = window.gtag || function () {};
   window.trackConversion = window.trackConversion || function () {};
   fetch('/api/integrations').then(function (r) { return r.ok ? r.json() : null; }).then(function (c) {
     if (!c) return;
-    var id = c.analytics && c.analytics.measurementId;
-    if (id && /^G-[A-Z0-9]{10}$/.test(id)) {
-      var s = document.createElement('script'); s.async = true;
-      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + id; document.head.appendChild(s);
-      window.dataLayer = window.dataLayer || [];
-      window.gtag = function () { window.dataLayer.push(arguments); };
-      gtag('js', new Date()); gtag('config', id);
-    }
-    if (c.ads && c.ads.conversionId) {
-      window.google_conversion_id = parseInt(c.ads.conversionId, 10);
-      window.trackConversion = function (data) {
-        gtag('event', 'conversion', Object.assign({ value: 1.0, currency: 'USD', transaction_id: 'inquiry_' + Date.now() }, data || {}));
+    var ga = c.analytics && c.analytics.measurementId;
+    var aw = c.ads && /^d{10}$/.test(c.ads.conversionId || '') ? 'AW-' + c.ads.conversionId : '';
+    if (!/^G-[A-Z0-9]{10}$/.test(ga || '')) ga = '';
+    if (!ga && !aw) return;
+    var s = document.createElement('script'); s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + (ga || aw); document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    gtag('js', new Date());
+    if (ga) gtag('config', ga);
+    if (aw) {
+      gtag('config', aw);
+      window.trackConversion = function () {
+        gtag('event', 'conversion', {
+          send_to: c.ads.conversionLabel ? aw + '/' + c.ads.conversionLabel : aw,
+          value: Number(c.ads.conversionValue) || 1, currency: 'USD', transaction_id: 'inquiry_' + Date.now()
+        });
       };
     }
   }).catch(function () {});
