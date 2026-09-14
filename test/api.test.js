@@ -17,6 +17,9 @@ import path from 'node:path';
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'olira-test-'));
 process.env.DATA_DIR = tmp;
 process.env.UPLOADS_DIR = path.join(tmp, 'uploads');
+// Config files normally live next to server.js; keep test writes in the temp dir.
+process.env.EMAIL_CONFIG_PATH = path.join(tmp, 'email-config.json');
+process.env.INTEGRATIONS_CONFIG_PATH = path.join(tmp, 'integrations-config.json');
 process.env.JWT_SECRET = 'test_secret_that_is_at_least_32_chars_long';
 process.env.ADMIN_PASSWORD = 'test_admin_password_123';
 process.env.ADMIN_LOGIN_RATE_PER_MIN = '1000'; // headroom: the suite makes many logins

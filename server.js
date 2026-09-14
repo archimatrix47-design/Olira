@@ -196,7 +196,8 @@ app.use('/api/inquiry', rateLimit);
 app.use('/api/email-config', rateLimit);
 
 // Email config file path
-const emailConfigPath = path.join(__dirname, 'email-config.json');
+// Overridable so the test suite never writes the real config next to server.js.
+const emailConfigPath = process.env.EMAIL_CONFIG_PATH || path.join(__dirname, 'email-config.json');
 
 // Initialize email config if it doesn't exist
 function initializeEmailConfig() {
@@ -895,7 +896,7 @@ app.post('/api/inquiry', async (req, res) => {
 // ============================================
 
 // Path to integrations config file
-const integrationsConfigPath = path.join(__dirname, 'integrations-config.json');
+const integrationsConfigPath = process.env.INTEGRATIONS_CONFIG_PATH || path.join(__dirname, 'integrations-config.json');
 
 // Initialize integrations config if it doesn't exist
 function initializeIntegrationsConfig() {
