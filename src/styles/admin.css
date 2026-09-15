@@ -139,7 +139,7 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .a-tag.agri { color: var(--accent); } }
 .a-lead-msg { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; font-size: .9375rem; }
 .a-lead-contact { display: flex; flex-wrap: wrap; gap: 8px; }
-.a-lead-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.a-lead-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
 
 /* ---------- products ---------- */
 .a-products { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); gap: 20px; align-items: start; }

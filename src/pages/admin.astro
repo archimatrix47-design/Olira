@@ -6,10 +6,12 @@ import '../styles/tokens.css';
 import '../styles/ambient.css';
 import '../styles/site.css';
 import '../styles/admin.css';
+import '../styles/admin-insights.css';
 import ThemeButton from '../components/site/ThemeButton.astro';
 
 const icon: Record<string, string> = {
   overview: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
+  traffic: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
   enquiries: '<path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/>',
   products: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
   company: '<path d="M4 21V5l8-2v18M12 8l8 3v10M8 9h.01M8 13h.01M8 17h.01M16 14h.01M16 18h.01"/>',
@@ -21,7 +23,7 @@ const icon: Record<string, string> = {
   security: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 118 0v3"/>',
 };
 const nav = [
-  { label: 'Daily', items: [['overview', 'Overview'], ['enquiries', 'Enquiries']] },
+  { label: 'Daily', items: [['overview', 'Overview'], ['enquiries', 'Enquiries'], ['traffic', 'Traffic']] },
   { label: 'Website', items: [['products', 'Products'], ['company', 'Company details'], ['certifications', 'Certifications'], ['logo', 'Logo'], ['social', 'Social links']] },
   { label: 'Settings', items: [['email', 'Email delivery'], ['marketing', 'Marketing tags'], ['security', 'Password']] },
 ];
@@ -90,48 +92,128 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
 
   <main id="adminMain" tabindex="-1">
 
-    <!-- OVERVIEW -->
+    <!-- OVERVIEW: is everything fine, and what needs doing -->
     <section class="a-view" data-view="overview" aria-labelledby="h-overview" hidden>
       <div class="a-head">
         <div>
           <h1 id="h-overview">Overview</h1>
-          <p>Visits and enquiries from the website. Counted without cookies; no IP addresses are stored.</p>
+          <p>How the website is doing for both businesses, compared with the period before, and what needs your attention.</p>
         </div>
-        <label class="a-field" style="gap:4px">
-          <span class="a-label sr-only">Period</span>
-          <select class="input" id="range" style="height:40px;width:auto">
+        <label class="a-period"><span>Period</span>
+          <select class="input" data-period>
             <option value="7">Last 7 days</option>
             <option value="30" selected>Last 30 days</option>
             <option value="90">Last 90 days</option>
+            <option value="365">Last 12 months</option>
           </select>
         </label>
       </div>
-      <div class="a-callout" id="newCallout" hidden>
-        <span id="newCalloutText"></span>
-        <a class="btn btn-primary btn-sm" href="#enquiries">Open enquiries</a>
+      <p class="a-freshness" data-freshness aria-live="polite"></p>
+
+      <div class="a-card a-attention" aria-labelledby="h-attention">
+        <h2 id="h-attention">Needs attention</h2>
+        <ul class="a-alerts" id="ovAttention"><li class="v-skeleton"></li></ul>
       </div>
-      <div class="a-kpis">
-        <div class="a-card a-kpi"><p>Page views</p><strong id="kViews">0</strong></div>
-        <div class="a-card a-kpi"><p>Visitors</p><strong id="kVisitors">0</strong></div>
-        <div class="a-card a-kpi"><p>Enquiries</p><strong id="kEnquiries">0</strong></div>
-        <div class="a-card a-kpi"><p>Enquiries per 100 views</p><strong id="kRate">0</strong></div>
-      </div>
-      <div class="a-card">
-        <div class="row-between" style="flex-wrap:wrap">
-          <h2 style="font-size:1.375rem">Daily visits</h2>
-          <div class="a-legend" aria-hidden="true"><span><i style="background:var(--accent)"></i>Page views</span><span><i style="background:var(--leaf)"></i>Visitors</span></div>
+
+      <div class="a-kpis a-kpis-5" id="ovKpis" aria-label="Key numbers"></div>
+
+      <div class="a-grid12">
+        <div class="a-card span-8">
+          <div class="a-card-head">
+            <div><h2>Visitors and enquiries</h2><p>Daily visitors against the same number of days before. Dots below the axis are days with enquiries.</p></div>
+          </div>
+          <div id="ovTrend" class="v-block"></div>
         </div>
-        <div id="chart" style="margin-top:14px"></div>
+        <div class="a-card span-4">
+          <div class="a-card-head"><div><h2>At a glance</h2><p>The strongest signal in each area for this period.</p></div></div>
+          <dl class="a-facts" id="ovFacts"></dl>
+        </div>
       </div>
-      <div class="a-three">
-        <div class="a-card"><h2>Pages</h2><div class="a-bars" id="topPages"></div></div>
-        <div class="a-card"><h2>Where visitors came from</h2><div class="a-bars" id="topRefs"></div></div>
-        <div class="a-card"><h2>Devices</h2><div class="a-bars" id="devices"></div></div>
+
+      <div class="a-grid12">
+        <div class="a-card span-6">
+          <div class="a-card-head"><div><h2>Agriculture journey</h2><p>Visitors who reached each step on the same day. Steps can be skipped, so read it as reach, not a strict path.</p></div></div>
+          <div id="ovFunnelAgri"></div>
+        </div>
+        <div class="a-card span-6">
+          <div class="a-card-head"><div><h2>Packaging journey</h2><p>Visitors who reached each step on the same day.</p></div></div>
+          <div id="ovFunnelPack"></div>
+        </div>
       </div>
+
       <div class="a-card">
-        <h2>Product interest</h2>
-        <p>How often visitors opened each product's details, and how many enquiries named it.</p>
-        <div id="productInterest"></div>
+        <div class="a-card-head"><div><h2>Website setup</h2><p>What the site needs to turn visits into enquiries.</p></div></div>
+        <ul class="a-checklist" id="ovHealth"></ul>
+      </div>
+    </section>
+
+    <!-- TRAFFIC: where visitors come from, what they read, when -->
+    <section class="a-view" data-view="traffic" aria-labelledby="h-traffic" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-traffic">Traffic</h1>
+          <p>Where visitors come from, which pages hold their attention, when they visit and what they do. No cookies are used and no IP addresses are stored.</p>
+        </div>
+        <label class="a-period"><span>Period</span>
+          <select class="input" data-period>
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last 12 months</option>
+          </select>
+        </label>
+      </div>
+      <p class="a-freshness" data-freshness aria-live="polite"></p>
+      <div class="a-kpis a-kpis-5" id="trKpis" aria-label="Traffic numbers"></div>
+
+      <div class="a-grid12">
+        <div class="a-card span-6">
+          <div class="a-card-head"><div><h2>Where visitors come from</h2><p>Share of page views by source, with the change on the previous period.</p></div></div>
+          <div id="trChannels"></div>
+        </div>
+        <div class="a-card span-6">
+          <div class="a-card-head"><div><h2>Referring websites</h2><p>Sites that linked to you. WhatsApp and most apps hide the link, so those visits count as direct.</p></div></div>
+          <div id="trReferrers"></div>
+        </div>
+      </div>
+
+      <div class="a-card">
+        <div class="a-card-head"><div><h2>Pages</h2><p>Engaged means the page stayed open 15 seconds or was scrolled halfway. Time bands run from under 10 seconds (lightest) to over 3 minutes (darkest).</p></div></div>
+        <div id="trPages"></div>
+      </div>
+
+      <div class="a-grid12">
+        <div class="a-card span-8">
+          <div class="a-card-head"><div><h2>When visitors arrive</h2><p>Page views by weekday and hour, Addis Ababa time.</p></div></div>
+          <div id="trHeat"></div>
+        </div>
+        <div class="a-card span-4">
+          <div class="a-card-head"><div><h2>Markets</h2><p>Browser language is a rough guide to where buyers are: Arabic suggests the Gulf, Chinese suggests China.</p></div></div>
+          <div id="trMarkets"></div>
+        </div>
+      </div>
+
+      <div class="a-grid12">
+        <div class="a-card span-6">
+          <div class="a-card-head"><div><h2>Contact actions</h2><p>People reaching for a phone number, WhatsApp, email or the enquiry form.</p></div></div>
+          <div id="trContact"></div>
+        </div>
+        <div class="a-card span-6">
+          <div class="a-card-head"><div><h2>Bag designer</h2><p>How visitors use the mockup studio on the packaging page.</p></div></div>
+          <div id="trStudio"></div>
+        </div>
+      </div>
+
+      <div class="a-grid12">
+        <div class="a-card span-6">
+          <div class="a-card-head"><div><h2>Campaigns</h2><p>Visits from links tagged with utm_source, utm_medium and utm_campaign.</p></div></div>
+          <div id="trCampaigns"></div>
+        </div>
+        <div class="a-card span-6">
+          <div class="a-card-head"><div><h2>Devices and first pages</h2><p>What visitors use, and the page they landed on first.</p></div></div>
+          <div id="trDevices"></div>
+          <div id="trEntries" style="margin-top:18px"></div>
+        </div>
       </div>
     </section>
 
@@ -140,31 +222,81 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
       <div class="a-head">
         <div>
           <h1 id="h-enquiries">Enquiries</h1>
-          <p>Every message sent from the website forms, kept here even when the notification email fails.</p>
+          <p>Every message sent from the website, kept here even when the notification email fails. Move each one through the pipeline as you work it.</p>
         </div>
         <div class="row" style="--gap:8px">
+          <label class="a-period"><span>Period</span>
+            <select class="input" data-period>
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="365">Last 12 months</option>
+            </select>
+          </label>
           <button class="btn btn-secondary" type="button" id="leadsCsv">Download CSV</button>
           <button class="btn btn-secondary" type="button" id="leadsRefresh">Refresh</button>
         </div>
       </div>
-      <div class="a-filters">
-        <fieldset class="a-seg" id="leadStatus" style="border:0;margin:0">
-          <legend class="sr-only">Status</legend>
-          <label><input type="radio" name="leadStatus" value="new" checked><span>New <b data-count="new">0</b></span></label>
-          <label><input type="radio" name="leadStatus" value="read"><span>Read <b data-count="read">0</b></span></label>
-          <label><input type="radio" name="leadStatus" value="archived"><span>Archived <b data-count="archived">0</b></span></label>
-          <label><input type="radio" name="leadStatus" value="all"><span>All <b data-count="total">0</b></span></label>
-        </fieldset>
-        <label class="sr-only" for="leadLine">Business line</label>
-        <select class="input" id="leadLine">
-          <option value="all">Both business lines</option>
-          <option value="agri">Agriculture</option>
-          <option value="pack">Packaging</option>
-        </select>
-        <label class="sr-only" for="leadSearch">Search enquiries</label>
-        <input class="input grow" id="leadSearch" type="search" placeholder="Search name, company, email or message">
+
+      <div class="a-kpis a-kpis-5" id="enKpis" aria-label="Enquiry numbers"></div>
+      <div class="a-grid12">
+        <div class="a-card span-8">
+          <div class="a-card-head"><div><h2>Enquiries over time</h2><p>By business line. Packaging is hatched.</p></div></div>
+          <div id="enVolume"></div>
+        </div>
+        <div class="a-card span-4">
+          <div class="a-card-head"><div><h2>Pipeline</h2><p>Where this period's enquiries are now.</p></div></div>
+          <div id="enPipeline"></div>
+        </div>
       </div>
-      <p class="sr-only" id="leadsLive" role="status" aria-live="polite"></p>
+      <div class="a-grid12">
+        <div class="a-card span-4">
+          <div class="a-card-head"><div><h2>Response speed</h2><p>Time from arrival to the first move out of New.</p></div></div>
+          <div id="enSpeed"></div>
+        </div>
+        <div class="a-card span-4">
+          <div class="a-card-head"><div><h2>Lead quality</h2><p>Scored on the details a buyer gave. Open an enquiry to see why.</p></div></div>
+          <div id="enQuality"></div>
+        </div>
+        <div class="a-card span-4">
+          <div class="a-card-head"><div><h2>Markets and products</h2><p>From phone codes and email domains, and what was asked for.</p></div></div>
+          <div id="enMarkets"></div>
+        </div>
+      </div>
+
+      <div class="a-card a-inbox-head">
+        <h2>Inbox</h2>
+        <div class="a-filters">
+          <label class="sr-only" for="leadStage">Stage</label>
+          <select class="input" id="leadStage">
+            <option value="open">Open (not won, lost or archived)</option>
+            <option value="new">New</option>
+            <option value="read">Opened</option>
+            <option value="contacted">Contacted</option>
+            <option value="quoted">Quoted</option>
+            <option value="won">Won</option>
+            <option value="lost">Lost</option>
+            <option value="archived">Archived</option>
+            <option value="all">All stages</option>
+          </select>
+          <label class="sr-only" for="leadLine">Business line</label>
+          <select class="input" id="leadLine">
+            <option value="all">Both business lines</option>
+            <option value="agri">Agriculture</option>
+            <option value="pack">Packaging</option>
+          </select>
+          <label class="sr-only" for="leadSort">Sort</label>
+          <select class="input" id="leadSort">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="score">Strongest leads first</option>
+          </select>
+          <label class="a-check"><input type="checkbox" id="leadPeriodOnly"> Only this period</label>
+          <label class="sr-only" for="leadSearch">Search enquiries</label>
+          <input class="input grow" id="leadSearch" type="search" placeholder="Search name, company, email, port or message">
+        </div>
+        <p class="a-note" id="leadsSummary" role="status" aria-live="polite"></p>
+      </div>
       <div class="a-leads" id="leads"></div>
     </section>
 
@@ -175,7 +307,21 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
           <h1 id="h-products">Products</h1>
           <p>The agricultural products in the stack on the agriculture page, in this order. The first product is the card in front.</p>
         </div>
-        <button class="btn btn-primary" type="button" id="productNew">Add product</button>
+        <div class="row" style="--gap:8px">
+          <label class="a-period"><span>Period</span>
+            <select class="input" data-period>
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="365">Last 12 months</option>
+            </select>
+          </label>
+          <button class="btn btn-primary" type="button" id="productNew">Add product</button>
+        </div>
+      </div>
+      <div class="a-card">
+        <div class="a-card-head"><div><h2>Performance</h2><p>Details opened on the agriculture page, enquiries that named the product, and how complete each product's content is. Sorted by interest.</p></div></div>
+        <div id="prPerformance"></div>
       </div>
       <div class="a-products">
         <div class="a-card">

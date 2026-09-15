@@ -23,6 +23,7 @@ process.env.INTEGRATIONS_CONFIG_PATH = path.join(tmp, 'integrations-config.json'
 process.env.JWT_SECRET = 'test_secret_that_is_at_least_32_chars_long';
 process.env.ADMIN_PASSWORD = 'test_admin_password_123';
 process.env.ADMIN_LOGIN_RATE_PER_MIN = '1000'; // headroom: the suite makes many logins
+process.env.GENERAL_RATE_PER_MIN = '1000'; // headroom: enquiry and settings posts share this bucket
 delete process.env.CORS_ORIGINS;
 
 const { app } = await import('../server.js');
@@ -203,6 +204,66 @@ test('PRIVACY: numbers are revealed only by POST from a browser, never to bots',
   assert.deepEqual(b.whatsapp, { href: 'https://wa.me/251900000001', display: '+251900000001' });
   assert.equal((await post('/api/contact/reveal', {}, { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' })).status, 403);
   assert.equal((await get('/api/contact/reveal')).status, 404); // a crawler following links gets nothing
+});
+
+// ---- Insights (2026-09) ----
+test('track records channel, campaign, language, entry page, time of day and engagement', async () => {
+  const ua = { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) Chrome/139 InsightsA' };
+  await post('/api/track', { path: '/agriculture/', referrer: 'https://www.google.com.et/', lang: 'ar-ae' }, ua);
+  await post('/api/track', { path: '/packaging/', referrer: '', utm: { source: 'newsletter', medium: 'email', campaign: 'sept<script>' } }, ua);
+  await post('/api/track', { event: 'leave', path: '/agriculture/', seconds: 42, scroll: 80 }, ua);
+  await post('/api/track', { event: 'leave', path: '/agriculture/', seconds: 3, scroll: 10 }, ua);
+  await post('/api/track', { event: 'reveal_whatsapp', path: '/agriculture/' }, ua);
+  await post('/api/track', { event: 'form_start', path: '/packaging/' }, ua);
+  await post('/api/track', { event: 'studio_download', path: '/packaging/' }, ua);
+  await post('/api/track', { event: 'not_a_real_event', path: '/' }, ua);
+  await post('/api/track', { event: 'product', product: 'Ethiopian Coffee', path: '/agriculture/' }, ua);
+
+  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
+  const a = await (await get('/api/analytics?days=7', { Authorization: `Bearer ${token}` })).json();
+  assert.ok(a.channels.search >= 1, 'google.com.et counts as search');
+  assert.ok(a.channels.email >= 1, 'utm medium email counts as email');
+  assert.ok(a.campaigns.some((c) => c.name === 'newsletter / email / septscript'), 'campaign tag stripped of markup');
+  assert.ok(a.languages.some((l) => l.name === 'ar-AE'));
+  assert.equal(a.heatmap.length, 7); assert.equal(a.heatmap[0].length, 24);
+  assert.ok(a.heatmap.flat().reduce((n, v) => n + v, 0) >= 2);
+  const agri = a.pages.find((p) => p.path === '/agriculture/');
+  assert.equal(agri.leaves, 2); assert.equal(agri.engagedRate, 50); assert.equal(agri.avgSeconds, 23);
+  assert.ok(a.events.reveal_whatsapp >= 1 && a.events.form_start_pack >= 1 && a.events.studio_download >= 1);
+  assert.equal(a.events.not_a_real_event, undefined, 'unknown events are ignored');
+  // same-day funnel for this visitor: saw agriculture and packaging, opened a product, used the designer, showed contact intent
+  for (const k of ['visit', 'agri', 'pack', 'product', 'studio', 'contactAgri', 'contactPack']) assert.ok(a.funnel[k] >= 1, `funnel step ${k}`);
+  assert.ok(a.previous && typeof a.previous.views === 'number', 'previous period included');
+  assert.equal(a.series.length, 7); assert.equal(a.previousSeries.length, 7);
+});
+
+test('every captured enquiry counts, even when the notification email fails', async () => {
+  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
+  const before = (await (await get('/api/analytics?days=1', { Authorization: `Bearer ${token}` })).json()).totals.inquiries;
+  // the test server has no email configured, so this lead is captured but not emailed
+  const r = await post('/api/inquiry', { name: 'Insight Buyer', email: 'buyer@example.com', message: 'Need 25 MT sesame to Jebel Ali', product: 'Kraft paper bags' });
+  assert.equal(r.status, 500);
+  const after = await (await get('/api/analytics?days=1', { Authorization: `Bearer ${token}` })).json();
+  assert.equal(after.totals.inquiries, before + 1);
+  assert.ok(after.inquiryLines.pack >= 1);
+});
+
+test('enquiry pipeline keeps a dated history and a private note', async () => {
+  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
+  const auth = { Authorization: `Bearer ${token}` };
+  const { inquiries } = await (await get('/api/admin/inquiries', auth)).json();
+  const id = inquiries.find((i) => i.name === 'Insight Buyer').id;
+  assert.equal((await post(`/api/admin/inquiries/${id}`, { status: 'contacted' }, auth)).status, 200);
+  assert.equal((await post(`/api/admin/inquiries/${id}`, { status: 'quoted', note: 'Sent CIF price for 25 MT' }, auth)).status, 200);
+  assert.equal((await post(`/api/admin/inquiries/${id}`, { status: 'shipped' }, auth)).status, 400);
+  assert.equal((await post(`/api/admin/inquiries/${id}`, { note: 'x'.repeat(2001) }, auth)).status, 400);
+  const rec = (await (await get('/api/admin/inquiries', auth)).json()).inquiries.find((i) => i.id === id);
+  assert.deepEqual(rec.history.map((h) => h.status), ['contacted', 'quoted']);
+  assert.equal(rec.history[0].from, 'new');
+  assert.ok(!Number.isNaN(Date.parse(rec.history[1].at)));
+  assert.equal(rec.note, 'Sent CIF price for 25 MT');
+  const counts = (await (await get('/api/admin/inquiries', auth)).json()).counts;
+  assert.ok(counts.quoted >= 1 && counts.won === 0);
 });
 
 // ---- Restart-free admin credentials ----
