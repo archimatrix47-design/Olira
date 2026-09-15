@@ -169,6 +169,42 @@ test('contact details keep only clean place fields and numeric coordinates', asy
 });
 
 
+// ---- Phone numbers are not handed to scrapers ----
+test('PRIVACY: public contact details and social links carry no phone number', async () => {
+  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
+  const auth = { Authorization: `Bearer ${token}` };
+  await post('/api/contact-details', { phones: ['+251-900 00 00 01', '+251 110 00 00 02'], emails: ['info@example.com'] }, auth);
+  await post('/api/social-links', { whatsapp: 'https://wa.me/251900000001', telegram: 'https://t.me/olira_test' }, auth);
+  const digitsOf = (s) => s.replace(/\D/g, '');
+  // the matcher must see a formatted number, or a clean result means nothing
+  assert.ok(digitsOf('+251-900 00 00 01').includes('900000001'));
+
+  const pubContacts = await (await get('/api/contact-details')).text();
+  const pubSocial = await (await get('/api/social-links')).text();
+  for (const n of ['900000001', '110000002', '900000001']) {
+    assert.ok(!digitsOf(pubContacts).includes(n), `contact-details leaks ${n}`);
+    assert.ok(!digitsOf(pubSocial).includes(n), `social-links leaks ${n}`);
+  }
+  assert.equal(JSON.parse(pubSocial).telegram, 'https://t.me/olira_test'); // not a phone, stays public
+
+  // the admin still sees and edits the real values
+  const adminContacts = await (await get('/api/contact-details', auth)).json();
+  assert.deepEqual(adminContacts.phones, ['+251-900 00 00 01', '+251 110 00 00 02']);
+  assert.equal((await (await get('/api/social-links', auth)).json()).whatsapp, 'https://wa.me/251900000001');
+});
+
+test('PRIVACY: numbers are revealed only by POST from a browser, never to bots', async () => {
+  const r = await post('/api/contact/reveal', {});
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('cache-control'), 'no-store');
+  const b = await r.json();
+  assert.deepEqual(b.phones.map((p) => p.href), ['tel:+251900000001', 'tel:+251110000002']);
+  assert.equal(b.phones[1].label, 'Office');
+  assert.deepEqual(b.whatsapp, { href: 'https://wa.me/251900000001', display: '+251900000001' });
+  assert.equal((await post('/api/contact/reveal', {}, { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' })).status, 403);
+  assert.equal((await get('/api/contact/reveal')).status, 404); // a crawler following links gets nothing
+});
+
 // ---- Restart-free admin credentials ----
 test('admin can change the password from the panel, effective immediately (no restart)', async () => {
   const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();

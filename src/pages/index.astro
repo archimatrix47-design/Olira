@@ -2,6 +2,7 @@
 // Home: two halves, one per business, and contact details only.
 import SiteLayout from '../layouts/SiteLayout.astro';
 import ThemeButton from '../components/site/ThemeButton.astro';
+import ReachIcons from '../components/site/ReachIcons.astro';
 import { contact, SITE } from '../lib/site-data';
 import contoursUrl from '../data/burayu-contours.json?url';
 
@@ -16,10 +17,10 @@ const jsonLd = {
   logo: `${SITE}/logo.png`,
   foundingDate: '2008',
   email: contact.email,
-  telephone: contact.phoneHref.slice(4),
+  // no telephone: the numbers are kept out of the page source (see ReachIcons.astro)
   address: { '@type': 'PostalAddress', streetAddress: 'Soreti Building, 2nd Floor, Room 214, Lemi Kura Subcity, Woreda 08', postOfficeBoxNumber: '46325', addressLocality: 'Addis Ababa', addressCountry: 'ET' },
   location: { '@type': 'Place', name: 'Olira processing facility', address: { '@type': 'PostalAddress', addressLocality: 'Burayu', addressRegion: 'Oromia', addressCountry: 'ET' }, geo: { '@type': 'GeoCoordinates', latitude: lat, longitude: lng } },
-  contactPoint: { '@type': 'ContactPoint', contactType: 'sales', telephone: contact.phoneHref.slice(4), email: contact.email },
+  contactPoint: { '@type': 'ContactPoint', contactType: 'sales', email: contact.email },
   makesOffer: [
     { '@type': 'Offer', url: `${SITE}/agriculture/`, itemOffered: { '@type': 'Product', name: 'Agricultural exports', description: 'Humera sesame, pulses, spices and coffee from Ethiopia.' } },
     { '@type': 'Offer', url: `${SITE}/packaging/`, itemOffered: { '@type': 'Product', name: 'Kraft paper bags', description: 'Twisted and flat handle kraft paper bags, custom printed with your logo.' } },
@@ -118,9 +119,7 @@ const jsonLd = {
 
   <footer class="split-contact">
     <address class="items">
-      <a href={contact.phoneHref} data-contact="phone"><span class="k">Phone</span><span>{contact.phone}</span></a>
-      <a href={contact.whatsappHref} target="_blank" rel="noopener" data-contact="whatsapp"><span class="k">WhatsApp</span><span>{contact.whatsappLabel}</span></a>
-      <a href={contact.telegramHref || '#'} target="_blank" rel="noopener" data-contact="telegram" hidden={!contact.telegramHref}><span class="k">Telegram</span><span>{contact.telegramLabel}</span></a>
+      <span class="reach-inline"><span class="k">Call or message</span><ReachIcons dir="up" /></span>
       <a href={`mailto:${contact.email}`} data-contact="email"><span class="k">Email</span><span>{contact.email}</span></a>
       <span><span class="k">Office</span><span data-contact="office-short">{contact.officeShort}</span></span>
     </address>

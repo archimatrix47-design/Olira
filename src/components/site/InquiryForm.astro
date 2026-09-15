@@ -67,9 +67,11 @@ const { prefix: p, line, labelledBy, extra, messagePlaceholder, messageRequired,
     <strong>Your {noun} was not sent</strong>
     Reach the {team} directly and your message comes with you.
     <div class="row">
-      <a class="btn btn-secondary" data-fail="wa" href={contact.whatsappHref} target="_blank" rel="noopener">Send on WhatsApp</a>
+      <!-- WhatsApp and call links are filled in by common.js only after a failed
+           send, from /api/contact/reveal, so no number sits in the page -->
+      <a class="btn btn-secondary" data-fail="wa" href="#" target="_blank" rel="noopener" hidden>Send on WhatsApp</a>
       <a class="btn btn-secondary" data-fail="mail" href={`mailto:${contact.email}`}>Send by email</a>
-      <a class="btn btn-secondary" data-fail="tel" href={contact.phoneHref}>Call <span data-contact-text="phone">{contact.phone}</span></a>
+      <a class="btn btn-secondary" data-fail="tel" href="#" hidden>Call us</a>
     </div>
   </div>
 </form>
