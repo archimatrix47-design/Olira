@@ -130,7 +130,10 @@ p { text-wrap: pretty; }
 .contours path { fill: none; stroke: var(--terrain); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
 
 .split-contact { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 28px; padding: 16px clamp(16px, 3vw, 32px); border-top: 1px solid var(--line); font-size: .9375rem; margin: 0; }
-.split-contact .items { display: flex; flex-wrap: wrap; gap: 8px 28px; font-style: normal; }
+/* centre every item on the row: the call/WhatsApp icons are taller than the text */
+.split-contact .items { display: flex; flex-wrap: wrap; align-items: center; gap: 0 28px; font-style: normal; }
+/* every item as tall as the icon buttons, so stacked lines on phones keep an even rhythm */
+.split-contact .items > * { min-height: 42px; display: inline-flex; align-items: center; }
 /* only the footer's own links; the call/WhatsApp popover styles its own */
 .split-contact .items > a { color: var(--ink); text-decoration: none; }
 .split-contact .items > a:hover { color: var(--accent); text-decoration: underline; }
