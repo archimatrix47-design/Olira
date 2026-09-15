@@ -1,89 +1,165 @@
-// Overview: first-party analytics from /api/analytics.
-import { $, h, api, nf, toast } from './api.js';
+// Overview: "is everything fine, and what needs doing". KPIs against the
+// previous period, the main trend, both business-line journeys, a needs
+// attention list and the setup checklist.
+import { $, h, toast } from './api.js';
+import * as store from './store.js';
+import { trendChart, funnel, tableFor, empty } from './charts.js';
+import { kpiCard, freshness, statusIcon } from './widgets.js';
+import { int, pct, decimal, duration, hours, delta, NO_DATA, shortDate, WEEKDAYS, hourLabel, CHANNEL_NAMES, languageName, pageName } from './format.js';
+import { inPeriod, lineOf, firstResponseHours, median, ageHours, scoreOf } from './leads.js';
 
-const PAGE_NAMES = { '/': 'Home', '/agriculture/': 'Agriculture', '/packaging/': 'Packaging', '/404.html': 'Page not found' };
-const DEVICE_NAMES = { desktop: 'Desktop', mobile: 'Phone', tablet: 'Tablet' };
+const view = () => $('[data-view="overview"]');
 
-let bound = false;
 export async function show() {
-  if (!bound) { bound = true; $('#range').addEventListener('change', load); }
-  load();
+  store.periodSelect(view().querySelector('[data-period]'), () => load());
+  view().querySelector('[data-period]').value = String(store.getDays());
+  await load();
 }
 
 async function load() {
-  const days = $('#range').value;
+  const days = store.getDays();
+  view().setAttribute('aria-busy', 'true');
   try {
-    const [a, inbox] = await Promise.all([api(`/api/analytics?days=${days}`), api('/api/admin/inquiries').catch(() => null)]);
-    render(a);
-    const n = inbox?.counts?.new || 0;
-    $('#newCallout').hidden = n === 0;
-    $('#newCalloutText').textContent = `${n} new ${n === 1 ? 'enquiry is' : 'enquiries are'} waiting for a reply.`;
+    const [a, inbox, prods, setup] = await Promise.all([store.analytics(days), store.inquiries(), store.products().catch(() => []), store.setup()]);
+    const leads = Array.isArray(inbox?.inquiries) ? inbox.inquiries : [];
+    freshness(view(), a, days);
+    renderKpis(a, leads, days);
+    renderTrend(a, leads);
+    renderFacts(a, leads, days);
+    renderFunnels(a);
+    renderAttention(a, leads, prods, setup, days);
+    renderHealth(a, prods, setup);
   } catch (e) {
     if (e.status !== 401) toast(e.message, 'error');
+  } finally {
+    view().removeAttribute('aria-busy');
   }
 }
 
-function render(a) {
-  const t = a.totals || {};
-  $('#kViews').textContent = nf.format(t.views || 0);
-  $('#kVisitors').textContent = nf.format(t.uniques || 0);
-  $('#kEnquiries').textContent = nf.format(t.inquiries || 0);
-  $('#kRate').textContent = t.views ? (Math.round((t.inquiries / t.views) * 1000) / 10).toLocaleString() : '0';
-  chart(a.series || [], a.range);
-  bars($('#topPages'), (a.topPages || []).map((p) => ({ name: PAGE_NAMES[p.name] || p.name, count: p.count })), 'No page views yet.');
-  bars($('#topRefs'), (a.topReferrers || []).map((r) => ({ name: r.name === 'direct' ? 'Typed in or bookmarked' : r.name, count: r.count })), 'No visits yet.');
-  bars($('#devices'), Object.entries(a.devices || {}).map(([k, v]) => ({ name: DEVICE_NAMES[k] || k, count: v })).filter((d) => d.count > 0), 'No visits yet.');
-  interest(a.products || []);
+function dailyCounts(series, leads) {
+  const byDay = {};
+  for (const l of leads) { const k = String(l.createdAt).slice(0, 10); byDay[k] = (byDay[k] || 0) + 1; }
+  return series.map((d) => byDay[d.date] || 0);
 }
 
-function bars(el, items, empty) {
-  if (!items.length) { el.replaceChildren(h('p', { class: 'a-note' }, empty)); return; }
-  const max = Math.max(...items.map((i) => i.count), 1);
-  el.replaceChildren(...items.map((i) => {
-    const fill = h('b'); fill.style.width = `${(i.count / max) * 100}%`;
-    return h('div', { class: 'a-bar' }, h('div', {}, h('span', { title: i.name }, i.name), h('span', {}, nf.format(i.count))), h('i', { 'aria-hidden': 'true' }, fill));
-  }));
+function renderKpis(a, leads, days) {
+  const cur = inPeriod(leads, days), prev = inPeriod(leads, days, days);
+  const t = a.totals, p = a.previous;
+  const rate = (n, v) => (v ? (n / v) * 100 : null);
+  const curRate = rate(cur.length, t.uniques), prevRate = rate(prev.length, p.uniques);
+  const resp = median(cur.map(firstResponseHours)), prevResp = median(prev.map(firstResponseHours));
+  const answered = cur.filter((l) => firstResponseHours(l) != null);
+  const within24 = answered.length ? (answered.filter((l) => firstResponseHours(l) < 24).length / answered.length) * 100 : null;
+  const waiting = leads.filter((l) => l.status === 'new').length;
+  const split = { agri: cur.filter((l) => lineOf(l.product) === 'agri').length, pack: cur.filter((l) => lineOf(l.product) === 'pack').length };
+
+  $('#ovKpis').replaceChildren(
+    kpiCard({ label: 'Visitors', value: int(t.uniques), delta: delta(t.uniques, p.uniques), spark: a.series.map((d) => d.uniques), context: `${int(t.views)} page views, ${t.viewsPerVisitor ?? 0} per visitor` }),
+    kpiCard({ label: 'Enquiries', value: int(cur.length), delta: delta(cur.length, prev.length), spark: dailyCounts(a.series, leads), context: `Agriculture ${split.agri}, packaging ${split.pack}` }),
+    kpiCard({ label: 'Enquiries per 100 visitors', value: curRate == null ? NO_DATA : decimal(curRate), delta: curRate == null || prevRate == null ? null : delta(curRate, prevRate, { points: true }), context: 'How well visits turn into enquiries' }),
+    kpiCard({ label: 'Engaged visits', value: t.engagedRate == null ? NO_DATA : pct(t.engagedRate, 0), delta: t.engagedRate == null || p.engagedRate == null ? null : delta(t.engagedRate, p.engagedRate, { points: true }), spark: a.series.map((d) => (d.leaves ? (d.engaged / d.leaves) * 100 : 0)), sparkLabel: 'Engaged share per day', context: t.avgSeconds == null ? 'Stayed 15 seconds or read half the page' : `Average ${duration(t.avgSeconds)} on a page` }),
+    kpiCard({ label: 'First response (median)', value: resp == null ? NO_DATA : hours(resp), delta: resp == null || prevResp == null ? null : delta(resp, prevResp, { higherIsBetter: false }), context: within24 == null ? `${waiting} waiting in New` : `${pct(within24, 0)} answered within a day. ${waiting} waiting in New` }),
+  );
 }
 
-function interest(rows) {
-  const el = $('#productInterest');
-  if (!rows.length) { el.replaceChildren(h('p', { class: 'a-note' }, 'No product details have been opened in this period.')); return; }
-  el.replaceChildren(h('div', { style: 'overflow-x:auto' }, h('table', { class: 'a-table' },
-    h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Product'), h('th', { scope: 'col' }, 'Details opened'), h('th', { scope: 'col' }, 'Enquiries'))),
-    h('tbody', {}, rows.map((r) => h('tr', {}, h('th', { scope: 'row', style: 'font-weight:500;color:var(--ink);border-bottom:1px solid var(--line)' }, r.name), h('td', {}, nf.format(r.clicks)), h('td', {}, nf.format(r.inquiries))))))));
+function renderTrend(a, leads) {
+  const dates = a.series.map((d) => d.date);
+  const current = a.series.map((d) => d.uniques);
+  const previous = a.previousSeries.map((d) => d.uniques);
+  const marks = dailyCounts(a.series, leads);
+  const box = $('#ovTrend');
+  if (!current.some(Boolean) && !previous.some(Boolean)) { box.replaceChildren(empty('No visits recorded in this period yet.')); return; }
+  const total = current.reduce((n, v) => n + v, 0), prevTotal = previous.reduce((n, v) => n + v, 0);
+  box.replaceChildren(
+    trendChart({ dates, current, previous, marks, width: box.clientWidth, label: `Daily visitors: ${int(total)} this period against ${int(prevTotal)} in the previous period, with ${marks.reduce((n, v) => n + v, 0)} enquiries.`, unit: 'visitors', markLabel: 'enquiries' }),
+    tableFor('Daily visitors and enquiries', ['Date', 'Visitors', 'Previous period', 'Page views', 'Enquiries'], a.series.map((d, i) => [shortDate(d.date), int(d.uniques), int(previous[i]), int(d.views), int(marks[i])])));
 }
 
-const SVG = 'http://www.w3.org/2000/svg';
-const s = (tag, attrs) => { const n = document.createElementNS(SVG, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); return n; };
+function renderFacts(a, leads, days) {
+  const fact = (dt, dd, sub) => h('div', {}, h('dt', {}, dt), h('dd', {}, dd, sub ? h('small', {}, sub) : null));
+  const topOf = (obj) => Object.entries(obj || {}).sort((x, y) => y[1] - x[1])[0];
+  const out = [];
+  const ch = topOf(a.channels);
+  const chTotal = Object.values(a.channels || {}).reduce((n, v) => n + v, 0);
+  out.push(fact('Biggest source', ch ? CHANNEL_NAMES[ch[0]] || ch[0] : NO_DATA, ch ? `${pct((ch[1] / chTotal) * 100, 0)} of page views` : 'Recorded from now on'));
+  let best = null;
+  a.heatmap.forEach((row, r) => row.forEach((v, c) => { if (v && (!best || v > best.v)) best = { r, c, v }; }));
+  out.push(fact('Busiest time', best ? `${WEEKDAYS[best.r]} ${hourLabel(best.c)}` : NO_DATA, best ? 'Addis Ababa time. A good hour to be ready to reply' : 'Recorded from now on'));
+  const markets = {};
+  for (const l of inPeriod(leads, days)) { const m = scoreOf(l).details.market; if (m) markets[m.name] = (markets[m.name] || 0) + 1; }
+  const mk = topOf(markets), lang = a.languages?.[0];
+  out.push(fact('Leading market', mk ? mk[0] : lang ? languageName(lang.name) : NO_DATA, mk ? `${mk[1]} ${mk[1] === 1 ? 'enquiry' : 'enquiries'} by phone code or email domain` : lang ? 'Most common browser language' : 'No enquiries or language data yet'));
+  const prod = a.products?.[0];
+  out.push(fact('Most viewed product', prod ? prod.name : NO_DATA, prod ? `Opened ${int(prod.clicks)} times, ${int(prod.inquiries)} ${prod.inquiries === 1 ? 'enquiry' : 'enquiries'}` : 'No product details opened yet'));
+  const page = a.pages?.filter((p) => p.leaves >= 3).sort((x, y) => (y.engagedRate ?? 0) - (x.engagedRate ?? 0))[0];
+  out.push(fact('Most engaging page', page ? pageName(page.path) : NO_DATA, page ? `${pct(page.engagedRate, 0)} engaged, ${duration(page.avgSeconds)} average` : 'Needs a few more visits'));
+  $('#ovFacts').replaceChildren(...out);
+}
 
-function chart(series, range) {
-  const el = $('#chart');
-  const W = 900, H = 220, P = { l: 36, r: 8, t: 10, b: 26 };
-  const max = Math.max(4, ...series.map((d) => d.views));
-  const step = (W - P.l - P.r) / Math.max(series.length, 1);
-  const bw = Math.max(2, step * 0.62);
-  const y = (v) => H - P.b - (v / max) * (H - P.t - P.b);
-  const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'a-chart', role: 'img' });
-  const total = series.reduce((n, d) => n + d.views, 0);
-  const best = series.reduce((b, d) => (d.views > (b?.views ?? -1) ? d : b), null);
-  const title = s('title', {});
-  title.textContent = `Page views per day over the last ${range} days: ${nf.format(total)} in total${best && best.views ? `, highest on ${best.date} with ${nf.format(best.views)}` : ''}.`;
-  svg.append(title);
-  for (const f of [0, 0.5, 1]) {
-    const v = Math.round(max * f), yy = y(v);
-    svg.append(s('line', { x1: P.l, x2: W - P.r, y1: yy, y2: yy, class: 'grid-line' }));
-    const lbl = s('text', { x: P.l - 6, y: yy + 4, 'text-anchor': 'end', class: 'axis' }); lbl.textContent = nf.format(v); svg.append(lbl);
-  }
-  series.forEach((d, i) => {
-    const x = P.l + i * step + (step - bw) / 2;
-    svg.append(s('rect', { x, y: y(d.views), width: bw, height: Math.max(0, H - P.b - y(d.views)), rx: 2, class: 'v' }));
-    svg.append(s('rect', { x: x + bw * 0.2, y: y(d.uniques), width: bw * 0.6, height: Math.max(0, H - P.b - y(d.uniques)), rx: 2, class: 'u' }));
-    const every = Math.ceil(series.length / 6);
-    if (i % every === 0) {
-      const lbl = s('text', { x: x + bw / 2, y: H - 8, 'text-anchor': 'middle', class: 'axis' });
-      lbl.textContent = new Date(`${d.date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-      svg.append(lbl);
-    }
-  });
-  el.replaceChildren(svg);
+function renderFunnels(a) {
+  const f = a.funnel || {};
+  const agri = [
+    { label: 'Visitors', value: f.visit || 0 },
+    { label: 'Saw agriculture', value: f.agri || 0 },
+    { label: 'Opened a product', value: f.product || 0 },
+    { label: 'Reached for contact', value: f.contactAgri || 0, hint: 'Call, WhatsApp, email or form' },
+    { label: 'Sent an enquiry', value: f.enquiryAgri || 0 },
+  ];
+  const pack = [
+    { label: 'Visitors', value: f.visit || 0 },
+    { label: 'Saw packaging', value: f.pack || 0 },
+    { label: 'Used the bag designer', value: f.studio || 0 },
+    { label: 'Reached for contact', value: f.contactPack || 0, hint: 'Call, WhatsApp, email or form' },
+    { label: 'Sent an enquiry', value: f.enquiryPack || 0 },
+  ];
+  const render = (el, steps, name, cls) => {
+    el.className = cls;
+    el.replaceChildren(funnel(steps, { label: `${name} journey` }), tableFor(`${name} journey`, ['Step', 'Visitors'], steps.map((s) => [s.label, int(s.value)])));
+  };
+  render($('#ovFunnelAgri'), agri, 'Agriculture', '');
+  render($('#ovFunnelPack'), pack, 'Packaging', 'a-funnel-pack');
+}
+
+function renderAttention(a, leads, prods, setup, days) {
+  const items = [];
+  const add = (level, title, text, href, action) => items.push({ level, title, text, href, action });
+  const stale = leads.filter((l) => l.status === 'new' && ageHours(l) > 24).sort((x, y) => Date.parse(x.createdAt) - Date.parse(y.createdAt));
+  if (stale.length) add('high', `${stale.length} ${stale.length === 1 ? 'enquiry has' : 'enquiries have'} waited more than a day`, `Oldest arrived ${hours(ageHours(stale[0]))} ago. Buyers answered within an hour are several times more likely to go ahead.`, `#enquiries?days=${days}`, 'Open New');
+  const fresh = leads.filter((l) => l.status === 'new' && ageHours(l) <= 24);
+  if (fresh.length) add('medium', `${fresh.length} new ${fresh.length === 1 ? 'enquiry' : 'enquiries'} today`, 'Reply while the buyer is still comparing suppliers.', `#enquiries?days=${days}`, 'Reply');
+  const undelivered = inPeriod(leads, days).filter((l) => l.emailed === false);
+  if (undelivered.length) add('high', `${undelivered.length} ${undelivered.length === 1 ? 'enquiry' : 'enquiries'} did not reach your email`, 'They are safe in the inbox here. Check Email delivery so the next ones arrive.', '#email', 'Check email');
+  // null means the settings could not be read, which is not the same as "not set up"
+  if (setup.email && !setup.email.smtpHost) add('high', 'Email delivery is not set up', 'Enquiries are saved here, but no one is notified and buyers get no confirmation.', '#email', 'Set up');
+  const fails = a.events?.form_fail || 0;
+  if (fails) add('high', `Visitors saw a sending error ${fails} ${fails === 1 ? 'time' : 'times'}`, 'The form offered them WhatsApp, email or a call instead. Check the email settings.', '#email', 'Check email');
+  const followUp = leads.filter((l) => l.status === 'quoted' && (Date.now() - Date.parse((l.history || []).slice(-1)[0]?.at || l.createdAt)) / 86400000 > 7);
+  if (followUp.length) add('medium', `${followUp.length} ${followUp.length === 1 ? 'quote has' : 'quotes have'} had no update for a week`, 'A short follow up often decides it.', `#enquiries?days=365`, 'Follow up');
+  const noPhoto = (prods || []).filter((p) => !p.image);
+  if (noPhoto.length) add('medium', `${noPhoto.length} ${noPhoto.length === 1 ? 'product has' : 'products have'} no photo`, noPhoto.map((p) => p.name).join(', '), '#products', 'Add photos');
+  const cold = (a.products || []).filter((p) => p.clicks >= 10 && p.inquiries === 0);
+  if (cold.length) add('medium', `${cold[0].name} gets attention but no enquiries`, `Opened ${cold[0].clicks} times this period. Check its description, minimum order and photo.`, '#products', 'Review');
+  if (a.previous.uniques >= 20 && a.totals.uniques < a.previous.uniques * 0.7) add('medium', `Visitors fell ${Math.round((1 - a.totals.uniques / a.previous.uniques) * 100)}% on the previous period`, 'See which source dropped on the Traffic page.', `#traffic?days=${days}`, 'See traffic');
+  if (!items.length) add('ok', 'Nothing needs attention', 'No waiting enquiries, delivery problems or missing content.', null, null);
+  $('#ovAttention').replaceChildren(...items.map((i) => h('li', { class: `is-${i.level}` },
+    h('div', {}, h('strong', {}, i.title), h('span', {}, i.text)),
+    i.href ? h('a', { class: `btn btn-sm ${i.level === 'high' ? 'btn-primary' : 'btn-secondary'}`, href: i.href }, i.action) : null)));
+}
+
+function renderHealth(a, prods, setup) {
+  const list = prods || [];
+  const withPhoto = list.filter((p) => p.image).length;
+  const rows = [
+    setup.email === null
+      ? ['optional', 'Email delivery', 'Could not check just now. Open Email delivery to see the settings', '#email']
+      : [setup.email.smtpHost ? 'ok' : 'todo', 'Email delivery', setup.email.smtpHost ? `Enquiries go to ${setup.email.recipientEmail}` : 'Not set up, so nobody is notified', '#email'],
+    [setup.contacts?.phones?.length ? 'ok' : 'todo', 'Call and WhatsApp', setup.contacts?.phones?.length ? `${setup.contacts.phones.length} phone ${setup.contacts.phones.length === 1 ? 'number' : 'numbers'}${setup.social?.whatsapp ? ', WhatsApp link set' : ', WhatsApp uses the main phone'}` : 'No phone number saved', '#company'],
+    [setup.social?.telegram ? 'ok' : 'optional', 'Telegram', setup.social?.telegram ? 'Shown beside WhatsApp' : 'Optional. Add a channel link to show the icon', '#social'],
+    [list.length && withPhoto === list.length ? 'ok' : 'todo', 'Product photos', `${withPhoto} of ${list.length} products have a photo`, '#products'],
+    [setup.certs?.length ? 'ok' : 'todo', 'Certifications', setup.certs?.length ? `${setup.certs.length} listed on the agriculture page` : 'None listed', '#certifications'],
+    [setup.integrations?.analytics?.measurementId ? 'ok' : 'optional', 'Google Analytics', setup.integrations?.analytics?.measurementId ? 'Connected' : 'Optional. The built-in numbers here work without it', '#marketing'],
+    [a.firstTracked ? 'ok' : 'optional', 'Detailed visit data', a.firstTracked ? `Recording since ${shortDate(a.firstTracked)}` : 'Starts with the next visit', null],
+  ];
+  $('#ovHealth').replaceChildren(...rows.map(([kind, title, text, href]) => h('li', {}, statusIcon(kind),
+    h('div', {}, h('strong', {}, title, h('span', { class: 'sr-only' }, kind === 'ok' ? ', done' : kind === 'todo' ? ', needs doing' : ', optional')), h('span', {}, text, href && kind !== 'ok' ? ' ' : null, href && kind !== 'ok' ? h('a', { href }, kind === 'todo' ? 'Fix' : 'Set up') : null)))));
 }

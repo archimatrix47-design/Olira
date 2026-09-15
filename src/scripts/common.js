@@ -10,8 +10,16 @@ export const getJSON = (url) => fetch(url).then((r) => (r.ok ? r.json() : null))
 
 /** First-party analytics event (the admin dashboard's product interest). */
 export function track(body) {
-  try { fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), keepalive: true }).catch(() => {}); } catch (e) {}
+  const { event, ...data } = body;
+  try { window.oliraTrack?.(event, data); } catch (e) {}
 }
+// contact actions the admin overview reports (no personal data is sent)
+document.addEventListener('click', (e) => {
+  const a = e.target.closest?.('a');
+  if (!a) return;
+  if (a.matches('[data-contact="telegram"]')) track({ event: 'telegram' });
+  else if ((a.getAttribute('href') || '').startsWith('mailto:')) track({ event: 'email' });
+});
 
 /* ---------- theme ---------- */
 const root = document.documentElement;
@@ -132,6 +140,7 @@ for (const form of $$('form[data-endpoint]')) {
   const status = $('.form-status', form), fail = $('.form-fail', form), btn = $('button[type=submit]', form);
   const btnText = btn.textContent;
 
+  form.addEventListener('focusin', () => track({ event: 'form_start' }), { once: true });
   fields.forEach((el) => {
     el.addEventListener('blur', () => { if (el.value.trim()) showError(el, checkField(el)); });
     el.addEventListener('input', () => { if (el.getAttribute('aria-invalid')) showError(el, checkField(el)); });
@@ -142,7 +151,7 @@ for (const form of $$('form[data-endpoint]')) {
     status.textContent = ''; status.classList.remove('is-ok'); fail.hidden = true;
     let first = null;
     for (const el of fields) { const msg = checkField(el); showError(el, msg); if (msg && !first) first = el; }
-    if (first) { status.textContent = 'Please check the highlighted fields.'; first.focus(); return; }
+    if (first) { status.textContent = 'Please check the highlighted fields.'; track({ event: 'form_invalid' }); first.focus(); return; }
 
     const data = Object.fromEntries(new FormData(form));
     if (data.website) { status.textContent = 'Thank you. Your request has been sent.'; form.reset(); return; }
@@ -166,6 +175,7 @@ for (const form of $$('form[data-endpoint]')) {
       try { window.gtag('event', 'form_submission', { form_name: 'inquiry', product: payload.product }); window.trackConversion({ product: payload.product }); } catch (err) {}
     } catch (err) {
       const body = `${payload.product} enquiry from ${payload.name}${payload.company ? ', ' + payload.company : ''}\n\n${payload.message}`;
+      track({ event: 'form_fail' });
       $('[data-fail="mail"]', fail).href = `mailto:${salesEmail()}?subject=${encodeURIComponent(payload.product + ' enquiry')}&body=${encodeURIComponent(body)}`;
       // the numbers are fetched only now, after a failed send (see reach.js)
       const waLink = $('[data-fail="wa"]', fail), telLink = $('[data-fail="tel"]', fail);

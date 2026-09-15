@@ -11,7 +11,11 @@
 //               shaded by the photo's own light
 // To use Olira's own bag photography later, add a photo and its four panel
 // corners to BAGS; nothing else changes.
-import { $, $$, h, prefill } from './common.js';
+import { $, $$, h, prefill, track } from './common.js';
+
+// designer use, for the admin insights: counted once per page view except downloads and quotes
+let changedOnce = false;
+const noteChange = () => { if (!changedOnce) { changedOnce = true; track({ event: 'studio_change' }); } };
 
 const CW = 1000, CH = 1400;                      // output canvas
 const canvas = $('#bagCanvas');
@@ -224,10 +228,10 @@ for (const name of ['size', 'handle', 'ink']) {
     if (!r.checked) return;
     state[name] = r.value;
     if (name === 'handle') { state.dx = 0; state.dy = 0; }
-    render(); announce(`Preview updated. ${specLine()}.`);
+    render(); announce(`Preview updated. ${specLine()}.`); noteChange();
   }));
 }
-$('#text1').addEventListener('input', (e) => { state.text1 = e.target.value; render(); });
+$('#text1').addEventListener('input', (e) => { state.text1 = e.target.value; render(); noteChange(); });
 $('#text2').addEventListener('input', (e) => { state.text2 = e.target.value; render(); });
 $('#scale').addEventListener('input', (e) => { state.scale = +e.target.value / 100; e.target.setAttribute('aria-valuetext', `${e.target.value} percent`); render(); });
 $('#scale').addEventListener('change', (e) => announce(`Design size ${e.target.value}%.`));
@@ -242,6 +246,7 @@ function loadLogo(file) {
     state.logo = img; state.logoName = file.name;
     $('#dropTitle').textContent = file.name; sub.textContent = 'Choose or drop another file to replace it.';
     $('#removeLogo').hidden = false; render(); announce(`Logo added: ${file.name}. It is on the bag preview.`);
+    track({ event: 'studio_logo' });
   };
   img.onerror = () => { sub.textContent = 'That image could not be read. Try a PNG.'; announce(sub.textContent); URL.revokeObjectURL(url); };
   img.src = url;
@@ -304,11 +309,13 @@ $('#download').addEventListener('click', () => {
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
     announce('Mockup image downloaded.');
+    track({ event: 'studio_download' });
   }, 'image/png');
 });
 $('#useDesign').addEventListener('click', () => {
   const s = SIZES[state.size];
   const form = $('#inquiry'); if (form) form.dataset.product = 'Kraft paper bags';
+  track({ event: 'studio_quote' });
   prefill(`Quote for ${s.label.toLowerCase()} kraft paper bags with ${state.handle} handles (${s.dims}). Print: ${state.logo ? 'our logo' : 'logo to follow'}, "${state.text1}" and "${state.text2}", ${INKS[state.ink][0].toLowerCase()} ink${state.oneInk ? ', logo in one colour' : ''}.`);
 });
 
