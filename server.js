@@ -1258,8 +1258,42 @@ app.delete('/api/certifications/:id', adminAuth, (req, res) => {
 
 // ----- CONTACT DETAILS -----
 
+// Phone numbers are kept away from scrapers: the public response leaves them
+// out, and a visitor gets them only by pressing a call or WhatsApp icon, which
+// calls POST /api/contact/reveal. A signed-in admin gets the full record.
+function isAdminRequest(req) {
+  const token = req.headers.authorization?.split(' ')[1];
+  return !!token && verifyTokenDetailed(token, clientIp(req)).valid;
+}
+
 app.get('/api/contact-details', (req, res) => {
-  res.json(readJsonFile(contactsPath, { phones: [], emails: [] }));
+  const data = readJsonFile(contactsPath, { phones: [], emails: [] });
+  if (isAdminRequest(req)) return res.json(data);
+  const { phones, ...rest } = data;
+  res.set('Cache-Control', 'no-store');
+  res.json({ ...rest, phones: [] });
+});
+
+// POST /api/contact/reveal: the numbers behind the call and WhatsApp icons.
+// POST (not a link a crawler follows), rate limited, never cached, bots refused.
+const revealLimit = makeRateLimiter(Number(process.env.REVEAL_RATE_PER_MIN) || 20, 'contact-reveal');
+app.post('/api/contact/reveal', revealLimit, (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.set('X-Robots-Tag', 'noindex');
+  if (BOT_RE.test(String(req.headers['user-agent'] || ''))) return res.status(403).json({ error: 'Forbidden' });
+  if (!checkOrigin(req)) return res.status(403).json({ error: 'Forbidden' });
+  const c = readJsonFile(contactsPath, { phones: [] });
+  const social = readJsonFile(socialPath, {});
+  const dial = (p) => String(p || '').replace(/[^\d+]/g, '');
+  const phones = (Array.isArray(c.phones) ? c.phones : []).filter(Boolean).slice(0, 4)
+    .map((p, i) => ({ label: i === 0 ? 'Sales' : i === 1 ? 'Office' : 'Phone', display: String(p).slice(0, 50), href: 'tel:' + dial(p) }));
+  const mainDigits = dial(c.phones?.[0]).replace('+', '');
+  const waUrl = sanitizeSocialUrl(social.whatsapp || '') || (mainDigits ? 'https://wa.me/' + mainDigits : '');
+  const waDigits = (waUrl.match(/wa\.me\/(\d{8,15})/) || [])[1];
+  res.json({
+    phones,
+    whatsapp: waUrl ? { href: waUrl, display: waDigits ? (waDigits === mainDigits ? phones[0].display : '+' + waDigits) : 'WhatsApp chat' } : null
+  });
 });
 
 // Keep only known text fields (trimmed, capped) plus numeric coordinates. The
@@ -1326,7 +1360,11 @@ function sanitizeSocialUrl(v) {
 }
 
 app.get('/api/social-links', (req, res) => {
-  res.json(readJsonFile(socialPath, {}));
+  const data = readJsonFile(socialPath, {});
+  if (isAdminRequest(req)) return res.json(data);
+  // a WhatsApp link carries a phone number; the public gets it via /api/contact/reveal
+  const { whatsapp, ...rest } = data;
+  res.json({ ...rest, whatsapp: whatsapp ? 'set' : '' });
 });
 
 app.post('/api/social-links', adminAuth, (req, res) => {

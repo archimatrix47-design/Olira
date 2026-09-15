@@ -1,6 +1,7 @@
 // Shared by every public page: theme toggle, sticky nav, one-time section fade,
 // Burayu contours, live admin data (contacts, logo, social links) and the
 // enquiry forms.
+import { reveal } from './reach.js';
 export const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const $ = (sel, r = document) => r.querySelector(sel);
 export const $$ = (sel, r = document) => [...r.querySelectorAll(sel)];
@@ -53,41 +54,24 @@ if (svgs.length) {
 /* ---------- live admin data ----------
    Pages are built with the data saved at build time; these calls apply anything
    the admin changed since, so no rebuild is needed. */
-const SALES = { phone: '', email: '', whatsapp: '' };
-const digits = (s) => String(s).replace(/[^\d+]/g, '');
-// same rules as src/lib/site-data.ts, which renders the first version at build time
-function whatsappLabel(url, mainPhone) {
-  if (!url) return mainPhone;
-  const m = url.match(/wa\.me\/(\d{8,15})/);
-  if (!m) return 'Chat on WhatsApp';
-  return digits(mainPhone).replace('+', '') === m[1] ? mainPhone : `+${m[1]}`;
-}
+// Phone numbers never come through here: the public API leaves them out, and
+// the call and WhatsApp icons fetch them on click (reach.js).
+const salesEmail = () => ($('[data-contact="email"]')?.getAttribute('href') || 'mailto:info@oliraagroindustry.com').slice(7);
 function telegramLabel(url) {
   const m = url.match(/(?:t|telegram)\.me\/([A-Za-z0-9_]{4,})/);
   return m ? `@${m[1]}` : 'Open Telegram';
 }
-function readSalesFromPage() {
-  SALES.phone = digits($('[data-contact="phone"]')?.getAttribute('href')?.slice(4) || '+251911223619');
-  SALES.email = ($('[data-contact="email"]')?.getAttribute('href') || 'mailto:info@oliraagroindustry.com').slice(7);
-  SALES.whatsapp = $('[data-contact="whatsapp"]')?.getAttribute('href') || `https://wa.me/${SALES.phone.replace('+', '')}`;
-}
-readSalesFromPage();
 
 function setLink(sel, href, text) {
   for (const a of $$(sel)) {
     a.href = href;
     const t = a.querySelector('span:last-child') || a;
-    if (text != null && a.dataset.keepText == null) t.textContent = text;
+    if (text != null) t.textContent = text;
   }
 }
 Promise.all([getJSON('/api/contact-details'), getJSON('/api/social-links')]).then(([d, social]) => {
   if (d) {
-    const phone = d.phones?.[0], office = d.phones?.[1], email = d.emails?.[0];
-    if (phone) {
-      setLink('[data-contact="phone"]', `tel:${digits(phone)}`, phone);
-      $$('[data-contact-text="phone"]').forEach((n) => { n.textContent = phone; });
-    }
-    if (office) setLink('[data-contact="office-phone"]', `tel:${digits(office)}`, office);
+    const email = d.emails?.[0];
     if (email) setLink('[data-contact="email"]', `mailto:${email}`, email);
     if (d.address) {
       const a = d.address;
@@ -97,15 +81,11 @@ Promise.all([getJSON('/api/contact-details'), getJSON('/api/social-links')]).the
     }
     if (d.office) $$('[data-contact="office-short"]').forEach((n) => { n.textContent = [d.office.name, d.office.city].filter(Boolean).join(', '); });
   }
-  const mainPhone = d?.phones?.[0] || $('[data-contact="phone"] span:last-child')?.textContent || '';
-  const wa = social?.whatsapp || (d?.phones?.[0] ? `https://wa.me/${digits(d.phones[0]).replace('+', '')}` : null);
-  // the label names the number the link opens, not always the main phone
-  if (wa) setLink('[data-contact="whatsapp"]', wa, whatsappLabel(social?.whatsapp || '', mainPhone));
   if (social) {
     const tg = /^https:\/\/\S+$/.test(social.telegram || '') ? social.telegram : '';
     for (const a of $$('[data-contact="telegram"]')) {
       a.hidden = !tg;
-      if (tg) { a.href = tg; a.querySelector('span:last-child').textContent = telegramLabel(tg); }
+      if (tg) { a.href = tg; a.setAttribute('aria-label', `Olira on Telegram ${telegramLabel(tg)}`); }
     }
     const labels = { facebook: 'Facebook', linkedin: 'LinkedIn', x: 'X', youtube: 'YouTube' };
     const links = Object.entries(labels).filter(([k]) => /^https?:\/\//.test(social[k] || ''));
@@ -114,7 +94,6 @@ Promise.all([getJSON('/api/contact-details'), getJSON('/api/social-links')]).the
       navEl.hidden = links.length === 0;
     }
   }
-  readSalesFromPage();
 });
 
 getJSON('/api/branding').then((b) => {
@@ -187,12 +166,20 @@ for (const form of $$('form[data-endpoint]')) {
       try { window.gtag('event', 'form_submission', { form_name: 'inquiry', product: payload.product }); window.trackConversion({ product: payload.product }); } catch (err) {}
     } catch (err) {
       const body = `${payload.product} enquiry from ${payload.name}${payload.company ? ', ' + payload.company : ''}\n\n${payload.message}`;
-      // WhatsApp documents %20-style encoding for text=; URLSearchParams would write + for spaces
-      const wa = new URL(SALES.whatsapp); wa.search = '';
-      $('[data-fail="wa"]', fail).href = `${wa.href}?text=${encodeURIComponent(body)}`;
-      $('[data-fail="mail"]', fail).href = `mailto:${SALES.email}?subject=${encodeURIComponent(payload.product + ' enquiry')}&body=${encodeURIComponent(body)}`;
-      $('[data-fail="tel"]', fail).href = `tel:${SALES.phone}`;
+      $('[data-fail="mail"]', fail).href = `mailto:${salesEmail()}?subject=${encodeURIComponent(payload.product + ' enquiry')}&body=${encodeURIComponent(body)}`;
+      // the numbers are fetched only now, after a failed send (see reach.js)
+      const waLink = $('[data-fail="wa"]', fail), telLink = $('[data-fail="tel"]', fail);
+      waLink.hidden = true; telLink.hidden = true;
       fail.hidden = false;
+      try {
+        const c = await reveal();
+        if (c.whatsapp) {
+          // WhatsApp documents %20-style encoding for text=; URLSearchParams would write + for spaces
+          const wa = new URL(c.whatsapp.href); wa.search = '';
+          waLink.href = `${wa.href}?text=${encodeURIComponent(body)}`; waLink.hidden = false;
+        }
+        if (c.phones?.[0]) { telLink.href = c.phones[0].href; telLink.hidden = false; }
+      } catch (x) { /* email stays available */ }
       status.textContent = 'Sending failed. Your details are still in the form.';
     } finally {
       clearTimeout(timer);

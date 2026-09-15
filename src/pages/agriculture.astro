@@ -17,7 +17,7 @@ const jsonLd = {
   '@type': 'OfferCatalog',
   name: 'Olira Agro agricultural exports',
   url: `${SITE}/agriculture/`,
-  provider: { '@type': 'Organization', name: 'Olira Agro Industry', url: `${SITE}/`, telephone: contact.phoneHref.slice(4), email: contact.email },
+  provider: { '@type': 'Organization', name: 'Olira Agro Industry', url: `${SITE}/`, email: contact.email },
   itemListElement: products.map((p) => ({
     '@type': 'Offer',
     itemOffered: { '@type': 'Product', name: p.name, category: p.category, description: p.description, ...(p.image ? { image: `${SITE}${p.image}` } : {}) },
@@ -137,7 +137,7 @@ const jsonLd = {
         <div>
           <h2 id="contactTitle">Talk to our export team</h2>
           <p class="lede" style="margin-top:20px">Tell us the product, volume and destination port. We answer within 24 hours.</p>
-          <ContactLines officePhone />
+          <ContactLines />
         </div>
         <InquiryForm prefix="a" line="Agricultural products" labelledBy="contactTitle" extra="port" messagePlaceholder="Product, volume and shipment window" messageRequired="Tell us the product and volume you need." submitLabel="Send enquiry" noun="enquiry" team="export team" />
       </div>

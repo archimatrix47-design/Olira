@@ -34,35 +34,22 @@ export const certifications = read<Certification[]>('certifications.json', []);
 const rawContacts = read<Contacts>('contact-details.json', { phones: [], emails: [] });
 const social = read<Record<string, string>>('social-links.json', {});
 
-// Fallbacks match the published company details, used only if the admin has
-// cleared a field.
-const phone = rawContacts.phones?.[0] || '+251 911 223 619';
-const digits = (s: string) => s.replace(/[^\d+]/g, '');
-
-// WhatsApp opens the admin's WhatsApp link when one is saved, otherwise the main
-// phone. The label always names the number the link actually opens.
-export function whatsappLabel(url: string, mainPhone: string) {
-  if (!url) return mainPhone;
-  const m = url.match(/wa\.me\/(\d{8,15})/);
-  if (!m) return 'Chat on WhatsApp';
-  return digits(mainPhone).replace('+', '') === m[1] ? mainPhone : `+${m[1]}`;
-}
+// Phone numbers and the WhatsApp link are deliberately NOT exported: nothing
+// built into the pages may contain them, so scrapers reading the HTML find
+// none. The icons in ReachIcons.astro fetch them on click from
+// POST /api/contact/reveal.
 export function telegramLabel(url: string) {
   const m = url.match(/(?:t|telegram)\.me\/([A-Za-z0-9_]{4,})/);
   return m ? `@${m[1]}` : 'Open Telegram';
 }
 const telegramUrl = /^https:\/\/\S+$/.test(social.telegram || '') ? social.telegram : '';
 
+// Fallbacks match the published company details, used only if the admin has
+// cleared a field.
 export const contact = {
-  phone,
-  phoneHref: `tel:${digits(phone)}`,
-  whatsappLabel: whatsappLabel(social.whatsapp || '', phone),
   telegramHref: telegramUrl,
   telegramLabel: telegramUrl ? telegramLabel(telegramUrl) : '',
-  officePhone: rawContacts.phones?.[1] || '',
-  officePhoneHref: rawContacts.phones?.[1] ? `tel:${digits(rawContacts.phones[1])}` : '',
   email: rawContacts.emails?.[0] || 'info@oliraagroindustry.com',
-  whatsappHref: social.whatsapp || `https://wa.me/${digits(phone).replace('+', '')}`,
   // "Soreti Building, 2nd Floor, Room 214" / "Lemi Kura Subcity, Woreda 08, Addis Ababa"
   addressLines: [
     rawContacts.address?.line2 || 'Soreti Building, 2nd Floor, Room 214',
