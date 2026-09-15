@@ -1,5 +1,6 @@
 // Admin entry: sign in, sign out and the section router (#overview, ...).
 import '../common.js'; // theme toggle and the live logo
+import './motion.js'; // keyboard or pointer, for motion decisions
 import { $, $$, api, getToken, setToken, whenSessionExpires, toast } from './api.js';
 import * as overview from './overview.js';
 import * as enquiries from './enquiries.js';
@@ -8,12 +9,16 @@ import * as company from './company.js';
 import * as settings from './settings.js';
 import * as traffic from './traffic.js';
 import * as store from './store.js';
+import * as packaging from './packaging.js';
+import * as team from './team.js';
 
 const VIEWS = {
   overview: overview.show,
   traffic: traffic.show,
   enquiries: enquiries.show,
   products: products.show,
+  packaging: packaging.show,
+  team: team.show,
   company: company.show,
   certifications: company.showCertifications,
   logo: settings.showLogo,

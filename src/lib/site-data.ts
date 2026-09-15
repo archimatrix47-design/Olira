@@ -30,6 +30,20 @@ export interface Contacts {
 }
 
 export const products = read<Product[]>('products.json', []);
+
+// Packaging products, managed in the admin. Those with a photo and print corners are also the mockup studio's bags.
+export interface PackagingProduct {
+  id: string; name: string; handle?: string; description?: string; moq?: string; specs?: string[];
+  image?: string | null; imageDark?: string | null; width?: number | null; height?: number | null;
+  quad?: number[][] | null; safeTop?: number; site?: boolean; team?: boolean;
+}
+export const packagingProducts = read<PackagingProduct[]>('packaging-products.json', [])
+  .filter((p) => p && p.site !== false && p.name)
+  .map(({ id, name, handle, description, moq, specs, image, imageDark, width, height, quad, safeTop }) => ({
+    id, name, handle: handle || '', description: description || '', moq: moq || '', specs: specs || [],
+    image: image || null, imageDark: image ? imageDark || null : null, width, height,
+    quad: image && Array.isArray(quad) && quad.length === 4 ? quad : null, safeTop: safeTop ?? 0.1,
+  }));
 export const certifications = read<Certification[]>('certifications.json', []);
 const rawContacts = read<Contacts>('contact-details.json', { phones: [], emails: [] });
 const social = read<Record<string, string>>('social-links.json', {});

@@ -115,6 +115,19 @@ getJSON('/api/branding').then((b) => {
    region, and if sending fails keeps the visitor's text and offers phone,
    WhatsApp and email with the message already filled in. */
 export function prefill(msg) { const m = $('#message'); if (m) { m.value = msg; m.dispatchEvent(new Event('input')); } }
+// Page scripts can add to a request: pack.js sets formHooks.design to send the studio design.
+export const formHooks = {};
+
+const FILE_EXT = /\.(pdf|ai|eps|svg|png|jpe?g|webp)$/i;
+function checkFiles(input) {
+  const files = [...(input?.files || [])];
+  if (files.length > 3) return 'Attach up to 3 files. Send more after we reply.';
+  const wrong = files.find((f) => !FILE_EXT.test(f.name));
+  if (wrong) return `"${wrong.name}" is not a file type we accept. Use PDF, AI, EPS, SVG, PNG, JPG or WebP.`;
+  const big = files.find((f) => f.size > 10 * 1024 * 1024);
+  if (big) return `"${big.name}" is over 10 MB. Send a smaller export, or send it after we reply.`;
+  return '';
+}
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE = /^\+?[\d\s()-]{7,20}$/;
@@ -141,6 +154,15 @@ for (const form of $$('form[data-endpoint]')) {
   const btnText = btn.textContent;
 
   form.addEventListener('focusin', () => track({ event: 'form_start' }), { once: true });
+
+  // packaging: the consent box appears once files or the studio design are being sent
+  const fileInput = $('input[type=file][name=files]', form), designBox = $('[data-send-design]', form), consentRow = $('[data-consent]', form);
+  const consent = consentRow && $('input[name=consent]', consentRow);
+  const attaching = () => !!(fileInput?.files?.length || designBox?.checked);
+  const syncConsent = () => { if (consentRow) consentRow.hidden = !attaching(); };
+  fileInput?.addEventListener('change', () => { showError(fileInput, checkFiles(fileInput)); syncConsent(); });
+  designBox?.addEventListener('change', syncConsent);
+  consent?.addEventListener('change', () => { if (consent.checked) showError(consent, ''); });
   fields.forEach((el) => {
     el.addEventListener('blur', () => { if (el.value.trim()) showError(el, checkField(el)); });
     el.addEventListener('input', () => { if (el.getAttribute('aria-invalid')) showError(el, checkField(el)); });
@@ -150,7 +172,15 @@ for (const form of $$('form[data-endpoint]')) {
     e.preventDefault();
     status.textContent = ''; status.classList.remove('is-ok'); fail.hidden = true;
     let first = null;
-    for (const el of fields) { const msg = checkField(el); showError(el, msg); if (msg && !first) first = el; }
+    for (const el of fields) {
+      if (el.type === 'file' || el.type === 'checkbox') continue;
+      const msg = checkField(el); showError(el, msg); if (msg && !first) first = el;
+    }
+    if (fileInput) { const msg = checkFiles(fileInput); showError(fileInput, msg); if (msg && !first) first = fileInput; }
+    if (consent && attaching() && !consent.checked) {
+      showError(consent, 'Tick this box to send your files and design, or remove them.');
+      if (!first) first = consent;
+    }
     if (first) { status.textContent = 'Please check the highlighted fields.'; track({ event: 'form_invalid' }); first.focus(); return; }
 
     const data = Object.fromEntries(new FormData(form));
@@ -165,13 +195,37 @@ for (const form of $$('form[data-endpoint]')) {
 
     btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Sending';
     status.textContent = 'Sending your request.';
-    const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 15000);
+    // with files or a design the request goes as multipart, otherwise as JSON
+    let body, headers = { 'Content-Type': 'application/json' };
+    let extras = null;
+    if (attaching() && consent?.checked) {
+      try { extras = await formHooks.design?.(); } catch (x) { extras = null; }
+      const fd = new FormData();
+      for (const [k, v] of Object.entries(payload)) fd.append(k, v);
+      fd.append('consent', '1');
+      for (const f of fileInput?.files || []) fd.append('files', f, f.name);
+      if (extras) {
+        fd.append('design', JSON.stringify(extras.design));
+        if (extras.logo) fd.append('logo', extras.logo, extras.logo.name);
+        if (extras.mockup) fd.append('mockup', extras.mockup, 'studio-mockup.png');
+      }
+      body = fd; headers = {};
+    } else body = JSON.stringify(payload);
+    const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), body instanceof FormData ? 60000 : 15000);
     try {
-      const res = await fetch(form.dataset.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctrl.signal });
+      const res = await fetch(form.dataset.endpoint, { method: 'POST', headers, body, signal: ctrl.signal });
+      const reply = await res.json().catch(() => ({}));
+      if (!res.ok && reply.saved) {
+        // the enquiry is in, only the files were refused
+        status.classList.add('is-ok');
+        status.textContent = reply.error;
+        form.reset(); delete form.dataset.product; syncConsent();
+        return;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       status.classList.add('is-ok');
-      status.textContent = 'Thank you. Your request is in and our team will reply within 24 hours.';
-      form.reset(); delete form.dataset.product;
+      status.textContent = body instanceof FormData ? 'Thank you. Your request and files are in, and our packaging team will reply within 24 hours.' : 'Thank you. Your request is in and our team will reply within 24 hours.';
+      form.reset(); delete form.dataset.product; syncConsent();
       try { window.gtag('event', 'form_submission', { form_name: 'inquiry', product: payload.product }); window.trackConversion({ product: payload.product }); } catch (err) {}
     } catch (err) {
       const body = `${payload.product} enquiry from ${payload.name}${payload.company ? ', ' + payload.company : ''}\n\n${payload.message}`;

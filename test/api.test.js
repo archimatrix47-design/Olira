@@ -14,6 +14,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+// server.js loads .env with dotenv, which fills in any variable that is not
+// already present. Keys set to '' count as present, so the real mail account,
+// origins and environment in .env can never leak into a test run.
+for (const key of ['NODE_ENV', 'PORT', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_NAME', 'RECIPIENT_EMAIL', 'CORS_ORIGINS', 'SITE_URL']) process.env[key] = '';
+process.env.NODE_ENV = 'test';
+
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'olira-test-'));
 process.env.DATA_DIR = tmp;
 process.env.UPLOADS_DIR = path.join(tmp, 'uploads');
@@ -24,7 +30,6 @@ process.env.JWT_SECRET = 'test_secret_that_is_at_least_32_chars_long';
 process.env.ADMIN_PASSWORD = 'test_admin_password_123';
 process.env.ADMIN_LOGIN_RATE_PER_MIN = '1000'; // headroom: the suite makes many logins
 process.env.GENERAL_RATE_PER_MIN = '1000'; // headroom: enquiry and settings posts share this bucket
-delete process.env.CORS_ORIGINS;
 
 const { app } = await import('../server.js');
 

@@ -9,6 +9,8 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import sharp from 'sharp';
+import { registerWorkspace, lineOfProduct } from './lib/workspace.js';
+import { registerPackaging } from './lib/packaging.js';
 
 // Load environment variables from .env file (if it exists)
 dotenv.config();
@@ -254,7 +256,7 @@ function saveEmailConfig(config) {
 }
 
 // Send email using configured SMTP
-async function sendEmail(to, subject, htmlContent) {
+async function sendEmail(to, subject, htmlContent, extra = {}) {
   const config = loadEmailConfig();
 
   if (!config || !config.smtpUser || !config.smtpPassword) {
@@ -271,12 +273,18 @@ async function sendEmail(to, subject, htmlContent) {
     }
   });
 
+  // extra: text, replyTo, bcc, attachments, and fromName to send as a team member
+  const fromName = String(extra.fromName || config.fromName || '').replace(/[\r\n"<>]/g, '').slice(0, 120);
   const mailOptions = {
-    from: `${config.fromName} <${config.smtpUser}>`,
+    from: `"${fromName}" <${config.smtpUser}>`,
     to: to,
     subject: subject,
     html: htmlContent
   };
+  if (extra.text) mailOptions.text = extra.text;
+  if (extra.replyTo) mailOptions.replyTo = extra.replyTo;
+  if (extra.bcc) mailOptions.bcc = extra.bcc;
+  if (Array.isArray(extra.attachments) && extra.attachments.length) mailOptions.attachments = extra.attachments;
 
   return new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (error, info) => {
@@ -497,12 +505,13 @@ function checkOrigin(req) {
 
 // JWT Token Generator — embeds IP hash so a stolen token replayed from a
 // different network is rejected.
-function generateToken(ip) {
+function generateToken(ip, claims = {}) {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const payload = Buffer.from(JSON.stringify({
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS,
-    iph: ipHash(ip)
+    iph: ipHash(ip),
+    ...claims // team members: role, uid, pv (see lib/workspace.js)
   })).toString('base64url');
 
   const signature = crypto
@@ -635,9 +644,15 @@ const adminAuth = (req, res, next) => {
     audit('admin_auth_rejected', req, { path: req.path, reason: result.reason });
     return res.status(401).json({ error: 'Unauthorized' });
   }
+  // a sales team token is signed with the same secret but is not an admin session
+  if (!isAdminPayload(result.payload)) {
+    audit('admin_auth_rejected', req, { path: req.path, reason: 'team_token' });
+    return res.status(403).json({ error: 'This account cannot use the admin panel.' });
+  }
 
   next();
 };
+function isAdminPayload(p) { return !!p && (!p.role || p.role === 'admin'); }
 
 // Verify token. Used by the admin page on load to decide whether to show
 // login or dashboard. All failure modes (missing/invalid/expired/revoked/
@@ -647,7 +662,7 @@ app.get('/api/admin/verify', (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ valid: false });
   const result = verifyTokenDetailed(token, ip);
-  if (!result.valid) return res.status(401).json({ valid: false });
+  if (!result.valid || !isAdminPayload(result.payload)) return res.status(401).json({ valid: false });
   res.json({ valid: true });
 });
 
@@ -726,6 +741,7 @@ app.delete('/api/admin/inquiries/:id', adminAuth, (req, res) => {
   const next = list.filter((i) => i.id !== req.params.id);
   if (next.length === list.length) return res.status(404).json({ error: 'Inquiry not found.' });
   if (!writeJsonFile(inquiriesPath, next)) return res.status(500).json({ error: 'Failed to delete.' });
+  workspace.removeLeadFiles(req.params.id);
   audit('inquiry_deleted', req, { id: req.params.id });
   res.json({ success: true });
 });
@@ -786,8 +802,9 @@ function sanitizeHtml(text) {
 }
 
 // Submit product inquiry
-app.post('/api/inquiry', async (req, res) => {
-  const { name, email, company, message, product, phone, website } = req.body;
+app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, next), async (req, res) => {
+  const { name, email, company, message, product, phone, website } = req.body || {};
+  const uploads = Object.values(req.files || {}).flat();
 
   // Honeypot: the hidden `website` field is invisible to humans. If it's
   // filled, this is almost certainly a bot — return success so the bot sees no
@@ -831,11 +848,41 @@ app.post('/api/inquiry', async (req, res) => {
     return res.status(400).json({ error: 'Invalid phone field' });
   }
 
+  // Files and the studio design are only taken with a packaging request, and
+  // only when the visitor ticked the box to send them.
+  const line = lineOfProduct(product);
+  if (uploads.length && line !== 'pack') {
+    return res.status(400).json({ error: 'Files can only be sent with a packaging request.' });
+  }
+  if (uploads.length && req.body.consent !== '1') {
+    return res.status(400).json({ error: 'Tick the box to send your files with the request.' });
+  }
+  let design = null;
+  if (line === 'pack' && typeof req.body.design === 'string' && req.body.design.length <= 2000) {
+    try { design = cleanDesign(JSON.parse(req.body.design)); } catch { design = null; }
+  }
+
+  // The lead is saved before any email is attempted, so a mail problem never loses it.
+  const rec = recordInquiryRecord({ name, email, company, message, product, phone, design }, false);
+  let fileNote = '';
+  if (rec && uploads.length) {
+    const r = workspace.saveIntakeFiles(rec, uploads);
+    updateInquiryRecord(rec.id, { files: rec.files || [], ...(r.rejected.length ? { filesRejected: r.rejected.slice(0, 5) } : {}) });
+    fileNote = r.saved.length ? `${r.saved.length} file${r.saved.length === 1 ? '' : 's'} attached` : '';
+    if (r.rejected.length) {
+      audit('inquiry_files_rejected', req, { count: r.rejected.length, full: !!r.full });
+      if (!r.saved.length) {
+        // tell the visitor, but the enquiry itself is in
+        recordInquiry(product, req);
+        return res.status(400).json({ error: r.full ? 'Your request is in, but the files could not be stored. Send them by email when we reply.' : 'Your request is in, but the files were not a type we accept (PDF, AI, EPS, SVG, PNG, JPG or WebP). Send them by email when we reply.', saved: true });
+      }
+    }
+  }
+
   const config = loadEmailConfig();
   if (!config || !config.recipientEmail) {
     // Still capture the lead so a mail-config gap never loses a customer; the
     // admin can see it (flagged un-emailed) in the Inquiries inbox.
-    recordInquiryRecord({ name, email, company, message, product, phone }, false);
     recordInquiry(product, req);
     return res.status(500).json({ error: 'Email not configured' });
   }
@@ -873,6 +920,11 @@ app.post('/api/inquiry', async (req, res) => {
           <strong style="color: #39572f;">Message:</strong><br/>
           ${sanitizedMessage}
         </div>
+        ${fileNote || design ? `<div style="margin-bottom: 15px;">
+          <strong style="color: #39572f;">Design and files:</strong><br/>
+          ${sanitizeHtml([design ? 'Bag design from the mockup studio' : '', fileNote].filter(Boolean).join(', '))}
+        </div>` : ''}
+        ${rec ? `<p style="margin: 18px 0 0;"><a href="${sanitizeHtml(workspace.workspaceUrl(rec))}" style="color: #186078; font-weight: bold;">Open it in the ${line === 'pack' ? 'packaging' : 'agriculture'} workspace</a></p>` : ''}
       </div>
       <div style="background: #f0f0f0; padding: 15px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 8px 8px;">
         <p style="margin: 0;">This is an automated inquiry from Olira Agro Industry website</p>
@@ -881,7 +933,9 @@ app.post('/api/inquiry', async (req, res) => {
   `;
 
   try {
-    await sendEmail(config.recipientEmail, `New Product Inquiry: ${sanitizedProduct}`, htmlContent);
+    // the sales team for this line gets the notification too, on blind copy
+    const teamCopies = workspace.teamEmailsFor(line).filter((m) => m.toLowerCase() !== String(config.recipientEmail).toLowerCase());
+    await sendEmail(config.recipientEmail, `New Product Inquiry: ${sanitizedProduct}`, htmlContent, teamCopies.length ? { bcc: teamCopies.join(', ') } : {});
 
     // Also send confirmation to customer
     const confirmationHtml = `
@@ -899,14 +953,13 @@ app.post('/api/inquiry', async (req, res) => {
 
     await sendEmail(sanitizedEmail, 'Thank You - Olira Agro Industry Inquiry', confirmationHtml);
 
-    recordInquiryRecord({ name, email, company, message, product, phone }, true); // save the lead for the admin inbox
+    if (rec) updateInquiryRecord(rec.id, { emailed: true });
     recordInquiry(product, req); // count as a conversion, attributed to the product
     res.json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
     console.error('Email send error:', error);
-    // Email delivery failed, but the lead is real — persist it so it can still
-    // be actioned from the admin panel rather than lost.
-    recordInquiryRecord({ name, email, company, message, product, phone }, false);
+    // Email delivery failed, but the lead is already saved (emailed: false) and
+    // can be actioned from the admin panel and the team workspace.
     recordInquiry(product, req);
     res.status(500).json({ error: 'Failed to send inquiry. Please try again.' });
   }
@@ -1115,17 +1168,51 @@ function recordInquiryRecord(data, emailed) {
       product: String(data.product || '').trim().slice(0, 200),
       phone: String(data.phone || '').trim().slice(0, 40),
       message: String(data.message || '').trim().slice(0, 2000),
+      line: lineOfProduct(data.product),
       emailed: !!emailed,
       status: 'new'
     };
+    if (data.design) rec.design = data.design;
     list.unshift(rec);
-    if (list.length > MAX_INQUIRIES) list.length = MAX_INQUIRIES;
+    if (list.length > MAX_INQUIRIES) {
+      for (const old of list.slice(MAX_INQUIRIES)) if (old.files?.length) workspace.removeLeadFiles(old.id);
+      list.length = MAX_INQUIRIES;
+    }
     writeJsonFile(inquiriesPath, list);
     return rec;
   } catch (err) {
     logError('inquiry_record_failed', err);
     return null;
   }
+}
+
+function updateInquiryRecord(id, patchFields) {
+  try {
+    const list = readJsonFile(inquiriesPath, []);
+    const rec = Array.isArray(list) && list.find((i) => i.id === id);
+    if (!rec) return false;
+    Object.assign(rec, patchFields);
+    return writeJsonFile(inquiriesPath, list);
+  } catch (err) {
+    logError('inquiry_update_failed', err);
+    return false;
+  }
+}
+
+// The bag design a visitor made in the packaging studio, kept so the packaging
+// team can re-render it. Only known settings, in range, are stored.
+function cleanDesign(d) {
+  if (!d || typeof d !== 'object') return null;
+  const str = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, max) : '');
+  const numIn = (v, lo, hi, dflt) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt; };
+  return {
+    template: str(d.template, 40), templateName: str(d.templateName, 60),
+    size: ['small', 'medium', 'large'].includes(d.size) ? d.size : 'medium',
+    ink: ['black', 'teal', 'leaf', 'red', 'white'].includes(d.ink) ? d.ink : 'black',
+    text1: str(d.text1, 18), text2: str(d.text2, 28),
+    scale: numIn(d.scale, 0.5, 1.4, 1), dx: numIn(d.dx, -400, 400, 0), dy: numIn(d.dy, -600, 600, 0),
+    oneInk: d.oneInk === true, hasLogo: d.hasLogo === true,
+  };
 }
 
 // Slug helper for product/cert IDs
@@ -1284,7 +1371,9 @@ app.delete('/api/certifications/:id', adminAuth, (req, res) => {
 // calls POST /api/contact/reveal. A signed-in admin gets the full record.
 function isAdminRequest(req) {
   const token = req.headers.authorization?.split(' ')[1];
-  return !!token && verifyTokenDetailed(token, clientIp(req)).valid;
+  if (!token) return false;
+  const r = verifyTokenDetailed(token, clientIp(req));
+  return r.valid && isAdminPayload(r.payload);
 }
 
 app.get('/api/contact-details', (req, res) => {
@@ -1475,7 +1564,7 @@ function getDay(key) {
 // Same-day funnel: each daily visitor hash keeps a bitmask of what that visitor
 // did. Hashes rotate daily, so a person is never followed across days.
 const STEP = { visit: 1, agri: 2, pack: 4, product: 8, studio: 16, contactAgri: 32, enquiryAgri: 64, enquiryPack: 128, contactPack: 256, contactHome: 512 };
-const lineOfProduct = (p) => (/packag|bag/i.test(String(p || '')) ? 'pack' : 'agri');
+// lineOfProduct (agriculture or packaging, from the product name) comes from lib/workspace.js
 const bump = (obj, key, n = 1, cap = 200) => {
   if (obj[key] === undefined && Object.keys(obj).length >= cap) key = 'other';
   obj[key] = (obj[key] || 0) + n;
@@ -1892,6 +1981,18 @@ app.post('/api/upload/logo', adminAuth, (req, res) => {
       res.status(500).json({ error: 'Failed to process logo' });
     }
   });
+});
+
+// ----- TEAM WORKSPACES AND PACKAGING PRODUCTS (lib/workspace.js, lib/packaging.js) -----
+const siteUrl = () => String(process.env.SITE_URL || (process.env.CORS_ORIGINS || '').split(',')[0] || 'https://oliraagroindustry.com').trim().replace(/\/+$/, '');
+const workspace = registerWorkspace(app, {
+  dataDir, readJsonFile, writeJsonFile, audit, logError, sendEmail, loadEmailConfig,
+  verifyTokenDetailed, generateToken, checkOrigin, clientIp, makeRateLimiter,
+  inquiriesPath, isLoginDisabled: () => adminLoginDisabled, siteUrl,
+});
+registerPackaging(app, {
+  dataDir, uploadsDir, publicDirs: [path.join(__dirname, 'dist'), path.join(__dirname, 'public')],
+  readJsonFile, writeJsonFile, audit, logError, adminAuth, resolveUser: workspace.resolveUser,
 });
 
 // Health check

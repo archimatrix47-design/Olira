@@ -8,9 +8,11 @@ https://www.pexels.com/license/
 | File | Photographer | Source |
 |---|---|---|
 | `public/images/packaging/packaging-hero-*` | Hanafi Mellek | https://www.pexels.com/photo/32166686/ |
-| `public/images/packaging/bag-twisted-1400.webp` | Picas Joe | https://www.pexels.com/photo/11348488/ |
-| `public/images/packaging/bag-flat-1400.webp` | SU JI | https://www.pexels.com/photo/25533235/ |
+| `public/images/packaging/products/flat-handle-bag.webp` | Mr. Mockup | https://www.pexels.com/photo/12024975/ (right-hand bag, cropped) |
+| `public/images/packaging/products/wide-flat-handle-bag.webp` | Mr. Mockup | https://www.pexels.com/photo/12024975/ (left-hand bag, cropped) |
 
-The bag mockup studio (`src/scripts/pack.js`) prints onto the two bag photos
-using front-panel corners measured by hand. To swap in Olira's own bag
-photography, add the photo and its four panel corners to `BAGS` in that file.
+The bags in the mockup studio are the packaging products managed in the admin
+(Website, Packaging products). Each has a photo on a plain white background,
+an optional identical shot on black for dark mode, and the four print corners
+set with the corner editor. Replace these stock photos with Olira's own bags
+from there; no code change is needed.

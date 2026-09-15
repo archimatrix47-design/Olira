@@ -5,7 +5,7 @@ import { countryName } from './format.js';
 
 export const STAGES = [
   { id: 'new', label: 'New', open: true },
-  { id: 'read', label: 'Opened', open: true },
+  { id: 'read', label: 'Accepted', open: true },
   { id: 'contacted', label: 'Contacted', open: true },
   { id: 'quoted', label: 'Quoted', open: true },
   { id: 'won', label: 'Won', open: false },
@@ -14,6 +14,8 @@ export const STAGES = [
 ];
 export const stageLabel = (id) => STAGES.find((s) => s.id === id)?.label || id;
 export const lineOf = (product) => (/packag|bag/i.test(product || '') ? 'pack' : 'agri');
+// the line stored with the enquiry wins; older enquiries are read from the product
+export const lineOfLead = (i) => (i?.line === 'agri' || i?.line === 'pack' ? i.line : lineOf(i?.product));
 
 // International dialling codes, longest prefix wins. Buyers type their own
 // numbers, so this is a hint about the market, not a verified location.
