@@ -6,9 +6,12 @@ import * as enquiries from './enquiries.js';
 import * as products from './products.js';
 import * as company from './company.js';
 import * as settings from './settings.js';
+import * as traffic from './traffic.js';
+import * as store from './store.js';
 
 const VIEWS = {
   overview: overview.show,
+  traffic: traffic.show,
   enquiries: enquiries.show,
   products: products.show,
   company: company.show,
@@ -46,7 +49,10 @@ whenSessionExpires(() => {
 
 function route() {
   if (panel.hidden) return;
-  const name = VIEWS[location.hash.slice(1)] ? location.hash.slice(1) : 'overview';
+  const requested = location.hash.slice(1).split('?')[0];
+  const name = VIEWS[requested] ? requested : 'overview';
+  // links keep the chosen period when moving between sections
+  for (const a of $$('[data-nav]')) a.setAttribute('href', `#${a.dataset.nav}?days=${store.getDays()}`);
   for (const v of $$('[data-view]')) v.hidden = v.dataset.view !== name;
   for (const a of $$('[data-nav]')) {
     if (a.dataset.nav === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
@@ -56,6 +62,12 @@ function route() {
   initialised.add(name);
   VIEWS[name]({ first });
 }
+// charts are drawn at their real width, so redraw (from cache) after a real resize
+let lastWidth = innerWidth, resizeTimer;
+addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (Math.abs(innerWidth - lastWidth) > 40) { lastWidth = innerWidth; route(); } }, 250);
+});
 addEventListener('hashchange', () => {
   route();
   // move focus to the section heading so keyboard and screen reader users land in it

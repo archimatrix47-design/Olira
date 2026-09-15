@@ -85,11 +85,44 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 <a class="skip" href="#main">Skip to content</a>
 <slot />
 <script is:inline>
-  // First-party page-view beacon: no cookies, no third party. The server derives
-  // a daily rotating salted hash for unique counts.
-  try {
-    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: location.pathname, referrer: document.referrer || '' }), keepalive: true }).catch(function () {});
-  } catch (e) {}
+  // First-party analytics: no cookies, no third party, nothing stored in the
+  // browser. The server counts visitors with a salted hash that changes daily.
+  // Sent: the page, where the visit came from (referrer host, utm_ tags), the
+  // browser language, and when leaving, how long the page was visible and how
+  // far it was scrolled. window.oliraTrack(name) records an action.
+  (function () {
+    try {
+      var send = function (body) {
+        try { fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), keepalive: true }).catch(function () {}); } catch (e) {}
+      };
+      var q = new URLSearchParams(location.search), utm = {};
+      ['source', 'medium', 'campaign'].forEach(function (k) { var v = q.get('utm_' + k); if (v) utm[k] = v.slice(0, 60); });
+      send({ path: location.pathname, referrer: document.referrer || '', utm: utm, lang: String(navigator.language || '').slice(0, 10) });
+      window.oliraTrack = function (event, data) {
+        var body = { event: event, path: location.pathname };
+        for (var k in data || {}) body[k] = data[k];
+        send(body);
+      };
+      var visibleMs = 0, since = document.visibilityState === 'visible' ? Date.now() : 0, deepest = 0, sent = false;
+      var measure = function () {
+        var h = document.documentElement;
+        var p = ((window.scrollY + window.innerHeight) / Math.max(h.scrollHeight, 1)) * 100;
+        if (p > deepest) deepest = Math.min(100, p);
+      };
+      addEventListener('scroll', measure, { passive: true });
+      addEventListener('load', measure);
+      var leave = function () {
+        if (since) { visibleMs += Date.now() - since; since = 0; }
+        if (sent) return;
+        sent = true;
+        send({ event: 'leave', path: location.pathname, seconds: Math.round(visibleMs / 1000), scroll: Math.round(deepest) });
+      };
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') since = Date.now(); else leave();
+      });
+      addEventListener('pagehide', leave);
+    } catch (e) {}
+  })();
 </script>
 </body>
 </html>

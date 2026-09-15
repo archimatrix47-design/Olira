@@ -94,7 +94,7 @@ function makeRateLimiter(maxPerMinute, label) {
 }
 
 // General endpoints: 5/min. Admin login gets its own stricter 3/min limiter.
-const rateLimit = makeRateLimiter(5, 'general');
+const rateLimit = makeRateLimiter(Number(process.env.GENERAL_RATE_PER_MIN) || 5, 'general');
 
 // Request logging middleware
 const requestLogger = (req, res, next) => {
@@ -193,7 +193,9 @@ const adminRateLimit = makeRateLimiter(Number(process.env.ADMIN_LOGIN_RATE_PER_M
 // Rate limiting on API endpoints
 app.use('/api/admin/login', adminRateLimit);
 app.use('/api/inquiry', rateLimit);
-app.use('/api/email-config', rateLimit);
+// Only saving is rate limited: reading needs an admin session anyway, and a
+// limited read made the dashboard report working email as "not set up".
+app.use('/api/email-config', (req, res, next) => (req.method === 'GET' ? next() : rateLimit(req, res, next)));
 
 // Email config file path
 // Overridable so the test suite never writes the real config next to server.js.
@@ -677,7 +679,7 @@ app.post('/api/admin/change-password', adminAuth, (req, res) => {
 app.get('/api/admin/inquiries', adminAuth, (req, res) => {
   const list = readJsonFile(inquiriesPath, []);
   const arr = Array.isArray(list) ? list : [];
-  const counts = { total: arr.length, new: 0, read: 0, archived: 0 };
+  const counts = { total: arr.length, new: 0, read: 0, contacted: 0, quoted: 0, won: 0, lost: 0, archived: 0 };
   for (const i of arr) {
     if (counts[i.status] === undefined) counts[i.status] = 0;
     counts[i.status]++;
@@ -686,18 +688,35 @@ app.get('/api/admin/inquiries', adminAuth, (req, res) => {
 });
 
 // Update one inquiry's triage status.
+// Sales pipeline: new -> read (opened) -> contacted -> quoted -> won / lost,
+// plus archived. Every change is appended to `history` with a timestamp so the
+// panel can measure how fast leads are answered; `note` is a private note.
+const INQUIRY_STATUSES = ['new', 'read', 'contacted', 'quoted', 'won', 'lost', 'archived'];
 app.post('/api/admin/inquiries/:id', adminAuth, (req, res) => {
-  const { status } = req.body || {};
-  if (!['new', 'read', 'archived'].includes(status)) {
-    return res.status(400).json({ error: 'Invalid status. Use new, read or archived.' });
+  const { status, note } = req.body || {};
+  if (status === undefined && note === undefined) {
+    return res.status(400).json({ error: 'Send a status, a note, or both.' });
+  }
+  if (status !== undefined && !INQUIRY_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `Invalid status. Use ${INQUIRY_STATUSES.join(', ')}.` });
+  }
+  if (note !== undefined && (typeof note !== 'string' || note.length > 2000)) {
+    return res.status(400).json({ error: 'A note is text up to 2000 characters.' });
   }
   const list = readJsonFile(inquiriesPath, []);
   if (!Array.isArray(list)) return res.status(500).json({ error: 'Inquiry store unreadable.' });
   const rec = list.find((i) => i.id === req.params.id);
   if (!rec) return res.status(404).json({ error: 'Inquiry not found.' });
-  rec.status = status;
+  const at = new Date().toISOString();
+  if (status !== undefined && status !== rec.status) {
+    if (!Array.isArray(rec.history)) rec.history = [];
+    rec.history.push({ status, at, from: rec.status || 'new' });
+    if (rec.history.length > 50) rec.history.splice(0, rec.history.length - 50);
+    rec.status = status;
+  }
+  if (note !== undefined) { rec.note = note.trim(); rec.noteAt = at; }
   if (!writeJsonFile(inquiriesPath, list)) return res.status(500).json({ error: 'Failed to save.' });
-  res.json({ success: true });
+  res.json({ success: true, inquiry: rec });
 });
 
 // Delete one inquiry.
@@ -817,6 +836,7 @@ app.post('/api/inquiry', async (req, res) => {
     // Still capture the lead so a mail-config gap never loses a customer; the
     // admin can see it (flagged un-emailed) in the Inquiries inbox.
     recordInquiryRecord({ name, email, company, message, product, phone }, false);
+    recordInquiry(product, req);
     return res.status(500).json({ error: 'Email not configured' });
   }
 
@@ -880,13 +900,14 @@ app.post('/api/inquiry', async (req, res) => {
     await sendEmail(sanitizedEmail, 'Thank You - Olira Agro Industry Inquiry', confirmationHtml);
 
     recordInquiryRecord({ name, email, company, message, product, phone }, true); // save the lead for the admin inbox
-    recordInquiry(product); // count as a conversion, attributed to the product
+    recordInquiry(product, req); // count as a conversion, attributed to the product
     res.json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
     console.error('Email send error:', error);
     // Email delivery failed, but the lead is real — persist it so it can still
     // be actioned from the admin panel rather than lost.
     recordInquiryRecord({ name, email, company, message, product, phone }, false);
+    recordInquiry(product, req);
     res.status(500).json({ error: 'Failed to send inquiry. Please try again.' });
   }
 });
@@ -1388,7 +1409,7 @@ app.post('/api/social-links', adminAuth, (req, res) => {
 // so visitors cannot be correlated across days. Only aggregates are persisted.
 
 const analyticsPath = path.join(dataDir, 'analytics.json');
-const ANALYTICS_RETENTION_DAYS = 90;
+const ANALYTICS_RETENTION_DAYS = 400; // a year plus, for same-period-last-year comparisons
 const MAX_VISITOR_HASHES_PER_DAY = 20000; // bound memory on a traffic spike
 
 const BOT_RE = /bot|crawler|spider|crawling|slurp|bingpreview|headless|lighthouse|pingdom|uptime|curl|wget|python-requests|axios|monitor|preview/i;
@@ -1419,9 +1440,19 @@ function emptyDay() {
     devices: { desktop: 0, mobile: 0, tablet: 0 },
     inquiries: 0,
     // Per-product interest:
-    //   products        → "Request quote" clicks on a product card
-    //   inquiryProducts → product chosen on an inquiry that was actually sent
-    products: {}, inquiryProducts: {}
+    //   products        → product details opened on the agriculture page
+    //   inquiryProducts → product named on an enquiry that was captured
+    products: {}, inquiryProducts: {},
+    // Added 2026-09 for the admin insights (all aggregates, nothing personal):
+    channels: {},      // direct / search / social / referral / campaign / paid / email
+    campaigns: {},     // "source / medium / campaign" from utm_ parameters
+    langs: {},         // browser language, a rough signal for the buyer's market
+    countries: {},     // only when a CDN supplies CF-IPCountry; never derived from the IP here
+    entries: {},       // first page a visitor opened that day
+    heat: {},          // "weekday-hour" in Addis Ababa time (EAT, UTC+3)
+    eng: {},           // per page: leaves, engaged, seconds, time buckets, deep scrolls
+    events: {},        // contact, bag designer and form actions
+    inquiryLines: {}   // agri / pack
   };
 }
 
@@ -1429,18 +1460,70 @@ function getDay(key) {
   if (!analytics.days[key]) analytics.days[key] = emptyDay();
   const d = analytics.days[key];
   // Defensive: older/partial records
-  d.visitors ||= {}; d.pages ||= {}; d.referrers ||= {};
+  // a compacted day keeps counts (uniq, fn) instead of hashes; don't recreate them
+  if (d.uniq === undefined) d.visitors ||= {};
+  d.pages ||= {}; d.referrers ||= {};
   d.devices ||= { desktop: 0, mobile: 0, tablet: 0 };
   d.products ||= {}; d.inquiryProducts ||= {};
   d.views ||= 0; d.inquiries ||= 0;
+  d.channels ||= {}; d.campaigns ||= {}; d.langs ||= {}; d.countries ||= {};
+  d.entries ||= {}; d.heat ||= {}; d.eng ||= {}; d.events ||= {}; d.inquiryLines ||= {};
   return d;
 }
+
+// ---- insight helpers ----
+// Same-day funnel: each daily visitor hash keeps a bitmask of what that visitor
+// did. Hashes rotate daily, so a person is never followed across days.
+const STEP = { visit: 1, agri: 2, pack: 4, product: 8, studio: 16, contactAgri: 32, enquiryAgri: 64, enquiryPack: 128, contactPack: 256, contactHome: 512 };
+const lineOfProduct = (p) => (/packag|bag/i.test(String(p || '')) ? 'pack' : 'agri');
+const bump = (obj, key, n = 1, cap = 200) => {
+  if (obj[key] === undefined && Object.keys(obj).length >= cap) key = 'other';
+  obj[key] = (obj[key] || 0) + n;
+};
+function markVisitor(day, req, bits) {
+  const h = visitorHash(clientIp(req), String(req.headers['user-agent'] || ''), todayKey());
+  if (!day.visitors) return false; // compacted day
+  const known = day.visitors[h] !== undefined;
+  if (!known && Object.keys(day.visitors).length >= MAX_VISITOR_HASHES_PER_DAY) return false;
+  day.visitors[h] = (Number(day.visitors[h]) || 0) | STEP.visit | bits;
+  return !known;
+}
+const SEARCH_RE = /(^|\.)(google|bing|duckduckgo|yahoo|yandex|baidu|ecosia|naver|seznam|qwant|startpage|brave|so|sogou)\.[a-z.]+$/i;
+const SOCIAL_HOSTS = ['facebook.com', 'fb.com', 'instagram.com', 'linkedin.com', 'lnkd.in', 't.co', 'x.com', 'twitter.com', 'youtube.com', 'youtu.be', 'tiktok.com', 't.me', 'telegram.org', 'whatsapp.com', 'wa.me', 'reddit.com', 'pinterest.com'];
+const onHost = (h, list) => list.some((d) => h === d || h.endsWith('.' + d));
+function channelOf(refHost, utm) {
+  if (utm.medium && /^(cpc|ppc|paid|paidsearch|paid_social|display|ads?)$/i.test(utm.medium)) return 'paid';
+  if (utm.medium && /e-?mail|newsletter/i.test(utm.medium)) return 'email';
+  if (utm.source) return 'campaign';
+  if (refHost === 'direct') return 'direct';
+  if (SEARCH_RE.test(refHost)) return 'search';
+  if (onHost(refHost, SOCIAL_HOSTS)) return 'social';
+  if (/(^|\.)(mail|outlook|gmail)\./i.test(refHost)) return 'email';
+  return 'referral';
+}
+const cleanTag = (v) => (typeof v === 'string' ? v.trim().replace(/[^\w .+\-]/g, '').slice(0, 60) : '');
+// Weekday and hour in Addis Ababa (UTC+3, no daylight saving)
+function eatHeatKey(now = Date.now()) {
+  const t = new Date(now + 3 * 3600000);
+  return `${t.getUTCDay()}-${t.getUTCHours()}`;
+}
+const TRACK_EVENTS = new Set(['reveal_phone', 'reveal_whatsapp', 'telegram', 'email', 'studio_logo', 'studio_download', 'studio_quote', 'studio_change', 'form_start', 'form_invalid', 'form_fail']);
 
 function pruneAnalytics() {
   const cutoff = new Date(Date.now() - ANALYTICS_RETENTION_DAYS * 86400000);
   const cutoffKey = todayKey(cutoff);
+  // Compact finished days: once a day is over its visitor hashes are replaced by
+  // counts (uniques and funnel steps), so no per-visitor value outlives the day
+  // and a year of history stays small.
+  const yesterdayKey = todayKey(new Date(Date.now() - 86400000));
   for (const key of Object.keys(analytics.days)) {
-    if (key < cutoffKey) delete analytics.days[key];
+    if (key < cutoffKey) { delete analytics.days[key]; continue; }
+    const d = analytics.days[key];
+    if (key < yesterdayKey && d.visitors) {
+      d.uniq = Object.keys(d.visitors).length;
+      d.fn = dayFunnel(d);
+      delete d.visitors;
+    }
   }
 }
 
@@ -1456,11 +1539,16 @@ process.on('SIGTERM', () => { flushAnalytics(); process.exit(0); });
 // Record a conversion (an inquiry actually sent). Called from /api/inquiry.
 // `product` is the option the visitor picked, so the dashboard can show which
 // products actually convert — not just which ones get clicked.
-function recordInquiry(product) {
+// Every captured lead counts, whether or not the notification email went out
+// (previously only emailed leads were counted, so an SMTP problem hid demand).
+function recordInquiry(product, req) {
   const day = getDay(todayKey());
   day.inquiries++;
   const name = typeof product === 'string' && product.trim() ? product.trim().slice(0, 80) : 'Not specified';
   day.inquiryProducts[name] = (day.inquiryProducts[name] || 0) + 1;
+  const line = lineOfProduct(name);
+  bump(day.inquiryLines, line);
+  if (req && !BOT_RE.test(String(req.headers['user-agent'] || ''))) markVisitor(day, req, line === 'pack' ? STEP.enquiryPack : STEP.enquiryAgri);
   analyticsDirty = true;
 }
 
@@ -1476,28 +1564,68 @@ app.post('/api/track', makeRateLimiter(60, 'track'), (req, res) => {
   if (BOT_RE.test(ua)) return res.status(204).end();
 
   const dayKey = todayKey();
+  const body = req.body || {};
+  let rawPath = typeof body.path === 'string' ? body.path : '/';
+  if (!rawPath.startsWith('/')) rawPath = '/';
+  rawPath = rawPath.split('?')[0].split('#')[0].slice(0, 120) || '/';
+  if (rawPath.startsWith('/admin')) return res.status(204).end();
+  const lineOfPath = rawPath.startsWith('/packaging') ? 'pack' : rawPath.startsWith('/agriculture') ? 'agri' : 'home';
 
-  // Product-interest event: a "Request quote" click on a specific product
-  // card. Counted separately from pageviews so it doesn't inflate traffic.
-  if (req.body?.event === 'product') {
-    const name = typeof req.body.product === 'string' ? req.body.product.trim().slice(0, 80) : '';
+  // Product-interest event: product details opened on the agriculture page.
+  // Counted separately from pageviews so it doesn't inflate traffic.
+  if (body.event === 'product') {
+    const name = typeof body.product === 'string' ? body.product.trim().slice(0, 80) : '';
     if (!name) return res.status(204).end();
     const d = getDay(dayKey);
     d.products[name] = (d.products[name] || 0) + 1;
+    markVisitor(d, req, STEP.product | STEP.agri);
     analyticsDirty = true;
     return res.status(204).end();
   }
 
-  let rawPath = typeof req.body?.path === 'string' ? req.body.path : '/';
-  if (!rawPath.startsWith('/')) rawPath = '/';
-  rawPath = rawPath.split('?')[0].split('#')[0].slice(0, 120) || '/';
-  if (rawPath.startsWith('/admin')) return res.status(204).end();
+  // Engagement, sent once when a visitor leaves or hides the page: seconds the
+  // page was visible and the deepest scroll. Engaged = 15s+ or half the page.
+  if (body.event === 'leave') {
+    const secs = Math.max(0, Math.min(1800, Math.round(Number(body.seconds) || 0)));
+    const scroll = Math.max(0, Math.min(100, Math.round(Number(body.scroll) || 0)));
+    const d = getDay(dayKey);
+    if (d.eng[rawPath] === undefined && Object.keys(d.eng).length >= 60) return res.status(204).end();
+    const e = (d.eng[rawPath] ||= { n: 0, engaged: 0, secs: 0, deep: 0, b: [0, 0, 0, 0, 0] });
+    e.n++; e.secs += secs;
+    if (secs >= 15 || scroll >= 50) e.engaged++;
+    if (scroll >= 75) e.deep++;
+    e.b[secs < 10 ? 0 : secs < 30 ? 1 : secs < 60 ? 2 : secs < 180 ? 3 : 4]++;
+    analyticsDirty = true;
+    return res.status(204).end();
+  }
+
+  // Contact, bag designer and form actions (fixed list; anything else ignored)
+  if (typeof body.event === 'string') {
+    if (!TRACK_EVENTS.has(body.event)) return res.status(204).end();
+    const d = getDay(dayKey);
+    const name = body.event === 'form_start' ? `form_start_${lineOfPath}` : body.event;
+    bump(d.events, name, 1, 40);
+    const contact = /^(reveal_|telegram|email|form_start)/.test(body.event);
+    const bits = body.event.startsWith('studio_') ? STEP.studio | STEP.pack
+      : contact ? (lineOfPath === 'pack' ? STEP.contactPack : lineOfPath === 'agri' ? STEP.contactAgri : STEP.contactHome) : 0;
+    if (bits) markVisitor(d, req, bits);
+    analyticsDirty = true;
+    return res.status(204).end();
+  }
 
   const day = getDay(dayKey);
 
   day.views++;
   day.devices[deviceFromUa(ua)]++;
   day.pages[rawPath] = (day.pages[rawPath] || 0) + 1;
+  bump(day.heat, eatHeatKey(), 1, 7 * 24);
+
+  const utm = { source: cleanTag(body.utm?.source), medium: cleanTag(body.utm?.medium), campaign: cleanTag(body.utm?.campaign) };
+  if (utm.source) bump(day.campaigns, [utm.source, utm.medium || '(none)', utm.campaign || '(none)'].join(' / '), 1, 60);
+  const lang = typeof body.lang === 'string' && /^[a-z]{2,3}(-[a-z]{2})?$/i.test(body.lang) ? body.lang.slice(0, 2).toLowerCase() + body.lang.slice(2).toUpperCase() : '';
+  if (lang) bump(day.langs, lang, 1, 60);
+  const cc = String(req.headers['cf-ipcountry'] || '').toUpperCase();
+  if (/^[A-Z]{2}$/.test(cc) && cc !== 'XX' && cc !== 'T1') bump(day.countries, cc, 1, 80);
 
   // Referrer: store hostname only (aggregate + privacy). Self-referrals and
   // empty referrers collapse to "direct".
@@ -1511,10 +1639,11 @@ app.post('/api/track', makeRateLimiter(60, 'track'), (req, res) => {
     } catch { refHost = 'direct'; }
   }
   day.referrers[refHost] = (day.referrers[refHost] || 0) + 1;
+  bump(day.channels, channelOf(refHost, utm), 1, 20);
 
-  // Unique visitor (daily-rotating hash, never an IP).
-  const h = visitorHash(clientIp(req), ua, dayKey);
-  if (Object.keys(day.visitors).length < MAX_VISITOR_HASHES_PER_DAY) day.visitors[h] = 1;
+  // Unique visitor (daily-rotating hash, never an IP), with the section reached
+  const firstToday = markVisitor(day, req, lineOfPath === 'agri' ? STEP.agri : lineOfPath === 'pack' ? STEP.pack : 0);
+  if (firstToday) bump(day.entries, rawPath, 1, 60);
 
   analyticsDirty = true;
   res.status(204).end();
@@ -1526,59 +1655,127 @@ app.post('/api/track', makeRateLimiter(60, 'track'), (req, res) => {
 
 // GET /api/analytics?days=30 (admin) — aggregated summary. Visitor hashes are
 // counted server-side and never returned.
-app.get('/api/analytics', adminAuth, (req, res) => {
-  const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), ANALYTICS_RETENTION_DAYS);
+const FUNNEL_KEYS = Object.keys(STEP);
+// visitors of one day, from live hashes or, for compacted days, stored counts
+function dayUniques(d) { return d?.visitors ? Object.keys(d.visitors).length : (d?.uniq || 0); }
+function dayFunnel(d) {
+  if (!d) return {};
+  if (!d.visitors) return d.fn || {};
+  const out = {};
+  for (const v of Object.values(d.visitors)) {
+    const bits = Number(v) || 1;
+    for (const k of FUNNEL_KEYS) if (bits & STEP[k]) out[k] = (out[k] || 0) + 1;
+  }
+  return out;
+}
 
-  const series = [];
-  const pages = {};
-  const referrers = {};
-  const devices = { desktop: 0, mobile: 0, tablet: 0 };
-  const productClicks = {};
-  const productInquiries = {};
-  let totalViews = 0, totalUniques = 0, totalInquiries = 0;
-
+// Sum `days` days ending `offset` days before today.
+function aggregateAnalytics(days, offset = 0) {
+  const a = {
+    series: [], views: 0, uniques: 0, inquiries: 0,
+    pages: {}, referrers: {}, devices: { desktop: 0, mobile: 0, tablet: 0 }, productClicks: {}, productInquiries: {},
+    productDaily: {}, channels: {}, campaigns: {}, langs: {}, countries: {}, entries: {}, heat: {}, events: {},
+    inquiryLines: {}, funnel: {}, eng: {}, leaves: 0, engaged: 0, secs: 0, trackedDays: 0
+  };
+  const add = (target, src) => { for (const [k, v] of Object.entries(src || {})) target[k] = (target[k] || 0) + (Number(v) || 0); };
   for (let i = days - 1; i >= 0; i--) {
-    const key = todayKey(new Date(Date.now() - i * 86400000));
+    const key = todayKey(new Date(Date.now() - (i + offset) * 86400000));
     const d = analytics.days[key];
-    const views = d?.views || 0;
-    const uniques = d?.visitors ? Object.keys(d.visitors).length : 0;
-    const inquiries = d?.inquiries || 0;
-
-    series.push({ date: key, views, uniques, inquiries });
-    totalViews += views; totalUniques += uniques; totalInquiries += inquiries;
-
-    if (d) {
-      for (const [k, v] of Object.entries(d.pages || {})) pages[k] = (pages[k] || 0) + v;
-      for (const [k, v] of Object.entries(d.referrers || {})) referrers[k] = (referrers[k] || 0) + v;
-      for (const k of ['desktop', 'mobile', 'tablet']) devices[k] += d.devices?.[k] || 0;
-      for (const [k, v] of Object.entries(d.products || {})) productClicks[k] = (productClicks[k] || 0) + v;
-      for (const [k, v] of Object.entries(d.inquiryProducts || {})) productInquiries[k] = (productInquiries[k] || 0) + v;
+    const uniques = dayUniques(d);
+    let dayLeaves = 0, dayEngaged = 0;
+    for (const e of Object.values(d?.eng || {})) { dayLeaves += e.n || 0; dayEngaged += e.engaged || 0; }
+    a.series.push({ date: key, views: d?.views || 0, uniques, inquiries: d?.inquiries || 0, leaves: dayLeaves, engaged: dayEngaged });
+    if (!d) continue;
+    if (d.heat) a.trackedDays++;
+    a.views += d.views || 0; a.uniques += uniques; a.inquiries += d.inquiries || 0;
+    add(a.pages, d.pages); add(a.referrers, d.referrers); add(a.devices, d.devices);
+    add(a.productClicks, d.products); add(a.productInquiries, d.inquiryProducts);
+    for (const [name, n] of Object.entries(d.products || {})) (a.productDaily[name] ||= new Array(days).fill(0))[days - 1 - i] += n;
+    add(a.channels, d.channels); add(a.campaigns, d.campaigns); add(a.langs, d.langs); add(a.countries, d.countries);
+    add(a.entries, d.entries); add(a.heat, d.heat); add(a.events, d.events); add(a.inquiryLines, d.inquiryLines);
+    add(a.funnel, dayFunnel(d));
+    for (const [p, e] of Object.entries(d.eng || {})) {
+      const t = (a.eng[p] ||= { n: 0, engaged: 0, secs: 0, deep: 0, b: [0, 0, 0, 0, 0] });
+      t.n += e.n || 0; t.engaged += e.engaged || 0; t.secs += e.secs || 0; t.deep += e.deep || 0;
+      (e.b || []).forEach((v, j) => { t.b[j] += v || 0; });
+      a.leaves += e.n || 0; a.engaged += e.engaged || 0; a.secs += e.secs || 0;
     }
   }
+  return a;
+}
+
+function summaryOf(a) {
+  return {
+    views: a.views,
+    // Sum of daily uniques (a returning visitor counts once per day).
+    uniques: a.uniques,
+    inquiries: a.inquiries,
+    conversionRate: a.views ? +((a.inquiries / a.views) * 100).toFixed(2) : 0,
+    enquiriesPer100Visitors: a.uniques ? +((a.inquiries / a.uniques) * 100).toFixed(2) : 0,
+    engagedRate: a.leaves ? +((a.engaged / a.leaves) * 100).toFixed(1) : null,
+    avgSeconds: a.leaves ? Math.round(a.secs / a.leaves) : null,
+    viewsPerVisitor: a.uniques ? +(a.views / a.uniques).toFixed(2) : null
+  };
+}
+
+// GET /api/analytics?days=30 (admin) — aggregated summary for the period and
+// the one before it. Visitor hashes are counted server-side and never returned.
+app.get('/api/analytics', adminAuth, (req, res) => {
+  const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
+  const cur = aggregateAnalytics(days, 0);
+  const prev = aggregateAnalytics(days, days);
 
   const top = (obj, n = 8) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n).map(([name, count]) => ({ name, count }));
 
   // One row per product the visitor showed interest in, so the admin can see
-  // clicks and actual inquiries side by side rather than in two lists.
-  const products = [...new Set([...Object.keys(productClicks), ...Object.keys(productInquiries)])]
-    .map((name) => ({ name, clicks: productClicks[name] || 0, inquiries: productInquiries[name] || 0 }))
+  // opens and actual enquiries side by side rather than in two lists.
+  const products = [...new Set([...Object.keys(cur.productClicks), ...Object.keys(cur.productInquiries)])]
+    .map((name) => ({ name, clicks: cur.productClicks[name] || 0, inquiries: cur.productInquiries[name] || 0, daily: cur.productDaily[name] || new Array(days).fill(0), prevClicks: prev.productClicks[name] || 0 }))
     .sort((a, b) => (b.clicks - a.clicks) || (b.inquiries - a.inquiries))
-    .slice(0, 12);
+    .slice(0, 20);
+
+  // 7 x 24 grid, weekday 0 = Sunday, Addis Ababa time
+  const heatmap = Array.from({ length: 7 }, (_, dow) => Array.from({ length: 24 }, (_, h) => cur.heat[`${dow}-${h}`] || 0));
+
+  const pages = Object.entries(cur.pages).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([path, views]) => {
+    const e = cur.eng[path];
+    return {
+      path, views, entries: cur.entries[path] || 0,
+      leaves: e?.n || 0,
+      engagedRate: e?.n ? +((e.engaged / e.n) * 100).toFixed(1) : null,
+      avgSeconds: e?.n ? Math.round(e.secs / e.n) : null,
+      deepRate: e?.n ? +((e.deep / e.n) * 100).toFixed(1) : null,
+      timeBuckets: e?.b || [0, 0, 0, 0, 0]
+    };
+  });
+
+  // first day holding the newer fields, so the panel can say "since"
+  const firstTracked = Object.keys(analytics.days).filter((k) => analytics.days[k].heat).sort()[0] || null;
 
   res.json({
     range: days,
-    totals: {
-      views: totalViews,
-      // Sum of daily uniques (a returning visitor counts once per day).
-      uniques: totalUniques,
-      inquiries: totalInquiries,
-      conversionRate: totalViews ? +((totalInquiries / totalViews) * 100).toFixed(2) : 0
-    },
-    series,
-    topPages: top(pages),
-    topReferrers: top(referrers),
-    devices,
-    products
+    firstTracked,
+    totals: summaryOf(cur),
+    previous: summaryOf(prev),
+    series: cur.series,
+    previousSeries: prev.series,
+    topPages: top(cur.pages),
+    topReferrers: top(cur.referrers, 12),
+    devices: cur.devices,
+    products,
+    channels: cur.channels,
+    previousChannels: prev.channels,
+    campaigns: top(cur.campaigns, 12),
+    languages: top(cur.langs, 12),
+    countries: top(cur.countries, 12),
+    entries: top(cur.entries, 10),
+    pages,
+    heatmap,
+    events: cur.events,
+    previousEvents: prev.events,
+    funnel: cur.funnel,
+    previousFunnel: prev.funnel,
+    inquiryLines: cur.inquiryLines
   });
 });
 

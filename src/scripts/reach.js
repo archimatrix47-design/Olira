@@ -50,6 +50,7 @@ async function show(root, button) {
   try {
     const data = await reveal();
     if (!open || open.button !== button) return;
+    try { window.oliraTrack?.(kind === 'phone' ? 'reveal_phone' : 'reveal_whatsapp'); } catch (x) {}
     if (kind === 'phone') {
       if (!data.phones?.length) throw new Error('none');
       pop.replaceChildren(h('strong', {}, 'Call Olira'), ...data.phones.map((p) =>
