@@ -6,7 +6,7 @@ import * as store from './store.js';
 import { trendChart, funnel, tableFor, empty } from './charts.js';
 import { kpiCard, freshness, statusIcon } from './widgets.js';
 import { int, pct, decimal, duration, hours, delta, NO_DATA, shortDate, WEEKDAYS, hourLabel, CHANNEL_NAMES, languageName, pageName } from './format.js';
-import { inPeriod, lineOf, firstResponseHours, median, ageHours, scoreOf } from './leads.js';
+import { inPeriod, lineOfLead, firstResponseHours, median, ageHours, scoreOf } from './leads.js';
 
 const view = () => $('[data-view="overview"]');
 
@@ -51,7 +51,7 @@ function renderKpis(a, leads, days) {
   const answered = cur.filter((l) => firstResponseHours(l) != null);
   const within24 = answered.length ? (answered.filter((l) => firstResponseHours(l) < 24).length / answered.length) * 100 : null;
   const waiting = leads.filter((l) => l.status === 'new').length;
-  const split = { agri: cur.filter((l) => lineOf(l.product) === 'agri').length, pack: cur.filter((l) => lineOf(l.product) === 'pack').length };
+  const split = { agri: cur.filter((l) => lineOfLead(l) === 'agri').length, pack: cur.filter((l) => lineOfLead(l) === 'pack').length };
 
   $('#ovKpis').replaceChildren(
     kpiCard({ label: 'Visitors', value: int(t.uniques), delta: delta(t.uniques, p.uniques), spark: a.series.map((d) => d.uniques), context: `${int(t.views)} page views, ${t.viewsPerVisitor ?? 0} per visitor` }),

@@ -4,6 +4,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /team
 Disallow: /api
 Disallow: /.astro
 Disallow: /dist

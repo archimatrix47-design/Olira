@@ -1,0 +1,90 @@
+[
+  {
+    "id": "pk_flat",
+    "name": "Flat handle bags",
+    "handle": "flat",
+    "description": "A lighter, lower-cost bag with flat paper handles for everyday retail and takeaway.",
+    "moq": "",
+    "specs": [],
+    "image": "/images/packaging/products/flat-handle-bag.webp",
+    "imageDark": null,
+    "width": 1400,
+    "height": 1983,
+    "quad": [
+      [
+        0.0914,
+        0.2057
+      ],
+      [
+        0.8502,
+        0.2057
+      ],
+      [
+        0.8502,
+        0.9202
+      ],
+      [
+        0.0914,
+        0.9202
+      ]
+    ],
+    "safeTop": 0.08,
+    "site": true,
+    "team": true,
+    "createdAt": "2026-09-15T00:00:00.000Z",
+    "updatedAt": "2026-09-15T00:00:00.000Z"
+  },
+  {
+    "id": "pk_wide",
+    "name": "Wide flat handle bags",
+    "handle": "wide",
+    "description": "A lower, wider bag with flat paper handles.",
+    "moq": "",
+    "specs": [],
+    "image": "/images/packaging/products/wide-flat-handle-bag.webp",
+    "imageDark": null,
+    "width": 1400,
+    "height": 1598,
+    "quad": [
+      [
+        0.1165,
+        0.2724
+      ],
+      [
+        0.8966,
+        0.2747
+      ],
+      [
+        0.894,
+        0.8888
+      ],
+      [
+        0.1204,
+        0.8888
+      ]
+    ],
+    "safeTop": 0.08,
+    "site": true,
+    "team": true,
+    "createdAt": "2026-09-15T00:00:00.000Z",
+    "updatedAt": "2026-09-15T00:00:00.000Z"
+  },
+  {
+    "id": "pk_twisted",
+    "name": "Twisted handle bags",
+    "handle": "twisted",
+    "description": "Strong kraft bags with twisted paper handles, in small, medium and large.",
+    "moq": "",
+    "specs": [],
+    "image": null,
+    "imageDark": null,
+    "width": null,
+    "height": null,
+    "quad": null,
+    "safeTop": 0.1,
+    "site": true,
+    "team": true,
+    "createdAt": "2026-09-15T00:00:00.000Z",
+    "updatedAt": "2026-09-15T00:00:00.000Z"
+  }
+]

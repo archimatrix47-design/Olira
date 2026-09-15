@@ -6,7 +6,9 @@ import * as store from './store.js';
 import { columns, barList, tableFor, empty } from './charts.js';
 import { kpiCard, bucketsFor } from './widgets.js';
 import { int, pct, hours, delta, NO_DATA } from './format.js';
-import { STAGES, stageLabel, lineOf, scoreOf, BAND_LABEL, firstResponseHours, median, RESPONSE_BUCKETS, inPeriod, ageHours } from './leads.js';
+import { confirmSelect } from './stage-control.js';
+import { captureFocus, restoreFocus } from './motion.js';
+import { STAGES, stageLabel, lineOfLead, scoreOf, BAND_LABEL, firstResponseHours, median, RESPONSE_BUCKETS, inPeriod, ageHours } from './leads.js';
 
 let all = [];
 let bound = false;
@@ -62,7 +64,7 @@ function renderInsights() {
   const open = all.filter((l) => OPEN.includes(l.status)).length;
 
   $('#enKpis').replaceChildren(
-    kpiCard({ label: 'Enquiries', value: int(cur.length), delta: delta(cur.length, prev.length), context: `Agriculture ${cur.filter((l) => lineOf(l.product) === 'agri').length}, packaging ${cur.filter((l) => lineOf(l.product) === 'pack').length}` }),
+    kpiCard({ label: 'Enquiries', value: int(cur.length), delta: delta(cur.length, prev.length), context: `Agriculture ${cur.filter((l) => lineOfLead(l) === 'agri').length}, packaging ${cur.filter((l) => lineOfLead(l) === 'pack').length}` }),
     kpiCard({ label: 'Open pipeline', value: int(open), context: `${all.filter((l) => l.status === 'new').length} new, ${all.filter((l) => l.status === 'quoted').length} quoted, across all time` }),
     kpiCard({ label: 'First response (median)', value: resp == null ? NO_DATA : hours(resp), delta: resp == null || prevResp == null ? null : delta(resp, prevResp, { higherIsBetter: false }), context: 'Arrival to first move out of New' }),
     kpiCard({ label: 'Win rate', value: winRate == null ? NO_DATA : pct(winRate, 0), context: won + lost ? `${won} won, ${lost} lost this period` : 'Mark enquiries Won or Lost to measure it' }),
@@ -72,7 +74,7 @@ function renderInsights() {
   // volume over time by business line
   const buckets = bucketsFor(days).map((b) => {
     const inB = all.filter((l) => { const t = Date.parse(l.createdAt); return t >= b.start && t < b.end; });
-    return { label: b.label, values: [inB.filter((l) => lineOf(l.product) === 'agri').length, inB.filter((l) => lineOf(l.product) === 'pack').length] };
+    return { label: b.label, values: [inB.filter((l) => lineOfLead(l) === 'agri').length, inB.filter((l) => lineOfLead(l) === 'pack').length] };
   });
   $('#enVolume').replaceChildren(cur.length
     ? h('div', {}, columns(buckets, { series: ['Agriculture', 'Packaging'], width: $('#enVolume').clientWidth, label: `Enquiries over time: ${cur.length} in this period` }),
@@ -140,8 +142,8 @@ function filtered() {
   const q = $('#leadSearch').value.trim().toLowerCase();
   let list = $('#leadPeriodOnly').checked ? inPeriod(all, store.getDays()) : all.slice();
   list = list.filter((i) => (stage === 'all' || (stage === 'open' ? OPEN.includes(i.status) : i.status === stage))
-    && (line === 'all' || lineOf(i.product) === line)
-    && (!q || [i.name, i.company, i.email, i.phone, i.product, i.message, i.note].some((v) => String(v || '').toLowerCase().includes(q))));
+    && (line === 'all' || lineOfLead(i) === line)
+    && (!q || [i.name, i.company, i.email, i.phone, i.product, i.message, i.note, i.assignee?.name].some((v) => String(v || '').toLowerCase().includes(q))));
   if (sort === 'oldest') list.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
   else if (sort === 'score') list.sort((a, b) => scoreOf(b).score - scoreOf(a).score);
   else list.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
@@ -161,7 +163,7 @@ function renderInbox() {
 }
 
 function card(i) {
-  const line = lineOf(i.product);
+  const line = lineOfLead(i);
   const sc = scoreOf(i), d = sc.details;
   const digits = String(i.phone || '').replace(/[^\d+]/g, '');
   const subject = `Your ${line === 'pack' ? 'packaging' : 'Olira'} enquiry`;
@@ -170,8 +172,7 @@ function card(i) {
   const resp = firstResponseHours(i);
   const who = i.name || 'this enquiry';
 
-  const stageSel = h('select', { class: 'input', 'aria-label': `Stage for ${who}` }, STAGES.map((s) => h('option', { value: s.id, selected: s.id === i.status || null }, s.label)));
-  stageSel.addEventListener('change', () => update(i, { status: stageSel.value }, `Moved to ${stageLabel(stageSel.value)}.`));
+  const stage = confirmSelect({ options: STAGES.map((s) => [s.id, s.label]), value: i.status, label: `Stage for ${who}`, onConfirm: (v) => update(i, { status: v }, `Moved to ${stageLabel(v)}.`) });
   const note = h('textarea', { class: 'input', maxlength: '2000', 'aria-label': `Private note about ${who}`, placeholder: 'Private note, for example the price quoted or the next step' });
   note.value = i.note || '';
   const saveNote = h('button', { class: 'btn btn-secondary btn-sm', type: 'button' }, 'Save note');
@@ -185,13 +186,15 @@ function card(i) {
   ].filter(Boolean);
   const history = (i.history || []).slice().reverse();
 
-  return h('article', { class: `a-card a-lead${i.status === 'new' ? ' is-new' : ''}`, 'aria-label': `Enquiry from ${i.name || 'unknown'}` },
+  return h('article', { class: `a-card a-lead${i.status === 'new' ? ' is-new' : ''}`, 'aria-label': `Enquiry from ${i.name || 'unknown'}`, 'data-focus-scope': `lead-${i.id}` },
     h('div', { class: 'a-lead-head' },
       h('h3', {}, i.name || 'Unknown', i.company ? h('small', {}, i.company) : null),
       h('div', { class: 'a-lead-meta' },
         h('span', { class: `a-tag ${line}` }, LINE_LABEL[line]),
         h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, String(sc.score), h('span', { class: 'sr-only' }, ` out of 100, ${BAND_LABEL[sc.band]}`)),
         i.emailed === false ? h('span', { class: 'a-tag warn', title: 'The notification email to your team failed. Reply from here.' }, 'Email not delivered') : null,
+        i.assignee ? h('span', { class: 'a-tag' }, `Handled by ${i.assignee.name}`) : null,
+        i.files?.length ? h('span', { class: 'a-tag' }, `${i.files.length} file${i.files.length === 1 ? '' : 's'}`) : null,
         h('time', { datetime: i.createdAt, title: formatDate(i.createdAt) }, timeAgo(i.createdAt)))),
     h('div', { class: 'a-lead-grid' },
       h('div', { style: 'display:grid;gap:12px' },
@@ -208,13 +211,16 @@ function card(i) {
           h('ul', { class: 'a-why' }, sc.checks.map((c) => h('li', { class: c.ok ? '' : 'miss' }, h('span', { class: 'pts' }, c.ok ? `+${c.pts}` : '0'), c.label))),
           h('p', { class: 'v-note' }, 'A guide from what the buyer wrote, not a verdict. A short enquiry from a known importer can still be the best lead of the month.'))),
       h('div', { class: 'a-lead-side' },
-        h('label', { class: 'a-stage' }, 'Stage', stageSel),
+        h('label', { class: 'a-stage' }, 'Stage', stage.select),
+        stage.button,
         h('p', { class: 'a-note', style: 'margin:0' }, resp != null ? `First response after ${hours(resp)}` : i.status === 'new' ? `Waiting ${hours(ageHours(i))}` : 'Response time not recorded'),
         h('div', { class: 'a-note-form' }, note, h('div', { class: 'row', style: '--gap:8px;flex-wrap:wrap' }, saveNote, i.noteAt ? h('span', { class: 'a-note' }, `Saved ${timeAgo(i.noteAt)}`) : null)),
         history.length ? h('details', {}, h('summary', {}, `History (${history.length})`),
           h('ol', { class: 'a-history' }, history.map((x) => h('li', {}, `${stageLabel(x.status)}, ${formatDate(x.at)}`)), h('li', {}, `Arrived, ${formatDate(i.createdAt)}`))) : null)),
     h('div', { class: 'a-lead-foot' },
-      h('span', { class: 'a-note' }, `Received ${formatDate(i.createdAt)}`),
+      h('span', { class: 'a-note' }, `Received ${formatDate(i.createdAt)}`,
+        (i.activity || []).some((a) => a.type === 'reply') ? `, ${(i.activity || []).filter((a) => a.type === 'reply').length} replied from the workspace` : ''),
+      h('a', { class: 'btn btn-ghost btn-sm', href: `/team/${line === 'pack' ? 'packaging' : 'agriculture'}/#inbox?lead=${encodeURIComponent(i.id)}` }, 'Open in workspace'),
       h('button', { class: 'btn btn-danger-quiet btn-sm', type: 'button', onclick: () => remove(i) }, 'Delete')));
 }
 
@@ -223,9 +229,11 @@ async function update(i, body, ok) {
     const r = await api(`/api/admin/inquiries/${encodeURIComponent(i.id)}`, { method: 'POST', body });
     Object.assign(i, r.inquiry || body);
     store.invalidate('inquiries');
+    const focus = captureFocus();
     setBadge(all);
     renderInsights();
     renderInbox();
+    restoreFocus(focus);
     toast(ok);
   } catch (e) { toast(e.message, 'error'); }
 }
@@ -250,7 +258,7 @@ function csv() {
   const cell = (v) => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
   const value = (r, k) => {
     const sc = scoreOf(r);
-    if (k === 'line') return LINE_LABEL[lineOf(r.product)];
+    if (k === 'line') return LINE_LABEL[lineOfLead(r)];
     if (k === 'status') return stageLabel(r.status);
     if (k === 'score') return sc.score;
     if (k === 'market') return sc.details.market?.name || '';

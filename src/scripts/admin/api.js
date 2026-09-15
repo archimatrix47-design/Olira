@@ -16,9 +16,12 @@ export function h(tag, attrs = {}, ...children) {
 }
 
 // Same storage key as the previous admin, so existing sessions carry over.
-const TOKEN = 'adminToken';
+// The team workspaces keep their own session under another key (useTokenKey).
+let TOKEN = 'adminToken';
+export const useTokenKey = (key) => { TOKEN = key; };
 export const getToken = () => { try { return localStorage.getItem(TOKEN); } catch (e) { return null; } };
 export const setToken = (t) => { try { t ? localStorage.setItem(TOKEN, t) : localStorage.removeItem(TOKEN); localStorage.removeItem('adminLoggedIn'); } catch (e) {} };
+export const readStoredToken = (key) => { try { return localStorage.getItem(key); } catch (e) { return null; } };
 
 let onExpired = () => {};
 export const whenSessionExpires = (fn) => { onExpired = fn; };

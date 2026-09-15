@@ -15,8 +15,9 @@ interface Props {
   submitLabel: string;
   noun: string;              // "enquiry" or "request"
   team: string;              // "export team" or "packaging team"
+  attachments?: boolean;     // packaging: artwork files and the studio design
 }
-const { prefix: p, line, labelledBy, extra, messagePlaceholder, messageRequired, submitLabel, noun, team } = Astro.props;
+const { prefix: p, line, labelledBy, extra, messagePlaceholder, messageRequired, submitLabel, noun, team, attachments = false } = Astro.props;
 ---
 <form class="sheet form" id="inquiry" action={`mailto:${contact.email}`} method="post" enctype="text/plain" data-endpoint="/api/inquiry" data-line={line} aria-labelledby={labelledBy}>
   <p class="note" style="margin:0">Fields marked <span class="req" aria-hidden="true">*</span><span class="sr-only">with an asterisk</span> are required.</p>
@@ -60,6 +61,22 @@ const { prefix: p, line, labelledBy, extra, messagePlaceholder, messageRequired,
     <textarea id="message" name="message" required maxlength="1800" placeholder={messagePlaceholder} aria-describedby="message-error" data-msg-required={messageRequired}></textarea>
     <p class="field-error" id="message-error" hidden></p>
   </div>
+  {attachments && (
+    <div class="attach" data-attach>
+      <div class="field">
+        <label for={`${p}-files`}>Artwork files</label>
+        <input class="file-field" id={`${p}-files`} name="files" type="file" multiple accept=".pdf,.ai,.eps,.svg,.png,.jpg,.jpeg,.webp" aria-describedby={`${p}-files-hint ${p}-files-error`}>
+        <p class="note" id={`${p}-files-hint`} style="margin:0;font-weight:400">Optional. Up to 3 files, 10 MB each: PDF, AI, EPS, SVG, PNG, JPG or WebP.</p>
+        <p class="field-error" id={`${p}-files-error`} hidden></p>
+      </div>
+      <label class="check"><input type="checkbox" name="sendDesign" value="1" data-send-design aria-describedby={`${p}-design-summary`}> Send my bag design from the mockup studio</label>
+      <p class="note" id={`${p}-design-summary`} data-design-summary style="margin:-6px 0 0 28px"></p>
+      <div class="consent" data-consent hidden>
+        <label class="check"><input type="checkbox" name="consent" value="1" id={`${p}-consent`} aria-describedby={`${p}-consent-error`}> Olira Packaging may keep these files and my design to prepare the quote and artwork.</label>
+        <p class="field-error" id={`${p}-consent-error`} hidden></p>
+      </div>
+    </div>
+  )}
   <div class="hp" aria-hidden="true"><label for={`${p}-website`}>Website</label><input id={`${p}-website`} name="website" tabindex="-1" autocomplete="off"></div>
   <button class="btn btn-lg btn-primary" type="submit">{submitLabel}</button>
   <p class="form-status" role="status" aria-live="polite"></p>

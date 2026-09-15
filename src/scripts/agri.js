@@ -63,6 +63,7 @@ function rebuild(list) {
     if (p.image) b.append(h('img', { src: p.image, alt: '', width: '800', height: '600', draggable: 'false', decoding: 'async' }));
     else b.append(h('span', { class: 'flow-ph' }, p.category || p.name));
     const tag = h('span', { class: 'flow-tag' }, p.name); tag.append(h('span', {}, p.category || '')); b.append(tag);
+    const open = h('span', { class: 'flow-open', 'aria-hidden': 'true' }); open.innerHTML = OPEN_ICON; open.append('View details'); b.append(open);
     return h('li').appendChild(b).parentNode;
   }));
   dots.replaceChildren(...list.map((p) => h('button', { type: 'button', 'aria-label': p.name })));
@@ -71,6 +72,32 @@ function rebuild(list) {
   $$('button', dots).forEach(bindDot);
   layout();
   requestAnimationFrame(() => cards.forEach((c) => c.classList.remove('no-anim')));
+}
+
+// the icon is fixed markup from this file, never product text
+const OPEN_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
+$('#flowOpen').addEventListener('click', () => openDetail());
+
+// First visit: once the stack has been on screen for a moment without being
+// touched, the front card's "View details" pulses twice so it reads as clickable.
+let touched = false;
+['pointerdown', 'keydown', 'wheel'].forEach((ev) => flow.addEventListener(ev, () => { touched = true; }, { once: true, passive: true }));
+if (!reduce && 'IntersectionObserver' in window) {
+  let seen = false;
+  try { seen = sessionStorage.getItem('olira-flow-hint') === '1'; } catch (e) {}
+  if (!seen) {
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((en) => en.isIntersecting)) return;
+      io.disconnect();
+      setTimeout(() => {
+        if (touched) return;
+        flow.classList.add('is-nudge');
+        try { sessionStorage.setItem('olira-flow-hint', '1'); } catch (e) {}
+        setTimeout(() => flow.classList.remove('is-nudge'), 2600);
+      }, 1400);
+    }, { threshold: 0.6 });
+    io.observe(flow);
+  }
 }
 
 $('#flowPrev').addEventListener('click', () => go(active - 1));

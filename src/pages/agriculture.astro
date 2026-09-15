@@ -23,6 +23,7 @@ const jsonLd = {
     itemOffered: { '@type': 'Product', name: p.name, category: p.category, description: p.description, ...(p.image ? { image: `${SITE}${p.image}` } : {}) },
   })),
 };
+const openIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
 ---
 <SiteLayout
   title="Agricultural exports, Olira Agro Industry"
@@ -57,6 +58,7 @@ const jsonLd = {
                       ? <img src={p.image} alt="" width="800" height="600" draggable="false" decoding="async" loading={a <= 1 ? 'eager' : 'lazy'} />
                       : <span class="flow-ph">{p.category || p.name}</span>}
                     <span class="flow-tag">{p.name}<span>{p.category}</span></span>
+                    <span class="flow-open" aria-hidden="true"><Fragment set:html={openIcon} />View details</span>
                   </button>
                 </li>
               );
@@ -95,9 +97,13 @@ const jsonLd = {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
           </button>
         </div>
+        <div class="flow-actions">
+          <button class="btn btn-secondary btn-sm flow-open-btn" id="flowOpen" type="button" aria-describedby="capName"><Fragment set:html={openIcon} />View details</button>
+        </div>
         <div class="flow-dots" id="flowDots" role="group" aria-label="Choose a product">
           {products.map((p, i) => <button type="button" aria-label={p.name} aria-current={String(i === 0)}></button>)}
         </div>
+        <p class="flow-hint" aria-hidden="true"><span class="on-touch">Tap the front card for details. Swipe to see more products.</span><span class="on-mouse">Click the front card for details. Use the arrows or drag to see more products.</span></p>
 
         <div class="flow-detail" id="flowDetail" hidden role="dialog" aria-modal="true" aria-labelledby="detName">
           <div class="detail-box" id="detailBox">

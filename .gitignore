@@ -54,3 +54,8 @@ data/analytics.json
 # Customer inquiry leads — contains PII, must never be committed
 data/inquiries.json
 src/data/burayu-grid.cache.json
+
+# Team workspaces: member password hashes and files clients send with requests
+data/team.json
+data/client-files/
+public/uploads/packaging/
