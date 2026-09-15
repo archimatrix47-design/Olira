@@ -1,6 +1,7 @@
 // Products: the agriculture page's stack, in order.
 import { $, h, api, toast, confirmDialog, busy, uploadImage } from './api.js';
 import * as store from './store.js';
+import { scrollBehavior } from './motion.js';
 import { sparkline, deltaChip, empty } from './charts.js';
 import { int, decimal, delta, NO_DATA } from './format.js';
 
@@ -210,7 +211,7 @@ function edit(p) {
   $('#productSave').textContent = 'Save changes';
   $('#productCancel').hidden = false;
   clearErrors(); preview(); renderList();
-  $('.a-editor').scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  $('.a-editor').scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
   field('name').focus({ preventScroll: true });
 }
 

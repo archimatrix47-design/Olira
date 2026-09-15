@@ -4,7 +4,9 @@ import SiteNav from '../components/site/SiteNav.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 import ContactLines from '../components/site/ContactLines.astro';
 import InquiryForm from '../components/site/InquiryForm.astro';
-import { contact, SITE } from '../lib/site-data';
+import { contact, SITE, packagingProducts } from '../lib/site-data';
+
+const studioBags = packagingProducts.filter((p) => p.image && p.quad);
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -51,25 +53,32 @@ const jsonLd = {
 
     <section class="container" id="formats" data-fade aria-labelledby="formatsTitle">
       <h2 class="sr-only" id="formatsTitle">Formats</h2>
-      <div class="formats">
-        <div class="format"><h3>Twisted handle bags</h3><p>Strong kraft bags with twisted paper handles, in small, medium and large.</p></div>
-        <div class="format"><h3>Flat handle bags</h3><p>A lighter, lower-cost handle for everyday retail and takeaway.</p></div>
-        <div class="format"><h3>Flat-packed bundles</h3><p>Bags supplied folded and stacked in bundles, ready to store and use. Brown kraft as standard, white kraft on request.</p></div>
+      <div class={`formats cols-${Math.min(4, Math.max(2, packagingProducts.length + 1))}`} id="packagingFormats">
+        {packagingProducts.map((p) => (
+          <div class="format" data-product={p.id}>
+            <h3>{p.name}</h3>
+            <p>{p.description}</p>
+            {p.moq && <p class="format-moq">Minimum order {p.moq}</p>}
+            {p.specs.length > 0 && <ul class="format-specs">{p.specs.map((s) => <li>{s}</li>)}</ul>}
+          </div>
+        ))}
+        <div class="format format-static"><h3>Flat-packed bundles</h3><p>Bags supplied folded and stacked in bundles, ready to store and use. Brown kraft as standard, white kraft on request.</p></div>
       </div>
     </section>
 
     <section class="sec container" id="studio" aria-labelledby="studioTitle">
       <div class="sec-head" data-fade>
         <h2 id="studioTitle">Mockup studio</h2>
-        <p class="lede">Choose a bag, add your logo and text, and move the design into place. Download the mockup or send it with your quote request.</p>
+        <p class="lede">Choose a bag, add your logo and text, and move the design into place. Download the mockup or send the design with your quote request.</p>
       </div>
   
       <div class="studio">
         <div class="sheet stage">
-          <canvas class="stage-canvas" id="bagCanvas" width="1000" height="1400" tabindex="0" role="img" aria-label="Bag mockup preview with your design" aria-describedby="stageInfo stageHelp"></canvas>
+          <canvas class="stage-canvas" id="bagCanvas" width="1200" height={studioBags[0]?.width ? Math.round(1200 * (studioBags[0].height || 1) / studioBags[0].width) : 1680} tabindex="0" role="img" aria-label="Bag mockup preview with your design" aria-describedby="stageInfo stageHelp"></canvas>
+          <script type="application/json" id="packagingData" set:html={JSON.stringify(packagingProducts).replace(/</g, '\\u003c')}></script>
           <div class="stage-meta">
             <span class="note" id="stageHelp">Drag the design on the bag, or focus the preview and use the arrow keys. Hold Shift to move further.</span>
-            <span class="note" id="stageInfo">Medium bag, twisted handles, 25 x 11 x 32 cm, teal ink</span>
+            <span class="note" id="stageInfo">Medium {(studioBags[0]?.name || 'kraft bags').replace(/s$/, '').toLowerCase()}, 25 x 11 x 32 cm, teal ink</span>
           </div>
         </div>
   
@@ -77,10 +86,11 @@ const jsonLd = {
           <p class="sr-only" id="studioStatus" role="status" aria-live="polite"></p>
   
           <fieldset class="choice">
-            <legend class="field-label">Handle</legend>
-            <div class="chips">
-              <label class="opt"><input type="radio" name="handle" value="twisted" checked><span>Twisted</span></label>
-              <label class="opt"><input type="radio" name="handle" value="flat"><span>Flat</span></label>
+            <legend class="field-label">Bag</legend>
+            <div class="chips" id="templateChips">
+              {studioBags.map((m, i) => (
+                <label class="opt"><input type="radio" name="template" value={m.id} data-handle={m.handle} checked={i === 0}><span>{m.name}</span></label>
+              ))}
             </div>
           </fieldset>
   
@@ -140,10 +150,10 @@ const jsonLd = {
           </fieldset>
   
           <div class="panel-actions">
-            <button class="btn btn-lg btn-secondary" type="button" id="download">Download PNG</button>
+            <button class="btn btn-lg btn-secondary" type="button" id="download" aria-describedby="downloadHint">Download PNG</button>
             <a class="btn btn-lg btn-primary" href="#quote" id="useDesign">Quote this design</a>
           </div>
-          <p class="note">Your logo stays in your browser and is never uploaded. Bag photos are for preview; production finish and print can vary.</p>
+          <p class="note" id="downloadHint">Your logo stays in your browser unless you choose to send it with a quote request. Bag photos are for preview; production finish and print can vary.</p>
         </div>
       </div>
     </section>
@@ -151,10 +161,10 @@ const jsonLd = {
       <div class="contact" data-fade>
         <div>
           <h2 id="quoteTitle">Request a quote</h2>
-          <p class="lede" style="margin-top:20px">Send the format, size and quantity. Attach your artwork when we reply, usually within 24 hours.</p>
+          <p class="lede" style="margin-top:20px">Send the format, size and quantity, with your artwork and the design from the studio if you have them. We usually reply within 24 hours.</p>
           <ContactLines />
         </div>
-        <InquiryForm prefix="p" line="Packaging" labelledBy="quoteTitle" extra="qty" messagePlaceholder="Bag size, handle, print colours and delivery" messageRequired="Tell us the bag and print you need." submitLabel="Send request" noun="request" team="packaging team" />
+        <InquiryForm prefix="p" line="Packaging" labelledBy="quoteTitle" extra="qty" messagePlaceholder="Bag size, handle, print colours and delivery" messageRequired="Tell us the bag and print you need." submitLabel="Send request" noun="request" team="packaging team" attachments />
       </div>
     </section>
 
