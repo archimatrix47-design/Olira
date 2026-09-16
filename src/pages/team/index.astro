@@ -1,0 +1,78 @@
+---
+// The one door into the marketing workspaces. A team member signs in here and
+// the account's role, set by the administrator, decides which workspace opens.
+// The workspace pages themselves carry no password field any more: an unsigned
+// visit to one of them comes back here.
+import '../../styles/tokens.css';
+import '../../styles/ambient.css';
+import '../../styles/site.css';
+import '../../styles/admin.css';
+import '../../styles/team.css';
+import ThemeButton from '../../components/site/ThemeButton.astro';
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<script is:inline>(function(){try{var s=localStorage.getItem('olira-theme');if(s==='dark'||s==='light')document.documentElement.setAttribute('data-theme',s);}catch(e){}})();</script>
+<title>Team sign in, Olira</title>
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+</head>
+<body class="admin-body team-body">
+<a class="skip" href="#signinMain">Skip to content</a>
+
+<header class="a-top">
+  <a class="a-brand" href="/"><img src="/logo.png" alt="Olira" width="68" height="32" data-brand-logo><span>Team sign in</span></a>
+  <div class="a-top-actions"><ThemeButton /></div>
+</header>
+
+<main class="a-login" id="signinMain" tabindex="-1">
+  <!-- one form for both teams; the account decides where it opens -->
+  <form class="a-card a-login-card" id="teamLoginForm" novalidate hidden>
+    <div>
+      <h1>Sign in</h1>
+      <p>One sign in for the marketing team. Your workspace opens on the team your account is on.</p>
+      <p class="a-note" id="signinNote" role="status" hidden></p>
+    </div>
+    <div class="a-field">
+      <label for="tEmail">Work email</label>
+      <input class="input" id="tEmail" name="email" type="email" autocomplete="username" required>
+    </div>
+    <div class="a-field">
+      <label for="tPass">Password</label>
+      <div class="a-pass">
+        <input class="input" id="tPass" name="password" type="password" autocomplete="current-password" required aria-describedby="tLoginError">
+        <button class="btn btn-ghost btn-sm" type="button" id="tTogglePass" aria-pressed="false">Show</button>
+      </div>
+      <p class="err" id="tLoginError" role="alert" hidden></p>
+    </div>
+    <button class="btn btn-primary btn-lg" type="submit">Sign in</button>
+    <p class="a-note">The site administrator creates team accounts and resets passwords.</p>
+  </form>
+
+  <!-- an administrator is already signed in: both workspaces are open to them -->
+  <div class="a-card a-login-card" id="adminChoice" hidden>
+    <div>
+      <h1>Open a workspace</h1>
+      <p>You are signed in as the administrator, so both teams are open to you.</p>
+    </div>
+    <div class="t-choice">
+      <a class="btn btn-primary btn-lg" href="/team/agriculture/">Agriculture workspace</a>
+      <a class="btn btn-secondary btn-lg" href="/team/packaging/">Packaging workspace</a>
+    </div>
+    <p class="a-note"><a href="/admin/#enquiries">Back to the admin panel</a>, or <button class="a-linkbtn" type="button" id="notMe">sign in as a team member</button>.</p>
+  </div>
+
+  <p class="a-note" id="signinBusy">Checking your session…</p>
+</main>
+
+<div class="a-toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<script>import '../../scripts/team/signin.js';</script>
+</body>
+</html>

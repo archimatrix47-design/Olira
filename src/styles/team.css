@@ -16,6 +16,11 @@
 .t-user { font-size: .875rem; font-weight: 600; color: var(--ink-2); padding-inline: var(--s-2) var(--s-4); }
 @media (max-width: 520px) { .t-user { display: none; } }
 
+/* sign in: the administrator's choice of workspace, and the link inside a note */
+.t-choice { display: grid; gap: var(--s-4); }
+.a-linkbtn { font: inherit; color: inherit; background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.a-linkbtn:hover { color: var(--ink); }
+
 /* ---------- inbox head: title, one line of numbers, refresh ---------- */
 .t-inbox-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-8); }
 .t-inbox-head h1 { font-size: clamp(1.75rem, 1.4rem + 1vw, 2.25rem); line-height: 1.1; letter-spacing: -.015em; }
