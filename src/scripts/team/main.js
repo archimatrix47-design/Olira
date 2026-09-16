@@ -1,9 +1,10 @@
-// Team workspace entry: sign in, session, the section router.
+// Team workspace entry: session and the section router. Signing in happens once
+// at /team/, which opens the workspace the account is on.
 // A team member's session is kept under its own key; an administrator who is
-// signed in to the admin panel can open the workspace with that session.
+// signed in to the admin panel can open either workspace with that session.
 import '../common.js'; // theme toggle and the live logo
 import '../admin/motion.js'; // keyboard or pointer, for motion decisions
-import { $, $$, api, useTokenKey, getToken, setToken, readStoredToken, whenSessionExpires, toast } from '../admin/api.js';
+import { $, $$, api, useTokenKey, getToken, setToken, readStoredToken, whenSessionExpires } from '../admin/api.js';
 import * as inbox from './inbox.js';
 import * as lists from './lists.js';
 import * as account from './account.js';
@@ -27,14 +28,24 @@ const TEAM_KEY = 'teamToken';
 const usingAdmin = !readStoredToken(TEAM_KEY) && !!readStoredToken('adminToken');
 useTokenKey(usingAdmin ? 'adminToken' : TEAM_KEY);
 
-function showLogin(message) {
-  useTokenKey(TEAM_KEY);
+/** Hide the workspace and show the small card in its place. */
+function showGate(note, label, onAction) {
   panel.hidden = true; signOut.hidden = true; backToAdmin.hidden = true; $('#teamUser').hidden = true;
   login.hidden = false;
-  const err = $('#tLoginError');
-  err.hidden = !message; err.textContent = message || '';
-  $('#tPass').value = '';
-  ($('#tEmail').value ? $('#tPass') : $('#tEmail')).focus();
+  $('#teamGateNote').textContent = note;
+  const action = $('#teamGateAction');
+  action.textContent = label;
+  action.onclick = onAction ? (e) => { e.preventDefault(); onAction(); } : null;
+}
+
+// Signing in lives at /team/, which sends the member straight back to the
+// workspace their account is on. This page only ever hands over.
+function toSignIn(reason) {
+  useTokenKey(TEAM_KEY);
+  showGate('Taking you to sign in.', 'Sign in');
+  const q = new URLSearchParams({ next: location.pathname + location.hash });
+  if (reason) q.set('m', reason);
+  location.replace(`/team/?${q}`);
 }
 
 async function start() {
@@ -56,8 +67,10 @@ async function start() {
     route();
     inbox.refreshCounts();
   } catch (e) {
-    if (e.status === 401 || e.status === 403) { setToken(null); showLogin(); }
-    else showLogin(e.message);
+    // Only a rejected session sends them back to sign in. A network blip keeps
+    // the session and offers another go, instead of logging them out.
+    if (e.status === 401 || e.status === 403) { setToken(null); toSignIn(); }
+    else showGate(e.message, 'Try again', () => location.reload());
   }
 }
 
@@ -67,7 +80,7 @@ whenSessionExpires(() => {
   expiredShown = true;
   setToken(null);
   initialised.clear();
-  showLogin('Your session has ended. Sign in again to continue.');
+  toSignIn('expired');
 });
 
 function route() {
@@ -90,40 +103,12 @@ addEventListener('hashchange', () => {
   if (!panel.hidden && prevView !== now) { const hd = $('[data-view]:not([hidden]) h1'); if (hd) { hd.tabIndex = -1; hd.focus({ preventScroll: true }); scrollTo({ top: 0 }); } }
 });
 
-/* ---------- sign in ---------- */
-$('#tTogglePass').addEventListener('click', (e) => {
-  const input = $('#tPass'), showIt = input.type === 'password';
-  input.type = showIt ? 'text' : 'password';
-  e.currentTarget.textContent = showIt ? 'Hide' : 'Show';
-  e.currentTarget.setAttribute('aria-pressed', String(showIt));
-});
-$('#teamLoginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = $('#tEmail').value.trim(), password = $('#tPass').value, err = $('#tLoginError');
-  const btn = e.currentTarget.querySelector('button[type=submit]');
-  if (!email || !password) { err.textContent = 'Enter your work email and password.'; err.hidden = false; (email ? $('#tPass') : $('#tEmail')).focus(); return; }
-  btn.disabled = true; btn.textContent = 'Signing in';
-  try {
-    const res = await fetch('/api/team/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.token) {
-      useTokenKey(TEAM_KEY); setToken(data.token); expiredShown = false;
-      await start();
-      return;
-    }
-    err.textContent = data.error || (res.status === 429 ? 'Too many attempts. Wait a few minutes and try again.' : 'That email and password do not match.');
-    err.hidden = false; $('#tPass').select();
-  } catch (x) {
-    err.textContent = 'Could not reach the server. Check the connection and try again.'; err.hidden = false;
-  } finally { btn.disabled = false; btn.textContent = 'Sign in'; }
-});
-
 signOut.addEventListener('click', async () => {
   try { await api('/api/admin/logout', { method: 'POST' }); } catch (e) {}
   setToken(null);
   initialised.clear();
-  showLogin();
-  toast('Signed out.');
+  showGate('Signing you out.', 'Sign in');
+  location.replace('/team/?m=signedout');
 });
 
-if (getToken()) start(); else showLogin();
+if (getToken()) start(); else toSignIn();
