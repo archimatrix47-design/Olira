@@ -100,11 +100,22 @@ git — `.env` is gitignored precisely so they are never committed.
 | `SMTP_HOST` | your mail host |
 | `SMTP_PORT` | usually `465` |
 | `SMTP_USER` | the sending mailbox |
-| `SMTP_PASS` | its password |
+| `SMTP_PASSWORD` | its password |
+| `CORS_ORIGINS` | `https://oliraagroindustry.com,https://www.oliraagroindustry.com` |
+| `SITE_URL` | `https://oliraagroindustry.com` |
 
-`server.js` refuses to start in production with weak or default secrets, so a
-missing `JWT_SECRET` or `ADMIN_PASSWORD` stops the app rather than running it
-insecurely. If the app will not boot, check these first.
+`SMTP_PASSWORD` is the name the code reads. `SMTP_PASS` is ignored, and email
+silently stays off.
+
+`CORS_ORIGINS` is the list of sites allowed to post to the API. Admin sign in,
+the team workspaces and the enquiry form all fail with a 403 if the live domain
+is missing from it. `SITE_URL` is the address used in the workspace links inside
+team notification email; it falls back to the first `CORS_ORIGINS` entry.
+
+Weak or missing secrets do **not** stop the app. The public site keeps serving
+and only `/admin` is locked, with `ADMIN LOGIN DISABLED` printed in the startup
+log and `adminLoginEnabled: false` in `/api/health`. If sign in is refused after
+a deploy, check those first.
 
 ### Step 6 — Fill in `.cpanel.yml` and deploy
 
