@@ -16,3 +16,10 @@ dist-old
 .fusebox/
 .dynamodb/
 .tern-port
+
+# Local-only runtime state: never bake team credentials, client uploads or
+# real secrets into an image.
+.env
+data/team.json
+data/client-files
+public/uploads
