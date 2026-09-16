@@ -33,7 +33,14 @@ COPY --from=builder /app/dist ./dist
 COPY server.js ./
 COPY scripts ./scripts
 COPY astro.config.mjs ./
-COPY tailwind.config.mjs ./
+
+# Route modules the server imports at boot: the team workspaces and the
+# packaging product API. Without these the container exits on the first import.
+COPY lib ./lib
+
+# Seed defaults for a fresh DATA_DIR (products, certs, contacts, branding,
+# packaging products). server.js copies any missing file out of here on boot.
+COPY data ./data
 
 # Static assets needed at runtime (logos, product photos, topo map, icons).
 # public/uploads/ is excluded here on purpose — it's a volume mount in

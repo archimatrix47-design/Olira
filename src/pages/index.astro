@@ -123,7 +123,15 @@ const jsonLd = {
       <a href={`mailto:${contact.email}`} data-contact="email"><span class="k">Email</span><span>{contact.email}</span></a>
       <span><span class="k">Office</span><span data-contact="office-short">{contact.officeShort}</span></span>
     </address>
-    <span class="note">© <span data-year>{new Date().getFullYear()}</span> Olira Agro Industry</span>
+    <div class="split-end">
+      <nav class="staff" aria-label="Staff sign in">
+        <span class="k">Staff</span>
+        <a href="/team/agriculture/" rel="nofollow">Agriculture team</a>
+        <a href="/team/packaging/" rel="nofollow">Packaging team</a>
+        <a href="/admin/" rel="nofollow">Admin</a>
+      </nav>
+      <span class="note">© <span data-year>{new Date().getFullYear()}</span> Olira Agro Industry</span>
+    </div>
   </footer>
 
   <script>import '../scripts/common.js';</script>
