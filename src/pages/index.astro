@@ -81,16 +81,18 @@ const jsonLd = {
         <source type="image/avif" srcset="/images/home/sesame-natural-800.avif 800w" sizes="(max-width: 760px) 100vw, 50vw">
         <img src="/images/home/sesame-natural-800.webp" srcset="/images/home/sesame-natural-800.webp 800w" sizes="(max-width: 760px) 100vw, 50vw" alt="" width="800" height="600" fetchpriority="high">
       </picture>
+      <!-- the product a visitor points at in the index below shows here -->
+      <div class="half-peek" aria-hidden="true"><img alt="" width="800" height="600" decoding="async"></div>
       <p class="coords"><b>Burayu, Oromia</b>{coord(lat, 'N', 'S')}, {coord(lng, 'E', 'W')}<br>2,600 m above sea level</p>
       <div class="half-inner">
         <span class="half-label">Olira Agro</span>
         <h2 id="agri-title">Agricultural exports</h2>
         <p>Grown in the Ethiopian highlands, cleaned and tested in Burayu, shipped to importers in more than 50 countries.</p>
-        <ul class="pills" aria-label="Product lines">
-          <li><a href="/agriculture/?p=sesame#range">Humera sesame</a></li>
-          <li><a href="/agriculture/?p=pulses#range">Pulses</a></li>
-          <li><a href="/agriculture/?p=spices#range">Spices</a></li>
-          <li><a href="/agriculture/?p=coffee#range">Coffee</a></li>
+        <ul class="index" aria-label="Product lines">
+          <li><a href="/agriculture/?p=sesame#range" data-photo="/products/photos/sesame-natural.webp">Humera sesame</a></li>
+          <li><a href="/agriculture/?p=pulses#range" data-photo="/products/photos/pulses.webp">Pulses</a></li>
+          <li><a href="/agriculture/?p=spices#range" data-photo="/products/photos/spices.webp">Spices</a></li>
+          <li><a href="/agriculture/?p=coffee#range" data-photo="/products/photos/coffee.webp">Coffee</a></li>
         </ul>
         <a class="half-cta" href="/agriculture/" aria-describedby="agri-title">View the range</a>
       </div>
@@ -105,7 +107,7 @@ const jsonLd = {
         <span class="half-label">Olira Packaging</span>
         <h2 id="pack-title">Kraft paper bags</h2>
         <p>Twisted and flat handle paper bags, made to your size and printed with your logo.</p>
-        <ul class="pills" aria-label="Bag options">
+        <ul class="index" aria-label="Bag options">
           <li><a href="/packaging/?handle=twisted#studio">Twisted handles</a></li>
           <li><a href="/packaging/?handle=flat#studio">Flat handles</a></li>
           <li><a href="/packaging/#studio">Custom print</a></li>
@@ -133,5 +135,5 @@ const jsonLd = {
     </div>
   </footer>
 
-  <script>import '../scripts/common.js';</script>
+  <script>import '../scripts/common.js'; import '../scripts/home.js';</script>
 </SiteLayout>

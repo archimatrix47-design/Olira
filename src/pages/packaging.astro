@@ -5,8 +5,15 @@ import SiteFooter from '../components/site/SiteFooter.astro';
 import ContactLines from '../components/site/ContactLines.astro';
 import InquiryForm from '../components/site/InquiryForm.astro';
 import { contact, SITE, packagingProducts } from '../lib/site-data';
+import { SIZES } from '../scripts/mockup/engine.js';
 
-const studioBags = packagingProducts.filter((p) => p.image && p.quad);
+// The admin's packaging products drive everything here. A bag with a photo and
+// its print corners can be designed in the studio; a bag without one yet is
+// offered for a quote, and joins the studio as soon as the admin adds its photo.
+const studioBags = packagingProducts.filter((p) => p.image && Array.isArray(p.quad) && p.quad.length === 4);
+const quoteOnly = packagingProducts.filter((p) => !studioBags.includes(p));
+const firstBag = studioBags[0];
+const cm = (dims: string) => { const [w, , h] = dims.match(/[\d.]+/g)!.map(Number); return { w, h }; };
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -28,81 +35,91 @@ const jsonLd = {
   bodyClass="theme-pack"
   jsonLd={jsonLd}
 >
-  <link slot="head" rel="preload" as="image" href="/images/packaging/packaging-hero-1080.avif" type="image/avif" imagesrcset="/images/packaging/packaging-hero-720.avif 720w, /images/packaging/packaging-hero-1080.avif 1080w, /images/packaging/packaging-hero-1440.avif 1440w" imagesizes="(max-width: 960px) 100vw, 45vw" fetchpriority="high">
+  {firstBag?.image && <link slot="head" rel="preload" as="image" href={firstBag.image} fetchpriority="high">}
 
-  <SiteNav links={[{ href: '#formats', label: 'Formats' }, { href: '#studio', label: 'Mockup studio' }, { href: '#quote', label: 'Quote' }, { href: '/agriculture/', label: 'Agriculture' }]} cta={{ href: '#quote', label: 'Request a quote' }} />
+  <SiteNav links={[{ href: '#studio', label: 'Mockup studio' }, { href: '#quote', label: 'Quote' }, { href: '/agriculture/', label: 'Agriculture' }]} cta={{ href: '#quote', label: 'Request a quote' }} />
 
   <main id="main">
-    <section class="container page-hero">
-      <div class="hero-split">
+    <!-- The page opens on the studio: the first screen is a bag with the
+         visitor's brand on it, not a picture of someone else's. -->
+    <section class="container studio-page" id="studio" aria-labelledby="packTitle">
+      <header class="studio-head">
         <div>
           <span class="line-label">Olira Packaging</span>
-          <h1>Kraft paper bags with your brand on them</h1>
-          <p class="lede">Twisted and flat handle paper bags for shops, cafés, bakeries and brands. Made to your size, printed with your logo and supplied flat-packed in bundles.</p>
-          <div class="row" style="--gap:10px;margin-top:28px;flex-wrap:wrap">
-            <a class="btn btn-lg btn-primary" href="#studio">Design your bag</a>
-            <a class="btn btn-lg btn-secondary" href="#quote">Request a quote</a>
-          </div>
+          <h1 id="packTitle">Kraft paper bags with your brand on them</h1>
         </div>
-        <picture class="hero-photo">
-          <source type="image/avif" srcset="/images/packaging/packaging-hero-720.avif 720w, /images/packaging/packaging-hero-1080.avif 1080w, /images/packaging/packaging-hero-1440.avif 1440w" sizes="(max-width: 960px) 100vw, 45vw">
-          <img src="/images/packaging/packaging-hero-1080.webp" srcset="/images/packaging/packaging-hero-720.webp 720w, /images/packaging/packaging-hero-1080.webp 1080w, /images/packaging/packaging-hero-1440.webp 1440w" sizes="(max-width: 960px) 100vw, 45vw" alt="Brown kraft paper shopping bags with twisted paper handles" width="1080" height="1440" fetchpriority="high">
-        </picture>
-      </div>
-    </section>
+        <p class="lede">Twisted and flat handle paper bags for shops, cafés, bakeries and brands. Made to your size, printed with your logo and supplied flat-packed in bundles.</p>
+      </header>
+      <h2 class="sr-only">Mockup studio</h2>
 
-    <section class="container" id="formats" data-fade aria-labelledby="formatsTitle">
-      <h2 class="sr-only" id="formatsTitle">Formats</h2>
-      <div class={`formats cols-${Math.min(4, Math.max(2, packagingProducts.length + 1))}`} id="packagingFormats">
-        {packagingProducts.map((p) => (
-          <div class="format" data-product={p.id}>
-            <h3>{p.name}</h3>
-            <p>{p.description}</p>
-            {p.moq && <p class="format-moq">Minimum order {p.moq}</p>}
-            {p.specs.length > 0 && <ul class="format-specs">{p.specs.map((s) => <li>{s}</li>)}</ul>}
-          </div>
-        ))}
-        <div class="format format-static"><h3>Flat-packed bundles</h3><p>Bags supplied folded and stacked in bundles, ready to store and use. Brown kraft as standard, white kraft on request.</p></div>
-      </div>
-    </section>
-
-    <section class="sec container" id="studio" aria-labelledby="studioTitle">
-      <div class="sec-head" data-fade>
-        <h2 id="studioTitle">Mockup studio</h2>
-        <p class="lede">Choose a bag, add your logo and text, and move the design into place. Download the mockup or send the design with your quote request.</p>
-      </div>
-  
       <div class="studio">
         <div class="sheet stage">
-          <canvas class="stage-canvas" id="bagCanvas" width="1200" height={studioBags[0]?.width ? Math.round(1200 * (studioBags[0].height || 1) / studioBags[0].width) : 1680} tabindex="0" role="img" aria-label="Bag mockup preview with your design" aria-describedby="stageInfo stageHelp"></canvas>
+          <div class="stage-frame">
+            <canvas class="stage-canvas" id="bagCanvas" width="1200" height={firstBag?.width ? Math.round(1200 * (firstBag.height || 1) / firstBag.width) : 1680} tabindex="0" role="img" aria-label="Bag mockup preview with your design" aria-describedby="stageInfo stageHelp"></canvas>
+          </div>
           <script type="application/json" id="packagingData" set:html={JSON.stringify(packagingProducts).replace(/</g, '\\u003c')}></script>
           <div class="stage-meta">
             <span class="note" id="stageHelp">Drag the design on the bag, or focus the preview and use the arrow keys. Hold Shift to move further.</span>
-            <span class="note" id="stageInfo">Medium {(studioBags[0]?.name || 'kraft bags').replace(/s$/, '').toLowerCase()}, 25 x 11 x 32 cm, teal ink</span>
+            <span class="note" id="stageInfo">Medium {(firstBag?.name || 'kraft bags').replace(/s$/, '').toLowerCase()}, 25 x 11 x 32 cm, teal ink</span>
           </div>
         </div>
-  
+
         <div class="sheet panel">
+          <p class="note panel-intro">Choose a bag, add your logo and text, and move the design into place. Download the mockup or send the design with your quote request.</p>
           <p class="sr-only" id="studioStatus" role="status" aria-live="polite"></p>
-  
+
           <fieldset class="choice">
             <legend class="field-label">Bag</legend>
-            <div class="chips" id="templateChips">
-              {studioBags.map((m, i) => (
-                <label class="opt"><input type="radio" name="template" value={m.id} data-handle={m.handle} checked={i === 0}><span>{m.name}</span></label>
+            <div class="bags" id="templateChips">
+              {studioBags.map((p) => (
+                <label class="bagopt">
+                  <input type="radio" name="template" value={p.id} data-handle={p.handle} checked={p.id === firstBag?.id}>
+                  <span class="bagopt-card">
+                    <img class="bagopt-photo" src={p.image} alt="" width="56" height="56" loading="lazy" decoding="async">
+                    <span class="bagopt-text">
+                      <span class="bagopt-name">{p.name}</span>
+                      {p.description && <span class="bagopt-desc">{p.description}</span>}
+                      {p.moq && <span class="bagopt-desc">Minimum order {p.moq}</span>}
+                    </span>
+                  </span>
+                </label>
               ))}
             </div>
           </fieldset>
-  
+
+          <!-- bags the admin has not photographed yet: quoted, not previewed -->
+          <div class="quote-only" id="quoteOnly" hidden={quoteOnly.length === 0}>
+            <span class="field-label">Quote only</span>
+            <ul class="quote-bags" id="quoteBags">
+              {quoteOnly.map((p) => (
+                <li>
+                  <button class="quote-bag" type="button" data-product={p.id} data-handle={p.handle}>
+                    <span class="bagopt-name">{p.name}</span>
+                    {p.description && <span class="bagopt-desc">{p.description}</span>}
+                    <span class="quote-bag-go">Quote this bag</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <p class="bundles note"><b>Flat-packed bundles</b> Bags supplied folded and stacked in bundles, ready to store and use. Brown kraft as standard, white kraft on request.</p>
+
           <fieldset class="choice">
-            <legend class="field-label">Size</legend>
-            <div class="chips">
-              <label class="opt"><input type="radio" name="size" value="small"><span>Small</span></label>
-              <label class="opt"><input type="radio" name="size" value="medium" checked><span>Medium</span></label>
-              <label class="opt"><input type="radio" name="size" value="large"><span>Large</span></label>
+            <legend class="field-label">Size <span class="legend-note">drawn to scale</span></legend>
+            <div class="sizes-row">
+              {Object.entries(SIZES).map(([key, s]) => (
+                <label class="sizeopt">
+                  <input type="radio" name="size" value={key} checked={key === 'medium'}>
+                  <span class="sizeopt-card">
+                    <span class="size-box" style={`--w:${cm(s.dims).w};--h:${cm(s.dims).h}`} aria-hidden="true"></span>
+                    <span class="size-name">{s.label}</span>
+                    <span class="size-dims">{s.dims}</span>
+                  </span>
+                </label>
+              ))}
             </div>
           </fieldset>
-  
+
           <div>
             <span class="field-label" id="logoLbl">Your logo</span>
             <label class="drop" id="drop">
@@ -110,17 +127,25 @@ const jsonLd = {
               <strong id="dropTitle">Upload a logo</strong>
               <span id="dropSub">PNG, JPG, SVG or WebP. Transparent PNG looks best.</span>
             </label>
+            <!-- filled in by the logo check when the upload would print badly -->
+            <div class="logo-advice" id="logoAdvice" hidden>
+              <p id="logoAdviceText"></p>
+              <div class="logo-advice-actions">
+                <button class="btn btn-secondary btn-sm" type="button" id="logoFixBox" hidden>Remove the white box</button>
+                <button class="btn btn-secondary btn-sm" type="button" id="logoFixInk" hidden>Print it in the ink colour</button>
+              </div>
+            </div>
             <div class="row" style="justify-content:space-between;margin-top:10px;--gap:10px;flex-wrap:wrap">
               <label class="check"><input type="checkbox" id="oneInk"> Print logo in the ink colour</label>
               <button class="btn btn-ghost btn-sm" type="button" id="removeLogo" hidden>Remove logo</button>
             </div>
           </div>
-  
+
           <div class="two">
             <div><label class="field-label" for="text1">Main text</label><input class="text-field" id="text1" maxlength="18" value="YOUR BRAND" autocomplete="off"></div>
             <div><label class="field-label" for="text2">Second line</label><input class="text-field" id="text2" maxlength="28" value="yourbrand.com" autocomplete="off"></div>
           </div>
-  
+
           <fieldset class="choice">
             <legend class="field-label">Ink colour</legend>
             <div class="chips">
@@ -131,13 +156,13 @@ const jsonLd = {
               <label class="opt opt-swatch" title="White"><input type="radio" name="ink" value="white"><span style="--sw:#FAF7F0"></span><b class="sr-only">White</b></label>
             </div>
           </fieldset>
-  
+
           <div>
             <label class="field-label" for="scale">Design size</label>
             <input class="range" id="scale" type="range" min="50" max="140" value="100" aria-valuetext="100 percent">
             <div class="range-row" aria-hidden="true"><span>Smaller</span><span>Larger</span></div>
           </div>
-  
+
           <fieldset class="choice">
             <legend class="field-label">Move the design</legend>
             <div class="nudge">
@@ -148,7 +173,7 @@ const jsonLd = {
               <button class="btn btn-secondary" type="button" id="resetPos">Centre design</button>
             </div>
           </fieldset>
-  
+
           <div class="panel-actions">
             <button class="btn btn-lg btn-secondary" type="button" id="download" aria-describedby="downloadHint">Download PNG</button>
             <a class="btn btn-lg btn-primary" href="#quote" id="useDesign">Quote this design</a>
@@ -157,6 +182,7 @@ const jsonLd = {
         </div>
       </div>
     </section>
+
     <section class="sec container" id="quote" style="padding-top:0" aria-labelledby="quoteTitle">
       <div class="contact" data-fade>
         <div>

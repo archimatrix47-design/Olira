@@ -124,18 +124,26 @@ const openIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
       </div>
       <script type="application/json" id="productsData" set:html={JSON.stringify(products).replace(/</g, '\\u003c')}></script>
 
-      <div class="facts" data-fade>
-        <div class="fact"><div class="n">2008</div><div class="l">Founded by two agronomists with 50+ years combined</div></div>
-        <div class="fact"><div class="n">20 MT</div><div class="l">Sesame processed per day in Burayu</div></div>
-        <div class="fact"><div class="n">99.95%</div><div class="l">Purity every sesame lot must reach</div></div>
-        <div class="fact"><div class="n">ISO 22000</div><div class="l">Food safety certified, with GMP and organic options</div></div>
-      </div>
-      <div class="certs" id="certs" hidden={certifications.length === 0}>
-        <h2>Certifications</h2>
-        <ul id="certList">
-          {certifications.map((c) => <li><b>{c.name}</b>{c.description}</li>)}
-        </ul>
-      </div>
+      <!-- The facts an importer's quality team checks, laid out as the document
+           they check them in: a specification sheet, one row per fact. -->
+      <article class="specsheet" data-fade aria-labelledby="specTitle">
+        <header class="specsheet-head">
+          <h2 id="specTitle">Specification</h2>
+          <span>Olira Agro, Burayu facility</span>
+        </header>
+        <dl class="specsheet-rows">
+          <div class="spec-row"><dt>Established</dt><dd class="v">2008</dd><dd class="d">Founded by two agronomists with 50+ years combined</dd></div>
+          <div class="spec-row"><dt>Capacity</dt><dd class="v">20 MT</dd><dd class="d">Sesame processed per day in Burayu</dd></div>
+          <div class="spec-row"><dt>Purity</dt><dd class="v">99.95%</dd><dd class="d">Purity every sesame lot must reach</dd></div>
+          <div class="spec-row"><dt>Food safety</dt><dd class="v">ISO 22000</dd><dd class="d">Food safety certified, with GMP and organic options</dd></div>
+        </dl>
+        <div class="certs" id="certs" hidden={certifications.length === 0}>
+          <h3>Certifications</h3>
+          <ul id="certList">
+            {certifications.map((c) => <li><b>{c.name}</b>{c.description}</li>)}
+          </ul>
+        </div>
+      </article>
     </section>
 
     <section class="sec container" id="contact" aria-labelledby="contactTitle">
