@@ -77,7 +77,7 @@ html[data-input="keyboard"] body.admin-body .btn:active { transform: none; }
 .a-field .hint { font-size: .8125rem; color: var(--ink-2); line-height: 1.45; }
 .admin-body .input { height: 44px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: .9375rem; }
 /* focus: a 2px accent edge (above 3:1 on the card in both themes) plus the soft halo */
-.admin-body .input:focus, .admin-body .input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-subtle); }
+.admin-body .input:focus, .admin-body .input:focus-visible { outline: 2px solid transparent; outline-offset: 1px; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-subtle); }
 .admin-body textarea.input { min-height: 110px; line-height: 1.5; }
 .admin-body select.input { padding-right: 32px; }
 .a-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-top: 4px; }

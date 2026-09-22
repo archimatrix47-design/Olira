@@ -1,9 +1,12 @@
-// Packaging page: the kraft paper bag mockup studio.
-// The bags are the packaging products managed in the admin that have a photo and
-// the corners of their printable panel; the drawing itself lives in
-// mockup/engine.js and is shared with the packaging team's workspace.
+// Packaging page: the kraft paper bag mockup studio, which is the first thing on
+// the page. The bags are the packaging products managed in the admin that have a
+// photo and the corners of their printable panel; the drawing itself lives in
+// mockup/engine.js and is shared with the packaging team's workspace. Products
+// without a photo yet are offered for a quote, and join the studio as soon as
+// the admin adds one.
 import { $, $$, h, prefill, track, formHooks } from './common.js';
 import { SIZES, INKS, defaultDesign, prepare, render, toArtboard, clampDesign, exportImage, specLine, saveBlob, usableInStudio, onThemeChange } from './mockup/engine.js';
+import { checkLogo, removeBox } from './mockup/logo-check.js';
 
 // designer use, for the admin insights: counted once per page view except downloads and quotes
 let changedOnce = false;
@@ -12,6 +15,7 @@ const noteChange = () => { if (!changedOnce) { changedOnce = true; track({ event
 const canvas = $('#bagCanvas');
 const ctx = canvas.getContext('2d');
 const chips = $('#templateChips');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
 let products = [];
 try { products = JSON.parse($('#packagingData')?.textContent || '[]'); } catch (e) { products = []; }
@@ -26,23 +30,20 @@ function pickFromUrl() {
   if (byId || byHandle) state.template = (byId || byHandle).id;
 }
 pickFromUrl();
-// a link to a bag that is not in the studio yet (no photo) lands on its line in Formats instead
+// a link to a bag that is quoted rather than previewed points at it in the Quote only list
 {
   const want = params.get('handle') || params.get('bag');
   const product = want && products.find((p) => p.handle === want || p.id === want);
   if (product && !templates.some((t) => t.id === product.id)) {
-    const cell = document.querySelector(`#packagingFormats [data-product="${CSS.escape(product.id)}"]`);
-    if (cell) {
-      cell.classList.add('is-target');
-      history.replaceState(null, '', `${location.pathname}${location.search}#formats`);
-      requestAnimationFrame(() => document.getElementById('formats')?.scrollIntoView({ block: 'start' }));
-    }
+    const btn = document.querySelector(`#quoteBags [data-product="${CSS.escape(product.id)}"]`);
+    if (btn) { btn.classList.add('is-target'); requestAnimationFrame(() => btn.scrollIntoView({ block: 'center' })); }
   }
 }
 const tpl = () => templates.find((t) => t.id === state.template) || templates[0];
 
 /* ---------------- drawing ---------------- */
 let current = null, pending = 0;
+let guides = null; // { x, y } while a drag is snapped to the centre lines
 async function draw() {
   const t = tpl();
   if (!t) { $('#stageInfo').textContent = 'No bags are set up yet.'; return; }
@@ -51,8 +52,36 @@ async function draw() {
   if (id !== pending) return;
   current = B;
   render(ctx, B, state);
+  if (guides) drawGuides(B);
+  canvas.parentElement.style.backgroundColor = backdrop(B);
   $('#stageInfo').textContent = specLine(t, state);
   updateSummary();
+}
+// The frame around the fitted photo takes the colour of the photo's own edge, so
+// the backdrop the bag was photographed on simply continues to the frame.
+function backdrop(B) {
+  if (B.edge) return B.edge;
+  try {
+    const g = B.photo.getContext('2d', { willReadFrequently: true });
+    const d = g.getImageData(0, Math.round(B.ch * 0.1), 3, Math.round(B.ch * 0.5)).data;
+    const sum = [0, 0, 0];
+    for (let o = 0; o < d.length; o += 4) { sum[0] += d[o]; sum[1] += d[o + 1]; sum[2] += d[o + 2]; }
+    const n = d.length / 4;
+    B.edge = `rgb(${sum.map((v) => Math.round(v / n)).join(', ')})`;
+  } catch (e) { B.edge = ''; }
+  return B.edge;
+}
+// the centre lines of the printable panel, drawn in perspective, only while snapping
+function drawGuides(B) {
+  if (!guides.x && !guides.y) return;
+  const ink = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#186078';
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.strokeStyle = ink; ctx.lineWidth = 3; ctx.setLineDash([14, 10]);
+  const line = (a, b) => { ctx.beginPath(); ctx.moveTo(...B.H.fwd(...a)); ctx.lineTo(...B.H.fwd(...b)); ctx.stroke(); };
+  if (guides.x) line([0.5, 0.02], [0.5, 0.98]);
+  if (guides.y) { const v = B.safeTop + (1 - B.safeTop) * 0.44; line([0.02, v], [0.98, v]); }
+  ctx.restore();
 }
 
 const live = $('#studioStatus');
@@ -63,15 +92,21 @@ function announce(msg) {
   liveTimer = setTimeout(() => { live.textContent = msg; }, 60);
 }
 
-/* ---------------- controls ---------------- */
+/* ---------------- bags: the admin's photographed products ---------------- */
 function buildChips() {
   // common.js h() takes text, not children, so the pieces are joined by hand
   chips.replaceChildren(...templates.map((t) => {
     const input = h('input', { type: 'radio', name: 'template', value: t.id });
     if (t.handle) input.dataset.handle = t.handle;
     input.checked = t.id === state.template;
-    const label = h('label', { class: 'opt' });
-    label.append(input, h('span', {}, t.name));
+    const text = h('span', { class: 'bagopt-text' });
+    text.append(h('span', { class: 'bagopt-name' }, t.name));
+    if (t.description) text.append(h('span', { class: 'bagopt-desc' }, t.description));
+    if (t.moq) text.append(h('span', { class: 'bagopt-desc' }, `Minimum order ${t.moq}`));
+    const card = h('span', { class: 'bagopt-card' });
+    card.append(h('img', { class: 'bagopt-photo', src: t.image, alt: '', width: '56', height: '56', loading: 'lazy', decoding: 'async' }), text);
+    const label = h('label', { class: 'bagopt' });
+    label.append(input, card);
     return label;
   }));
   bindTemplateChips();
@@ -84,6 +119,44 @@ function bindTemplateChips() {
   }));
 }
 bindTemplateChips();
+
+/* ---------------- quote only: products without a photo yet ---------------- */
+function buildQuoteOnly() {
+  const list = products.filter((p) => !usableInStudio(p));
+  $('#quoteOnly').hidden = !list.length;
+  $('#quoteBags').replaceChildren(...list.map((p) => {
+    const b = h('button', { class: 'quote-bag', type: 'button' });
+    b.dataset.product = p.id;
+    if (p.handle) b.dataset.handle = p.handle;
+    b.append(h('span', { class: 'bagopt-name' }, p.name));
+    if (p.description) b.append(h('span', { class: 'bagopt-desc' }, p.description));
+    b.append(h('span', { class: 'quote-bag-go' }, 'Quote this bag'));
+    const li = h('li'); li.append(b);
+    return li;
+  }));
+}
+// The size, ink and text chosen in the studio carry over to the request, so a
+// bag that cannot be previewed yet is still quoted with the visitor's choices.
+function quoteMessage(name) {
+  const s = SIZES[state.size];
+  return `Quote for ${s.label.toLowerCase()} kraft paper bags, ${(name || '').toLowerCase()} (${s.dims}). Print: ${state.logo ? 'our logo' : 'logo to follow'}, "${state.text1}" and "${state.text2}", ${INKS[state.ink][0].toLowerCase()} ink${state.oneInk && state.logo ? ', logo in one colour' : ''}.`;
+}
+function goToQuote(e) {
+  const instant = reduced.matches || e.detail === 0;
+  $('#quote').scrollIntoView({ behavior: instant ? 'auto' : 'smooth', block: 'start' });
+  $('#inquiry input:not([type="hidden"]):not([tabindex="-1"])')?.focus({ preventScroll: true });
+}
+$('#quoteBags').addEventListener('click', (e) => {
+  const b = e.target.closest('.quote-bag');
+  const p = b && products.find((x) => x.id === b.dataset.product);
+  if (!p) return;
+  const form = $('#inquiry'); if (form) form.dataset.product = 'Kraft paper bags';
+  // the studio preview shows another bag, so its picture is not attached
+  if (sendDesign?.checked) { sendDesign.checked = false; sendDesign.dispatchEvent(new Event('change', { bubbles: true })); }
+  track({ event: 'studio_quote' });
+  prefill(quoteMessage(p.name));
+  goToQuote(e);
+});
 
 function syncRadios() {
   for (const [name, val] of [['size', state.size], ['ink', state.ink], ['template', state.template]]) {
@@ -101,7 +174,44 @@ $('#text1').addEventListener('input', (e) => { state.text1 = e.target.value; dra
 $('#text2').addEventListener('input', (e) => { state.text2 = e.target.value; draw(); });
 $('#scale').addEventListener('input', (e) => { state.scale = +e.target.value / 100; e.target.setAttribute('aria-valuetext', `${e.target.value} percent`); draw(); });
 $('#scale').addEventListener('change', (e) => announce(`Design size ${e.target.value}%.`));
-$('#oneInk').addEventListener('change', (e) => { state.oneInk = e.target.checked; draw(); announce(e.target.checked ? 'Logo printed in the ink colour.' : 'Logo printed in its own colours.'); });
+$('#oneInk').addEventListener('change', (e) => { state.oneInk = e.target.checked; draw(); advise(); announce(e.target.checked ? 'Logo printed in the ink colour.' : 'Logo printed in its own colours.'); });
+
+/* ---------------- the logo, and the printer's check on it ---------------- */
+const advice = $('#logoAdvice'), fixBox = $('#logoFixBox'), fixInk = $('#logoFixInk');
+let logoCheck = null;
+// One problem at a time, most serious first: a box around the logo, then a logo
+// too pale to show on kraft. Each comes with the fix the studio can apply.
+function advise() {
+  const c = state.logo && logoCheck;
+  const boxed = !!(c && c.boxed);
+  const pale = !!(c && !c.boxed && c.light && !state.oneInk);
+  advice.hidden = !boxed && !pale;
+  fixBox.hidden = !boxed;
+  fixInk.hidden = !pale;
+  $('#logoAdviceText').textContent = boxed
+    ? 'Your logo sits on a white box. Printed on kraft, the box shows as a pale patch around it.'
+    : pale ? 'Your logo is very light. On kraft paper it will hardly show.' : '';
+}
+function readLogo(img) {
+  try { logoCheck = checkLogo(img); } catch (e) { logoCheck = null; } // an image the browser will not let us read
+  advise();
+  if (!advice.hidden) announce($('#logoAdviceText').textContent);
+}
+fixBox.addEventListener('click', async () => {
+  if (!state.logo || !logoCheck) return;
+  try {
+    state.logo = await removeBox(state.logo, logoCheck.bg);
+    readLogo(state.logo);
+    draw();
+    announce('The white box is removed from your logo on the preview.');
+    (fixInk.hidden ? $('#oneInk') : fixInk).focus();
+  } catch (e) { announce(e.message); }
+});
+fixInk.addEventListener('click', () => {
+  const box = $('#oneInk');
+  box.checked = true; box.dispatchEvent(new Event('change', { bubbles: true }));
+  box.focus();
+});
 
 function loadLogo(file) {
   const sub = $('#dropSub');
@@ -112,6 +222,7 @@ function loadLogo(file) {
     state.logo = img; state.logoFile = file;
     $('#dropTitle').textContent = file.name; sub.textContent = 'Choose or drop another file to replace it.';
     $('#removeLogo').hidden = false; draw(); announce(`Logo added: ${file.name}. It is on the bag preview.`);
+    readLogo(img);
     track({ event: 'studio_logo' });
   };
   img.onerror = () => { sub.textContent = 'That image could not be read. Try a PNG.'; announce(sub.textContent); URL.revokeObjectURL(url); };
@@ -123,16 +234,23 @@ const drop = $('#drop');
 ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('is-over'); }));
 drop.addEventListener('drop', (e) => loadLogo(e.dataTransfer.files[0]));
 $('#removeLogo').addEventListener('click', () => {
-  state.logo = null; state.logoFile = null; $('#logoFile').value = ''; $('#dropTitle').textContent = 'Upload a logo';
+  state.logo = null; state.logoFile = null; logoCheck = null; $('#logoFile').value = ''; $('#dropTitle').textContent = 'Upload a logo';
   $('#dropSub').textContent = 'PNG, JPG, SVG or WebP. Transparent PNG looks best.'; $('#removeLogo').hidden = true;
-  draw(); announce('Logo removed.'); $('#logoFile').focus();
+  advise(); draw(); announce('Logo removed.'); $('#logoFile').focus();
 });
 
 /* moving the design: drag on the bag, arrow keys on the preview, or the buttons */
 function move(x, y, say) { state.dx += x; state.dy += y; if (current) clampDesign(current, state); draw(); if (say) announce(say); }
 
+// The preview is fitted inside a fixed frame (object-fit: contain), so a pointer
+// position is mapped through the fitted picture, not the whole element.
+const toCanvas = (e) => {
+  const r = canvas.getBoundingClientRect();
+  const s = Math.min(r.width / canvas.width, r.height / canvas.height);
+  const ox = r.left + (r.width - canvas.width * s) / 2, oy = r.top + (r.height - canvas.height * s) / 2;
+  return [(e.clientX - ox) / s, (e.clientY - oy) / s];
+};
 let drag = null;
-const toCanvas = (e) => { const r = canvas.getBoundingClientRect(); return [(e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height]; };
 canvas.addEventListener('pointerdown', (e) => {
   if (!current) return;
   const p = toCanvas(e);
@@ -143,9 +261,24 @@ canvas.addEventListener('pointerdown', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   if (!drag) return;
   const a = toArtboard(current, ...toCanvas(e));
-  state.dx = drag.dx + a[0] - drag.a[0]; state.dy = drag.dy + a[1] - drag.a[1]; clampDesign(current, state); draw();
+  let dx = drag.dx + a[0] - drag.a[0], dy = drag.dy + a[1] - drag.a[1];
+  // within 2.5% of the panel width of a centre line, the design settles on it
+  const snap = current.AW * 0.025;
+  const sx = Math.abs(dx) < snap, sy = Math.abs(dy) < snap;
+  if (sx) dx = 0;
+  if (sy) dy = 0;
+  // a short tick on phones as the design settles, once per line
+  if (e.pointerType === 'touch' && ((sx && !guides?.x) || (sy && !guides?.y))) navigator.vibrate?.(8);
+  guides = { x: sx, y: sy };
+  state.dx = dx; state.dy = dy; clampDesign(current, state); draw();
 });
-const endDrag = () => { if (!drag) return; drag = null; canvas.classList.remove('is-dragging'); announce('Design moved.'); };
+const endDrag = () => {
+  if (!drag) return;
+  const centred = guides && guides.x && guides.y;
+  drag = null; guides = null; canvas.classList.remove('is-dragging');
+  draw();
+  announce(centred ? 'Design centred on the bag.' : 'Design moved.');
+};
 canvas.addEventListener('pointerup', endDrag);
 canvas.addEventListener('pointercancel', endDrag);
 canvas.addEventListener('keydown', (e) => {
@@ -189,32 +322,11 @@ formHooks.design = async () => {
 };
 
 $('#useDesign').addEventListener('click', () => {
-  const s = SIZES[state.size];
   const form = $('#inquiry'); if (form) form.dataset.product = 'Kraft paper bags';
   if (sendDesign && !sendDesign.checked) { sendDesign.checked = true; sendDesign.dispatchEvent(new Event('change', { bubbles: true })); }
   track({ event: 'studio_quote' });
-  prefill(`Quote for ${s.label.toLowerCase()} kraft paper bags, ${(tpl()?.name || '').toLowerCase()} (${s.dims}). Print: ${state.logo ? 'our logo' : 'logo to follow'}, "${state.text1}" and "${state.text2}", ${INKS[state.ink][0].toLowerCase()} ink${state.oneInk ? ', logo in one colour' : ''}.`);
+  prefill(quoteMessage(tpl()?.name));
 });
-
-/* the formats list, rebuilt when the admin changed the products after the build (text only) */
-function renderFormats(list) {
-  const box = $('#packagingFormats');
-  if (!box) return;
-  const key = (arr) => JSON.stringify(arr.map((p) => [p.id, p.name, p.description, p.moq, p.specs]));
-  if (key(list) === key(products)) return;
-  products = list;
-  const cells = list.map((p) => {
-    const cell = h('div', { class: 'format' });
-    cell.dataset.product = p.id;
-    cell.append(h('h3', {}, p.name), h('p', {}, p.description || ''));
-    if (p.moq) cell.append(h('p', { class: 'format-moq' }, `Minimum order ${p.moq}`));
-    if (p.specs?.length) { const ul = h('ul', { class: 'format-specs' }); p.specs.forEach((s) => ul.append(h('li', {}, s))); cell.append(ul); }
-    return cell;
-  });
-  const fixed = $('.format-static', box);
-  box.replaceChildren(...cells, ...(fixed ? [fixed] : []));
-  box.className = `formats cols-${Math.min(4, Math.max(2, box.children.length))}`;
-}
 
 /* ---------------- start ---------------- */
 syncRadios();
@@ -225,16 +337,16 @@ onThemeChange(() => draw());
 // warm the other bags so switching is instant
 templates.slice(0, 4).forEach((t) => { if (t.id !== state.template) prepare(t).catch(() => {}); });
 
-// bags changed in the admin since this page was built
+// products changed in the admin since this page was built
 fetch('/api/packaging-products').then((r) => (r.ok ? r.json() : null)).then((list) => {
   if (!Array.isArray(list)) return;
-  renderFormats(list);
-  const bags = list.filter(usableInStudio);
-  const key = (arr) => JSON.stringify(arr.map((t) => [t.id, t.name, t.image, t.imageDark, t.quad, t.safeTop]));
-  if (!bags.length || key(bags) === key(templates)) return;
-  templates = bags;
-  if (!templates.some((t) => t.id === state.template)) state.template = templates[0].id;
+  const key = (arr) => JSON.stringify(arr.map((p) => [p.id, p.name, p.description, p.moq, p.handle, p.image, p.imageDark, p.quad, p.safeTop]));
+  if (key(list) === key(products)) return;
+  products = list;
+  templates = list.filter(usableInStudio);
+  if (!templates.some((t) => t.id === state.template)) state.template = templates[0]?.id || null;
   if (!changedOnce) pickFromUrl();
   buildChips();
+  buildQuoteOnly();
   draw();
 }).catch(() => {});

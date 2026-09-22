@@ -12,6 +12,12 @@
 .team-body .a-check { min-height: var(--ctl); }
 .team-body summary { min-height: var(--ctl); padding-block: calc((var(--ctl) - 1.25rem) / 2); line-height: 1.25rem; box-sizing: border-box; }
 .team-body .a-pass button { height: calc(var(--ctl) - var(--s-3)); min-height: 0; }
+/* "Show" sits inside the password field, so it cannot grow to 44px; on touch its
+   hit area reaches past its edges instead. The logo link gets the full height. */
+@media (pointer: coarse) {
+  .team-body .a-pass button::after { content: ""; position: absolute; inset: -4px -6px; }
+  .team-body .a-brand { min-height: var(--ctl); }
+}
 
 .t-user { font-size: .875rem; font-weight: 600; color: var(--ink-2); padding-inline: var(--s-2) var(--s-4); }
 @media (max-width: 520px) { .t-user { display: none; } }
