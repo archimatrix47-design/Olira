@@ -222,6 +222,7 @@ test('track records channel, campaign, language, entry page, time of day and eng
   await post('/api/track', { event: 'form_start', path: '/packaging/' }, ua);
   await post('/api/track', { event: 'studio_download', path: '/packaging/' }, ua);
   await post('/api/track', { event: 'not_a_real_event', path: '/' }, ua);
+  for (const event of ['studio_quote_only', 'studio_logo_warn', 'studio_logo_fix', 'home_product']) await post('/api/track', { event, path: event === 'home_product' ? '/' : '/packaging/' }, ua);
   await post('/api/track', { event: 'product', product: 'Ethiopian Coffee', path: '/agriculture/' }, ua);
 
   const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
@@ -236,6 +237,7 @@ test('track records channel, campaign, language, entry page, time of day and eng
   assert.equal(agri.leaves, 2); assert.equal(agri.engagedRate, 50); assert.equal(agri.avgSeconds, 23);
   assert.ok(a.events.reveal_whatsapp >= 1 && a.events.form_start_pack >= 1 && a.events.studio_download >= 1);
   assert.equal(a.events.not_a_real_event, undefined, 'unknown events are ignored');
+  for (const k of ['studio_quote_only', 'studio_logo_warn', 'studio_logo_fix', 'home_product']) assert.equal(a.events[k], 1, `${k} is counted`);
   // same-day funnel for this visitor: saw agriculture and packaging, opened a product, used the designer, showed contact intent
   for (const k of ['visit', 'agri', 'pack', 'product', 'studio', 'contactAgri', 'contactPack']) assert.ok(a.funnel[k] >= 1, `funnel step ${k}`);
   assert.ok(a.previous && typeof a.previous.views === 'number', 'previous period included');
@@ -245,9 +247,13 @@ test('track records channel, campaign, language, entry page, time of day and eng
 test('every captured enquiry counts, even when the notification email fails', async () => {
   const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
   const before = (await (await get('/api/analytics?days=1', { Authorization: `Bearer ${token}` })).json()).totals.inquiries;
-  // the test server has no email configured, so this lead is captured but not emailed
+  // the test server has no email configured, so this lead is captured but not
+  // emailed; the visitor is told it arrived (it did), so they do not send it twice
   const r = await post('/api/inquiry', { name: 'Insight Buyer', email: 'buyer@example.com', message: 'Need 25 MT sesame to Jebel Ali', product: 'Kraft paper bags' });
-  assert.equal(r.status, 500);
+  assert.equal(r.status, 200);
+  const body = await r.json();
+  assert.equal(body.saved, true);
+  assert.equal(body.emailed, false);
   const after = await (await get('/api/analytics?days=1', { Authorization: `Bearer ${token}` })).json();
   assert.equal(after.totals.inquiries, before + 1);
   assert.ok(after.inquiryLines.pack >= 1);

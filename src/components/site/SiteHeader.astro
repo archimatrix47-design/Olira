@@ -1,0 +1,44 @@
+---
+// The status bar along the top of every public page: logo, two groups of links in
+// the mono voice, the theme switch, and the live packing list. The packaging page
+// passes its own button (it opens the drawer in place); every other page gets a
+// link that opens the list on the packaging page, with the count read from this
+// browser.
+import ThemeButton from './ThemeButton.astro';
+interface Link { href: string; label: string }
+interface Props { groups: Link[][]; current?: string }
+const { groups, current } = Astro.props;
+const own = Astro.slots.has('default');
+---
+<header class="sheet-head">
+  <div class="container sheet-head-grid">
+    <a class="brand" href="/"><img src="/logo.png" alt="Olira Agro Industry, home" width="80" height="38" data-brand-logo></a>
+    <div class="head-nav">
+      {groups.map((g, i) => (
+        <nav class="head-links" aria-label={i === 0 ? 'Primary' : 'On this page'}>
+          {g.map((l) => <a href={l.href} aria-current={current && l.href === current ? 'page' : undefined}>{l.label}</a>)}
+        </nav>
+      ))}
+    </div>
+    <div class="head-end">
+      <ThemeButton />
+      {own ? <slot /> : (
+        <a class="tab-btn" href="/packaging/?list=open#catalogue-title" data-pl-link><span class="tab-word">Packing list</span> <span class="count" data-zero>0</span></a>
+      )}
+    </div>
+  </div>
+</header>
+{!own && (
+  <script is:inline>
+    (function () {
+      try {
+        var n = JSON.parse(localStorage.getItem('olira-packing-list') || '[]').length || 0;
+        var a = document.querySelector('[data-pl-link]'), c = a && a.querySelector('.count');
+        if (!c) return;
+        c.textContent = String(n);
+        if (n) c.removeAttribute('data-zero');
+        a.setAttribute('aria-label', 'Packing list, ' + n + (n === 1 ? ' product' : ' products'));
+      } catch (e) {}
+    })();
+  </script>
+)}

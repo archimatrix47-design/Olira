@@ -8,6 +8,7 @@ import '../styles/site.css';
 import '../styles/admin.css';
 import '../styles/admin-insights.css';
 import ThemeButton from '../components/site/ThemeButton.astro';
+import { SOCIAL_PLATFORMS } from '../../lib/social.js';
 
 const icon: Record<string, string> = {
   overview: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
@@ -26,7 +27,7 @@ const icon: Record<string, string> = {
 };
 const nav = [
   { label: 'Daily', items: [['overview', 'Overview'], ['enquiries', 'Enquiries'], ['traffic', 'Traffic']] },
-  { label: 'Website', items: [['products', 'Agriculture products'], ['packaging', 'Packaging products'], ['company', 'Company details'], ['certifications', 'Certifications'], ['logo', 'Logo'], ['social', 'Social links']] },
+  { label: 'Website', items: [['products', 'Agriculture products'], ['packaging', 'Packaging products'], ['company', 'Company details'], ['certifications', 'Certifications'], ['logo', 'Logo'], ['social', 'Contact and social links']] },
   { label: 'Settings', items: [['team', 'Team accounts'], ['email', 'Email delivery'], ['marketing', 'Marketing tags'], ['security', 'Password']] },
 ];
 const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon[name]}</svg>`;
@@ -93,6 +94,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
   </nav>
 
   <main id="adminMain" tabindex="-1">
+    <a class="a-back" href="#menu">All sections</a>
 
     <!-- OVERVIEW: is everything fine, and what needs doing -->
     <section class="a-view" data-view="overview" aria-labelledby="h-overview" hidden>
@@ -219,14 +221,18 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
       </div>
     </section>
 
-    <!-- ENQUIRIES -->
+    <!-- ENQUIRIES: the inbox (a list, and the chosen enquiry beside it), or the report -->
     <section class="a-view" data-view="enquiries" aria-labelledby="h-enquiries" hidden>
       <div class="a-head">
         <div>
           <h1 id="h-enquiries">Enquiries</h1>
           <p>Every message sent from the website, kept here even when the notification email fails. Move each one through the pipeline as you work it.</p>
         </div>
-        <div class="row" style="--gap:8px">
+        <div class="a-head-tools">
+          <div class="a-seg" role="radiogroup" aria-label="Show">
+            <label><input type="radio" name="enTab" value="inbox" checked><span>Inbox</span></label>
+            <label><input type="radio" name="enTab" value="report"><span>Report</span></label>
+          </div>
           <label class="a-period"><span>Period</span>
             <select class="input" data-period>
               <option value="7">Last 7 days</option>
@@ -240,66 +246,73 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
         </div>
       </div>
 
-      <div class="a-kpis a-kpis-5" id="enKpis" aria-label="Enquiry numbers"></div>
-      <div class="a-grid12">
-        <div class="a-card span-8">
-          <div class="a-card-head"><div><h2>Enquiries over time</h2><p>By business line. Packaging is hatched.</p></div></div>
-          <div id="enVolume"></div>
+      <div class="a-view-part" data-en-tab="report" hidden>
+        <div class="a-kpis a-kpis-5" id="enKpis" aria-label="Enquiry numbers"></div>
+        <div class="a-grid12">
+          <div class="a-card span-8">
+            <div class="a-card-head"><div><h2>Enquiries over time</h2><p>By business line. Packaging is hatched.</p></div></div>
+            <div id="enVolume"></div>
+          </div>
+          <div class="a-card span-4">
+            <div class="a-card-head"><div><h2>Pipeline</h2><p>Where this period's enquiries are now.</p></div></div>
+            <div id="enPipeline"></div>
+          </div>
         </div>
-        <div class="a-card span-4">
-          <div class="a-card-head"><div><h2>Pipeline</h2><p>Where this period's enquiries are now.</p></div></div>
-          <div id="enPipeline"></div>
-        </div>
-      </div>
-      <div class="a-grid12">
-        <div class="a-card span-4">
-          <div class="a-card-head"><div><h2>Response speed</h2><p>Time from arrival to the first move out of New.</p></div></div>
-          <div id="enSpeed"></div>
-        </div>
-        <div class="a-card span-4">
-          <div class="a-card-head"><div><h2>Lead quality</h2><p>Scored on the details a buyer gave. Open an enquiry to see why.</p></div></div>
-          <div id="enQuality"></div>
-        </div>
-        <div class="a-card span-4">
-          <div class="a-card-head"><div><h2>Markets and products</h2><p>From phone codes and email domains, and what was asked for.</p></div></div>
-          <div id="enMarkets"></div>
+        <div class="a-grid12">
+          <div class="a-card span-4">
+            <div class="a-card-head"><div><h2>Response speed</h2><p>Time from arrival to the first move out of New.</p></div></div>
+            <div id="enSpeed"></div>
+          </div>
+          <div class="a-card span-4">
+            <div class="a-card-head"><div><h2>Lead quality</h2><p>Scored on the details a buyer gave. Open an enquiry to see why.</p></div></div>
+            <div id="enQuality"></div>
+          </div>
+          <div class="a-card span-4">
+            <div class="a-card-head"><div><h2>Markets and products</h2><p>From phone codes and email domains, and what was asked for.</p></div></div>
+            <div id="enMarkets"></div>
+          </div>
         </div>
       </div>
 
-      <div class="a-card a-inbox-head">
-        <h2>Inbox</h2>
-        <div class="a-filters">
-          <label class="sr-only" for="leadStage">Stage</label>
-          <select class="input" id="leadStage">
-            <option value="open">Open (not won, lost or archived)</option>
-            <option value="new">New</option>
-            <option value="read">Accepted</option>
-            <option value="contacted">Contacted</option>
-            <option value="quoted">Quoted</option>
-            <option value="won">Won</option>
-            <option value="lost">Lost</option>
-            <option value="archived">Archived</option>
-            <option value="all">All stages</option>
-          </select>
-          <label class="sr-only" for="leadLine">Business line</label>
-          <select class="input" id="leadLine">
-            <option value="all">Both business lines</option>
-            <option value="agri">Agriculture</option>
-            <option value="pack">Packaging</option>
-          </select>
-          <label class="sr-only" for="leadSort">Sort</label>
-          <select class="input" id="leadSort">
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="score">Strongest leads first</option>
-          </select>
-          <label class="a-check"><input type="checkbox" id="leadPeriodOnly"> Only this period</label>
-          <label class="sr-only" for="leadSearch">Search enquiries</label>
-          <input class="input grow" id="leadSearch" type="search" placeholder="Search name, company, email, port or message">
+      <div class="a-view-part" data-en-tab="inbox">
+        <div class="a-card t-toolbar">
+          <div class="a-seg" role="radiogroup" aria-label="Business line">
+            <label><input type="radio" name="leadLine" value="all" checked><span>Both lines</span></label>
+            <label><input type="radio" name="leadLine" value="agri"><span>Agriculture</span></label>
+            <label><input type="radio" name="leadLine" value="pack"><span>Packaging</span></label>
+          </div>
+          <div class="t-toolbar-row">
+            <label class="sr-only" for="leadSearch">Search enquiries</label>
+            <input class="input grow" id="leadSearch" type="search" placeholder="Search name, company, email, port or message" aria-keyshortcuts="/">
+            <label class="sr-only" for="leadStage">Stage</label>
+            <select class="input" id="leadStage">
+              <option value="open">Open (not won, lost or archived)</option>
+              <option value="new">New</option>
+              <option value="read">Accepted</option>
+              <option value="contacted">Contacted</option>
+              <option value="quoted">Quoted</option>
+              <option value="won">Won</option>
+              <option value="lost">Lost</option>
+              <option value="archived">Archived</option>
+              <option value="all">All stages</option>
+            </select>
+            <label class="sr-only" for="leadSort">Sort</label>
+            <select class="input" id="leadSort">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="score">Strongest leads first</option>
+            </select>
+            <label class="a-check"><input type="checkbox" id="leadPeriodOnly"> Only this period</label>
+          </div>
+          <p class="a-note" id="leadsSummary" role="status" aria-live="polite"></p>
         </div>
-        <p class="a-note" id="leadsSummary" role="status" aria-live="polite"></p>
+        <div class="t-inbox" id="enInbox">
+          <ul class="t-list" id="leads" aria-label="Enquiries"></ul>
+          <article class="t-detail a-card" id="enDetail" aria-live="off">
+            <div class="a-empty"><strong>Choose an enquiry</strong>Its message, the buyer's details and the reply buttons open here. Arrow keys move through the list.</div>
+          </article>
+        </div>
       </div>
-      <div class="a-leads" id="leads"></div>
     </section>
 
     <!-- PRODUCTS -->
@@ -321,20 +334,24 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
           <button class="btn btn-primary" type="button" id="productNew">Add product</button>
         </div>
       </div>
-      <div class="a-card">
-        <div class="a-card-head"><div><h2>Performance</h2><p>Details opened on the agriculture page, enquiries that named the product, and how complete each product's content is. Sorted by interest.</p></div></div>
-        <div id="prPerformance"></div>
-      </div>
-      <div class="a-products">
+      <div class="a-products" id="productPanes">
         <div class="a-card">
           <h2>Order on the website</h2>
           <p>Home page links open the first product whose category is Sesame, Pulses, Spices or Coffee, so keep those category names.</p>
           <ol class="a-plist" id="productList"></ol>
           <p class="sr-only" id="productLive" role="status" aria-live="polite"></p>
         </div>
-        <div class="a-card a-editor">
-          <h2 id="editorTitle">Add product</h2>
-          <form class="a-form" id="productForm" novalidate>
+        <div class="a-card a-editor" id="productEditor">
+          <div class="a-empty a-editor-empty" id="productEmpty">
+            <strong>Choose a product</strong>
+            Its details and photo open here to edit.
+            <div><button class="btn btn-secondary" type="button" data-add="product">Add product</button></div>
+          </div>
+          <form class="a-form" id="productForm" novalidate hidden aria-labelledby="editorTitle">
+            <button class="md-back" type="button" data-back="product">Products</button>
+            <div class="a-editor-head">
+              <h2 id="editorTitle">Add product</h2>
+            </div>
             <input type="hidden" name="id">
             <div class="a-field">
               <label for="pName">Name</label>
@@ -385,12 +402,20 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
                 </div>
               </div>
             </div>
-            <div class="a-actions">
-              <button class="btn btn-primary btn-lg" type="submit" id="productSave">Save product</button>
-              <button class="btn btn-ghost btn-lg" type="button" id="productCancel" hidden>Cancel</button>
+            <div class="a-danger-zone" id="productDangerZone" hidden>
+              <button class="btn btn-danger-quiet btn-sm" type="button" id="productDelete">Delete product</button>
+            </div>
+            <div class="a-actions a-savebar">
+              <span class="a-dirty a-grow">Unsaved changes</span>
+              <button class="btn btn-ghost" type="button" id="productCancel">Cancel</button>
+              <button class="btn btn-primary" type="submit" id="productSave">Save product</button>
             </div>
           </form>
         </div>
+      </div>
+      <div class="a-card">
+        <div class="a-card-head"><div><h2>Performance</h2><p>Details opened on the agriculture page, enquiries that named the product, and how complete each product's content is. Sorted by interest.</p></div></div>
+        <div id="prPerformance"></div>
       </div>
     </section>
 
@@ -399,20 +424,28 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
       <div class="a-head">
         <div>
           <h1 id="h-packaging">Packaging products</h1>
-          <p>The bags listed on the packaging page, in this order. A product with a photo and its print corners is also a bag in the mockup studio and in the packaging team's workspace.</p>
+          <p>The catalogue on the packaging page, in this order, grouped by family. Every product can be added to a visitor's packing list and sent for one quote, at the sizes and minimum orders set here (the packaging team can also set minimums in their workspace). With a photo and its print corners, a product can also be designed in the mockup studio and in the packaging team's workspace.</p>
         </div>
         <button class="btn btn-primary" type="button" id="packNew">Add packaging product</button>
       </div>
-      <div class="a-products">
+      <div class="a-products" id="packPanes">
         <div class="a-card">
           <h2>Order on the website</h2>
           <p>The first product with a photo is the bag the mockup studio opens with.</p>
           <ol class="a-plist" id="packList"></ol>
           <p class="sr-only" id="packLive" role="status" aria-live="polite"></p>
         </div>
-        <div class="a-card a-editor a-pack-editor">
-          <h2 id="packTitle">Add packaging product</h2>
-          <form class="a-form" id="packForm" novalidate>
+        <div class="a-card a-editor a-pack-editor" id="packEditor">
+          <div class="a-empty a-editor-empty" id="packEmpty">
+            <strong>Choose a product</strong>
+            Its sizes, minimum order, photo and print corners open here to edit.
+            <div><button class="btn btn-secondary" type="button" data-add="pack">Add packaging product</button></div>
+          </div>
+          <form class="a-form" id="packForm" novalidate hidden aria-labelledby="packTitle">
+            <button class="md-back" type="button" data-back="pack">Packaging products</button>
+            <div class="a-editor-head">
+              <h2 id="packTitle">Add packaging product</h2>
+            </div>
             <p class="sr-only" id="packStatus" role="status" aria-live="polite"></p>
             <div class="a-field">
               <label for="pkName">Name</label>
@@ -421,15 +454,45 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
             </div>
             <div class="a-two">
               <div class="a-field">
-                <label for="pkMoq">Minimum order</label>
-                <input class="input" id="pkMoq" name="moq" maxlength="60" placeholder="5,000 bags">
+                <label for="pkFamily">Group</label>
+                <select class="input" id="pkFamily" name="family">
+                  <option value="bags">Paper bags</option>
+                  <option value="food">Bakery and food boxes</option>
+                  <option value="medical">Medical packets</option>
+                  <option value="foil">Aluminium foil bags</option>
+                </select>
               </div>
               <div class="a-field">
                 <label for="pkHandle">Short code</label>
                 <input class="input" id="pkHandle" name="handle" maxlength="30" placeholder="twisted" aria-describedby="pkHandleHint">
-                <p class="hint" id="pkHandleHint">Optional. Links like /packaging/?handle=twisted open this bag in the studio.</p>
+                <p class="hint" id="pkHandleHint">Optional. Links like /packaging/?handle=twisted open this product in the studio, or show it in the catalogue while it has no photo.</p>
               </div>
             </div>
+            <div class="a-two">
+              <div class="a-field">
+                <label for="pkMin">Minimum order</label>
+                <input class="input" id="pkMin" name="minOrder" inputmode="numeric" maxlength="12" placeholder="For example 5,000" aria-describedby="pkMinHint pkMinErr">
+                <p class="hint" id="pkMinHint">Units. Visitors cannot send a packing list below it. Leave blank to confirm it with each quote.</p>
+                <p class="err" id="pkMinErr" hidden></p>
+              </div>
+              <div class="a-field">
+                <label for="pkColours">Print colours</label>
+                <select class="input" id="pkColours" name="printColours" aria-describedby="pkColoursHint">
+                  <option value="">Standard, up to 4</option>
+                  <option value="0">Plain only, no print</option>
+                  <option value="1">Up to 1</option><option value="2">Up to 2</option><option value="3">Up to 3</option>
+                  <option value="4">Up to 4</option><option value="5">Up to 5</option><option value="6">Up to 6</option>
+                </select>
+                <p class="hint" id="pkColoursHint">Flexographic print colours visitors can choose for this product.</p>
+              </div>
+            </div>
+            <fieldset class="a-field a-sizes">
+              <legend class="a-label">Sizes</legend>
+              <p class="hint" id="pkSizesHint">In centimetres, width x depth (gusset) x height. A size's own minimum replaces the product minimum. Leave the measurements blank if you do not want them shown.</p>
+              <div class="a-size-head" aria-hidden="true"><span>Name</span><span>W</span><span>D</span><span>H</span><span>Minimum</span><span></span></div>
+              <ol class="a-size-list" id="pkSizes"></ol>
+              <button class="btn btn-secondary btn-sm" type="button" id="pkAddSize">Add a size</button>
+            </fieldset>
             <div class="a-field">
               <label for="pkDesc">Description</label>
               <textarea class="input" id="pkDesc" name="description" required maxlength="1000" aria-describedby="pkDescErr"></textarea>
@@ -442,14 +505,14 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
             </div>
 
             <div class="a-field">
-              <span class="a-label" id="pkPhotoLabel">Photo on a white background</span>
+              <span class="a-label" id="pkPhotoLabel">Product image</span>
               <div class="a-photo-pair">
                 <div class="a-photo-slot">
                   <label class="a-drop" id="packDrop-light">
                     <input type="file" id="packFile-light" accept="image/jpeg,image/png,image/webp" aria-labelledby="pkPhotoLabel" aria-describedby="pkPhotoHint">
                     <img id="packImg-light" alt="" hidden>
-                    <strong>Upload the photo</strong>
-                    <span id="pkPhotoHint">The bag straight on, on plain white paper or a white wall. JPG, PNG or WebP up to 15 MB.</span>
+                    <strong>Upload the image</strong>
+                    <span id="pkPhotoHint">Best: the product on a transparent background, a PNG or WebP exported from a mockup. It stands on the website like the other products and works in dark mode as it is. A photo on plain white also works: straight on, at the product's height, in soft even light. Up to 15 MB.</span>
                   </label>
                   <button class="btn btn-ghost btn-sm" type="button" id="packClearPhoto" hidden>Remove photo</button>
                 </div>
@@ -504,12 +567,16 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
 
             <fieldset class="a-field a-fieldset">
               <legend class="a-label">Where it shows</legend>
-              <label class="a-check"><input type="checkbox" name="site" checked> Packaging page and mockup studio</label>
-              <label class="a-check"><input type="checkbox" name="team" checked> Packaging team workspace</label>
+              <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="site" checked> Packaging page and mockup studio</label>
+              <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="team" checked> Packaging team workspace</label>
             </fieldset>
-            <div class="a-actions">
-              <button class="btn btn-primary btn-lg" type="submit" id="packSave">Save product</button>
-              <button class="btn btn-ghost btn-lg" type="button" id="packCancel" hidden>Cancel</button>
+            <div class="a-danger-zone" id="packDangerZone" hidden>
+              <button class="btn btn-danger-quiet btn-sm" type="button" id="packDelete">Delete product</button>
+            </div>
+            <div class="a-actions a-savebar">
+              <span class="a-dirty a-grow">Unsaved changes</span>
+              <button class="btn btn-ghost" type="button" id="packCancel">Cancel</button>
+              <button class="btn btn-primary" type="submit" id="packSave">Save product</button>
             </div>
           </form>
         </div>
@@ -524,48 +591,40 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
           <p>Phone numbers, email and addresses shown on every page of the website and used by the enquiry forms.</p>
         </div>
       </div>
-      <form class="a-form" id="companyForm" novalidate>
-        <div class="a-card a-form">
+      <form class="a-form a-settings" id="companyForm" novalidate>
+        <div class="a-card a-group">
           <h2>Phone and email</h2>
-          <div class="a-two">
             <div class="a-field">
               <label for="cPhones">Phone numbers</label>
               <textarea class="input" id="cPhones" name="phones" aria-describedby="cPhonesHint" style="min-height:96px"></textarea>
-              <p class="hint" id="cPhonesHint">One per line. The first is the main sales number, also used for WhatsApp unless a WhatsApp link is set in Social links. The second is shown as the office line.</p>
+              <p class="hint" id="cPhonesHint">One per line. The first is the main sales number, also used for WhatsApp unless a WhatsApp link is set in Contact and social links. The second is shown as the office line.</p>
             </div>
             <div class="a-field">
               <label for="cEmails">Email addresses</label>
               <textarea class="input" id="cEmails" name="emails" aria-describedby="cEmailsHint" style="min-height:96px"></textarea>
               <p class="hint" id="cEmailsHint">One per line. The first is shown on the website.</p>
             </div>
-          </div>
         </div>
-        <div class="a-card a-form">
+        <div class="a-card a-group">
           <h2>Head office address</h2>
-          <div class="a-two">
             <div class="a-field"><label for="aLine2">Building and room</label><input class="input" id="aLine2" name="address.line2" placeholder="Soreti Building, 2nd Floor, Room 214"></div>
             <div class="a-field"><label for="aLine1">Area</label><input class="input" id="aLine1" name="address.line1" placeholder="Lemi Kura Subcity, Woreda 08"></div>
             <div class="a-field"><label for="aPo">P.O. Box</label><input class="input" id="aPo" name="address.poBox" placeholder="P.O. Box 46325"></div>
             <div class="a-field"><label for="aCity">City</label><input class="input" id="aCity" name="address.city" placeholder="Addis Ababa"></div>
             <div class="a-field"><label for="aCountry">Country</label><input class="input" id="aCountry" name="address.country" placeholder="Ethiopia"></div>
-          </div>
-          <div class="a-two">
             <div class="a-field"><label for="oName">Short office name</label><input class="input" id="oName" name="office.name" placeholder="Soreti Building"></div>
             <div class="a-field"><label for="oCity">Short office area</label><input class="input" id="oCity" name="office.city" placeholder="Lemi Kura, Addis Ababa"></div>
-          </div>
           <p class="a-note">The short name and area appear together in the home page footer.</p>
         </div>
-        <div class="a-card a-form">
+        <div class="a-card a-group">
           <h2>Processing facility</h2>
-          <div class="a-two">
             <div class="a-field"><label for="fName">Name</label><input class="input" id="fName" name="factory.name" placeholder="Burayu"></div>
             <div class="a-field"><label for="fCity">Location</label><input class="input" id="fCity" name="factory.city" placeholder="15 km West of Addis Ababa"></div>
             <div class="a-field"><label for="fLat">Latitude</label><input class="input" id="fLat" name="factory.lat" inputmode="decimal" placeholder="9.0366"></div>
             <div class="a-field"><label for="fLng">Longitude</label><input class="input" id="fLng" name="factory.lng" inputmode="decimal" placeholder="38.6364"></div>
-          </div>
           <p class="a-note">The coordinates are printed on the home page. New coordinates appear after the next deploy; phone, email and addresses update straight away.</p>
         </div>
-        <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Save company details</button></div>
+        <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save company details</button></div>
       </form>
     </section>
 
@@ -631,25 +690,22 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
     <section class="a-view" data-view="social" aria-labelledby="h-social" hidden>
       <div class="a-head">
         <div>
-          <h1 id="h-social">Social links</h1>
-          <p>Paste the full address of each profile. Blank ones are hidden on the website.</p>
+          <h1 id="h-social">Contact and social links</h1>
+          <p>Paste the full address of each profile. They appear in the floating contact button on every page and in the footer; blank ones are hidden. Both marketing teams can change these in their workspaces too.</p>
         </div>
       </div>
-      <form class="a-card a-form" id="socialForm" novalidate style="max-width:720px">
-        <div class="a-two">
-          <div class="a-field"><label for="sFacebook">Facebook</label><input class="input" id="sFacebook" name="facebook" type="url" placeholder="https://facebook.com/..."></div>
-          <div class="a-field"><label for="sLinkedin">LinkedIn</label><input class="input" id="sLinkedin" name="linkedin" type="url" placeholder="https://linkedin.com/company/..."></div>
-          <div class="a-field"><label for="sX">X</label><input class="input" id="sX" name="x" type="url" placeholder="https://x.com/..."></div>
-          <div class="a-field"><label for="sYoutube">YouTube</label><input class="input" id="sYoutube" name="youtube" type="url" placeholder="https://youtube.com/@..."></div>
-          <div class="a-field"><label for="sTelegram">Telegram</label><input class="input" id="sTelegram" name="telegram" type="url" placeholder="https://t.me/yourname" aria-describedby="sTgHint"><p class="hint" id="sTgHint">Shown next to WhatsApp in the contact details on every page. Leave blank to hide it.</p></div>
-          <div class="a-field">
-            <label for="sWhatsapp">WhatsApp</label>
-            <input class="input" id="sWhatsapp" name="whatsapp" type="url" placeholder="https://wa.me/2519XXXXXXXX" aria-describedby="sWaHint">
-            <p class="hint" id="sWaHint">Used by every WhatsApp button. Leave blank to use the main phone number.</p>
-          </div>
+      <form class="a-form a-settings" id="socialForm" novalidate>
+        <div class="a-card a-group">
+          {SOCIAL_PLATFORMS.map((p) => (
+            <div class="a-field">
+              <label for={`s-${p.key}`}>{p.label}</label>
+              <input class="input" id={`s-${p.key}`} name={p.key} type="url" placeholder={p.placeholder} aria-describedby={p.hint ? `s-${p.key}-hint` : undefined}>
+              {p.hint && <p class="hint" id={`s-${p.key}-hint`}>{p.hint}</p>}
+            </div>
+          ))}
         </div>
         <p class="err" id="socialErr" role="alert" hidden></p>
-        <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Save social links</button></div>
+        <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save social links</button></div>
       </form>
     </section>
 
@@ -692,7 +748,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
               <p class="hint" id="teamPwHint"></p>
               <button class="btn btn-secondary btn-sm" type="button" id="teamGenerate" style="justify-self:start">Create a strong password</button>
             </div>
-            <label class="a-check"><input type="checkbox" name="active" checked> Account switched on</label>
+            <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="active" checked> Account switched on</label>
             <div class="a-actions">
               <button class="btn btn-primary btn-lg" type="submit" id="teamSave">Add team member</button>
               <button class="btn btn-ghost btn-lg" type="button" id="teamCancel" hidden>Cancel</button>
@@ -711,8 +767,8 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
         </div>
         <span class="a-status" id="emailState">Checking</span>
       </div>
-      <form class="a-card a-form" id="emailForm" novalidate style="max-width:720px">
-        <div class="a-two">
+      <form class="a-form a-settings" id="emailForm" novalidate>
+        <div class="a-card a-group">
           <div class="a-field"><label for="eHost">SMTP server</label><input class="input" id="eHost" name="smtpHost" required placeholder="smtp.gmail.com" autocomplete="off"></div>
           <div class="a-field"><label for="ePort">Port</label><input class="input" id="ePort" name="smtpPort" required inputmode="numeric" placeholder="587" aria-describedby="ePortHint"><p class="hint" id="ePortHint">587 for TLS, 465 for SSL.</p></div>
           <div class="a-field"><label for="eUser">Sending account</label><input class="input" id="eUser" name="smtpUser" type="email" required autocomplete="off" placeholder="notifications@gmail.com"></div>
@@ -720,7 +776,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
           <div class="a-field"><label for="eTo">Send enquiries to</label><input class="input" id="eTo" name="recipientEmail" type="email" required placeholder="info@oliraagroindustry.com"></div>
           <div class="a-field"><label for="eFrom">Sender name</label><input class="input" id="eFrom" name="fromName" placeholder="Olira Agro Industry"></div>
         </div>
-        <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Save email settings</button></div>
+        <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save email settings</button></div>
       </form>
     </section>
 
@@ -732,21 +788,23 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
           <p>Optional Google tools. Nothing from Google loads on the website until an ID is saved here.</p>
         </div>
       </div>
-      <div class="a-two" style="align-items:start">
-        <form class="a-card a-form" id="gaForm" novalidate>
-          <h2>Google Analytics 4</h2>
-          <span class="a-status" id="gaState">Not set</span>
-          <div class="a-field"><label for="gaId">Measurement ID</label><input class="input" id="gaId" name="measurementId" placeholder="G-XXXXXXXXXX" pattern="G-[A-Z0-9]{10}" aria-describedby="gaHint"><p class="hint" id="gaHint">Google Analytics, Admin, Data streams, your web stream. Leave blank to turn it off.</p></div>
-          <div class="a-field"><label for="gaProp">Property ID (optional)</label><input class="input" id="gaProp" name="propertyId" inputmode="numeric"></div>
-          <div class="a-actions"><button class="btn btn-primary" type="submit">Save analytics</button></div>
+      <div class="a-settings">
+        <form class="a-form" id="gaForm" novalidate>
+          <div class="a-card a-group">
+            <div class="a-group-head"><h2>Google Analytics 4</h2><span class="a-status" id="gaState">Not set</span></div>
+            <div class="a-field"><label for="gaId">Measurement ID</label><input class="input" id="gaId" name="measurementId" placeholder="G-XXXXXXXXXX" pattern="G-[A-Z0-9]{10}" aria-describedby="gaHint"><p class="hint" id="gaHint">Google Analytics, Admin, Data streams, your web stream. Leave blank to turn it off.</p></div>
+            <div class="a-field"><label for="gaProp">Property ID (optional)</label><input class="input" id="gaProp" name="propertyId" inputmode="numeric"></div>
+          </div>
+          <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save analytics</button></div>
         </form>
-        <form class="a-card a-form" id="adsForm" novalidate>
-          <h2>Google Ads conversions</h2>
-          <span class="a-status" id="adsState">Not set</span>
-          <div class="a-field"><label for="adsId">Conversion ID</label><input class="input" id="adsId" name="conversionId" inputmode="numeric" placeholder="10 digits" pattern="[0-9]{10}"></div>
-          <div class="a-field"><label for="adsLabel">Conversion label</label><input class="input" id="adsLabel" name="conversionLabel"></div>
-          <div class="a-field"><label for="adsValue">Value per enquiry (USD)</label><input class="input" id="adsValue" name="conversionValue" inputmode="decimal" placeholder="10"></div>
-          <div class="a-actions"><button class="btn btn-primary" type="submit">Save conversions</button></div>
+        <form class="a-form" id="adsForm" novalidate>
+          <div class="a-card a-group">
+            <div class="a-group-head"><h2>Google Ads conversions</h2><span class="a-status" id="adsState">Not set</span></div>
+            <div class="a-field"><label for="adsId">Conversion ID</label><input class="input" id="adsId" name="conversionId" inputmode="numeric" placeholder="10 digits" pattern="[0-9]{10}"></div>
+            <div class="a-field"><label for="adsLabel">Conversion label</label><input class="input" id="adsLabel" name="conversionLabel"></div>
+            <div class="a-field"><label for="adsValue">Value per enquiry (USD)</label><input class="input" id="adsValue" name="conversionValue" inputmode="decimal" placeholder="10"></div>
+          </div>
+          <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save conversions</button></div>
         </form>
       </div>
     </section>
@@ -759,10 +817,12 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
           <p>Change the admin password. It works straight away; you stay signed in on this device.</p>
         </div>
       </div>
-      <form class="a-card a-form" id="passForm" novalidate style="max-width:520px">
-        <div class="a-field"><label for="newPass">New password</label><input class="input" id="newPass" type="password" autocomplete="new-password" minlength="12" required aria-describedby="newPassHint"><p class="hint" id="newPassHint">At least 12 characters. A short sentence is easy to remember and hard to guess.</p></div>
-        <div class="a-field"><label for="newPass2">Type it again</label><input class="input" id="newPass2" type="password" autocomplete="new-password" required aria-describedby="passErr"><p class="err" id="passErr" role="alert" hidden></p></div>
-        <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Change password</button></div>
+      <form class="a-form a-settings" id="passForm" novalidate>
+        <div class="a-card a-group">
+          <div class="a-field"><label for="newPass">New password</label><input class="input" id="newPass" type="password" autocomplete="new-password" minlength="12" required aria-describedby="newPassHint"><p class="hint" id="newPassHint">At least 12 characters. A short sentence is easy to remember and hard to guess.</p></div>
+          <div class="a-field"><label for="newPass2">Type it again</label><input class="input" id="newPass2" type="password" autocomplete="new-password" required aria-describedby="passErr"><p class="err" id="passErr" role="alert" hidden></p></div>
+        </div>
+        <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Change password</button></div>
       </form>
     </section>
   </main>

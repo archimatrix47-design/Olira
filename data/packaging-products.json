@@ -1,90 +1,1053 @@
 [
-  {
-    "id": "pk_flat",
-    "name": "Flat handle bags",
-    "handle": "flat",
-    "description": "A lighter, lower-cost bag with flat paper handles for everyday retail and takeaway.",
-    "moq": "",
-    "specs": [],
-    "image": "/images/packaging/products/flat-handle-bag.webp",
-    "imageDark": null,
-    "width": 1400,
-    "height": 1983,
-    "quad": [
-      [
-        0.0914,
-        0.2057
-      ],
-      [
-        0.8502,
-        0.2057
-      ],
-      [
-        0.8502,
-        0.9202
-      ],
-      [
-        0.0914,
-        0.9202
-      ]
-    ],
-    "safeTop": 0.08,
-    "site": true,
-    "team": true,
-    "createdAt": "2026-09-15T00:00:00.000Z",
-    "updatedAt": "2026-09-15T00:00:00.000Z"
-  },
-  {
-    "id": "pk_wide",
-    "name": "Wide flat handle bags",
-    "handle": "wide",
-    "description": "A lower, wider bag with flat paper handles.",
-    "moq": "",
-    "specs": [],
-    "image": "/images/packaging/products/wide-flat-handle-bag.webp",
-    "imageDark": null,
-    "width": 1400,
-    "height": 1598,
-    "quad": [
-      [
-        0.1165,
-        0.2724
-      ],
-      [
-        0.8966,
-        0.2747
-      ],
-      [
-        0.894,
-        0.8888
-      ],
-      [
-        0.1204,
-        0.8888
-      ]
-    ],
-    "safeTop": 0.08,
-    "site": true,
-    "team": true,
-    "createdAt": "2026-09-15T00:00:00.000Z",
-    "updatedAt": "2026-09-15T00:00:00.000Z"
-  },
-  {
-    "id": "pk_twisted",
-    "name": "Twisted handle bags",
-    "handle": "twisted",
-    "description": "Strong kraft bags with twisted paper handles, in small, medium and large.",
-    "moq": "",
-    "specs": [],
-    "image": null,
-    "imageDark": null,
-    "width": null,
-    "height": null,
-    "quad": null,
-    "safeTop": 0.1,
-    "site": true,
-    "team": true,
-    "createdAt": "2026-09-15T00:00:00.000Z",
-    "updatedAt": "2026-09-15T00:00:00.000Z"
-  }
+ {
+  "id": "pk_flat",
+  "name": "Flat handle bags",
+  "handle": "flat",
+  "description": "A lighter, lower-cost bag with flat paper handles for everyday retail and takeaway.",
+  "moq": "",
+  "specs": [],
+  "image": "/images/packaging/products/flat-handle-bag-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.2412,
+    0.301
+   ],
+   [
+    0.7613,
+    0.301
+   ],
+   [
+    0.7613,
+    0.856
+   ],
+   [
+    0.2412,
+    0.856
+   ]
+  ],
+  "safeTop": 0.08,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-15T00:00:00.000Z",
+  "updatedAt": "2026-09-15T00:00:00.000Z",
+  "family": "bags"
+ },
+ {
+  "id": "pk_wide",
+  "name": "Wide flat handle bags",
+  "handle": "wide",
+  "description": "A lower, wider bag with flat paper handles.",
+  "moq": "",
+  "specs": [],
+  "image": "/images/packaging/products/wide-flat-handle-bag-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.1488,
+    0.3429
+   ],
+   [
+    0.8514,
+    0.3448
+   ],
+   [
+    0.8491,
+    0.8499
+   ],
+   [
+    0.1523,
+    0.8499
+   ]
+  ],
+  "safeTop": 0.08,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-15T00:00:00.000Z",
+  "updatedAt": "2026-09-15T00:00:00.000Z",
+  "family": "bags"
+ },
+ {
+  "id": "pk_twisted",
+  "name": "Twisted handle bags",
+  "handle": "twisted",
+  "description": "Strong kraft bags with twisted paper handles, in small, medium and large.",
+  "moq": "",
+  "specs": [],
+  "image": "/images/packaging/products/twisted-handle-bag-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.2421,
+    0.3272
+   ],
+   [
+    0.7579,
+    0.3272
+   ],
+   [
+    0.7579,
+    0.6593
+   ],
+   [
+    0.2421,
+    0.6593
+   ]
+  ],
+  "safeTop": 0.04,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-15T00:00:00.000Z",
+  "updatedAt": "2026-09-15T00:00:00.000Z",
+  "family": "bags"
+ },
+ {
+  "id": "pk_sos",
+  "name": "Square bottom paper bags",
+  "handle": "sos",
+  "family": "bags",
+  "description": "Paper bags with a flat, square base that stands open on its own. For groceries, takeaway and retail, in several sizes.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "extra-large",
+    "label": "Extra large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/square-bottom-bag-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.186,
+    0.3496
+   ],
+   [
+    0.8181,
+    0.3496
+   ],
+   [
+    0.8181,
+    0.6914
+   ],
+   [
+    0.186,
+    0.6914
+   ]
+  ],
+  "safeTop": 0.04,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-27T00:00:00.000Z",
+  "updatedAt": "2026-09-27T00:00:00.000Z"
+ },
+ {
+  "id": "pk_vbottom",
+  "name": "V-bottom paper bags",
+  "handle": "vbottom",
+  "family": "bags",
+  "description": "Flat paper bags with a folded V-shaped base, for bread, pastries, snacks and dry goods.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/v-bottom-bag-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.3228,
+    0.3658
+   ],
+   [
+    0.6756,
+    0.3658
+   ],
+   [
+    0.6756,
+    0.8003
+   ],
+   [
+    0.3228,
+    0.8003
+   ]
+  ],
+  "safeTop": 0.02,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-27T00:00:00.000Z",
+  "updatedAt": "2026-09-27T00:00:00.000Z"
+ },
+ {
+  "id": "pk_bakery",
+  "name": "Bakery and confectionery boxes",
+  "handle": "bakery",
+  "family": "food",
+  "description": "Boxes for cakes, pastries, cookies and sweets, with or without a window.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/bakery-window-box-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.4388,
+    0.7495
+   ],
+   [
+    0.7465,
+    0.6283
+   ],
+   [
+    0.7465,
+    0.7116
+   ],
+   [
+    0.4435,
+    0.8328
+   ]
+  ],
+  "safeTop": 0.02,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-27T00:00:00.000Z",
+  "updatedAt": "2026-09-27T00:00:00.000Z"
+ },
+ {
+  "id": "pk_pizza",
+  "name": "Pizza boxes",
+  "handle": "pizza",
+  "family": "food",
+  "description": "Folding pizza boxes printed with your brand on the lid.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/pizza-box-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": null,
+  "safeTop": 0.1,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-27T00:00:00.000Z",
+  "updatedAt": "2026-09-27T00:00:00.000Z"
+ },
+ {
+  "id": "pk_burger",
+  "name": "Burger boxes",
+  "handle": "burger",
+  "family": "food",
+  "description": "Clamshell boxes for burgers and sandwiches, printed with your brand.",
+  "sizes": [
+   {
+    "id": "standard",
+    "label": "Standard",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/burger-box-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.3483,
+    0.743
+   ],
+   [
+    0.8016,
+    0.6674
+   ],
+   [
+    0.8016,
+    0.7618
+   ],
+   [
+    0.3625,
+    0.8374
+   ]
+  ],
+  "safeTop": 0.02,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-27T00:00:00.000Z",
+  "updatedAt": "2026-09-27T00:00:00.000Z"
+ },
+ {
+  "id": "pk_medical",
+  "name": "Medical packets",
+  "handle": "medical",
+  "family": "medical",
+  "description": "Paper packets for dispensing tablets and small medical supplies at pharmacies and clinics.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/medical-packet-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.4314,
+    0.5506
+   ],
+   [
+    0.7991,
+    0.5506
+   ],
+   [
+    0.7991,
+    0.7788
+   ],
+   [
+    0.4314,
+    0.7788
+   ]
+  ],
+  "safeTop": 0.02,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-27T00:00:00.000Z",
+  "updatedAt": "2026-09-27T00:00:00.000Z"
+ },
+ {
+  "id": "pk_foil",
+  "name": "Aluminium foil bags",
+  "handle": "foil",
+  "family": "foil",
+  "description": "Foil-lined stand-up bags and pouches for coffee, tea, spices and snacks, printed with your brand.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/foil-gusseted-bag-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.3523,
+    0.1971
+   ],
+   [
+    0.6769,
+    0.2103
+   ],
+   [
+    0.7155,
+    0.8527
+   ],
+   [
+    0.3944,
+    0.8632
+   ]
+  ],
+  "safeTop": 0.12,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-27T00:00:00.000Z",
+  "updatedAt": "2026-09-28T00:00:00.000Z"
+ },
+ {
+  "id": "pk_blockbottom",
+  "name": "Block-bottom paper bags",
+  "handle": "block-bottom",
+  "family": "bags",
+  "description": "Tall paper bags with a flat base and a fold-over top, for coffee, tea, flour and spices.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/block-bottom-bag-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.3753,
+    0.2262
+   ],
+   [
+    0.6355,
+    0.1943
+   ],
+   [
+    0.6767,
+    0.8084
+   ],
+   [
+    0.4415,
+    0.8609
+   ]
+  ],
+  "safeTop": 0.06,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-28T00:00:00.000Z",
+  "updatedAt": "2026-09-28T00:00:00.000Z"
+ },
+ {
+  "id": "pk_pouch",
+  "name": "Kraft stand-up pouches",
+  "handle": "kraft-pouch",
+  "family": "foil",
+  "description": "Kraft paper pouches with a foil lining and a flat base, for coffee, tea, nuts and snacks.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/kraft-stand-up-pouch-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.3484,
+    0.1979
+   ],
+   [
+    0.6994,
+    0.1979
+   ],
+   [
+    0.7027,
+    0.8506
+   ],
+   [
+    0.3492,
+    0.8662
+   ]
+  ],
+  "safeTop": 0.08,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-28T00:00:00.000Z",
+  "updatedAt": "2026-09-28T00:00:00.000Z"
+ },
+ {
+  "id": "pk_zipfoil",
+  "name": "Zip foil pouches",
+  "handle": "zip-foil",
+  "family": "foil",
+  "description": "Resealable flat foil pouches for spices, tea, samples and single portions.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/zip-foil-pouch-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.2467,
+    0.2005
+   ],
+   [
+    0.753,
+    0.2005
+   ],
+   [
+    0.753,
+    0.86
+   ],
+   [
+    0.2471,
+    0.86
+   ]
+  ],
+  "safeTop": 0.1,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-28T00:00:00.000Z",
+  "updatedAt": "2026-09-28T00:00:00.000Z"
+ },
+ {
+  "id": "pk_sachet",
+  "name": "Sachets",
+  "handle": "sachet",
+  "family": "medical",
+  "description": "Flat sealed sachets for single doses, powders and samples.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/medical-sachet-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.1494,
+    0.2645
+   ],
+   [
+    0.8511,
+    0.2645
+   ],
+   [
+    0.8511,
+    0.8598
+   ],
+   [
+    0.1498,
+    0.8598
+   ]
+  ],
+  "safeTop": 0.04,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-28T00:00:00.000Z",
+  "updatedAt": "2026-09-28T00:00:00.000Z"
+ },
+ {
+  "id": "pk_medbox",
+  "name": "Medicine boxes",
+  "handle": "medicine-box",
+  "family": "medical",
+  "description": "Folding cartons for tablets, creams and medical supplies.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/medicine-box-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.16,
+    0.4245
+   ],
+   [
+    0.84,
+    0.4245
+   ],
+   [
+    0.84,
+    0.9457
+   ],
+   [
+    0.16,
+    0.9457
+   ]
+  ],
+  "safeTop": 0.04,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-28T00:00:00.000Z",
+  "updatedAt": "2026-09-28T00:00:00.000Z"
+ },
+ {
+  "id": "pk_pillow",
+  "name": "Pillow boxes",
+  "handle": "pillow-box",
+  "family": "food",
+  "description": "Kraft pillow boxes with a window, for sweets, cookies and small gifts.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/pillow-window-box-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.2626,
+    0.1998
+   ],
+   [
+    0.7369,
+    0.1998
+   ],
+   [
+    0.7369,
+    0.8596
+   ],
+   [
+    0.2629,
+    0.8596
+   ]
+  ],
+  "safeTop": 0.04,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-28T00:00:00.000Z",
+  "updatedAt": "2026-09-28T00:00:00.000Z"
+ },
+ {
+  "id": "pk_tray",
+  "name": "Food trays",
+  "handle": "food-tray",
+  "family": "food",
+  "description": "Open kraft trays for fries, snacks and street food.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/food-tray-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.1017,
+    0.651
+   ],
+   [
+    0.8994,
+    0.651
+   ],
+   [
+    0.8994,
+    0.8123
+   ],
+   [
+    0.1017,
+    0.8123
+   ]
+  ],
+  "safeTop": 0.02,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-28T00:00:00.000Z",
+  "updatedAt": "2026-09-28T00:00:00.000Z"
+ },
+ {
+  "id": "pk_fries",
+  "name": "Fries cartons",
+  "handle": "fries-carton",
+  "family": "food",
+  "description": "Scoop cartons for fries and snacks, printed with your brand.",
+  "sizes": [
+   {
+    "id": "small",
+    "label": "Small",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "medium",
+    "label": "Medium",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   },
+   {
+    "id": "large",
+    "label": "Large",
+    "w": null,
+    "d": null,
+    "h": null,
+    "minOrder": null
+   }
+  ],
+  "moq": "",
+  "minOrder": null,
+  "printColours": null,
+  "specs": [],
+  "image": "/images/packaging/products/fries-carton-v2.webp",
+  "imageDark": null,
+  "width": 1200,
+  "height": 1500,
+  "quad": [
+   [
+    0.1489,
+    0.3409
+   ],
+   [
+    0.8514,
+    0.3409
+   ],
+   [
+    0.8514,
+    0.8592
+   ],
+   [
+    0.149,
+    0.8592
+   ]
+  ],
+  "safeTop": 0.04,
+  "site": true,
+  "team": true,
+  "createdAt": "2026-09-28T00:00:00.000Z",
+  "updatedAt": "2026-09-28T00:00:00.000Z"
+ }
 ]

@@ -59,3 +59,6 @@ src/data/burayu-grid.cache.json
 data/team.json
 data/client-files/
 public/uploads/packaging/
+
+# mockup source files: licensed for our renders only, never to be redistributed
+*.psd

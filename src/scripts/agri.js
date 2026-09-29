@@ -1,173 +1,33 @@
-// Agriculture page: an endless cover-flow stack. Cards wrap around both ends,
-// and the front card grows into its detail view.
-//
-// The cards are rendered at build time from data/products.json, already laid
-// out (site.css positions each card from --a and --s). This script takes over
-// from there, and re-renders the stack if the admin has changed the products
-// since the build.
-import { $, $$, h, reduce, prefill, getJSON, track } from './common.js';
+// Agriculture page: the range in the shared product carousel (flow.js), the
+// detail panel's purity and minimum order, the "Ask about this product" link,
+// and a fresh render if the admin has changed the products since the build.
+import { $, h, prefill, getJSON, track } from './common.js';
+import { mountFlow } from './flow.js';
 
-const flow = $('#flow'), track_ = $('#flowTrack'), dots = $('#flowDots');
-let PRODUCTS = JSON.parse($('#productsData').textContent || '[]');
-let cards = $$('.flow-card', track_);
-let N = cards.length;
-let active = Math.max(0, cards.findIndex((c) => c.classList.contains('is-front')));
-let prevOffset = new Array(N).fill(null);
-let dragged = false;
+const toItem = (p) => ({ ...p, sub: p.category, cat: p.category });
+let RAW = JSON.parse($('#productsData').textContent || '[]');
 
-const wrap = (i) => ((i % N) + N) % N;
-// signed shortest distance around the ring, so the stack never ends
-function ringOffset(i) {
-  let o = wrap(i - active);
-  if (o > N / 2) o -= N;
-  return o;
-}
-
-function layout() {
-  if (!N) return;
-  cards.forEach((c, i) => {
-    const o = ringOffset(i), a = Math.abs(o);
-    // a card crossing from one end of the ring to the other jumps instead of
-    // sliding through the middle of the stack
-    const jumped = prevOffset[i] !== null && Math.abs(prevOffset[i] - o) > 1;
-    if (jumped) c.classList.add('no-anim');
-    c.style.setProperty('--a', String(a));
-    c.style.setProperty('--s', String(Math.sign(o)));
-    c.style.zIndex = String(20 - a);
-    c.tabIndex = o === 0 ? 0 : -1;
-    c.classList.toggle('is-front', o === 0);
-    c.classList.toggle('is-far', a >= 3);
-    if (a >= 3) c.setAttribute('aria-hidden', 'true'); else c.removeAttribute('aria-hidden');
-    if (jumped) { void c.offsetWidth; c.classList.remove('no-anim'); }
-    prevOffset[i] = o;
-  });
-  const p = PRODUCTS[active];
-  $('#capName').textContent = p.name;
-  $('#capSub').textContent = p.category || '';
-  $$('button', dots).forEach((d, i) => d.setAttribute('aria-current', String(i === active)));
-}
-function go(i) { active = wrap(i); layout(); }
-
-function bindCard(c, i) {
-  c.addEventListener('click', () => { if (dragged) return; if (i === active) openDetail(); else go(i); });
-}
-function bindDot(d, i) { d.addEventListener('click', () => go(i)); }
-cards.forEach(bindCard);
-$$('button', dots).forEach(bindDot);
-
-// rebuild with the same markup as agriculture.astro (text only, never HTML)
-function rebuild(list) {
-  PRODUCTS = list; N = list.length; active = Math.min(active, N - 1); prevOffset = new Array(N).fill(null);
-  track_.replaceChildren(...list.map((p, i) => {
-    const b = h('button', { type: 'button', class: 'flow-card no-anim', 'aria-label': p.name, 'data-id': p.id, 'data-cat': (p.category || '').toLowerCase() });
-    if (p.image) b.append(h('img', { src: p.image, alt: '', width: '800', height: '600', draggable: 'false', decoding: 'async' }));
-    else b.append(h('span', { class: 'flow-ph' }, p.category || p.name));
-    const tag = h('span', { class: 'flow-tag' }, p.name); tag.append(h('span', {}, p.category || '')); b.append(tag);
-    const open = h('span', { class: 'flow-open', 'aria-hidden': 'true' }); open.innerHTML = OPEN_ICON; open.append('View details'); b.append(open);
-    return h('li').appendChild(b).parentNode;
-  }));
-  dots.replaceChildren(...list.map((p) => h('button', { type: 'button', 'aria-label': p.name })));
-  cards = $$('.flow-card', track_);
-  cards.forEach(bindCard);
-  $$('button', dots).forEach(bindDot);
-  layout();
-  requestAnimationFrame(() => cards.forEach((c) => c.classList.remove('no-anim')));
-}
-
-// the icon is fixed markup from this file, never product text
-const OPEN_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
-$('#flowOpen').addEventListener('click', () => openDetail());
-
-// First visit: once the stack has been on screen for a moment without being
-// touched, the front card's "View details" pulses twice so it reads as clickable.
-let touched = false;
-['pointerdown', 'keydown', 'wheel'].forEach((ev) => flow.addEventListener(ev, () => { touched = true; }, { once: true, passive: true }));
-if (!reduce && 'IntersectionObserver' in window) {
-  let seen = false;
-  try { seen = sessionStorage.getItem('olira-flow-hint') === '1'; } catch (e) {}
-  if (!seen) {
-    const io = new IntersectionObserver((entries) => {
-      if (!entries.some((en) => en.isIntersecting)) return;
-      io.disconnect();
-      setTimeout(() => {
-        if (touched) return;
-        flow.classList.add('is-nudge');
-        try { sessionStorage.setItem('olira-flow-hint', '1'); } catch (e) {}
-        setTimeout(() => flow.classList.remove('is-nudge'), 2600);
-      }, 1400);
-    }, { threshold: 0.6 });
-    io.observe(flow);
-  }
-}
-
-$('#flowPrev').addEventListener('click', () => go(active - 1));
-$('#flowNext').addEventListener('click', () => go(active + 1));
-flow.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowLeft') { e.preventDefault(); go(active - 1); }
-  else if (e.key === 'ArrowRight') { e.preventDefault(); go(active + 1); }
-  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(); }
+const flow = mountFlow($('.flow-wrap[data-flow="agri"]'), {
+  products: RAW.map(toItem),
+  onDetail: (p) => {
+    const dl = $('#detSpec'); dl.replaceChildren();
+    for (const [k, v] of [['Purity', p.purity], ['Min. order', p.moq]]) if (v) dl.append(h('dt', {}, k), h('dd', {}, v));
+    dl.hidden = !dl.children.length;
+    $('#detSpecs').replaceChildren(...(p.specs || []).map((s) => h('li', {}, s)));
+  },
+  onOpen: (p) => track({ event: 'product', product: p.name }),
 });
-let startX = null;
-flow.addEventListener('pointerdown', (e) => { startX = e.clientX; dragged = false; });
-addEventListener('pointerup', (e) => {
-  if (startX == null) return;
-  const dx = e.clientX - startX; startX = null;
-  if (Math.abs(dx) > 40) { dragged = true; go(active + (dx < 0 ? 1 : -1)); setTimeout(() => { dragged = false; }, 0); }
-});
-layout();
 
 getJSON('/api/products').then((live) => {
   if (!Array.isArray(live) || !live.length) return;
-  if (JSON.stringify(live) === JSON.stringify(PRODUCTS)) return; // unchanged since the build
-  const id = PRODUCTS[active]?.id;
-  const keep = live.findIndex((p) => p.id === id);
-  active = keep >= 0 ? keep : 0;
-  rebuild(live);
+  if (JSON.stringify(live) === JSON.stringify(RAW)) return; // unchanged since the build
+  RAW = live;
+  flow.set(live.map(toItem));
 });
 
-/* ---------- expand the front card into its detail ---------- */
-const detail = $('#flowDetail'), box = $('#detailBox');
-function openDetail() {
-  const p = PRODUCTS[active];
-  const img = $('#detImg');
-  if (p.image) { img.src = p.image; img.alt = p.name; img.hidden = false; } else img.hidden = true;
-  $('#detCat').textContent = p.category || '';
-  $('#detName').textContent = p.name;
-  $('#detDesc').textContent = p.description || '';
-  const dl = $('#detSpec'); dl.replaceChildren();
-  for (const [k, v] of [['Purity', p.purity], ['Min. order', p.moq]]) if (v) dl.append(h('dt', {}, k), h('dd', {}, v));
-  dl.hidden = !dl.children.length;
-  $('#detSpecs').replaceChildren(...(p.specs || []).map((s) => h('li', {}, s)));
-  track({ event: 'product', product: p.name });
-  const from = cards[active].getBoundingClientRect();
-  detail.hidden = false;
-  const to = box.getBoundingClientRect();
-  if (!reduce) {
-    box.classList.add('is-growing');
-    box.animate([
-      { transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})` },
-      { transform: 'none' },
-    ], { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' }).finished.then(() => box.classList.remove('is-growing'));
-  }
-  $('#detClose').focus({ preventScroll: true });
-}
-function closeDetail() {
-  if (detail.hidden) return;
-  const done = () => { detail.hidden = true; cards[active].focus({ preventScroll: true }); };
-  if (reduce) return done();
-  const to = cards[active].getBoundingClientRect(), from = box.getBoundingClientRect();
-  box.classList.add('is-growing');
-  box.animate([
-    { transform: 'none' },
-    { transform: `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${to.width / from.width}, ${to.height / from.height})` },
-  ], { duration: 320, easing: 'cubic-bezier(.4,0,.2,1)' }).finished.then(() => { box.classList.remove('is-growing'); done(); });
-}
-$('#detClose').addEventListener('click', closeDetail);
-detail.addEventListener('click', (e) => { if (e.target === detail) closeDetail(); });
-addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
 $('#detAsk').addEventListener('click', () => {
-  const p = PRODUCTS[active];
-  closeDetail();
+  const p = flow.current();
+  flow.close();
   const form = $('#inquiry'); if (form) form.dataset.product = p.name;
   prefill(`Interested in ${p.name}. Volume and shipment window: `);
 });

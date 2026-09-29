@@ -9,6 +9,7 @@ import '../../styles/admin.css';
 import '../../styles/admin-insights.css';
 import '../../styles/team.css';
 import ThemeButton from '../site/ThemeButton.astro';
+import { SOCIAL_PLATFORMS } from '../../../lib/social.js';
 
 interface Props { line: 'agri' | 'pack' }
 const { line } = Astro.props;
@@ -20,11 +21,17 @@ const icon: Record<string, string> = {
   followups: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>',
   quotes: '<path d="M7 3h7l5 5v12a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
   mockups: '<path d="M6 8h12l1.2 12.5a1 1 0 01-1 1.1H5.8a1 1 0 01-1-1.1z"/><path d="M9 8V6.5a3 3 0 016 0V8"/>',
+  minimums: '<path d="M4 7h16M4 12h10M4 17h6"/><path d="M17 14v6M14 17h6"/>',
+  photos: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+  social: '<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>',
+  partners: '<rect x="3" y="7" width="7" height="10" rx="1.5"/><rect x="14" y="7" width="7" height="10" rx="1.5"/><path d="M10 12h4"/>',
   account: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>',
 };
 const nav = [
   ['inbox', 'Inbox'], ['followups', 'Follow-ups'], ['quotes', 'Quotes'],
-  ...(pack ? [['mockups', 'Mockups']] : []),
+  ...(pack ? [['mockups', 'Mockups'], ['photos', 'Product photos'], ['minimums', 'Minimum orders']] : []),
+  ['social', 'Contact links'],
+  ['partners', 'Partner logos'],
   ['account', 'My account'],
 ];
 const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon[name]}</svg>`;
@@ -79,6 +86,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
   </nav>
 
   <main id="teamMain" tabindex="-1">
+    <a class="a-back" href="#menu">All sections</a>
     <!-- INBOX -->
     <section class="a-view" data-view="inbox" aria-labelledby="h-inbox" hidden>
       <div class="t-inbox-head">
@@ -95,7 +103,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
         </div>
         <div class="t-toolbar-row">
           <label class="sr-only" for="inboxSearch">Search enquiries</label>
-          <input class="input grow" id="inboxSearch" type="search" placeholder="Search name, company, email or message">
+          <input class="input grow" id="inboxSearch" type="search" placeholder="Search name, company, email or message" aria-keyshortcuts="/">
           <label class="sr-only" for="inboxSort">Sort</label>
           <select class="input" id="inboxSort">
             <option value="newest">Newest first</option>
@@ -121,6 +129,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
           <p>Enquiries that are waiting on you. Buyers who hear back within a day are far more likely to order, so start at the top.</p>
         </div>
       </div>
+      <p class="t-follow-sum" id="followupSum" aria-live="polite"></p>
       <div id="followupList" class="t-follow"></div>
     </section>
 
@@ -159,15 +168,12 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
             </div>
             <fieldset class="a-fieldset a-field">
               <legend class="a-label">Bag</legend>
-              <div class="chips" id="tmBags"></div>
+              <div class="t-bags" id="tmBags"></div>
             </fieldset>
             <fieldset class="a-fieldset a-field">
               <legend class="a-label">Size</legend>
-              <div class="chips">
-                <label class="opt"><input type="radio" name="tmSize" value="small"><span>Small</span></label>
-                <label class="opt"><input type="radio" name="tmSize" value="medium" checked><span>Medium</span></label>
-                <label class="opt"><input type="radio" name="tmSize" value="large"><span>Large</span></label>
-              </div>
+              <!-- the chosen product's own sizes, filled in by mockups.js -->
+              <div class="chips" id="tmSizes"></div>
             </fieldset>
             <div class="a-field">
               <span class="a-label" id="tmLogoLabel">Logo</span>
@@ -180,6 +186,14 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
                 <div class="a-field" id="tmFromLeadWrap" hidden>
                   <label for="tmFromLead">Or use a file the client sent</label>
                   <select class="input" id="tmFromLead"></select>
+                </div>
+              </div>
+              <!-- the same logo check as the public studio, with its fixes -->
+              <div class="t-logo-note" id="tmLogoAdvice" hidden>
+                <p id="tmLogoAdviceText"></p>
+                <div class="row" style="--gap:8px;flex-wrap:wrap;margin-top:8px">
+                  <button class="btn btn-secondary btn-sm" type="button" id="tmFixBox" hidden>Remove the white box</button>
+                  <button class="btn btn-secondary btn-sm" type="button" id="tmFixInk" hidden>Print it in the ink colour</button>
                 </div>
               </div>
               <div class="row" style="justify-content:space-between;--gap:10px;flex-wrap:wrap">
@@ -219,6 +233,139 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
       </section>
     )}
 
+    {pack && (
+      <Fragment>
+      <!-- PRODUCT PHOTOS: the image of each product on the website, and its print area -->
+      <section class="a-view" data-view="photos" aria-labelledby="h-photos" hidden>
+        <div class="a-head">
+          <div>
+            <h1 id="h-photos">Product photos</h1>
+            <p>The image of each product on the website: the home page, the catalogue, the mockup studio and your mockups. Replace one, place the four print corners on its front panel, and save. The website uses it straight away.</p>
+          </div>
+        </div>
+        <p class="sr-only" id="tPhLive" role="status" aria-live="polite"></p>
+        <div class="t-ph-layout">
+          <ul class="t-ph-list" id="tPhList" aria-label="Packaging products"><li class="note">Loading the products.</li></ul>
+          <form class="a-card t-ph-editor" id="tPhEditor" novalidate hidden aria-labelledby="tPhTitle">
+            <div class="t-ph-head">
+              <h2 id="tPhTitle">Product</h2>
+              <button class="btn btn-ghost btn-sm" type="button" id="tPhCancel">Close</button>
+            </div>
+            <div class="a-field">
+              <span class="a-label" id="tPhImgLabel">New image</span>
+              <label class="a-drop" id="tPhDrop">
+                <input type="file" id="tPhFile" accept="image/png,image/webp,image/jpeg" aria-labelledby="tPhImgLabel" aria-describedby="tPhImgHint">
+                <strong>Upload the image</strong>
+                <span id="tPhImgHint">Best: the product on a transparent background, a PNG or WebP exported from a mockup, with the whole product in view. It stands on the website like the other products. A photo on plain white also works. Up to 15 MB.</span>
+              </label>
+              <p class="a-warn" id="tPhWarn" role="alert" hidden></p>
+            </div>
+            <div class="t-ph-work" id="tPhWork" hidden>
+              <div class="a-field">
+                <span class="a-label" id="tPhCornersLabel">Print corners</span>
+                <p class="hint" id="tPhCornersHint">Drag the four dots onto the corners of the front panel: 1 top left, 2 top right, 3 bottom right, 4 bottom left. Or select a dot and use the arrow keys, holding Shift to move further.</p>
+                <div class="a-corner-stage t-ph-stage" id="tPhStage" role="group" aria-labelledby="tPhCornersLabel" aria-describedby="tPhCornersHint">
+                  <img id="tPhStageImg" alt="">
+                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon id="tPhPoly" points=""/></svg>
+                  <button type="button" class="a-corner" data-corner="0">1</button>
+                  <button type="button" class="a-corner" data-corner="1">2</button>
+                  <button type="button" class="a-corner" data-corner="2">3</button>
+                  <button type="button" class="a-corner" data-corner="3">4</button>
+                </div>
+                <button class="btn btn-ghost btn-sm" type="button" id="tPhReset" style="justify-self:start">Reset the corners</button>
+              </div>
+              <div class="a-field">
+                <label for="tPhSample">Preview with this brand</label>
+                <input class="input" id="tPhSample" maxlength="18" value="YOUR BRAND" autocomplete="off">
+                <div class="a-preview-stage t-ph-preview"><canvas id="tPhPreview" width="1200" height="1500" role="img" aria-label="Preview of the product with the sample brand printed in its print area"></canvas></div>
+                <p class="err" id="tPhPreviewMsg" role="alert" hidden></p>
+              </div>
+              <div class="a-field">
+                <label for="tPhSafe">Space above the design</label>
+                <input class="range" id="tPhSafe" type="range" min="0" max="40" value="10" aria-valuetext="10 percent" aria-describedby="tPhSafeHint">
+                <p class="hint" id="tPhSafeHint">Moves the design down when the top of the panel has a fold, a seal or handles.</p>
+              </div>
+            </div>
+            <div class="t-ph-actions">
+              <button class="btn btn-primary" type="submit" id="tPhSave" disabled>Save the photo</button>
+              <span class="note" id="tPhSaveNote">Upload an image to change this product's photo.</span>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- MINIMUM ORDERS: what visitors can put in a packing list -->
+      <section class="a-view" data-view="minimums" aria-labelledby="h-minimums" hidden>
+        <div class="a-head">
+          <div>
+            <h1 id="h-minimums">Minimum orders</h1>
+            <p>The smallest quantity a visitor can request, per product and, where it differs, per size. The packaging page and its packing list use these straight away, and a request below them is not accepted. Leave a size blank to use the product minimum; leave both blank to agree it in the quote.</p>
+          </div>
+        </div>
+        <p class="sr-only" id="tMinLive" role="status" aria-live="polite"></p>
+        <form class="t-min" id="tMinForm" novalidate>
+          <div class="t-min-list" id="tMinList"><p class="note">Loading the products.</p></div>
+          <div class="a-actions a-savebar"><span class="a-dirty a-grow" id="tMinDirty">Unsaved changes</span><button class="btn btn-primary" type="submit" id="tMinSave">Save minimums</button></div>
+        </form>
+      </section>
+      </Fragment>
+    )}
+
+    <!-- CONTACT LINKS: the floating contact button and the footer, for both teams -->
+    <section class="a-view" data-view="social" aria-labelledby="h-social" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-social">Contact links</h1>
+          <p>WhatsApp, Telegram and the social pages in the floating contact button on every page of the website, and in the footer. Paste the full address of each profile; blank ones are hidden. The other team and the administrator can change these too.</p>
+        </div>
+      </div>
+      <form class="a-form a-settings t-social-form" id="tSocialForm" novalidate>
+        <div class="a-card a-group">
+          {SOCIAL_PLATFORMS.map((p) => (
+            <div class="a-field">
+              <label for={`ts-${p.key}`}>{p.label}</label>
+              <input class="input" id={`ts-${p.key}`} name={p.key} type="url" placeholder={p.placeholder} autocomplete="off" aria-describedby={`ts-${p.key}-err${p.hint ? ` ts-${p.key}-hint` : ''}`}>
+              {p.hint && <p class="hint" id={`ts-${p.key}-hint`}>{p.hint}</p>}
+              <p class="err" id={`ts-${p.key}-err`} hidden></p>
+            </div>
+          ))}
+        </div>
+        <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit" id="tSocialSave">Save contact links</button></div>
+        <p class="sr-only" id="tSocialLive" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <!-- PARTNER LOGOS: the organisations on the home page, for both teams -->
+    <section class="a-view" data-view="partners" aria-labelledby="h-partners" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-partners">Partner logos</h1>
+          <p>The organisations Olira has worked with, moving slowly across the home page under the two businesses. Add a logo with the organisation's name, put them in order, and save. With none saved, the row is hidden. The other team and the administrator can change these too.</p>
+        </div>
+      </div>
+      <div class="t-pt-layout">
+        <div class="a-card t-pt-add">
+          <h2>Add a logo</h2>
+          <label class="a-drop" id="tPtDrop">
+            <input type="file" id="tPtFile" accept="image/png,image/svg+xml,image/webp,image/jpeg" aria-labelledby="tPtDropTitle" aria-describedby="tPtHint">
+            <img id="tPtPreview" alt="" hidden>
+            <strong id="tPtDropTitle">Upload the logo</strong>
+            <span id="tPtHint">The organisation's official logo, on a transparent background: SVG or PNG is best, up to 5 MB. Only show logos you have permission to use.</span>
+          </label>
+          <div class="a-field"><label for="tPtName">Organisation</label><input class="input" id="tPtName" maxlength="80" autocomplete="off" placeholder="Food and Agriculture Organization (FAO)"><p class="err" id="tPtNameErr" hidden></p></div>
+          <div class="a-field"><label for="tPtUrl">Link (optional)</label><input class="input" id="tPtUrl" type="url" maxlength="300" autocomplete="off" placeholder="https://www.fao.org"><p class="err" id="tPtUrlErr" hidden></p></div>
+          <button class="btn btn-secondary" type="button" id="tPtAdd" disabled>Add to the list</button>
+        </div>
+        <div class="a-card t-pt-listcard">
+          <h2>On the home page</h2>
+          <ol class="t-pt-list" id="tPtList" aria-label="Partner logos, in order"></ol>
+          <p class="note" id="tPtEmpty">No logos yet. The row is hidden on the home page until the first one is saved.</p>
+          <div class="t-ph-actions"><button class="btn btn-primary" type="button" id="tPtSave" disabled>Save partner logos</button><span class="note" id="tPtNote"></span></div>
+        </div>
+      </div>
+      <p class="sr-only" id="tPtLive" role="status" aria-live="polite"></p>
+    </section>
+
     <!-- ACCOUNT -->
     <section class="a-view" data-view="account" aria-labelledby="h-account" hidden>
       <div class="a-head">
@@ -227,17 +374,19 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
           <p>Buyers' replies to the emails you send from here go to your work email.</p>
         </div>
       </div>
-      <div class="a-two" style="align-items:start">
-        <div class="a-card">
+      <div class="a-settings">
+        <div class="a-card a-group">
           <h2>Signed in as</h2>
           <dl class="t-profile" id="accountProfile"></dl>
         </div>
-        <form class="a-card a-form" id="accountPassForm" novalidate>
-          <h2>Change password</h2>
-          <div class="a-field"><label for="apCurrent">Current password</label><input class="input" id="apCurrent" type="password" autocomplete="current-password" required></div>
-          <div class="a-field"><label for="apNew">New password</label><input class="input" id="apNew" type="password" autocomplete="new-password" minlength="12" required aria-describedby="apHint"><p class="hint" id="apHint">At least 12 characters.</p></div>
-          <div class="a-field"><label for="apNew2">Type it again</label><input class="input" id="apNew2" type="password" autocomplete="new-password" required aria-describedby="apErr"><p class="err" id="apErr" role="alert" hidden></p></div>
-          <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Change password</button></div>
+        <form class="a-form" id="accountPassForm" novalidate>
+          <div class="a-card a-group">
+            <h2>Change password</h2>
+            <div class="a-field"><label for="apCurrent">Current password</label><input class="input" id="apCurrent" type="password" autocomplete="current-password" required></div>
+            <div class="a-field"><label for="apNew">New password</label><input class="input" id="apNew" type="password" autocomplete="new-password" minlength="12" required aria-describedby="apHint"><p class="hint" id="apHint">At least 12 characters.</p></div>
+            <div class="a-field"><label for="apNew2">Type it again</label><input class="input" id="apNew2" type="password" autocomplete="new-password" required aria-describedby="apErr"><p class="err" id="apErr" role="alert" hidden></p></div>
+          </div>
+          <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Change password</button></div>
         </form>
       </div>
     </section>

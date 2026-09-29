@@ -31,6 +31,8 @@ export const invalidate = (prefix) => { for (const k of cache.keys()) if (k.star
 export const analytics = (days = getDays()) => cached(`analytics:${days}`, () => api(`/api/analytics?days=${days}`));
 export const inquiries = () => cached('inquiries', () => api('/api/admin/inquiries'), 15000);
 export const products = () => cached('products', () => api('/api/products'));
+// every packaging product, including hidden ones: which bags the studio can show
+export const packaging = () => cached('packaging', () => api('/api/packaging-products?scope=all'));
 export const setup = () => cached('setup', async () => {
   const safe = (p) => p.catch(() => null);
   const [certs, email, integrations, branding, social, contacts] = await Promise.all([

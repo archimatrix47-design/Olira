@@ -155,7 +155,7 @@ test('packaging quote requests carry files only with consent, stored privately',
   assert.equal(fake.status, 400);
   assert.equal((await fake.json()).saved, true, 'the enquiry is kept even when its files are refused');
 
-  const design = JSON.stringify({ template: 'pk_flat', size: 'large', ink: 'red', text1: 'CAFE', scale: 9, hasLogo: true, evil: '<script>' });
+  const design = JSON.stringify({ template: 'pk_flat', size: 'large', ink: 'red', text1: 'CAFE', scale: 9, hasLogo: true, logoCheck: 'boxed', boxRemoved: true, evil: '<script>' });
   const ok = await req('POST', '/api/inquiry', { form: form({ ...fields, consent: '1', design }, [['files', logo, 'artwork.png', 'image/png'], ['logo', logo, 'mylogo.png', 'image/png'], ['mockup', logo, 'studio.png', 'image/png']]) });
   assert.ok([200, 500].includes(ok.status));
   const rec = JSON.parse(fs.readFileSync(path.join(tmp, 'inquiries.json'), 'utf8'))[0];
@@ -163,6 +163,8 @@ test('packaging quote requests carry files only with consent, stored privately',
   assert.deepEqual(rec.files.map((f) => f.kind).sort(), ['artwork', 'logo', 'mockup']);
   assert.equal(rec.design.scale, 1.4, 'design values are clamped');
   assert.equal(rec.design.evil, undefined, 'unknown design keys are dropped');
+  assert.equal(rec.design.logoCheck, 'boxed', 'the studio logo check reaches the team');
+  assert.equal(rec.design.boxRemoved, true);
   const f = rec.files[0];
   assert.ok(!fs.existsSync(path.join(process.env.UPLOADS_DIR, f.stored)), 'client files are not in the public uploads folder');
 

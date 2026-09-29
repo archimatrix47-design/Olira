@@ -13,33 +13,47 @@ function whileLoading(box, rows) {
 const leadLink = (l, text = 'Open') => h('a', { class: 'btn btn-secondary btn-sm', href: `#inbox?lead=${encodeURIComponent(l.id)}` }, text);
 
 export async function showFollowups() {
-  const box = $('#followupList');
+  const box = $('#followupList'), sum = $('#followupSum');
   const done = whileLoading(box, 4);
   try {
     const all = await leads(true);
     done();
     const due = followupsOf(all);
     if (!due.length) {
+      sum.replaceChildren();
       box.replaceChildren(h('div', { class: 'a-card a-empty' }, h('strong', {}, 'Nothing is waiting on you'), 'New enquiries, quiet buyers and quotes that need a nudge will appear here.'));
       return;
     }
     const groups = [
-      ['accept', 'Waiting to be accepted', 'Over 4 hours old and nobody has taken them.'],
-      ['contact', 'Accepted, not contacted yet', 'Accepted more than a day ago with no reply, call or message logged.'],
-      ['quote', 'Quotes to follow up', 'Quoted more than 5 days ago with nothing since.'],
-      ['quiet', 'Gone quiet', 'Contacted, then nothing for a week.'],
-    ];
-    box.replaceChildren(...groups.map(([kind, title, note]) => {
-      const items = due.filter((d) => d.kind === kind);
-      if (!items.length) return null;
-      return h('section', { class: 'a-card t-follow-group', 'aria-labelledby': `fu-${kind}` },
-        h('div', { class: 'a-card-head' }, h('div', {}, h('h2', { id: `fu-${kind}` }, `${title} (${items.length})`), h('p', {}, note))),
-        h('ul', { class: 'a-rows' }, items.map(({ lead: l, due: at }) => h('li', {},
+      ['accept', 'Waiting to be accepted', 'to accept', 'Over 4 hours old and nobody has taken them.'],
+      ['contact', 'Accepted, not contacted yet', 'to contact', 'Accepted more than a day ago with no reply, call or message logged.'],
+      ['quote', 'Quotes to follow up', 'quotes to chase', 'Quoted more than 5 days ago with nothing since.'],
+      ['quiet', 'Gone quiet', 'gone quiet', 'Contacted, then nothing for a week.'],
+    ].map(([kind, title, short, note]) => ({ kind, title, short, note, items: due.filter((d) => d.kind === kind) })).filter((g) => g.items.length);
+    // one line that says what is waiting, before the lists
+    sum.replaceChildren(...groups.map((g) => h('span', {}, h('strong', {}, String(g.items.length)), ` ${g.short}`)));
+    const SHOWN = 6; // the longest waits first; the rest a click away
+    box.replaceChildren(...groups.map(({ kind, title, note, items }) => {
+      const ul = h('ul', { class: 'a-rows' }, items.map(({ lead: l, due: at }, i) => h('li', { hidden: i >= SHOWN || null },
+        h('a', { class: 'a-row-link', href: `#inbox?lead=${encodeURIComponent(l.id)}` },
           h('div', { class: 'grow' },
             h('strong', {}, `${l.name || 'Unknown'}${l.company ? `, ${l.company}` : ''}`),
-            h('span', {}, `${stageName(l.status)}${l.assignee ? `, ${isMine(l) ? 'yours' : l.assignee.name}` : ''}. Arrived ${timeAgo(l.createdAt)}. Due ${hours((Date.now() - at) / 3600000)} ago.`)),
-          leadLink(l)))));
-    }).filter(Boolean));
+            h('span', {}, `${stageName(l.status)}${l.assignee ? `, ${isMine(l) ? 'yours' : l.assignee.name}` : ''}. Arrived ${timeAgo(l.createdAt)}.`)),
+          h('span', { class: 't-follow-when' }, `Due ${hours((Date.now() - at) / 3600000)} ago`)))));
+      const more = items.length > SHOWN ? h('button', {
+        class: 'btn btn-ghost btn-sm t-follow-more', type: 'button', 'aria-expanded': 'false',
+        onclick: (e) => {
+          const btn = e.currentTarget, open = btn.getAttribute('aria-expanded') === 'true';
+          [...ul.children].forEach((li, i) => { if (i >= SHOWN) li.hidden = open; });
+          btn.setAttribute('aria-expanded', String(!open));
+          btn.textContent = open ? `Show all ${items.length}` : 'Show fewer';
+          if (!open) ul.children[SHOWN]?.querySelector('a')?.focus();
+        },
+      }, `Show all ${items.length}`) : null;
+      return h('section', { class: 'a-card t-follow-group', 'aria-labelledby': `fu-${kind}` },
+        h('header', {}, h('h2', { id: `fu-${kind}` }, title, h('b', {}, String(items.length))), h('p', {}, note)),
+        ul, more);
+    }));
   } catch (e) { done(); if (e.status !== 401) toast(e.message, 'error'); }
 }
 

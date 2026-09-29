@@ -1,6 +1,7 @@
 // Team accounts: the people who answer enquiries in the agriculture and
 // packaging workspaces. Each signs in with their own email and password.
 import { $, h, api, toast, confirmDialog, busy, timeAgo } from './api.js';
+import { mayLeave } from './tools.js';
 
 let members = [];
 let editingId = null;
@@ -76,10 +77,12 @@ function reset() {
   $('#teamCancel').hidden = true;
   $('#teamPwHint').textContent = 'At least 12 characters. Create one and share it privately; they can change it after signing in.';
   form().elements.active.checked = true;
+  form().dispatchEvent(new Event('saved')); // a fresh form has nothing unsaved (tools.js)
   renderList();
 }
 
-function edit(m) {
+async function edit(m) {
+  if (!(await mayLeave(form(), 'the changes to this account'))) return;
   editingId = m.id;
   const f = form();
   f.elements.name.value = m.name;
@@ -91,6 +94,7 @@ function edit(m) {
   $('#teamSave').textContent = 'Save changes';
   $('#teamCancel').hidden = false;
   $('#teamPwHint').textContent = 'Leave blank to keep the current password. A new password, a new team or switching the account off signs them out everywhere.';
+  f.dispatchEvent(new Event('saved'));
   renderList();
   f.elements.name.focus();
 }

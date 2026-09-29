@@ -181,3 +181,357 @@
 @media (max-width: 767px) {
   :root { --gutter: var(--s-6); }
 }
+
+/* ======================================================================
+   Project tokens: every custom property the site, the public sheet, the
+   admin and the team tools define, gathered here so this file is the one
+   authority. Order and selectors are kept as they were in each file, so the
+   cascade is unchanged. Moved by consolidate.py on 2026-09-28.
+   ====================================================================== */
+
+/* ---- from site.css ---- */
+:root {
+  --canvas: #F5F1E8;
+  --surface: #FFFDF8;
+  --surface-2: #EDE6D8;
+  --ink: #22201B;
+  --ink-2: #57524A;
+  --ink-3: #756E61;
+  --fill-1: rgba(34,32,27,.05);
+  --line: rgba(34,32,27,.12);
+  --line-strong: rgba(34,32,27,.22);
+  --accent: #186078;
+  --accent-hover: #0F4E63;
+  --accent-subtle: #DCEBEF;
+  --on-accent: #FFFFFF;
+  --leaf: #607818;
+  --leaf-text: #4F6414;
+  --danger: #A3301E;
+  --danger-subtle: #F7E4DF;
+  --scrim: 16,20,18;
+  --scrim-side: .62;
+  --scrim-bottom: .78;
+  --cta-bg: #FFFDF8;
+  --cta-ink: #0F4E63;
+  --terrain: rgba(255,255,255,.05);
+  --terrain-ink: rgba(24,96,120,.05);
+  --kraft-fill: rgba(181,138,90,.2);
+  --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --container: 1240px;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+.theme-pack {
+  --canvas: #EFF1E6;
+  --surface-2: #E4E8D6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #111412;
+    --surface: #1A1E1B;
+    --surface-2: #232823;
+    --ink: #ECE8DF;
+    --ink-2: #B7B2A6;
+    --ink-3: #8A857A;
+    --fill-1: rgba(236,232,223,.06);
+    --line: rgba(236,232,223,.12);
+    --line-strong: rgba(236,232,223,.22);
+    --accent: #5FA8C0;
+    --accent-hover: #7BBACF;
+    --accent-subtle: #1A2E34;
+    --on-accent: #071419;
+    --leaf-text: #C3D586;
+    --danger: #F0907C;
+    --danger-subtle: #3A1F19;
+    --scrim: 6,8,7;
+    --scrim-side: .72;
+    --scrim-bottom: .88;
+    --cta-bg: #5FA8C0;
+    --cta-ink: #071419;
+    --terrain-ink: rgba(95,168,192,.05);
+    --kraft-fill: rgba(201,161,118,.16);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-pack {
+    --canvas: #0F120D;
+    --surface-2: #1F241B;
+  }
+}
+:root[data-theme="dark"] {
+  --canvas: #111412;
+  --surface: #1A1E1B;
+  --surface-2: #232823;
+  --ink: #ECE8DF;
+  --ink-2: #B7B2A6;
+  --ink-3: #8A857A;
+  --fill-1: rgba(236,232,223,.06);
+  --line: rgba(236,232,223,.12);
+  --line-strong: rgba(236,232,223,.22);
+  --accent: #5FA8C0;
+  --accent-hover: #7BBACF;
+  --accent-subtle: #1A2E34;
+  --on-accent: #071419;
+  --leaf-text: #C3D586;
+  --danger: #F0907C;
+  --danger-subtle: #3A1F19;
+  --scrim: 6,8,7;
+  --scrim-side: .72;
+  --scrim-bottom: .88;
+  --cta-bg: #5FA8C0;
+  --cta-ink: #071419;
+  --terrain-ink: rgba(95,168,192,.05);
+  --kraft-fill: rgba(201,161,118,.16);
+}
+:root[data-theme="dark"] .theme-pack {
+  --canvas: #0F120D;
+  --surface-2: #1F241B;
+}
+.flow {
+  --cw: clamp(320px, min(30vw, calc((100svh - 380px) / 1.3)), 430px);
+  --ch: calc(var(--cw) * 1.3);
+}
+.flow {
+  --k0: .78;
+  --k1: .24;
+  --kz0: .55;
+  --kz1: .2;
+  --rot: 50deg;
+}
+/* .flow-card --a and --s (ring position) are set on each card in the markup */
+@media (hover: hover) and (pointer: fine) {
+  .flow-track:has(.flow-card:not(.is-far):hover) .flow-card:not(:hover) {
+    --veil: .55;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .flow-track .flow-card:not(.is-far):hover {
+    --veil: 0;
+  }
+}
+.flow-card:not(.is-front) {
+  --veil: .24;
+}
+@media (max-width: 760px) {
+  .flow {
+    --cw: min(68vw, 300px);
+    --k0: .7;
+    --k1: .18;
+    --kz0: .56;
+    --kz1: .23;
+    --rot: 48deg;
+  }
+}
+.specsheet {
+  --lab: 11rem;
+  --val: 11rem;
+}
+.sizes-row {
+  --cm: 2.4px;
+}
+
+/* ---- the public site (sheet.css): product-first, Apple-style ----
+   White page, a light grey stage for products, near-black ink, the logo's teal as
+   the one accent. Dark mode is true black with graphite stages. */
+.sheet-site {
+  --page: #FFFFFF;
+  --stage: #F3EEE6;          /* kraft paper, lightly: the stage the products stand on */
+  --tile: #FFFFFF;
+  --ink: #1D1D1F;
+  --ink-2: #606065;          /* 5.4:1 on the kraft stage, 6.3:1 on white */
+  --ink-3: #66666B;          /* 4.9:1 on the stage: still text, so still AA */
+  --line: rgba(0,0,0,.08);
+  --line-strong: rgba(0,0,0,.16);
+  --fill-1: rgba(0,0,0,.04);
+  --canvas: var(--page);
+  --surface: var(--tile);
+  --surface-2: var(--stage);
+  --accent: #186078;
+  --accent-hover: #0F4E63;
+  --accent-subtle: #E3EEF1;
+  --on-accent: #FFFFFF;
+  --link: #186078;
+  --dark-page: #000000;
+  --dark-tile: #1D1D1F;
+  --dark-ink: #F5F5F7;
+  --dark-ink-2: #A1A1A6;
+  --kraft-fill: rgba(181,138,90,.16);
+  --glass: rgba(255,255,255,.72);
+  --leaf-ink: #48721B;        /* the logo's leaf, as text on light: 4.9:1 on the kraft stage */
+  --grad: linear-gradient(100deg, #186078 5%, #2F7A5A 50%, #5E8A1E 95%);   /* the logo's leaf, teal into green */
+  --agri-band: #0C1810;       /* deep leaf: the agriculture band */
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Hanken Grotesk", system-ui, "Segoe UI", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hanken Grotesk", system-ui, "Segoe UI", sans-serif;
+  --r-tile: 22px;
+  --r-card: 18px;
+  --r-pill: 980px;
+  --bar-h: 48px;
+  --gutter: clamp(20px, 4vw, 48px);
+  --container: 1180px;
+  --wide: 1440px;
+  --ease-out: cubic-bezier(0, 0, .2, 1);
+  --settle: cubic-bezier(.22, 1, .36, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .sheet-site {
+    --page: #000000;
+    --stage: #15130F;
+    --tile: #1E1C18;
+    --leaf-ink: #A7C95B;
+    --grad: linear-gradient(100deg, #6FB6CE 5%, #7DBE9A 50%, #B5D06A 95%);
+    --ink: #F5F5F7;
+    --ink-2: #A1A1A6;
+    --ink-3: #86868B;
+    --line: rgba(255,255,255,.1);
+    --line-strong: rgba(255,255,255,.2);
+    --fill-1: rgba(255,255,255,.06);
+    --accent: #5FA8C0;
+    --accent-hover: #7BBACF;
+    --accent-subtle: #10262D;
+    --on-accent: #041014;
+    --link: #6FB6CE;
+    --glass: rgba(22,22,23,.72);
+    --kraft-fill: rgba(201,161,118,.12);
+  }
+}
+:root[data-theme="dark"] .sheet-site {
+  --page: #000000;
+  --stage: #15130F;
+  --tile: #1E1C18;
+  --leaf-ink: #A7C95B;
+  --grad: linear-gradient(100deg, #6FB6CE 5%, #7DBE9A 50%, #B5D06A 95%);
+  --ink: #F5F5F7;
+  --ink-2: #A1A1A6;
+  --ink-3: #86868B;
+  --line: rgba(255,255,255,.1);
+  --line-strong: rgba(255,255,255,.2);
+  --fill-1: rgba(255,255,255,.06);
+  --accent: #5FA8C0;
+  --accent-hover: #7BBACF;
+  --accent-subtle: #10262D;
+  --on-accent: #041014;
+  --link: #6FB6CE;
+  --glass: rgba(22,22,23,.72);
+  --kraft-fill: rgba(201,161,118,.12);
+}
+/* a dark tile inside a light page: the agriculture band, the press */
+.tone-dark {
+  --ink: #F5F5F7;
+  --ink-2: #A1A1A6;
+  --ink-3: #86868B;
+  --line: rgba(255,255,255,.12);
+  --line-strong: rgba(255,255,255,.22);
+  --fill-1: rgba(255,255,255,.06);
+  --surface: #1D1D1F;
+  --surface-2: #2C2C2E;
+  --accent: #5FA8C0;
+  --accent-hover: #7BBACF;
+  --on-accent: #041014;
+  --link: #6FB6CE;
+}
+
+/* ---- from admin.css ---- */
+/* the admin panel and both marketing workspaces: the website's warm stage behind
+   white cards, and the website's type (system display face, no serif) */
+.admin-body {
+  --canvas: var(--site-stage);
+  --surface: #FFFFFF;
+  --surface-2: #EFEAE1;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Hanken Grotesk", system-ui, "Segoe UI", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hanken Grotesk", system-ui, "Segoe UI", sans-serif;
+}
+:root[data-theme="dark"] .admin-body {
+  --canvas: #000000;
+  --surface: #1D1D1F;
+  --surface-2: #2C2C2E;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .admin-body {
+    --canvas: #000000;
+    --surface: #1D1D1F;
+    --surface-2: #2C2C2E;
+  }
+}
+
+/* ---- from admin-insights.css ---- */
+.admin-body {
+  --viz-a: var(--accent);
+  --viz-b: var(--leaf);
+  --viz-context: var(--ink-3);
+  --ramp-1: color-mix(in oklab, var(--accent) 14%, var(--surface));
+  --ramp-2: color-mix(in oklab, var(--accent) 32%, var(--surface));
+  --ramp-3: color-mix(in oklab, var(--accent) 52%, var(--surface));
+  --ramp-4: color-mix(in oklab, var(--accent) 74%, var(--surface));
+  --ramp-5: var(--accent);
+  --good: #2E6B2F;
+  --warn: #9A6212;
+  --bad: var(--danger);
+}
+:root[data-theme="dark"] .admin-body {
+  --viz-b: var(--leaf-text);
+  --good: #9FD49A;
+  --warn: #E7B45F;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .admin-body {
+    --viz-b: var(--leaf-text);
+    --good: #9FD49A;
+    --warn: #E7B45F;
+  }
+}
+
+/* ---- the staff tools (admin.css, team.css): Apple's app idiom ----
+   One control height (36px with a mouse, 44px on touch), a source list on the
+   left in the window's own tone, grouped white panels on the warm stage, and the
+   accent for the selected row. */
+.admin-body {
+  --ctl: var(--h-md);
+  --bar-h: 52px;
+  --side-w: 248px;
+  --side-bg: #ECE6DB;            /* the stage, a shade deeper: the window's sidebar */
+  --row-sel: #DDEAEE;            /* a chosen row in a list: the accent, lightly */
+  --t-radius: 12px;
+  --t-radius-sm: 8px;
+  --t-sticky: calc(var(--bar-h) + 12px);
+  --glass-bar: color-mix(in srgb, var(--canvas) 78%, transparent);
+}
+:root[data-theme="dark"] .admin-body {
+  --side-bg: #111113;
+  --row-sel: #16303A;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .admin-body {
+    --side-bg: #111113;
+    --row-sel: #16303A;
+  }
+}
+@media (pointer: coarse) {
+  .admin-body {
+    --ctl: var(--h-lg);
+  }
+}
+
+/* ---- constants: brand colours that do not change with the theme ----
+   On :root so the staff tools can use them too. Alpha variants are written as
+   color-mix() on these, so they move with the colour. */
+:root {
+  --white: #FFFFFF; --shadow: #000000;
+  --black: #0B0C0B; --black-2: #151714; --bone: #EDE9E1; --bone-2: #A9A397;
+  --teal: #186078; --teal-hi: #5FA8C0; --teal-deep: #0F4E63; --teal-lift: #1C7390;
+  --leaf: #5E7E19; --leaf-hi: #A7BD5B; --red: #A3301E; --process-black: #1B1A17;
+  --kraft-stock: #C8A273; --kraft-ink-k: #1A1712; --paper-k: #F4EEE3;
+  --kraft-shadow: #321E05; --fibre-dark: #5A3C1E; --fibre-light: #FFF0D2;
+  --press-off: #23261F; --wordmark: #161816;
+  --on-danger: #FFFFFF;
+  /* the website's stage colour, for the staff tools that show a product as visitors see it */
+  --site-stage: #F3EEE6;
+  /* motion named for what moves: a photo fading in, ink reaching a roller, a product lifting */
+  --dur-fade: 350ms; --dur-ink: 400ms; --dur-lift: 450ms;
+  --ink-col: currentColor;   /* set per ink station in the markup */
+  --sw: transparent;         /* set per swatch in the markup */
+}
+:root[data-theme="dark"] { --on-danger: #1B0906; --site-stage: #15130F; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --on-danger: #1B0906; --site-stage: #15130F; } }
+
+/* the kit's progressive blur: each layer's blur radius, set per layer by ambient.js */
+.progressive-blur > i { --b: 0px; }

@@ -1,208 +1,296 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
-import SiteNav from '../components/site/SiteNav.astro';
+import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 import ContactLines from '../components/site/ContactLines.astro';
 import InquiryForm from '../components/site/InquiryForm.astro';
-import { contact, SITE, packagingProducts } from '../lib/site-data';
-import { SIZES } from '../scripts/mockup/engine.js';
+import { contact, SITE, packagingProducts, FAMILIES, FLEXO_MAX_COLOURS } from '../lib/site-data';
+import { sizesOf } from '../scripts/mockup/engine.js';
+import { inStudio, flowItem } from '../scripts/catalogue-panel.js';
+import ProductFlow from '../components/site/ProductFlow.astro';
 
-// The admin's packaging products drive everything here. A bag with a photo and
-// its print corners can be designed in the studio; a bag without one yet is
-// offered for a quote, and joins the studio as soon as the admin adds its photo.
-const studioBags = packagingProducts.filter((p) => p.image && Array.isArray(p.quad) && p.quad.length === 4);
-const quoteOnly = packagingProducts.filter((p) => !studioBags.includes(p));
+// The catalogue is every packaging product the admin shows on the site, grouped
+// by family. Products with a photo and print corners can also be designed in the
+// studio; the rest are quoted from the packing list until their photo is added.
+const families = Object.fromEntries(FAMILIES.map((f) => [f.id, f.label]));
+const famsInUse = FAMILIES.filter((f) => packagingProducts.some((p) => p.family === f.id));
+const studioBags = packagingProducts.filter(inStudio);
 const firstBag = studioBags[0];
-const cm = (dims: string) => { const [w, , h] = dims.match(/[\d.]+/g)!.map(Number); return { w, h }; };
+const firstSizes = firstBag ? sizesOf(firstBag) : [];
+const firstSize = firstSizes.find((s) => s.id === 'medium') || firstSizes[0];
+const cm = (s: { w?: number | null; h?: number | null }) => ({ w: s.w || 0, h: s.h || 0 });
+const INK_STATIONS = [['Teal', '#186078'], ['Black', '#1B1A17'], ['Leaf green', '#5E7E19'], ['Red', '#A3301E']].slice(0, FLEXO_MAX_COLOURS);
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'Product',
-  name: 'Custom printed kraft paper bags',
-  description: "Kraft paper bags with twisted or flat paper handles in small, medium and large sizes, printed with the buyer's logo and supplied flat-packed in bundles.",
-  brand: { '@type': 'Brand', name: 'Olira Packaging' },
-  manufacturer: { '@type': 'Organization', name: 'Olira Agro Industry', url: `${SITE}/`, email: contact.email },
-  material: 'Kraft paper',
+  '@type': 'OfferCatalog',
+  name: 'Olira Packaging',
   url: `${SITE}/packaging/`,
-  image: `${SITE}/images/packaging/packaging-hero-1080.webp`,
+  provider: { '@type': 'Organization', name: 'Olira Agro Industry', url: `${SITE}/`, email: contact.email },
+  itemListElement: packagingProducts.map((p) => ({
+    '@type': 'Offer',
+    itemOffered: { '@type': 'Product', name: p.name, category: families[p.family || 'bags'], description: p.description, brand: { '@type': 'Brand', name: 'Olira Packaging' }, ...(p.image ? { image: `${SITE}${p.image}` } : {}) },
+  })),
 };
 ---
 <SiteLayout
-  title="Kraft paper bags, Olira Packaging"
-  description="Kraft paper bags with twisted or flat handles, made to your size and printed with your logo. Design your bag in the mockup studio and request a quote."
+  title="Printed packaging, Olira Packaging"
+  description="Paper bags, bakery and food boxes, medical packets and aluminium foil bags, made to your size and printed with your logo. Build a packing list and request one quote."
   ogImage="/og-packaging.jpg"
-  ogImageAlt="Kraft paper bags with twisted handles"
+  ogImageAlt="Printed paper bags and boxes by Olira Packaging"
   bodyClass="theme-pack"
   jsonLd={jsonLd}
 >
-  {firstBag?.image && <link slot="head" rel="preload" as="image" href={firstBag.image} fetchpriority="high">}
+  {firstBag?.image && <link slot="head" rel="preload" as="image" href={firstBag.image}>}
 
-  <SiteNav links={[{ href: '#studio', label: 'Mockup studio' }, { href: '#quote', label: 'Quote' }, { href: '/agriculture/', label: 'Agriculture' }]} cta={{ href: '#quote', label: 'Request a quote' }} />
+  <SiteHeader groups={[[{ href: '/packaging/', label: 'Packaging' }, { href: '#studio', label: 'Mockup studio' }, { href: '#printing', label: 'Printing' }, { href: '/agriculture/', label: 'Agriculture' }, { href: '#quote', label: 'Contact' }]]} current="/packaging/">
+    <button class="tab-btn" id="plOpen" type="button" aria-haspopup="dialog" aria-controls="packingList"><span class="tab-word">Packing list</span> <span class="count" data-zero>0</span></button>
+  </SiteHeader>
 
   <main id="main">
-    <!-- The page opens on the studio: the first screen is a bag with the
-         visitor's brand on it, not a picture of someone else's. -->
-    <section class="container studio-page" id="studio" aria-labelledby="packTitle">
-      <header class="studio-head">
-        <div>
-          <span class="line-label">Olira Packaging</span>
-          <h1 id="packTitle">Kraft paper bags with your brand on them</h1>
+    <!-- the title and the brand field -->
+    <section class="title-block center" aria-labelledby="packTitle">
+      <div class="wrap">
+        <span class="label">Olira Packaging</span>
+        <h1 class="display" id="packTitle">Packaging printed with <span class="grad">your brand.</span></h1>
+        <p class="sub">Paper bags, bakery and food boxes, medical packets and aluminium foil bags, made to your size and printed with your logo. Add what you need to one packing list and ask for a single quote.</p>
+        <div class="brand-field">
+          <label for="brandIn">Type your brand</label>
+          <input id="brandIn" data-brand-input maxlength="18" placeholder="Your brand" autocomplete="off" spellcheck="false" aria-describedby="brandHelp">
+          <span class="left" aria-hidden="true" data-brand-left>18</span>
+          <p id="brandHelp">Every product below is printed with it as you type, and the studio starts from it.</p>
         </div>
-        <p class="lede">Twisted and flat handle paper bags for shops, cafés, bakeries and brands. Made to your size, printed with your logo and supplied flat-packed in bundles.</p>
-      </header>
-      <h2 class="sr-only">Mockup studio</h2>
+      </div>
+    </section>
 
-      <div class="studio">
-        <div class="sheet stage">
-          <div class="stage-frame">
-            <canvas class="stage-canvas" id="bagCanvas" width="1200" height={firstBag?.width ? Math.round(1200 * (firstBag.height || 1) / firstBag.width) : 1680} tabindex="0" role="img" aria-label="Bag mockup preview with your design" aria-describedby="stageInfo stageHelp"></canvas>
-          </div>
-          <script type="application/json" id="packagingData" set:html={JSON.stringify(packagingProducts).replace(/</g, '\\u003c')}></script>
-          <div class="stage-meta">
-            <span class="note" id="stageHelp">Drag the design on the bag, or focus the preview and use the arrow keys. Hold Shift to move further.</span>
-            <span class="note" id="stageInfo">Medium {(firstBag?.name || 'kraft bags').replace(/s$/, '').toLowerCase()}, 25 x 11 x 32 cm, teal ink</span>
-          </div>
+    <!-- the catalogue on the grey stage -->
+    <section class="band on-stage" style="padding-top:clamp(24px,3vw,40px)" aria-labelledby="catalogue-title">
+      <div class="wrap">
+        <h2 class="sr-only" id="catalogue-title">Catalogue</h2>
+        <div class="families" role="group" aria-label="Show a product group">
+          <button class="fam" type="button" data-family="all" aria-pressed="true">All <span class="n">{packagingProducts.length}</span></button>
+          {famsInUse.map((f) => (
+            <button class="fam" type="button" data-family={f.id} aria-pressed="false">{f.label} <span class="n">{packagingProducts.filter((p) => p.family === f.id).length}</span></button>
+          ))}
         </div>
-
-        <div class="sheet panel">
-          <p class="note panel-intro">Choose a bag, add your logo and text, and move the design into place. Download the mockup or send the design with your quote request.</p>
-          <p class="sr-only" id="studioStatus" role="status" aria-live="polite"></p>
-
-          <fieldset class="choice">
-            <legend class="field-label">Bag</legend>
-            <div class="bags" id="templateChips">
-              {studioBags.map((p) => (
-                <label class="bagopt">
-                  <input type="radio" name="template" value={p.id} data-handle={p.handle} checked={p.id === firstBag?.id}>
-                  <span class="bagopt-card">
-                    <img class="bagopt-photo" src={p.image} alt="" width="56" height="56" loading="lazy" decoding="async">
-                    <span class="bagopt-text">
-                      <span class="bagopt-name">{p.name}</span>
-                      {p.description && <span class="bagopt-desc">{p.description}</span>}
-                      {p.moq && <span class="bagopt-desc">Minimum order {p.moq}</span>}
-                    </span>
-                  </span>
-                </label>
-              ))}
+        <p class="sr-only" id="catalogueStatus" role="status" aria-live="polite"></p>
+        <!-- the catalogue: the same carousel and detail panel as the agriculture range -->
+        <div id="catalogue" class="catalogue-flow" data-families={JSON.stringify(families)} data-flexo-max={FLEXO_MAX_COLOURS}>
+          <ProductFlow items={packagingProducts.map((p) => flowItem(p, families))} label="Packaging products" kind="pack" prefix="pk">
+            <canvas slot="media" class="flow-print" aria-hidden="true" width="960" height="1200"></canvas>
+            <div class="pk-actions">
+              <button class="pp-add" type="button" data-id="" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add to packing list</span></button>
+              <a class="pp-studio" href="#studio" id="pkStudio">Design it in the studio</a>
             </div>
-          </fieldset>
+          </ProductFlow>
+        </div>
+        <script type="application/json" id="packagingData" set:html={JSON.stringify(packagingProducts).replace(/</g, '\\u003c')}></script>
+      </div>
+    </section>
 
-          <!-- bags the admin has not photographed yet: quoted, not previewed -->
-          <div class="quote-only" id="quoteOnly" hidden={quoteOnly.length === 0}>
-            <span class="field-label">Quote only</span>
-            <ul class="quote-bags" id="quoteBags">
-              {quoteOnly.map((p) => (
-                <li>
-                  <button class="quote-bag" type="button" data-product={p.id} data-handle={p.handle}>
-                    <span class="bagopt-name">{p.name}</span>
-                    {p.description && <span class="bagopt-desc">{p.description}</span>}
-                    <span class="quote-bag-go">Quote this bag</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <p class="bundles note"><b>Flat-packed bundles</b> Bags supplied folded and stacked in bundles, ready to store and use. Brown kraft as standard, white kraft on request.</p>
-
-          <fieldset class="choice">
-            <legend class="field-label">Size <span class="legend-note">drawn to scale</span></legend>
-            <div class="sizes-row">
-              {Object.entries(SIZES).map(([key, s]) => (
-                <label class="sizeopt">
-                  <input type="radio" name="size" value={key} checked={key === 'medium'}>
-                  <span class="sizeopt-card">
-                    <span class="size-box" style={`--w:${cm(s.dims).w};--h:${cm(s.dims).h}`} aria-hidden="true"></span>
-                    <span class="size-name">{s.label}</span>
-                    <span class="size-dims">{s.dims}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
+    <!-- the mockup studio: the visitor's own logo inside a product's print area -->
+    <section class="sheet-sec" id="studio" aria-labelledby="studioTitle">
+      <div class="container">
+        <div class="sec-title" data-rise>
           <div>
-            <span class="field-label" id="logoLbl">Your logo</span>
-            <label class="drop" id="drop">
-              <input type="file" id="logoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" aria-labelledby="logoLbl dropTitle" aria-describedby="dropSub">
-              <strong id="dropTitle">Upload a logo</strong>
-              <span id="dropSub">PNG, JPG, SVG or WebP. Transparent PNG looks best.</span>
-            </label>
-            <!-- filled in by the logo check when the upload would print badly -->
-            <div class="logo-advice" id="logoAdvice" hidden>
-              <p id="logoAdviceText"></p>
-              <div class="logo-advice-actions">
-                <button class="btn btn-secondary btn-sm" type="button" id="logoFixBox" hidden>Remove the white box</button>
-                <button class="btn btn-secondary btn-sm" type="button" id="logoFixInk" hidden>Print it in the ink colour</button>
+            <span class="kicker">Mockup studio</span>
+            <h2 id="studioTitle">Kraft paper bags with your brand on them</h2>
+          </div>
+          <p class="lede">Twisted and flat handle paper bags for shops, cafés, bakeries and brands. Made to your size, printed with your logo and supplied flat-packed in bundles.</p>
+        </div>
+
+        <div class="studio">
+          <div class="sheet stage">
+            <div class="stage-frame">
+              <canvas class="stage-canvas" id="bagCanvas" width="1200" height={firstBag?.width ? Math.round(1200 * (firstBag.height || 1) / firstBag.width) : 1680} tabindex="0" role="img" aria-label="Bag mockup preview with your design" aria-describedby="stageInfo stageHelp"></canvas>
+            </div>
+            <div class="stage-meta">
+              <span class="note" id="stageHelp">Drag the design inside the print area, or focus the preview and use the arrow keys. Hold Shift to move further.</span>
+              <span class="note" id="stageInfo">{firstBag ? `${firstSize?.label} ${firstBag.name.toLowerCase()}${firstSize?.dims ? `, ${firstSize.dims}` : ''}, teal ink` : ''}</span>
+            </div>
+          </div>
+
+          <div class="sheet panel">
+            <p class="note panel-intro">Choose a bag, add your logo and text, and move the design into place. Download the mockup or send the design with your quote request.</p>
+            <p class="sr-only" id="studioStatus" role="status" aria-live="polite"></p>
+
+            <fieldset class="choice">
+              <legend class="field-label">Bag</legend>
+              <div class="bags" id="templateChips">
+                {studioBags.map((p) => (
+                  <label class="bagopt">
+                    <input type="radio" name="template" value={p.id} data-handle={p.handle} checked={p.id === firstBag?.id}>
+                    <span class="bagopt-card">
+                      <img class="bagopt-photo" src={p.image} alt="" width="56" height="56" loading="lazy" decoding="async">
+                      <span class="bagopt-text">
+                        <span class="bagopt-name">{p.name}</span>
+                        {p.description && <span class="bagopt-desc">{p.description}</span>}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <p class="bundles note"><b>Flat-packed bundles</b> Bags supplied folded and stacked in bundles, ready to store and use. Brown kraft as standard, white kraft on request.</p>
+
+            <fieldset class="choice">
+              <legend class="field-label">Size <span class="legend-note">drawn to scale</span></legend>
+              <div class="sizes-row" id="sizeChips">
+                {firstSizes.map((s) => (
+                  <label class="sizeopt">
+                    <input type="radio" name="size" value={s.id} checked={s.id === firstSize?.id}>
+                    <span class="sizeopt-card">
+                      {s.w && s.h ? <span class="size-box" style={`--w:${cm(s).w};--h:${cm(s).h}`} aria-hidden="true"></span> : null}
+                      <span class="size-name">{s.label}</span>
+                      {s.dims && <span class="size-dims">{s.dims}</span>}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <div>
+              <span class="field-label" id="logoLbl">Your logo</span>
+              <label class="drop" id="drop">
+                <input type="file" id="logoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" aria-labelledby="logoLbl dropTitle" aria-describedby="dropSub">
+                <strong id="dropTitle">Upload a logo</strong>
+                <span id="dropSub">PNG, JPG, SVG or WebP. Transparent PNG looks best.</span>
+              </label>
+              <div class="logo-advice" id="logoAdvice" hidden>
+                <p id="logoAdviceText"></p>
+                <div class="logo-advice-actions">
+                  <button class="btn btn-secondary btn-sm" type="button" id="logoFixBox" hidden>Remove the white box</button>
+                  <button class="btn btn-secondary btn-sm" type="button" id="logoFixInk" hidden>Print it in the ink colour</button>
+                </div>
+              </div>
+              <div class="row" style="justify-content:space-between;margin-top:10px;--gap:10px;flex-wrap:wrap">
+                <label class="check"><input type="checkbox" id="oneInk"> Print logo in the ink colour</label>
+                <button class="btn btn-ghost btn-sm" type="button" id="removeLogo" hidden>Remove logo</button>
               </div>
             </div>
-            <div class="row" style="justify-content:space-between;margin-top:10px;--gap:10px;flex-wrap:wrap">
-              <label class="check"><input type="checkbox" id="oneInk"> Print logo in the ink colour</label>
-              <button class="btn btn-ghost btn-sm" type="button" id="removeLogo" hidden>Remove logo</button>
+
+            <div class="two">
+              <div><label class="field-label" for="text1">Main text</label><input class="text-field" id="text1" maxlength="18" value="YOUR BRAND" autocomplete="off"></div>
+              <div><label class="field-label" for="text2">Second line</label><input class="text-field" id="text2" maxlength="28" value="yourbrand.com" autocomplete="off"></div>
             </div>
-          </div>
 
-          <div class="two">
-            <div><label class="field-label" for="text1">Main text</label><input class="text-field" id="text1" maxlength="18" value="YOUR BRAND" autocomplete="off"></div>
-            <div><label class="field-label" for="text2">Second line</label><input class="text-field" id="text2" maxlength="28" value="yourbrand.com" autocomplete="off"></div>
-          </div>
+            <fieldset class="choice">
+              <legend class="field-label">Ink colour</legend>
+              <div class="chips">
+                <label class="opt opt-swatch" title="Black"><input type="radio" name="ink" value="black"><span style="--sw:#1E1B16"></span><b class="sr-only">Black</b></label>
+                <label class="opt opt-swatch" title="Teal"><input type="radio" name="ink" value="teal" checked><span style="--sw:#186078"></span><b class="sr-only">Teal</b></label>
+                <label class="opt opt-swatch" title="Leaf green"><input type="radio" name="ink" value="leaf"><span style="--sw:#4A5E17"></span><b class="sr-only">Leaf green</b></label>
+                <label class="opt opt-swatch" title="Red"><input type="radio" name="ink" value="red"><span style="--sw:#A3301E"></span><b class="sr-only">Red</b></label>
+                <label class="opt opt-swatch" title="White"><input type="radio" name="ink" value="white"><span style="--sw:#FAF7F0"></span><b class="sr-only">White</b></label>
+              </div>
+            </fieldset>
 
-          <fieldset class="choice">
-            <legend class="field-label">Ink colour</legend>
-            <div class="chips">
-              <label class="opt opt-swatch" title="Black"><input type="radio" name="ink" value="black"><span style="--sw:#1E1B16"></span><b class="sr-only">Black</b></label>
-              <label class="opt opt-swatch" title="Teal"><input type="radio" name="ink" value="teal" checked><span style="--sw:#186078"></span><b class="sr-only">Teal</b></label>
-              <label class="opt opt-swatch" title="Leaf green"><input type="radio" name="ink" value="leaf"><span style="--sw:#4A5E17"></span><b class="sr-only">Leaf green</b></label>
-              <label class="opt opt-swatch" title="Red"><input type="radio" name="ink" value="red"><span style="--sw:#A3301E"></span><b class="sr-only">Red</b></label>
-              <label class="opt opt-swatch" title="White"><input type="radio" name="ink" value="white"><span style="--sw:#FAF7F0"></span><b class="sr-only">White</b></label>
+            <div>
+              <label class="field-label" for="scale">Design size</label>
+              <input class="range" id="scale" type="range" min="50" max="140" value="100" aria-valuetext="100 percent">
+              <div class="range-row" aria-hidden="true"><span>Smaller</span><span>Larger</span></div>
             </div>
-          </fieldset>
 
+            <fieldset class="choice">
+              <legend class="field-label">Move the design</legend>
+              <div class="nudge">
+                <button class="round-btn" type="button" data-nudge="left" aria-label="Move left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+                <button class="round-btn" type="button" data-nudge="up" aria-label="Move up"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
+                <button class="round-btn" type="button" data-nudge="down" aria-label="Move down"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+                <button class="round-btn" type="button" data-nudge="right" aria-label="Move right"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+                <button class="btn btn-secondary" type="button" id="resetPos">Centre design</button>
+              </div>
+            </fieldset>
+
+            <div class="panel-actions">
+              <button class="btn btn-lg btn-secondary" type="button" id="download" aria-describedby="downloadHint">Download PNG</button>
+              <a class="btn btn-lg btn-primary" href="#quote" id="useDesign">Quote this design</a>
+            </div>
+            <p class="note" id="downloadHint">Your logo stays in your browser unless you choose to send it with a quote request. Bag photos are for preview; production finish and print can vary.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- flexographic printing, as ink stations on a press -->
+    <section class="sheet-sec tone-dark" id="printing" aria-labelledby="printTitle">
+      <div class="container">
+        <div class="stations-wrap" data-rise>
+          <div class="stations-copy">
+            <h2 id="printTitle">Flexographic printing.</h2>
+            <p class="lede" style="margin-top:18px">Each colour in your print has its own ink station on the press. Choose how many colours each product needs in your packing list, from plain stock to {FLEXO_MAX_COLOURS} colours.</p>
+            <fieldset class="choice stations-controls">
+              <legend class="field-label">Colours</legend>
+              <div class="chips">
+                <label class="opt"><input type="radio" name="colours" value="0"><span>Plain</span></label>
+                {INK_STATIONS.map((_, i) => <label class="opt"><input type="radio" name="colours" value={i + 1} checked={i === 1}><span>{i + 1}</span></label>)}
+              </div>
+            </fieldset>
+          </div>
+          <div class="press" id="press" style={`--n:${INK_STATIONS.length}`} aria-describedby="pressNote">
+            <div class="press-row">
+              {INK_STATIONS.map(([name, hex]) => (
+                <div class="station" data-ink={name} style={`--ink-col:${hex}`}><span class="roller" aria-hidden="true"></span>{name}</div>
+              ))}
+            </div>
+            <div class="proof" aria-hidden="true">
+              {INK_STATIONS.map(([, hex], i) => <span class="proof-layer" style={`--ink-col:${hex}`} data-brand-echo={i === 0 ? '' : undefined}>{i === 0 ? 'YOUR BRAND' : i === 1 ? 'YOURBRAND.COM' : ''}</span>)}
+            </div>
+            <div class="colour-bar" aria-hidden="true">
+              <span class="reg"></span>
+              <ol>{INK_STATIONS.map(([, hex]) => <li style={`--ink-col:${hex}`}></li>)}</ol>
+              <span class="reg"></span>
+            </div>
+            <p class="press-note" id="pressNote" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sheet-sec on-stage" id="quote" aria-labelledby="quoteTitle">
+      <div class="container">
+        <div class="contact" data-rise>
           <div>
-            <label class="field-label" for="scale">Design size</label>
-            <input class="range" id="scale" type="range" min="50" max="140" value="100" aria-valuetext="100 percent">
-            <div class="range-row" aria-hidden="true"><span>Smaller</span><span>Larger</span></div>
+            <h2 id="quoteTitle">Request a quote.</h2>
+            <p class="lede" style="margin-top:20px">Send the format, size and quantity, with your artwork and the design from the studio if you have them. We usually reply within 24 hours.</p>
+            <ContactLines />
           </div>
-
-          <fieldset class="choice">
-            <legend class="field-label">Move the design</legend>
-            <div class="nudge">
-              <button class="round-btn" type="button" data-nudge="left" aria-label="Move left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
-              <button class="round-btn" type="button" data-nudge="up" aria-label="Move up"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
-              <button class="round-btn" type="button" data-nudge="down" aria-label="Move down"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-              <button class="round-btn" type="button" data-nudge="right" aria-label="Move right"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
-              <button class="btn btn-secondary" type="button" id="resetPos">Centre design</button>
-            </div>
-          </fieldset>
-
-          <div class="panel-actions">
-            <button class="btn btn-lg btn-secondary" type="button" id="download" aria-describedby="downloadHint">Download PNG</button>
-            <a class="btn btn-lg btn-primary" href="#quote" id="useDesign">Quote this design</a>
-          </div>
-          <p class="note" id="downloadHint">Your logo stays in your browser unless you choose to send it with a quote request. Bag photos are for preview; production finish and print can vary.</p>
+          <InquiryForm prefix="p" line="Packaging" labelledBy="quoteTitle" extra="qty" messagePlaceholder="Products, sizes, print colours and delivery" messageRequired="Tell us the packaging and print you need." submitLabel="Send request" noun="request" team="packaging team" attachments />
         </div>
       </div>
     </section>
 
-    <section class="sec container" id="quote" style="padding-top:0" aria-labelledby="quoteTitle">
-      <div class="contact" data-fade>
-        <div>
-          <h2 id="quoteTitle">Request a quote</h2>
-          <p class="lede" style="margin-top:20px">Send the format, size and quantity, with your artwork and the design from the studio if you have them. We usually reply within 24 hours.</p>
-          <ContactLines />
-        </div>
-        <InquiryForm prefix="p" line="Packaging" labelledBy="quoteTitle" extra="qty" messagePlaceholder="Bag size, handle, print colours and delivery" messageRequired="Tell us the bag and print you need." submitLabel="Send request" noun="request" team="packaging team" attachments />
-      </div>
-    </section>
-
-    <section class="container" style="padding-bottom: 56px">
-      <div class="sheet switch-line">
+    <section class="switch-band" aria-label="Olira Agro">
+      <div class="wrap">
         <p>Buying sesame, pulses, spices or coffee? Olira Agro is our separate agricultural export line.</p>
-        <a class="btn btn-secondary" href="/agriculture/">Go to agriculture</a>
+        <div class="acts"><a class="act" href="/agriculture/">Go to agriculture</a></div>
       </div>
     </section>
   </main>
 
+  <!-- the packing list: the quote bundle, as a drawer -->
+  <dialog class="pl" id="packingList" aria-labelledby="plTitle" data-flexo-max={FLEXO_MAX_COLOURS} data-families={JSON.stringify(families)}>
+    <div class="pl-head">
+      <div>
+        <span class="kicker">Quote bundle</span>
+        <h2 id="plTitle">Packing list</h2>
+      </div>
+      <button class="round-btn" id="plClose" type="button" aria-label="Close the packing list">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="pl-body">
+      <p class="pl-empty" id="plEmpty">Your packing list is empty. Add products from the <a href="#catalogue-title" data-pl-close>catalogue</a>, then send them together for one quote.</p>
+      <ul class="pl-lines" id="plLines"></ul>
+    </div>
+    <div class="pl-foot" id="plFoot" hidden>
+      <div class="pl-total"><span>In this list</span><b id="plTotal">0 products</b></div>
+      <button class="tab-btn" type="button" id="plSend">Request a quote for this list</button>
+    </div>
+    <p class="sr-only" id="plStatus" role="status" aria-live="polite"></p>
+  </dialog>
+
   <SiteFooter note="Olira Packaging, a product line of Olira Agro Industry, Addis Ababa." />
 
-  <script>import '../scripts/pack.js';</script>
+  <script>import '../scripts/motion.js'; import '../scripts/catalogue.js'; import '../scripts/packing-list.js'; import '../scripts/pack.js'; import '../scripts/stations.js'; import '../scripts/live-print.js';</script>
 </SiteLayout>

@@ -4,7 +4,9 @@
 import '../styles/tokens.css';
 import '../styles/ambient.css';
 import '../styles/site.css';
+import '../styles/sheet.css';
 import { SITE } from '../lib/site-data';
+import ContactFab from '../components/site/ContactFab.astro';
 
 interface Props {
   title: string;
@@ -30,8 +32,8 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 <title>{title}</title>
 <meta name="description" content={description}>
 {noindex ? <meta name="robots" content="noindex"> : <link rel="canonical" href={url}>}
-<meta name="theme-color" content="#F5F1E8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#111412" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Olira Agro Industry">
 <meta property="og:title" content={title}>
@@ -51,7 +53,7 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 <slot name="head" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script is:inline>
   // Google Analytics and Google Ads, only when an ID is saved in the admin panel
   // (Marketing tags). No third-party request is made otherwise.
@@ -81,9 +83,11 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   }).catch(function () {});
 </script>
 </head>
-<body class={bodyClass}>
+<body class:list={['sheet-site', bodyClass]}>
 <a class="skip" href="#main">Skip to content</a>
 <slot />
+<ContactFab />
+<script>import '../scripts/fab.js';</script>
 <script is:inline>
   // First-party analytics: no cookies, no third party, nothing stored in the
   // browser. The server counts visitors with a salted hash that changes daily.

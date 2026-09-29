@@ -1,16 +1,15 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
-import SiteNav from '../components/site/SiteNav.astro';
+import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 import ContactLines from '../components/site/ContactLines.astro';
 import InquiryForm from '../components/site/InquiryForm.astro';
+import ProductFlow from '../components/site/ProductFlow.astro';
 import { products, certifications, contact, SITE } from '../lib/site-data';
-import contoursUrl from '../data/burayu-contours.json?url';
 
 // Ring position of each card with the first product in front (see site.css).
-const N = products.length;
-const offset = (i: number) => { let o = ((i % N) + N) % N; if (o > N / 2) o -= N; return o; };
-const first = products[0];
+// the carousel's cards: the same shape the packaging catalogue uses
+const items = products.map((p) => ({ id: p.id, name: p.name, sub: p.category, image: p.image, cat: p.category }));
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -23,7 +22,6 @@ const jsonLd = {
     itemOffered: { '@type': 'Product', name: p.name, category: p.category, description: p.description, ...(p.image ? { image: `${SITE}${p.image}` } : {}) },
   })),
 };
-const openIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
 ---
 <SiteLayout
   title="Agricultural exports, Olira Agro Industry"
@@ -32,39 +30,35 @@ const openIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
   ogImageAlt="Olira Agro agricultural products"
   jsonLd={jsonLd}
 >
-  <SiteNav links={[{ href: '#range', label: 'Range' }, { href: '#contact', label: 'Contact' }, { href: '/packaging/', label: 'Packaging' }]} cta={{ href: '#contact', label: 'Talk to sales' }} />
+  <Fragment slot="head">
+    <link rel="preload" as="image" href="/images/home/sesame-natural-800.avif" type="image/avif" fetchpriority="high">
+  </Fragment>
+  <SiteHeader groups={[[{ href: '/agriculture/', label: 'Agriculture' }, { href: '#range', label: 'Range' }, { href: '#specTitle', label: 'Specification' }, { href: '/packaging/', label: 'Packaging' }, { href: '#contact', label: 'Contact' }]]} current="/agriculture/" />
 
   <main id="main">
-    <section class="container page-hero hero-compact">
-      <svg class="hero-contours" data-contours={contoursUrl} preserveAspectRatio="xMaxYMid meet" aria-hidden="true" focusable="false"></svg>
-      <div>
-        <span class="line-label">Olira Agro</span>
-        <h1>Agricultural exports from the Ethiopian highlands</h1>
+    <!-- the produce, full bleed, and one line over it -->
+    <section class="ag-hero" aria-labelledby="agTitle">
+      <picture class="photo" aria-hidden="true">
+        <source type="image/avif" srcset="/images/home/sesame-natural-800.avif">
+        <img src="/images/home/sesame-natural-800.webp" alt="" width="800" height="600" fetchpriority="high">
+      </picture>
+      <div class="shade" aria-hidden="true"></div>
+      <div class="wrap">
+        <span class="label" style="color:#A7C95B">Olira Agro</span>
+        <h1 class="display" id="agTitle">Agricultural exports from the Ethiopian highlands.</h1>
+        <p class="sub">Humera sesame, pulses, spices and specialty coffee, cleaned, sorted and tested at our facility in Burayu, and shipped to importers in more than 50 countries.</p>
+        <div class="acts">
+          <a class="act fill" href="#range">View the range</a>
+          <a class="act" href="#contact">Talk to sales</a>
+        </div>
       </div>
-      <p class="lede">Humera sesame, pulses, spices and specialty coffee, cleaned, sorted and tested at our facility in Burayu, and shipped to importers in more than 50 countries.</p>
     </section>
 
-    <section class="container" id="range" style="padding-block: 8px 24px" aria-labelledby="rangeTitle">
+    <section class="container" id="range" style="padding-block: clamp(56px,7vw,96px)" aria-labelledby="rangeTitle">
       <h2 class="sr-only" id="rangeTitle">Product range</h2>
-      <div class="flow-wrap">
-        <div class="flow" id="flow" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Agricultural products" aria-describedby="flowHelp">
-          <ul class="flow-track" id="flowTrack">
-            {products.map((p, i) => {
-              const o = offset(i), a = Math.abs(o);
-              return (
-                <li>
-                  <button type="button" class:list={['flow-card', { 'is-front': o === 0, 'is-far': a >= 3 }]} style={`--a:${a};--s:${Math.sign(o)};z-index:${20 - a}`} aria-label={p.name} tabindex={o === 0 ? 0 : -1} aria-hidden={a >= 3 ? 'true' : undefined} data-id={p.id} data-cat={(p.category || '').toLowerCase()}>
-                    {p.image
-                      ? <img src={p.image} alt="" width="800" height="600" draggable="false" decoding="async" loading={a <= 1 ? 'eager' : 'lazy'} />
-                      : <span class="flow-ph">{p.category || p.name}</span>}
-                    <span class="flow-tag">{p.name}<span>{p.category}</span></span>
-                    <span class="flow-open" aria-hidden="true"><Fragment set:html={openIcon} />View details</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+      <ProductFlow items={items} label="Agricultural products" kind="agri">
+        <a class="btn btn-lg btn-primary" id="detAsk" href="#contact">Ask about this product</a>
+      </ProductFlow>
         <script is:inline>
           // Links from the home page land on a product line (?p=sesame|pulses|spices|coffee,
           // or a product id). Runs before first paint so the right card is in front
@@ -84,49 +78,15 @@ const openIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
             requestAnimationFrame(function () { requestAnimationFrame(function () { cards.forEach(function (c) { c.classList.remove('no-anim'); }); }); });
           })();
         </script>
-        <p class="sr-only" id="flowHelp">Use the left and right arrow keys to browse. Press Enter to open the product details.</p>
-        <div class="flow-bar">
-          <button class="round-btn" id="flowPrev" type="button" aria-label="Previous product">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
-          </button>
-          <div class="flow-cap" aria-live="polite">
-            <h3 id="capName">{first?.name}</h3>
-            <p id="capSub">{first?.category}</p>
-          </div>
-          <button class="round-btn" id="flowNext" type="button" aria-label="Next product">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-        </div>
-        <div class="flow-actions">
-          <button class="btn btn-secondary btn-sm flow-open-btn" id="flowOpen" type="button" aria-describedby="capName"><Fragment set:html={openIcon} />View details</button>
-        </div>
-        <div class="flow-dots" id="flowDots" role="group" aria-label="Choose a product">
-          {products.map((p, i) => <button type="button" aria-label={p.name} aria-current={String(i === 0)}></button>)}
-        </div>
-        <p class="flow-hint" aria-hidden="true"><span class="on-touch">Tap the front card for details. Swipe to see more products.</span><span class="on-mouse">Click the front card for details. Use the arrows or drag to see more products.</span></p>
-
-        <div class="flow-detail" id="flowDetail" hidden role="dialog" aria-modal="true" aria-labelledby="detName">
-          <div class="detail-box" id="detailBox">
-            <div class="detail-media"><img id="detImg" src={first?.image || '/logo.png'} alt="" width="800" height="600" decoding="async"></div>
-            <div class="detail-body">
-              <button class="round-btn detail-close" id="detClose" type="button" aria-label="Close details">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-              </button>
-              <p class="note" id="detCat"></p>
-              <h3 id="detName"></h3>
-              <p class="detail-desc" id="detDesc"></p>
-              <dl class="spec-list" id="detSpec"></dl>
-              <ul class="detail-specs" id="detSpecs"></ul>
-              <a class="btn btn-lg btn-primary" id="detAsk" href="#contact">Ask about this product</a>
-            </div>
-          </div>
-        </div>
-      </div>
       <script type="application/json" id="productsData" set:html={JSON.stringify(products).replace(/</g, '\\u003c')}></script>
 
+    </section>
+
+    <section class="band on-stage" aria-labelledby="specTitle">
+      <div class="wrap">
       <!-- The facts an importer's quality team checks, laid out as the document
            they check them in: a specification sheet, one row per fact. -->
-      <article class="specsheet" data-fade aria-labelledby="specTitle">
+      <article class="specsheet" data-rise aria-labelledby="specTitle">
         <header class="specsheet-head">
           <h2 id="specTitle">Specification</h2>
           <span>Olira Agro, Burayu facility</span>
@@ -144,28 +104,31 @@ const openIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
           </ul>
         </div>
       </article>
-    </section>
-
-    <section class="sec container" id="contact" aria-labelledby="contactTitle">
-      <div class="contact" data-fade>
-        <div>
-          <h2 id="contactTitle">Talk to our export team</h2>
-          <p class="lede" style="margin-top:20px">Tell us the product, volume and destination port. We answer within 24 hours.</p>
-          <ContactLines />
-        </div>
-        <InquiryForm prefix="a" line="Agricultural products" labelledBy="contactTitle" extra="port" messagePlaceholder="Product, volume and shipment window" messageRequired="Tell us the product and volume you need." submitLabel="Send enquiry" noun="enquiry" team="export team" />
       </div>
     </section>
 
-    <section class="container" style="padding-bottom: 56px">
-      <div class="sheet switch-line">
-        <p>Looking for kraft paper bags instead? Olira Packaging is our separate product line.</p>
-        <a class="btn btn-secondary" href="/packaging/">Go to packaging</a>
+    <section class="sheet-sec" id="contact" aria-labelledby="contactTitle">
+      <div class="container">
+        <div class="contact" data-rise>
+          <div>
+            <h2 id="contactTitle">Talk to our export team.</h2>
+            <p class="lede" style="margin-top:20px">Tell us the product, volume and destination port. We answer within 24 hours.</p>
+            <ContactLines />
+          </div>
+          <InquiryForm prefix="a" line="Agricultural products" labelledBy="contactTitle" extra="port" messagePlaceholder="Product, volume and shipment window" messageRequired="Tell us the product and volume you need." submitLabel="Send enquiry" noun="enquiry" team="export team" />
+        </div>
+      </div>
+    </section>
+
+    <section class="switch-band" aria-label="Olira Packaging">
+      <div class="wrap">
+        <p>Looking for printed bags, boxes or foil bags instead? Olira Packaging is our separate product line.</p>
+        <div class="acts"><a class="act" href="/packaging/">Go to packaging</a></div>
       </div>
     </section>
   </main>
 
   <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." />
 
-  <script>import '../scripts/agri.js';</script>
+  <script>import '../scripts/agri.js'; import '../scripts/motion.js';</script>
 </SiteLayout>

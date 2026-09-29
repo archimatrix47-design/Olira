@@ -8,7 +8,7 @@ const lines = (v) => v.split('\n').map((s) => s.trim()).filter(Boolean);
 
 export async function show({ first }) {
   if (!bound) { bound = true; form.addEventListener('submit', submit); }
-  if (!first && form.dataset.dirty) return; // keep unsaved typing when coming back
+  if (!first && form.hasAttribute('data-dirty')) return; // keep unsaved typing when coming back
   try {
     const d = await api('/api/contact-details');
     form.elements.phones.value = (d.phones || []).join('\n');
@@ -17,8 +17,6 @@ export async function show({ first }) {
       const [group, key] = el.name.split('.');
       el.value = d[group]?.[key] ?? '';
     }
-    delete form.dataset.dirty;
-    form.addEventListener('input', () => { form.dataset.dirty = '1'; }, { once: true });
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -42,8 +40,6 @@ async function submit(e) {
   }
   await save(form.querySelector('button[type=submit]'), async () => {
     await api('/api/contact-details', { method: 'POST', body });
-    delete form.dataset.dirty;
-    form.addEventListener('input', () => { form.dataset.dirty = '1'; }, { once: true });
   }, 'Company details saved. The website shows them now.');
 }
 

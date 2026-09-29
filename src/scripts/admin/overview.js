@@ -20,15 +20,15 @@ async function load() {
   const days = store.getDays();
   view().setAttribute('aria-busy', 'true');
   try {
-    const [a, inbox, prods, setup] = await Promise.all([store.analytics(days), store.inquiries(), store.products().catch(() => []), store.setup()]);
+    const [a, inbox, prods, setup, bags] = await Promise.all([store.analytics(days), store.inquiries(), store.products().catch(() => []), store.setup(), store.packaging().catch(() => null)]);
     const leads = Array.isArray(inbox?.inquiries) ? inbox.inquiries : [];
     freshness(view(), a, days);
     renderKpis(a, leads, days);
     renderTrend(a, leads);
     renderFacts(a, leads, days);
     renderFunnels(a);
-    renderAttention(a, leads, prods, setup, days);
-    renderHealth(a, prods, setup);
+    renderAttention(a, leads, prods, setup, days, bags);
+    renderHealth(a, prods, setup, bags);
   } catch (e) {
     if (e.status !== 401) toast(e.message, 'error');
   } finally {
@@ -120,7 +120,12 @@ function renderFunnels(a) {
   render($('#ovFunnelPack'), pack, 'Packaging', 'a-funnel-pack');
 }
 
-function renderAttention(a, leads, prods, setup, days) {
+// A packaging product is a bag visitors can design once it has a photo and the
+// corners of its print panel; until then the website offers it as quote only.
+const inStudio = (p) => !!(p.image && Array.isArray(p.quad) && p.quad.length === 4);
+const onSite = (bags) => (bags || []).filter((p) => p.site !== false);
+
+function renderAttention(a, leads, prods, setup, days, bags) {
   const items = [];
   const add = (level, title, text, href, action) => items.push({ level, title, text, href, action });
   const stale = leads.filter((l) => l.status === 'new' && ageHours(l) > 24).sort((x, y) => Date.parse(x.createdAt) - Date.parse(y.createdAt));
@@ -137,6 +142,16 @@ function renderAttention(a, leads, prods, setup, days) {
   if (followUp.length) add('medium', `${followUp.length} ${followUp.length === 1 ? 'quote has' : 'quotes have'} had no update for a week`, 'A short follow up often decides it.', `#enquiries?days=365`, 'Follow up');
   const noPhoto = (prods || []).filter((p) => !p.image);
   if (noPhoto.length) add('medium', `${noPhoto.length} ${noPhoto.length === 1 ? 'product has' : 'products have'} no photo`, noPhoto.map((p) => p.name).join(', '), '#products', 'Add photos');
+  const noPackPhoto = onSite(bags).filter((p) => !p.image);
+  if (noPackPhoto.length) {
+    add('medium', `${noPackPhoto.length} packaging ${noPackPhoto.length === 1 ? 'product has' : 'products have'} no photo`,
+      `${noPackPhoto.map((p) => p.name).join(', ')}. ${noPackPhoto.length === 1 ? 'It shows' : 'They show'} as a text tile in the catalogue; visitors can still add ${noPackPhoto.length === 1 ? 'it' : 'them'} to a packing list. A photo with print corners also puts ${noPackPhoto.length === 1 ? 'it' : 'them'} in the mockup studio.`,
+      '#packaging', 'Add photo');
+  }
+  const stopped = a.events?.bundle_below_min || 0;
+  if (stopped >= 3) add('medium', `A minimum order stopped visitors ${int(stopped)} times`, 'They tried to send a packing list below the minimum order for a product. Check the minimums still suit the business.', '#packaging', 'Review minimums');
+  const warned = a.events?.studio_logo_warn || 0, fixed = a.events?.studio_logo_fix || 0;
+  if (warned >= 3 && fixed < warned / 2) add('medium', `${int(warned)} uploaded logos would print badly`, `The studio flagged a white box or a very pale logo and offered a fix; ${int(fixed)} ${fixed === 1 ? 'visitor' : 'visitors'} used it. Ask for a transparent PNG or vector file when you reply to those quotes.`, `#traffic?days=${days}`, 'See designer');
   const cold = (a.products || []).filter((p) => p.clicks >= 10 && p.inquiries === 0);
   if (cold.length) add('medium', `${cold[0].name} gets attention but no enquiries`, `Opened ${cold[0].clicks} times this period. Check its description, minimum order and photo.`, '#products', 'Review');
   if (a.previous.uniques >= 20 && a.totals.uniques < a.previous.uniques * 0.7) add('medium', `Visitors fell ${Math.round((1 - a.totals.uniques / a.previous.uniques) * 100)}% on the previous period`, 'See which source dropped on the Traffic page.', `#traffic?days=${days}`, 'See traffic');
@@ -146,20 +161,28 @@ function renderAttention(a, leads, prods, setup, days) {
     i.href ? h('a', { class: `btn btn-sm ${i.level === 'high' ? 'btn-primary' : 'btn-secondary'}`, href: i.href }, i.action) : null)));
 }
 
-function renderHealth(a, prods, setup) {
+function renderHealth(a, prods, setup, bags) {
   const list = prods || [];
   const withPhoto = list.filter((p) => p.image).length;
+  const shown = onSite(bags), designable = shown.filter(inStudio).length;
+  const withPackPhoto = shown.filter((p) => p.image).length;
+  const withMin = shown.filter((p) => p.minOrder || (p.sizes || []).some((z) => z.minOrder)).length;
   const rows = [
     setup.email === null
       ? ['optional', 'Email delivery', 'Could not check just now. Open Email delivery to see the settings', '#email']
       : [setup.email.smtpHost ? 'ok' : 'todo', 'Email delivery', setup.email.smtpHost ? `Enquiries go to ${setup.email.recipientEmail}` : 'Not set up, so nobody is notified', '#email'],
     [setup.contacts?.phones?.length ? 'ok' : 'todo', 'Call and WhatsApp', setup.contacts?.phones?.length ? `${setup.contacts.phones.length} phone ${setup.contacts.phones.length === 1 ? 'number' : 'numbers'}${setup.social?.whatsapp ? ', WhatsApp link set' : ', WhatsApp uses the main phone'}` : 'No phone number saved', '#company'],
     [setup.social?.telegram ? 'ok' : 'optional', 'Telegram', setup.social?.telegram ? 'Shown beside WhatsApp' : 'Optional. Add a channel link to show the icon', '#social'],
-    [list.length && withPhoto === list.length ? 'ok' : 'todo', 'Product photos', `${withPhoto} of ${list.length} products have a photo`, '#products'],
+    [list.length && withPhoto === list.length ? 'ok' : 'todo', 'Agriculture product photos', `${withPhoto} of ${list.length} products have a photo`, '#products'],
+    bags === null
+      ? ['optional', 'Packaging catalogue', 'Could not check just now. Open Packaging products to see them', '#packaging']
+      : [shown.length && withPackPhoto === shown.length ? 'ok' : 'todo', 'Packaging catalogue photos', !shown.length ? 'No packaging products on the website' : `${withPackPhoto} of ${shown.length} products have a photo; ${designable} can be designed in the mockup studio`, '#packaging'],
+    bags === null ? null
+      : [withMin === shown.length && shown.length ? 'ok' : 'optional', 'Minimum orders', !shown.length ? 'No packaging products yet' : `${withMin} of ${shown.length} products have a minimum order. Without one it is agreed per quote`, '#packaging'],
     [setup.certs?.length ? 'ok' : 'todo', 'Certifications', setup.certs?.length ? `${setup.certs.length} listed on the agriculture page` : 'None listed', '#certifications'],
     [setup.integrations?.analytics?.measurementId ? 'ok' : 'optional', 'Google Analytics', setup.integrations?.analytics?.measurementId ? 'Connected' : 'Optional. The built-in numbers here work without it', '#marketing'],
     [a.firstTracked ? 'ok' : 'optional', 'Detailed visit data', a.firstTracked ? `Recording since ${shortDate(a.firstTracked)}` : 'Starts with the next visit', null],
   ];
-  $('#ovHealth').replaceChildren(...rows.map(([kind, title, text, href]) => h('li', {}, statusIcon(kind),
+  $('#ovHealth').replaceChildren(...rows.filter(Boolean).map(([kind, title, text, href]) => h('li', {}, statusIcon(kind),
     h('div', {}, h('strong', {}, title, h('span', { class: 'sr-only' }, kind === 'ok' ? ', done' : kind === 'todo' ? ', needs doing' : ', optional')), h('span', {}, text, href && kind !== 'ok' ? ' ' : null, href && kind !== 'ok' ? h('a', { href }, kind === 'todo' ? 'Fix' : 'Set up') : null)))));
 }
