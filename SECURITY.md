@@ -52,7 +52,7 @@ Restricted to localhost and local network IPs:
 - http://localhost:3000
 - http://127.0.0.1:3000
 - http://192.168.1.1:3000
-- http://192.168.40.225:3000
+- http://192.168.1.50:3000
 ```
 
 Allowed headers: Content-Type, Authorization
