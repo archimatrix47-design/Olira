@@ -2,6 +2,7 @@
 // Burayu contours, live admin data (contacts, logo, social links) and the
 // enquiry forms.
 import { reveal } from './reach.js';
+import { SOCIAL_PAGES } from '../../lib/social.js';
 export const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const $ = (sel, r = document) => r.querySelector(sel);
 export const $$ = (sel, r = document) => [...r.querySelectorAll(sel)];
@@ -81,6 +82,7 @@ Promise.all([getJSON('/api/contact-details'), getJSON('/api/social-links')]).the
   if (d) {
     const email = d.emails?.[0];
     if (email) setLink('[data-contact="email"]', `mailto:${email}`, email);
+    if (email) $$('[data-contact-href="email"]').forEach((a) => { a.href = `mailto:${email}`; }); // icon-only links keep their icon
     if (d.address) {
       const a = d.address;
       for (const el of $$('[data-contact="address"] span:last-child')) {
@@ -95,12 +97,12 @@ Promise.all([getJSON('/api/contact-details'), getJSON('/api/social-links')]).the
       a.hidden = !tg;
       if (tg) { a.href = tg; a.setAttribute('aria-label', `Olira on Telegram ${telegramLabel(tg)}`); }
     }
-    const labels = { facebook: 'Facebook', linkedin: 'LinkedIn', x: 'X', youtube: 'YouTube' };
-    const links = Object.entries(labels).filter(([k]) => /^https?:\/\//.test(social[k] || ''));
+    const links = SOCIAL_PAGES.filter((p) => /^https?:\/\//.test(social[p.key] || ''));
     for (const navEl of $$('[data-social]')) {
-      navEl.replaceChildren(...links.map(([k, label]) => h('a', { href: social[k], target: '_blank', rel: 'noopener' }, label)));
+      navEl.replaceChildren(...links.map((p) => h('a', { href: social[p.key], target: '_blank', rel: 'noopener' }, p.label)));
       navEl.hidden = links.length === 0;
     }
+    document.dispatchEvent(new CustomEvent('social:live', { detail: social })); // the floating contact button
   }
 });
 
@@ -183,6 +185,10 @@ for (const form of $$('form[data-endpoint]')) {
     }
     if (first) { status.textContent = 'Please check the highlighted fields.'; track({ event: 'form_invalid' }); first.focus(); return; }
 
+    // packaging: the packing list goes with the request; a line under its minimum stops it here
+    const bundle = formHooks.bundle?.() || null;
+    if (bundle?.error) { status.textContent = bundle.error; track({ event: 'form_invalid' }); formHooks.bundleProblem?.(); return; }
+
     const data = Object.fromEntries(new FormData(form));
     if (data.website) { status.textContent = 'Thank you. Your request has been sent.'; form.reset(); return; }
     const extra = [data.port && `Destination port: ${data.port.trim()}`, data.qty && `Quantity: ${data.qty.trim()}`].filter(Boolean).join('\n');
@@ -191,7 +197,10 @@ for (const form of $$('form[data-endpoint]')) {
       // a product picked on the page is recorded, so the admin dashboard can attribute the lead
       product: form.dataset.product || form.dataset.line,
       message: `${extra ? extra + '\n\n' : ''}${data.message.trim()}`, website: '',
+      // which team: the page's own line, so products without "bag" in the name still reach packaging
+      line: /packag/i.test(form.dataset.line || '') ? 'pack' : 'agri',
     };
+    if (bundle?.items?.length) payload.bundle = bundle.items;
 
     btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Sending';
     status.textContent = 'Sending your request.';
@@ -201,7 +210,7 @@ for (const form of $$('form[data-endpoint]')) {
     if (attaching() && consent?.checked) {
       try { extras = await formHooks.design?.(); } catch (x) { extras = null; }
       const fd = new FormData();
-      for (const [k, v] of Object.entries(payload)) fd.append(k, v);
+      for (const [k, v] of Object.entries(payload)) fd.append(k, typeof v === 'string' ? v : JSON.stringify(v));
       fd.append('consent', '1');
       for (const f of fileInput?.files || []) fd.append('files', f, f.name);
       if (extras) {
@@ -222,10 +231,18 @@ for (const form of $$('form[data-endpoint]')) {
         form.reset(); delete form.dataset.product; syncConsent();
         return;
       }
+      // the server refused something the visitor can fix (a packing list line under its
+      // minimum, a product no longer offered): say what, keep everything as it is
+      if (res.status === 400 && reply.error && reply.code) {
+        status.textContent = reply.error;
+        formHooks.rejected?.(reply);
+        return;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       status.classList.add('is-ok');
       status.textContent = body instanceof FormData ? 'Thank you. Your request and files are in, and our packaging team will reply within 24 hours.' : 'Thank you. Your request is in and our team will reply within 24 hours.';
       form.reset(); delete form.dataset.product; syncConsent();
+      if (payload.bundle) formHooks.sent?.();
       try { window.gtag('event', 'form_submission', { form_name: 'inquiry', product: payload.product }); window.trackConversion({ product: payload.product }); } catch (err) {}
     } catch (err) {
       const body = `${payload.product} enquiry from ${payload.name}${payload.company ? ', ' + payload.company : ''}\n\n${payload.message}`;

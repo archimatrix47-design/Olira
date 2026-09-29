@@ -1,0 +1,417 @@
+{
+ "pk_twisted": {
+  "image": "/images/packaging/products/twisted-handle-bag-v2.webp",
+  "cutout": "/images/packaging/cutouts/twisted-handle-bag-v2.webp",
+  "width": 660,
+  "height": 990,
+  "quad": [
+   [
+    0.0311,
+    0.1927
+   ],
+   [
+    0.9683,
+    0.1927
+   ],
+   [
+    0.9683,
+    0.6959
+   ],
+   [
+    0.0311,
+    0.6959
+   ]
+  ]
+ },
+ "pk_sos": {
+  "image": "/images/packaging/products/square-bottom-bag-v2.webp",
+  "cutout": "/images/packaging/cutouts/square-bottom-bag-v2.webp",
+  "width": 833,
+  "height": 990,
+  "quad": [
+   [
+    0.047,
+    0.2266
+   ],
+   [
+    0.9573,
+    0.2266
+   ],
+   [
+    0.9573,
+    0.7446
+   ],
+   [
+    0.047,
+    0.7446
+   ]
+  ]
+ },
+ "pk_vbottom": {
+  "image": "/images/packaging/products/v-bottom-bag-v2.webp",
+  "cutout": "/images/packaging/cutouts/v-bottom-bag-v2.webp",
+  "width": 560,
+  "height": 990,
+  "quad": [
+   [
+    0.1202,
+    0.2512
+   ],
+   [
+    0.8758,
+    0.2512
+   ],
+   [
+    0.8758,
+    0.9095
+   ],
+   [
+    0.1202,
+    0.9095
+   ]
+  ]
+ },
+ "pk_bakery": {
+  "image": "/images/packaging/products/bakery-window-box-v2.webp",
+  "cutout": "/images/packaging/cutouts/bakery-window-box-v2.webp",
+  "width": 840,
+  "height": 910,
+  "quad": [
+   [
+    0.4125,
+    0.8174
+   ],
+   [
+    0.8521,
+    0.6177
+   ],
+   [
+    0.8521,
+    0.755
+   ],
+   [
+    0.4193,
+    0.9547
+   ]
+  ]
+ },
+ "pk_burger": {
+  "image": "/images/packaging/products/burger-box-v2.webp",
+  "cutout": "/images/packaging/cutouts/burger-box-v2.webp",
+  "width": 840,
+  "height": 864,
+  "quad": [
+   [
+    0.2833,
+    0.7967
+   ],
+   [
+    0.9309,
+    0.6656
+   ],
+   [
+    0.9309,
+    0.8295
+   ],
+   [
+    0.3035,
+    0.9607
+   ]
+  ]
+ },
+ "pk_medical": {
+  "image": "/images/packaging/products/medical-packet-v2.webp",
+  "cutout": "/images/packaging/cutouts/medical-packet-v2.webp",
+  "width": 840,
+  "height": 599,
+  "quad": [
+   [
+    0.402,
+    0.2251
+   ],
+   [
+    0.9273,
+    0.2251
+   ],
+   [
+    0.9273,
+    0.7961
+   ],
+   [
+    0.402,
+    0.7961
+   ]
+  ]
+ },
+ "pk_foil": {
+  "image": "/images/packaging/products/foil-gusseted-bag-v2.webp",
+  "cutout": "/images/packaging/cutouts/foil-gusseted-bag-v2.webp",
+  "width": 450,
+  "height": 990,
+  "quad": [
+   [
+    0.106,
+    -0.0045
+   ],
+   [
+    0.9706,
+    0.0156
+   ],
+   [
+    1.0736,
+    0.9889
+   ],
+   [
+    0.2183,
+    1.0048
+   ]
+  ]
+ },
+ "pk_pizza": {
+  "image": "/images/packaging/products/pizza-box-v2.webp",
+  "cutout": "/images/packaging/cutouts/pizza-box-v2.webp",
+  "width": 840,
+  "height": 852,
+  "quad": null
+ },
+ "pk_flat": {
+  "image": "/images/packaging/products/flat-handle-bag-v2.webp",
+  "cutout": "/images/packaging/cutouts/flat-handle-bag-v2.webp",
+  "width": 621,
+  "height": 990,
+  "quad": [
+   [
+    -0.001,
+    0.1531
+   ],
+   [
+    1.004,
+    0.1531
+   ],
+   [
+    1.004,
+    0.9939
+   ],
+   [
+    -0.001,
+    0.9939
+   ]
+  ]
+ },
+ "pk_wide": {
+  "image": "/images/packaging/products/wide-flat-handle-bag-v2.webp",
+  "cutout": "/images/packaging/cutouts/wide-flat-handle-bag-v2.webp",
+  "width": 840,
+  "height": 982,
+  "quad": [
+   [
+    -0.0017,
+    0.2101
+   ],
+   [
+    1.0021,
+    0.213
+   ],
+   [
+    0.9987,
+    0.9845
+   ],
+   [
+    0.0033,
+    0.9845
+   ]
+  ]
+ },
+ "pk_blockbottom": {
+  "image": "/images/packaging/products/block-bottom-bag-v2.webp",
+  "cutout": "/images/packaging/cutouts/block-bottom-bag-v2.webp",
+  "width": 386,
+  "height": 990,
+  "quad": [
+   [
+    0.1121,
+    0.0397
+   ],
+   [
+    0.9202,
+    -0.0087
+   ],
+   [
+    1.0481,
+    0.9219
+   ],
+   [
+    0.3177,
+    1.0014
+   ]
+  ]
+ },
+ "pk_pouch": {
+  "image": "/images/packaging/products/kraft-stand-up-pouch-v2.webp",
+  "cutout": "/images/packaging/cutouts/kraft-stand-up-pouch-v2.webp",
+  "width": 483,
+  "height": 990,
+  "quad": [
+   [
+    0.1246,
+    -0.0032
+   ],
+   [
+    0.9974,
+    -0.0032
+   ],
+   [
+    1.0055,
+    0.9857
+   ],
+   [
+    0.1266,
+    1.0094
+   ]
+  ]
+ },
+ "pk_zipfoil": {
+  "image": "/images/packaging/products/zip-foil-pouch-v2.webp",
+  "cutout": "/images/packaging/cutouts/zip-foil-pouch-v2.webp",
+  "width": 606,
+  "height": 990,
+  "quad": [
+   [
+    -0.0016,
+    0.0007
+   ],
+   [
+    1.0015,
+    0.0007
+   ],
+   [
+    1.0015,
+    1.0001
+   ],
+   [
+    -0.0009,
+    1.0001
+   ]
+  ]
+ },
+ "pk_sachet": {
+  "image": "/images/packaging/products/medical-sachet-v2.webp",
+  "cutout": "/images/packaging/cutouts/medical-sachet-v2.webp",
+  "width": 840,
+  "height": 894,
+  "quad": [
+   [
+    -0.0009,
+    0.0009
+   ],
+   [
+    1.0016,
+    0.0009
+   ],
+   [
+    1.0016,
+    0.9997
+   ],
+   [
+    -0.0002,
+    0.9997
+   ]
+  ]
+ },
+ "pk_medbox": {
+  "image": "/images/packaging/products/medicine-box-v2.webp",
+  "cutout": "/images/packaging/cutouts/medicine-box-v2.webp",
+  "width": 840,
+  "height": 537,
+  "quad": [
+   [
+    0.02,
+    -0.2163
+   ],
+   [
+    0.98,
+    -0.2163
+   ],
+   [
+    0.98,
+    1.2387
+   ],
+   [
+    0.02,
+    1.2387
+   ]
+  ]
+ },
+ "pk_pillow": {
+  "image": "/images/packaging/products/pillow-window-box-v2.webp",
+  "cutout": "/images/packaging/cutouts/pillow-window-box-v2.webp",
+  "width": 566,
+  "height": 990,
+  "quad": [
+   [
+    -0.0034,
+    -0.0003
+   ],
+   [
+    1.0027,
+    -0.0003
+   ],
+   [
+    1.0027,
+    0.9993
+   ],
+   [
+    -0.0027,
+    0.9993
+   ]
+  ]
+ },
+ "pk_tray": {
+  "image": "/images/packaging/products/food-tray-v2.webp",
+  "cutout": "/images/packaging/cutouts/food-tray-v2.webp",
+  "width": 840,
+  "height": 536,
+  "quad": [
+   [
+    -0.069,
+    0.4149
+   ],
+   [
+    1.0705,
+    0.4149
+   ],
+   [
+    1.0705,
+    0.8657
+   ],
+   [
+    -0.069,
+    0.8657
+   ]
+  ]
+ },
+ "pk_fries": {
+  "image": "/images/packaging/products/fries-carton-v2.webp",
+  "cutout": "/images/packaging/cutouts/fries-carton-v2.webp",
+  "width": 840,
+  "height": 965,
+  "quad": [
+   [
+    -0.0015,
+    0.1931
+   ],
+   [
+    1.002,
+    0.1931
+   ],
+   [
+    1.002,
+    0.9986
+   ],
+   [
+    -0.0014,
+    0.9986
+   ]
+  ]
+ }
+}

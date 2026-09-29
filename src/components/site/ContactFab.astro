@@ -1,0 +1,25 @@
+---
+// The floating contact button, bottom right on every public page. Pointing at it
+// (or pressing it, or reaching it with the keyboard) opens a column of round
+// buttons: email, WhatsApp, Telegram, then every social page the admin or a
+// marketing team has set (TikTok, Facebook, Instagram, Messenger and others).
+// WhatsApp asks the server for the number on press (reach.js), so no phone
+// number is ever in the page. Behaviour: src/scripts/fab.js.
+import { contact, socialLinks } from '../../lib/site-data';
+import { ICONS } from '../../scripts/social-icons.js';
+---
+<div class="fab" data-fab data-reach data-dir="up">
+  <ul class="fab-list" id="fabList" aria-label="Contact Olira">
+    <li style="--i:0"><a class="fab-btn" href={`mailto:${contact.email}`} data-contact-href="email" aria-label="Email Olira"><Fragment set:html={ICONS.email} /><span class="fab-tip" aria-hidden="true">Email</span></a></li>
+    <li style="--i:1"><button class="fab-btn" type="button" data-reach-kind="whatsapp" aria-label="Message Olira on WhatsApp" aria-expanded="false"><Fragment set:html={ICONS.whatsapp} /><span class="fab-tip" aria-hidden="true">WhatsApp</span></button></li>
+    <li style="--i:2" data-fab-channel="telegram" hidden={!contact.telegramHref}><a class="fab-btn" data-contact="telegram" href={contact.telegramHref || '#'} target="_blank" rel="noopener" aria-label={`Olira on Telegram ${contact.telegramLabel}`.trim()}><Fragment set:html={ICONS.telegram} /><span class="fab-tip" aria-hidden="true">Telegram</span></a></li>
+    {socialLinks.map((s, i) => (
+      <li style={`--i:${i + 3}`} data-fab-social={s.key}><a class="fab-btn" href={s.url} target="_blank" rel="noopener" aria-label={`Olira on ${s.label}`}><Fragment set:html={ICONS[s.key] || ICONS.chat} /><span class="fab-tip" aria-hidden="true">{s.label}</span></a></li>
+    ))}
+  </ul>
+  <div class="reach-pop fab-pop" role="group" aria-live="polite" hidden></div>
+  <button class="fab-main" type="button" aria-expanded="false" aria-controls="fabList" aria-label="Contact Olira">
+    <span class="fab-ico fab-ico-chat"><Fragment set:html={ICONS.chat} /></span>
+    <span class="fab-ico fab-ico-close"><Fragment set:html={ICONS.close} /></span>
+  </button>
+</div>

@@ -11,6 +11,7 @@ import * as traffic from './traffic.js';
 import * as store from './store.js';
 import * as packaging from './packaging.js';
 import * as team from './team.js';
+import { initShell, watch } from './tools.js';
 
 const VIEWS = {
   overview: overview.show,
@@ -30,6 +31,9 @@ const VIEWS = {
 const initialised = new Set();
 
 const loginView = $('#loginView'), panel = $('#panel'), signOut = $('#signOut');
+const shell = initShell({ panel, route: () => route() });
+// every settings form and editor says when it has unsaved changes
+$$('#panel form.a-form').forEach(watch);
 
 function showLogin(message) {
   panel.hidden = true; signOut.hidden = true; loginView.hidden = false;
@@ -55,9 +59,11 @@ whenSessionExpires(() => {
 function route() {
   if (panel.hidden) return;
   const requested = location.hash.slice(1).split('?')[0];
-  const name = VIEWS[requested] ? requested : 'overview';
   // links keep the chosen period when moving between sections
   for (const a of $$('[data-nav]')) a.setAttribute('href', `#${a.dataset.nav}?days=${store.getDays()}`);
+  // on a phone, the list of sections
+  if (shell.menu(requested)) return;
+  const name = VIEWS[requested] ? requested : 'overview';
   for (const v of $$('[data-view]')) v.hidden = v.dataset.view !== name;
   for (const a of $$('[data-nav]')) {
     if (a.dataset.nav === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
@@ -65,7 +71,7 @@ function route() {
   $(`[data-nav="${name}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   const first = !initialised.has(name);
   initialised.add(name);
-  VIEWS[name]({ first });
+  VIEWS[name]({ first, params: new URLSearchParams(location.hash.split('?')[1] || '') });
 }
 // charts are drawn at their real width, so redraw (from cache) after a real resize
 let lastWidth = innerWidth, resizeTimer;
@@ -73,10 +79,18 @@ addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => { if (Math.abs(innerWidth - lastWidth) > 40) { lastWidth = innerWidth; route(); } }, 250);
 });
+let lastView = null;
 addEventListener('hashchange', () => {
   route();
-  // move focus to the section heading so keyboard and screen reader users land in it
-  if (!panel.hidden) { const hd = $('[data-view]:not([hidden]) h1'); if (hd) { hd.tabIndex = -1; hd.focus({ preventScroll: true }); scrollTo({ top: 0 }); } }
+  if (panel.hidden) return;
+  const now = document.querySelector('[data-view]:not([hidden])')?.dataset.view || 'menu';
+  // a new section: focus its heading so keyboard and screen reader users land in it
+  // (a change inside the same section, like opening an enquiry, is handled there)
+  if (now !== lastView) {
+    const hd = now === 'menu' ? $('.a-nav-link[aria-current="page"]') || $('.a-nav-link') : $('[data-view]:not([hidden]) h1');
+    if (hd) { if (hd.tagName === 'H1') hd.tabIndex = -1; hd.focus({ preventScroll: true }); scrollTo({ top: 0 }); }
+  }
+  lastView = now;
 });
 
 /* ---------- sign in ---------- */

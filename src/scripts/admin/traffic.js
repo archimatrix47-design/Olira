@@ -90,7 +90,10 @@ function renderPages(a) {
       h('td', { class: 'num' }, duration(p.avgSeconds)),
       h('td', { class: 'num' }, p.deepRate == null ? NO_DATA : pct(p.deepRate, 0)),
       h('td', {}, bands(p.timeBuckets))))));
-  $('#trPages').replaceChildren(h('div', { class: 'a-scroll' }, table));
+  // the home page's agriculture tiles: opening a product line from the first screen
+  const homeViews = a.pages.find((p) => p.path === '/')?.views || 0, peeks = a.events?.home_product || 0;
+  $('#trPages').replaceChildren(h('div', { class: 'a-scroll' }, table),
+    peeks ? h('p', { class: 'v-note' }, `On the home page, ${int(peeks)} ${peeks === 1 ? 'visit' : 'visits'}${homeViews ? ` (${pct((peeks / homeViews) * 100, 0)} of home page views)` : ''} opened a product line (sesame, pulses, spices or coffee) from the first screen.`) : h('span'));
 }
 
 function renderHeat(a) {
@@ -139,13 +142,37 @@ function renderActions(a) {
     barList(contact, { emptyText: 'No contact actions recorded in this period yet.' }),
     errors.length ? h('div', { style: 'margin-top:18px' }, h('h3', { class: 'a-label', style: 'margin-bottom:10px' }, 'Form problems'), barList(errors, { tone: 'context' })) : h('span'),
     contact.length ? tableFor('Contact actions', ['Action', 'Count'], [...contact, ...errors].map((i) => [i.label, int(i.value)])) : h('span'));
-  const studio = actionItems([['studio_change', 'Changed the bag or print'], ['studio_logo', 'Uploaded a logo'], ['studio_download', 'Downloaded a mockup'], ['studio_quote', 'Asked for a quote from the design']], a);
+  const studio = actionItems([
+    ['studio_change', 'Changed the bag or print'], ['studio_logo', 'Uploaded a logo'], ['studio_download', 'Downloaded a mockup'],
+    ['studio_quote', 'Asked for a quote from the design'], ['studio_quote_only', 'Asked for a quote on a quote only bag'],
+  ], a);
+  // the logo check: uploads that would print badly, and how many took the fix
+  const logos = actionItems([['studio_logo_warn', 'Logo would print badly'], ['studio_logo_fix', 'Fixed it with one click']], a);
   const views = a.pages.find((p) => p.path === '/packaging/')?.views || 0;
-  const used = a.events?.studio_change || 0;
+  const used = a.events?.studio_change || 0, quotes = (a.events?.studio_quote || 0) + (a.events?.studio_quote_only || 0);
+  const warned = a.events?.studio_logo_warn || 0, fixed = a.events?.studio_logo_fix || 0, uploads = a.events?.studio_logo || 0;
   $('#trStudio').replaceChildren(
     barList(studio, { tone: 'b', emptyText: 'No one has used the bag designer in this period yet.' }),
-    views ? h('p', { class: 'v-note' }, `${pct((used / views) * 100, 0)} of packaging page views changed the design. ${int(a.events?.studio_quote || 0)} went on to ask for a quote.`) : h('span'),
-    studio.length ? tableFor('Bag designer use', ['Action', 'Count'], studio.map((i) => [i.label, int(i.value)])) : h('span'));
+    views ? h('p', { class: 'v-note' }, `${pct((used / views) * 100, 0)} of packaging page views changed the design. ${int(quotes)} went on to ask for a quote.`) : h('span'),
+    logos.length ? h('div', { style: 'margin-top:18px' }, h('h3', { class: 'a-label', style: 'margin-bottom:10px' }, 'Logo check'), barList(logos, { tone: 'context' }),
+      h('p', { class: 'v-note' }, `${int(warned)} of ${int(uploads)} uploaded ${uploads === 1 ? 'logo' : 'logos'} ${warned === 1 ? 'was' : 'were'} on a white box or too pale for kraft paper, and ${int(fixed)} ${fixed === 1 ? 'was' : 'were'} fixed with one click. The team sees which enquiries these were.`)) : h('span'),
+    studio.length ? tableFor('Bag designer use', ['Action', 'Count'], [...studio, ...logos].map((i) => [i.label, int(i.value)])) : h('span'),
+    packingList(a, views));
+}
+
+// the catalogue and packing list: what visitors add, send, and where a minimum order stops them
+function packingList(a, views) {
+  const items = actionItems([
+    ['catalogue_filter', 'Filtered the catalogue by group'], ['bundle_add', 'Added a product to a packing list'],
+    ['bundle_remove', 'Removed a product'], ['bundle_below_min', 'Stopped by a minimum order'], ['bundle_send', 'Sent a packing list for a quote'],
+  ], a);
+  if (!items.length) return h('div', { style: 'margin-top:18px' }, h('h3', { class: 'a-label', style: 'margin-bottom:10px' }, 'Packing list'), empty('No one has used the packing list in this period yet.'));
+  const added = a.events?.bundle_add || 0, sent = a.events?.bundle_send || 0, stopped = a.events?.bundle_below_min || 0;
+  return h('div', { style: 'margin-top:18px' },
+    h('h3', { class: 'a-label', style: 'margin-bottom:10px' }, 'Packing list'),
+    barList(items, { tone: 'b' }),
+    h('p', { class: 'v-note' }, `${int(added)} ${added === 1 ? 'product was' : 'products were'} added to packing lists and ${int(sent)} ${sent === 1 ? 'list was' : 'lists were'} sent for a quote${views ? `, from ${int(views)} packaging page ${views === 1 ? 'view' : 'views'}` : ''}.${stopped ? ` A minimum order stopped a visitor ${int(stopped)} ${stopped === 1 ? 'time' : 'times'}; the packaging team can review minimums in their workspace.` : ''}`),
+    tableFor('Packing list use', ['Action', 'Count'], items.map((i) => [i.label, int(i.value)])));
 }
 
 function renderCampaigns(a) {

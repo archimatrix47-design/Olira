@@ -84,7 +84,12 @@ export function busy(btn, label = 'Saving') {
 /** Run a save with a busy button and a toast either way. */
 export async function save(btn, fn, okMessage) {
   const done = busy(btn);
-  try { const r = await fn(); if (okMessage) toast(okMessage); return r; }
+  try {
+    const r = await fn();
+    if (okMessage) toast(okMessage);
+    btn?.form?.dispatchEvent(new Event('saved')); // the form is clean again (tools.js)
+    return r;
+  }
   catch (e) { toast(e.message, 'error'); return undefined; }
   finally { done(); }
 }

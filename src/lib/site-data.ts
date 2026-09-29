@@ -3,6 +3,7 @@
 // scripts (src/scripts) re-read the live API so later edits show without a
 // rebuild.
 import fs from 'node:fs';
+import { SOCIAL_PAGES } from '../../lib/social.js';
 import path from 'node:path';
 
 const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
@@ -32,19 +33,34 @@ export interface Contacts {
 export const products = read<Product[]>('products.json', []);
 
 // Packaging products, managed in the admin. Those with a photo and print corners are also the mockup studio's bags.
+// normalise() is the server's own: older records read as bags with the three studio sizes.
+import { normalise, FAMILIES } from '../../lib/packaging.js';
+export { FAMILIES };
+export interface PackagingSize { id: string; label: string; w: number | null; d: number | null; h: number | null; minOrder: number | null }
 export interface PackagingProduct {
-  id: string; name: string; handle?: string; description?: string; moq?: string; specs?: string[];
+  id: string; name: string; handle?: string; family?: string; description?: string; moq?: string; specs?: string[];
+  sizes?: PackagingSize[]; minOrder?: number | null; printColours?: number | null;
   image?: string | null; imageDark?: string | null; width?: number | null; height?: number | null;
   quad?: number[][] | null; safeTop?: number; site?: boolean; team?: boolean;
 }
+// Flexographic printing: the most colours offered when a product does not set its own
+// limit. Shown on the packaging page; the packaging team confirms per order.
+export const FLEXO_MAX_COLOURS = 4;
 export const packagingProducts = read<PackagingProduct[]>('packaging-products.json', [])
-  .filter((p) => p && p.site !== false && p.name)
-  .map(({ id, name, handle, description, moq, specs, image, imageDark, width, height, quad, safeTop }) => ({
-    id, name, handle: handle || '', description: description || '', moq: moq || '', specs: specs || [],
+  .filter((p) => p && p.id && p.site !== false && p.name)
+  .map((raw) => normalise(raw) as PackagingProduct)
+  .map(({ id, name, handle, family, description, moq, specs, sizes, minOrder, printColours, image, imageDark, width, height, quad, safeTop }) => ({
+    id, name, handle: handle || '', family: family || 'bags', description: description || '', moq: moq || '', specs: specs || [],
+    sizes: sizes || [], minOrder: minOrder ?? null, printColours: printColours ?? null,
     image: image || null, imageDark: image ? imageDark || null : null, width, height,
     quad: image && Array.isArray(quad) && quad.length === 4 ? quad : null, safeTop: safeTop ?? 0.1,
   }));
 export const certifications = read<Certification[]>('certifications.json', []);
+
+// Partner logos on the home page (lib/partners.js), set by the marketing teams.
+export interface Partner { id: string; name: string; logo: string; url?: string; width?: number | null; height?: number | null }
+export const partners = read<Partner[]>('partners.json', [])
+  .filter((p) => p && p.id && p.name && /^\/uploads\/partners\/[a-z0-9-]+\.webp$/.test(p.logo || ''));
 const rawContacts = read<Contacts>('contact-details.json', { phones: [], emails: [] });
 const social = read<Record<string, string>>('social-links.json', {});
 
@@ -76,9 +92,10 @@ export const contact = {
   },
 };
 
-export const socialLinks = Object.entries(social)
-  // WhatsApp and Telegram are contact channels, shown with the phone and email
-  .filter(([key, url]) => key !== 'whatsapp' && key !== 'telegram' && typeof url === 'string' && /^https?:\/\//.test(url))
-  .map(([key, url]) => ({ key, url, label: { facebook: 'Facebook', linkedin: 'LinkedIn', x: 'X', youtube: 'YouTube', telegram: 'Telegram' }[key] || key }));
+// The social pages that are set, in the platform order of lib/social.js. WhatsApp
+// and Telegram are contact channels, shown with the phone and email.
+export const socialLinks = SOCIAL_PAGES
+  .filter((p) => typeof social[p.key] === 'string' && /^https?:\/\//.test(social[p.key]))
+  .map((p) => ({ key: p.key, url: social[p.key], label: p.label }));
 
 export const SITE = 'https://oliraagroindustry.com';

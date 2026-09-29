@@ -1,16 +1,72 @@
 ---
-import { socialLinks } from '../../lib/site-data';
+// The footer, on every public page. The kraft stage with the real Burayu contour
+// lines drawn very faintly behind it (common.js draws them), then:
+//   the logo, one line about the company and the two ways to ask
+//   four columns: Olira Agro (in its leaf green), Olira Packaging (in its teal),
+//   Reach us (call and WhatsApp icons, email, social links), Visit (address)
+//   a base line: copyright and the staff sign in links
+// Phone numbers are never in this markup (ReachIcons asks for them on click).
+import { contact, socialLinks } from '../../lib/site-data';
+import ReachIcons from './ReachIcons.astro';
+import contoursUrl from '../../data/burayu-contours.json?url';
 interface Props { note: string }
 const { note } = Astro.props;
 const year = new Date().getFullYear();
 ---
-<footer class="foot">
-  <div class="container foot-grid">
-    <a href="/"><img src="/logo.png" alt="Olira Agro Industry, home" width="72" height="34" style="height:34px;width:auto" loading="lazy" data-brand-logo></a>
-    <span>{note}</span>
-    <nav class="foot-social" aria-label="Social media" data-social hidden={socialLinks.length === 0}>
-      {socialLinks.map((s) => <a href={s.url} target="_blank" rel="noopener">{s.label}</a>)}
-    </nav>
-    <span>© <span data-year>{year}</span> Olira Agro Industry</span>
+<footer class="sheet-foot">
+  <svg class="foot-topo" data-contours={contoursUrl} aria-hidden="true" focusable="false"></svg>
+  <div class="wrap foot-wrap">
+    <div class="foot-top">
+      <div class="foot-intro">
+        <a class="foot-logo" href="/"><img src="/logo.png" alt="Olira Agro Industry, home" width="96" height="46" loading="lazy" data-brand-logo></a>
+        <p class="foot-lede">Agricultural exports and printed packaging, from Addis Ababa since 2008.</p>
+      </div>
+      <div class="acts foot-acts">
+        <a class="act fill" href="/packaging/#quote">Request a packaging quote</a>
+        <a class="act" href="/agriculture/#contact">Talk to the export team</a>
+      </div>
+    </div>
+
+    <div class="foot-cols">
+      <nav class="foot-col" aria-labelledby="footAgri">
+        <h2 id="footAgri" class="foot-agri">Olira Agro</h2>
+        <ul class="foot-menu">
+          <li><a href="/agriculture/">Agriculture</a></li>
+          <li><a href="/agriculture/#range">Product range</a></li>
+          <li><a href="/agriculture/#specTitle">Specification</a></li>
+          <li><a href="/agriculture/#contact">Talk to sales</a></li>
+        </ul>
+      </nav>
+      <nav class="foot-col" aria-labelledby="footPack">
+        <h2 id="footPack" class="foot-pack">Olira Packaging</h2>
+        <ul class="foot-menu">
+          <li><a href="/packaging/">Packaging</a></li>
+          <li><a href="/packaging/#studio">Mockup studio</a></li>
+          <li><a href="/packaging/#printing">Printing</a></li>
+          <li><a href="/packaging/#quote">Request a quote</a></li>
+        </ul>
+      </nav>
+      <div class="foot-col">
+        <h2>Reach us</h2>
+        <div class="reach-inline"><span class="sr-only">Call or message</span><ReachIcons dir="up" /></div>
+        <p class="foot-line"><a href={`mailto:${contact.email}`} data-contact="email" class="foot-mail">{contact.email}</a></p>
+        <nav class="foot-social" data-social hidden={socialLinks.length === 0} aria-label="Social media">
+          {socialLinks.map((s) => <a href={s.url} target="_blank" rel="noopener">{s.label}</a>)}
+        </nav>
+      </div>
+      <div class="foot-col">
+        <h2>Visit</h2>
+        <address data-contact="address"><span>{contact.addressLines[0]}<br>{contact.addressLines[1]}</span></address>
+        <p class="foot-line">{note}</p>
+      </div>
+    </div>
+
+    <div class="foot-base">
+      <span>© <span data-year>{year}</span> Olira Agro Industry</span>
+      <nav class="foot-staff" aria-label="Staff sign in">
+        <a href="/team/" rel="nofollow">Team sign in</a>
+        <a href="/admin/" rel="nofollow">Admin</a>
+      </nav>
+    </div>
   </div>
 </footer>

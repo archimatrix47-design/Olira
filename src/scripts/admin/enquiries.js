@@ -1,20 +1,25 @@
-// Enquiries: pipeline analysis for the period, then the inbox where each lead
-// is scored, read for market, volume and port, moved through the pipeline and
-// annotated. Enquiry text comes from strangers, so it is only ever set as text.
-import { $, h, api, toast, confirmDialog, formatDate, timeAgo } from './api.js';
+// Enquiries: an inbox (the list, and the chosen enquiry beside it, with
+// everything needed to act on it) and a report of the pipeline for the period.
+// Enquiry text comes from strangers, so it is only ever set as text.
+import { $, $$, h, api, toast, confirmDialog, formatDate, timeAgo } from './api.js';
+import { bundleTable, bundleCount, bundleText } from '../team/bundle-view.js';
 import * as store from './store.js';
 import { columns, barList, tableFor, empty } from './charts.js';
 import { kpiCard, bucketsFor } from './widgets.js';
 import { int, pct, hours, delta, NO_DATA } from './format.js';
 import { confirmSelect } from './stage-control.js';
-import { captureFocus, restoreFocus } from './motion.js';
+import { captureFocus, restoreFocus, scrollBehavior } from './motion.js';
+import { arrowKeys, backButton } from './tools.js';
 import { STAGES, stageLabel, lineOfLead, scoreOf, BAND_LABEL, firstResponseHours, median, RESPONSE_BUCKETS, inPeriod, ageHours } from './leads.js';
 
 let all = [];
 let bound = false;
+let selectedId = null;
 const view = () => $('[data-view="enquiries"]');
 const LINE_LABEL = { agri: 'Agriculture', pack: 'Packaging' };
 const OPEN = ['new', 'read', 'contacted', 'quoted'];
+const tab = () => $('input[name="enTab"]:checked').value;
+const line = () => $('input[name="leadLine"]:checked').value;
 
 export async function refreshBadge() {
   try { setBadge((await store.inquiries()).inquiries || []); } catch (e) {}
@@ -27,17 +32,50 @@ function setBadge(list) {
   badge.setAttribute('aria-label', `${n} new`);
 }
 
-export async function show() {
+export async function show({ params } = {}) {
   if (!bound) {
     bound = true;
-    ['#leadStage', '#leadLine', '#leadSort', '#leadPeriodOnly'].forEach((s) => $(s).addEventListener('change', renderInbox));
-    let t; $('#leadSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(renderInbox, 150); });
+    ['#leadStage', '#leadSort', '#leadPeriodOnly'].forEach((s) => $(s).addEventListener('change', () => { renderInbox(); writeUrl(); }));
+    $$('input[name="leadLine"]').forEach((r) => r.addEventListener('change', () => { renderInbox(); writeUrl(); }));
+    $$('input[name="enTab"]').forEach((r) => r.addEventListener('change', () => { showTab(); writeUrl(); }));
+    let t; $('#leadSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { renderInbox(); writeUrl(); }, 150); });
     $('#leadsRefresh').addEventListener('click', () => load(true));
     $('#leadsCsv').addEventListener('click', csv);
+    arrowKeys($('#leads'), '.t-row', (id) => select(id));
   }
-  store.periodSelect(view().querySelector('[data-period]'), () => { renderInsights(); renderInbox(); });
+  store.periodSelect(view().querySelector('[data-period]'), () => { renderInsights(); renderInbox(); writeUrl(); });
   view().querySelector('[data-period]').value = String(store.getDays());
+  // the tab, the business line and the enquiry live in the URL, so a view can be bookmarked
+  const want = params?.get('tab');
+  if (want === 'report' || want === 'inbox') $(`input[name="enTab"][value="${want}"]`).checked = true;
+  const ln = params?.get('line');
+  if (ln && $(`input[name="leadLine"][value="${CSS.escape(ln)}"]`)) $(`input[name="leadLine"][value="${CSS.escape(ln)}"]`).checked = true;
+  showTab();
   await load();
+  const lead = params?.get('lead');
+  if (lead && all.some((i) => i.id === lead)) {
+    // a link to one enquiry shows it even when the filters would hide it
+    if (!filtered().some((i) => i.id === lead)) {
+      $('#leadStage').value = 'all'; $('#leadSearch').value = ''; $('#leadPeriodOnly').checked = false;
+      $('input[name="leadLine"][value="all"]').checked = true;
+      renderInbox();
+    }
+    select(lead, { focus: true, push: true });
+  }
+}
+
+function showTab() {
+  for (const part of $$('[data-en-tab]')) part.hidden = part.dataset.enTab !== tab();
+  // charts are drawn at their real width, so they are drawn once they can be measured
+  if (tab() === 'report') renderInsights();
+}
+
+function writeUrl() {
+  const p = new URLSearchParams({ days: String(store.getDays()) });
+  if (tab() === 'report') p.set('tab', 'report');
+  if (line() !== 'all') p.set('line', line());
+  if (selectedId && tab() === 'inbox') p.set('lead', selectedId);
+  history.replaceState(null, '', `#enquiries?${p}`);
 }
 
 async function load(force) {
@@ -46,14 +84,17 @@ async function load(force) {
     const d = await store.inquiries();
     all = Array.isArray(d?.inquiries) ? d.inquiries : [];
     setBadge(all);
+    const focus = captureFocus();
     renderInsights();
     renderInbox();
+    restoreFocus(focus);
     if (force) toast('Enquiries refreshed.');
   } catch (e) { if (e.status !== 401) toast(e.message, 'error'); }
 }
 
 /* ---------- insights ---------- */
 function renderInsights() {
+  if (tab() !== 'report') return;
   const days = store.getDays();
   const cur = inPeriod(all, days), prev = inPeriod(all, days, days);
   const won = cur.filter((l) => l.status === 'won').length, lost = cur.filter((l) => l.status === 'lost').length;
@@ -136,13 +177,13 @@ function renderInsights() {
     Object.keys(ports).length ? h('p', { class: 'v-note' }, `Destination ports named: ${top(ports, 6).map((p) => `${p.label} (${p.value})`).join(', ')}.`) : h('span'));
 }
 
-/* ---------- inbox ---------- */
+/* ---------- inbox: the list ---------- */
 function filtered() {
-  const stage = $('#leadStage').value, line = $('#leadLine').value, sort = $('#leadSort').value;
+  const stage = $('#leadStage').value, ln = line(), sort = $('#leadSort').value;
   const q = $('#leadSearch').value.trim().toLowerCase();
   let list = $('#leadPeriodOnly').checked ? inPeriod(all, store.getDays()) : all.slice();
   list = list.filter((i) => (stage === 'all' || (stage === 'open' ? OPEN.includes(i.status) : i.status === stage))
-    && (line === 'all' || lineOfLead(i) === line)
+    && (ln === 'all' || lineOfLead(i) === ln)
     && (!q || [i.name, i.company, i.email, i.phone, i.product, i.message, i.note, i.assignee?.name].some((v) => String(v || '').toLowerCase().includes(q))));
   if (sort === 'oldest') list.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
   else if (sort === 'score') list.sort((a, b) => scoreOf(b).score - scoreOf(a).score);
@@ -153,31 +194,88 @@ function filtered() {
 function renderInbox() {
   const list = filtered();
   $('#leadsSummary').textContent = `${list.length} of ${all.length} ${all.length === 1 ? 'enquiry' : 'enquiries'} shown.`;
-  const el = $('#leads');
+  const ul = $('#leads');
   if (!list.length) {
-    el.replaceChildren(h('div', { class: 'a-card a-empty' }, h('strong', {}, all.length ? 'Nothing matches' : 'No enquiries yet'),
+    ul.replaceChildren(h('li', { class: 't-list-empty' }, h('strong', {}, all.length ? 'Nothing matches' : 'No enquiries yet'),
       all.length ? ($('#leadStage').value === 'open' ? 'Every enquiry is closed or archived. Choose All stages to see them.' : 'Try another stage, business line or search.') : 'When someone sends a form on the website, it appears here.'));
-    return;
+  } else {
+    ul.replaceChildren(...list.map(row));
   }
-  el.replaceChildren(...list.map(card));
+  renderDetail();
 }
 
-function card(i) {
-  const line = lineOfLead(i);
-  const sc = scoreOf(i), d = sc.details;
+function row(i) {
+  const ln = lineOfLead(i), sc = scoreOf(i);
+  const spoken = [
+    [i.name || 'Unknown', i.company].filter(Boolean).join(', '),
+    stageLabel(i.status), LINE_LABEL[ln],
+    `Lead score ${sc.score}, ${BAND_LABEL[sc.band].toLowerCase()}`,
+    i.emailed === false ? 'Notification email not delivered' : null,
+    i.assignee ? `Handled by ${i.assignee.name}` : null,
+    `Received ${timeAgo(i.createdAt)}`,
+  ].filter(Boolean).join('. ');
+  const btn = h('button', { type: 'button', class: 't-row', 'data-id': i.id, 'aria-label': spoken, 'aria-current': i.id === selectedId ? 'true' : null, onclick: (e) => select(i.id, { focus: true, push: true, event: e }) },
+    h('span', { class: 't-row-top' },
+      h('strong', {}, i.name || 'Unknown'),
+      h('time', { datetime: i.createdAt, title: formatDate(i.createdAt) }, timeAgo(i.createdAt))),
+    // the business line leads the second line; the list can also be filtered by it
+    h('span', { class: 't-row-sub' }, h('b', { class: `t-line-${ln}` }, LINE_LABEL[ln]), [i.company, i.product && !/^(Agricultural products|Packaging)$/i.test(i.product) ? i.product : null, i.company ? null : i.email].filter(Boolean).map((x) => `, ${x}`).join('')),
+    h('span', { class: 't-row-meta' },
+      h('span', { class: `a-tag stage-${i.status}` }, stageLabel(i.status)),
+      h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, String(sc.score), h('span', { class: 'sr-only' }, ` out of 100, ${BAND_LABEL[sc.band]}`)),
+      i.emailed === false ? h('span', { class: 'a-tag warn' }, 'Email not delivered') : null,
+      i.assignee ? h('span', { class: 't-owner' }, i.assignee.name) : null));
+  return h('li', { class: i.status === 'new' ? 'is-new' : '', 'data-focus-scope': `row-${i.id}` }, btn);
+}
+
+function select(id, { focus, push, event } = {}) {
+  selectedId = id;
+  for (const b of $$('#leads .t-row')) { if (b.dataset.id === id) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); }
+  renderDetail();
+  writeUrl();
+  if (push) $('#enInbox').classList.add('is-detail');
+  if (focus) {
+    const hd = $('#enDetail h2');
+    if (hd) { hd.tabIndex = -1; hd.focus({ preventScroll: true }); }
+    if (push && matchMedia('(max-width: 760px)').matches) scrollTo({ top: 0, behavior: scrollBehavior(event) });
+  }
+}
+function back() {
+  $('#enInbox').classList.remove('is-detail');
+  const rowBtn = $(`#leads .t-row[data-id="${CSS.escape(selectedId || '')}"]`);
+  if (rowBtn) { rowBtn.focus({ preventScroll: true }); rowBtn.scrollIntoView({ block: 'center' }); }
+}
+
+/* ---------- inbox: the chosen enquiry ---------- */
+const fact = (k, v) => h('div', {}, h('dt', {}, k), h('dd', {}, v));
+const section = (title, ...children) => h('section', { class: 't-section', 'aria-label': title }, h('h3', {}, title), ...children);
+
+function renderDetail() {
+  const box = $('#enDetail');
+  const i = all.find((x) => x.id === selectedId);
+  if (!i) {
+    selectedId = null;
+    delete box.dataset.lead;
+    $('#enInbox').classList.remove('is-detail');
+    box.replaceChildren(h('div', { class: 'a-empty' }, h('strong', {}, 'Choose an enquiry'), 'Its message, the buyer’s details and the reply buttons open here. Arrow keys move through the list.'));
+    return;
+  }
+  // keep a note that is being typed when the enquiry re-renders after an action
+  const typing = box.dataset.lead === i.id ? box.querySelector('[data-note]')?.value : null;
+  box.dataset.lead = i.id;
+  const ln = lineOfLead(i), sc = scoreOf(i), d = sc.details;
+  const who = i.name || 'this enquiry';
   const digits = String(i.phone || '').replace(/[^\d+]/g, '');
-  const subject = `Your ${line === 'pack' ? 'packaging' : 'Olira'} enquiry`;
+  const subject = `Your ${ln === 'pack' ? 'packaging' : 'Olira'} enquiry`;
   const quoted = String(i.message || '').split('\n').map((l) => `> ${l}`).join('\n');
   const mail = `mailto:${encodeURIComponent(i.email || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`Dear ${i.name || ''},\n\nThank you for your enquiry.\n\n\n\n${quoted}`)}`;
   const resp = firstResponseHours(i);
-  const who = i.name || 'this enquiry';
 
   const stage = confirmSelect({ options: STAGES.map((s) => [s.id, s.label]), value: i.status, label: `Stage for ${who}`, onConfirm: (v) => update(i, { status: v }, `Moved to ${stageLabel(v)}.`) });
-  const note = h('textarea', { class: 'input', maxlength: '2000', 'aria-label': `Private note about ${who}`, placeholder: 'Private note, for example the price quoted or the next step' });
-  note.value = i.note || '';
+  const note = h('textarea', { class: 'input', maxlength: '2000', 'data-note': '', 'aria-label': `Private note about ${who}`, placeholder: 'Private note, for example the price quoted or the next step' });
+  note.value = typing ?? i.note ?? '';
   const saveNote = h('button', { class: 'btn btn-secondary btn-sm', type: 'button' }, 'Save note');
   saveNote.addEventListener('click', () => update(i, { note: note.value }, 'Note saved.'));
-
   const chips = [
     d.market ? ['Market', d.market.name] : null,
     d.port ? ['Port', d.port] : null,
@@ -185,43 +283,47 @@ function card(i) {
     d.domain ? ['Email', d.freeMail ? 'personal address' : d.domain] : null,
   ].filter(Boolean);
   const history = (i.history || []).slice().reverse();
+  const replies = (i.activity || []).filter((a) => a.type === 'reply').length;
 
-  return h('article', { class: `a-card a-lead${i.status === 'new' ? ' is-new' : ''}`, 'aria-label': `Enquiry from ${i.name || 'unknown'}`, 'data-focus-scope': `lead-${i.id}` },
-    h('div', { class: 'a-lead-head' },
-      h('h3', {}, i.name || 'Unknown', i.company ? h('small', {}, i.company) : null),
+  box.replaceChildren(...[
+    backButton('Enquiries', back),
+    h('header', { class: 't-detail-head', 'data-focus-scope': `head-${i.id}` },
+      h('div', {}, h('h2', {}, i.name || 'Unknown'), h('p', {}, [i.company, i.email].filter(Boolean).join(', '))),
       h('div', { class: 'a-lead-meta' },
-        h('span', { class: `a-tag ${line}` }, LINE_LABEL[line]),
+        h('span', { class: `a-tag ${ln}` }, LINE_LABEL[ln]),
+        h('span', { class: `a-tag stage-${i.status}` }, stageLabel(i.status)),
         h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, String(sc.score), h('span', { class: 'sr-only' }, ` out of 100, ${BAND_LABEL[sc.band]}`)),
-        i.emailed === false ? h('span', { class: 'a-tag warn', title: 'The notification email to your team failed. Reply from here.' }, 'Email not delivered') : null,
-        i.assignee ? h('span', { class: 'a-tag' }, `Handled by ${i.assignee.name}`) : null,
-        i.files?.length ? h('span', { class: 'a-tag' }, `${i.files.length} file${i.files.length === 1 ? '' : 's'}`) : null,
-        h('time', { datetime: i.createdAt, title: formatDate(i.createdAt) }, timeAgo(i.createdAt)))),
-    h('div', { class: 'a-lead-grid' },
-      h('div', { style: 'display:grid;gap:12px' },
-        i.product && !/^(Agricultural products|Packaging)$/.test(i.product) ? h('p', { class: 'a-note' }, 'About: ', h('strong', { style: 'color:var(--ink)' }, i.product)) : null,
-        // the port and quantity lines added by the form are shown as chips below
-        h('p', { class: 'a-lead-msg' }, String(i.message || '').replace(/^(Destination port|Quantity):.*\n?/gim, '').trim() || i.message || ''),
-        chips.length ? h('div', { class: 'a-chips' }, chips.map(([k, v]) => h('span', { class: 'a-chip' }, h('b', {}, k), v))) : null,
-        h('div', { class: 'a-lead-contact' },
-          i.email ? h('a', { class: 'btn btn-primary btn-sm', href: mail }, `Reply to ${i.email}`) : null,
-          digits ? h('a', { class: 'btn btn-secondary btn-sm', href: `tel:${digits}` }, `Call ${i.phone}`) : null,
-          digits ? h('a', { class: 'btn btn-secondary btn-sm', href: `https://wa.me/${digits.replace('+', '')}`, target: '_blank', rel: 'noopener' }, 'WhatsApp') : null),
-        h('details', {},
-          h('summary', {}, `Why this scores ${sc.score}`),
-          h('ul', { class: 'a-why' }, sc.checks.map((c) => h('li', { class: c.ok ? '' : 'miss' }, h('span', { class: 'pts' }, c.ok ? `+${c.pts}` : '0'), c.label))),
-          h('p', { class: 'v-note' }, 'A guide from what the buyer wrote, not a verdict. A short enquiry from a known importer can still be the best lead of the month.'))),
-      h('div', { class: 'a-lead-side' },
-        h('label', { class: 'a-stage' }, 'Stage', stage.select),
-        stage.button,
-        h('p', { class: 'a-note', style: 'margin:0' }, resp != null ? `First response after ${hours(resp)}` : i.status === 'new' ? `Waiting ${hours(ageHours(i))}` : 'Response time not recorded'),
-        h('div', { class: 'a-note-form' }, note, h('div', { class: 'row', style: '--gap:8px;flex-wrap:wrap' }, saveNote, i.noteAt ? h('span', { class: 'a-note' }, `Saved ${timeAgo(i.noteAt)}`) : null)),
-        history.length ? h('details', {}, h('summary', {}, `History (${history.length})`),
-          h('ol', { class: 'a-history' }, history.map((x) => h('li', {}, `${stageLabel(x.status)}, ${formatDate(x.at)}`)), h('li', {}, `Arrived, ${formatDate(i.createdAt)}`))) : null)),
-    h('div', { class: 'a-lead-foot' },
-      h('span', { class: 'a-note' }, `Received ${formatDate(i.createdAt)}`,
-        (i.activity || []).some((a) => a.type === 'reply') ? `, ${(i.activity || []).filter((a) => a.type === 'reply').length} replied from the workspace` : ''),
-      h('a', { class: 'btn btn-ghost btn-sm', href: `/team/${line === 'pack' ? 'packaging' : 'agriculture'}/#inbox?lead=${encodeURIComponent(i.id)}` }, 'Open in workspace'),
-      h('button', { class: 'btn btn-danger-quiet btn-sm', type: 'button', onclick: () => remove(i) }, 'Delete')));
+        i.emailed === false ? h('span', { class: 'a-tag warn', title: 'The notification email to your team failed. Reply from here.' }, 'Email not delivered') : null)),
+    h('div', { class: 't-actionbar', 'data-focus-scope': `act-${i.id}` },
+      i.email ? h('a', { class: 'btn btn-primary btn-sm', href: mail }, `Reply to ${i.email}`) : null,
+      digits ? h('a', { class: 'btn btn-secondary btn-sm', href: `tel:${digits}` }, `Call ${i.phone}`) : null,
+      digits ? h('a', { class: 'btn btn-secondary btn-sm', href: `https://wa.me/${digits.replace('+', '')}`, target: '_blank', rel: 'noopener' }, 'WhatsApp') : null,
+      h('div', { class: 't-stage' }, h('label', { class: 'a-stage' }, 'Stage', stage.select), stage.button)),
+    section('Message',
+      i.product && !/^(Agricultural products|Packaging)$/.test(i.product) ? h('p', { class: 'a-note' }, 'About: ', h('strong', { style: 'color:var(--ink)' }, i.product)) : null,
+      // the port and quantity lines added by the form are shown as chips below
+      h('p', { class: 'a-lead-msg' }, String(i.message || '').replace(/^(Destination port|Quantity):.*\n?/gim, '').trim() || i.message || 'No message.'),
+      chips.length ? h('div', { class: 'a-chips' }, chips.map(([k, v]) => h('span', { class: 'a-chip' }, h('b', {}, k), v))) : null),
+    bundleCount(i) ? section('Packing list', bundleTable(i)) : null,
+    section('Buyer', h('dl', { class: 't-facts' },
+      fact('Email', i.email ? h('a', { href: `mailto:${i.email}` }, i.email) : 'Not given'),
+      fact('Phone', i.phone || 'Not given'),
+      fact('Received', `${formatDate(i.createdAt)}, ${timeAgo(i.createdAt)}`),
+      fact('First response', resp != null ? `After ${hours(resp)}` : i.status === 'new' ? `Waiting ${hours(ageHours(i))}` : 'Not recorded'),
+      fact('Handled by', i.assignee ? i.assignee.name : 'Nobody yet'),
+      replies ? fact('Replies from the workspace', String(replies)) : null),
+      h('details', { class: 't-why' },
+        h('summary', {}, `Why this scores ${sc.score}`),
+        h('ul', { class: 'a-why' }, sc.checks.map((c) => h('li', { class: c.ok ? '' : 'miss' }, h('span', { class: 'pts' }, c.ok ? `+${c.pts}` : '0'), c.label))),
+        h('p', { class: 'v-note' }, 'A guide from what the buyer wrote, not a verdict. A short enquiry from a known importer can still be the best lead of the month.'))),
+    section('Private note', h('div', { class: 'a-note-form', 'data-focus-scope': `note-${i.id}` }, note,
+      h('div', { class: 'row', style: '--gap:8px;flex-wrap:wrap' }, saveNote, i.noteAt ? h('span', { class: 'a-note' }, `Saved ${timeAgo(i.noteAt)}`) : null))),
+    section('History', h('ol', { class: 'a-history' }, history.map((x) => h('li', {}, `${stageLabel(x.status)}, ${formatDate(x.at)}`)), h('li', {}, `Arrived, ${formatDate(i.createdAt)}`))),
+    h('div', { class: 't-section', 'data-focus-scope': `foot-${i.id}` },
+      h('div', { class: 'row', style: '--gap:8px;flex-wrap:wrap;justify-content:space-between' },
+        h('a', { class: 'btn btn-secondary btn-sm', href: `/team/${ln === 'pack' ? 'packaging' : 'agriculture'}/#inbox?lead=${encodeURIComponent(i.id)}` }, 'Open in the workspace'),
+        h('button', { class: 'btn btn-danger-quiet btn-sm', type: 'button', onclick: () => remove(i) }, 'Delete enquiry'))),
+  ].filter(Boolean));
 }
 
 async function update(i, body, ok) {
@@ -230,6 +332,7 @@ async function update(i, body, ok) {
     Object.assign(i, r.inquiry || body);
     store.invalidate('inquiries');
     const focus = captureFocus();
+    if (body.note !== undefined) delete $('#enDetail').dataset.lead; // the saved note replaces what was typed
     setBadge(all);
     renderInsights();
     renderInbox();
@@ -243,9 +346,15 @@ async function remove(i) {
   if (!ok) return;
   try {
     await api(`/api/admin/inquiries/${encodeURIComponent(i.id)}`, { method: 'DELETE' });
+    // the next enquiry in the list takes its place, as in Mail
+    const ids = $$('#leads .t-row').map((b) => b.dataset.id);
+    const at = ids.indexOf(i.id);
     all = all.filter((x) => x.id !== i.id);
+    selectedId = ids[at + 1] || ids[at - 1] || null;
     store.invalidate('inquiries');
-    setBadge(all); renderInsights(); renderInbox();
+    setBadge(all); renderInsights(); renderInbox(); writeUrl();
+    const next = selectedId && $(`#leads .t-row[data-id="${CSS.escape(selectedId)}"]`);
+    (next || $('#leadSearch')).focus({ preventScroll: true });
     toast('Enquiry deleted.');
   } catch (e) { toast(e.message, 'error'); }
 }
@@ -253,7 +362,7 @@ async function remove(i) {
 function csv() {
   const rows = filtered();
   if (!rows.length) return toast('There are no enquiries in this view to download.', 'error');
-  const cols = [['createdAt', 'Date'], ['status', 'Stage'], ['line', 'Business line'], ['product', 'Product'], ['score', 'Lead score'], ['market', 'Market'], ['port', 'Destination port'], ['volume', 'Volume'], ['firstResponse', 'First response (hours)'], ['name', 'Name'], ['company', 'Company'], ['email', 'Email'], ['phone', 'Phone'], ['message', 'Message'], ['note', 'Private note'], ['emailed', 'Notification emailed']];
+  const cols = [['createdAt', 'Date'], ['status', 'Stage'], ['line', 'Business line'], ['product', 'Product'], ['score', 'Lead score'], ['market', 'Market'], ['port', 'Destination port'], ['volume', 'Volume'], ['firstResponse', 'First response (hours)'], ['name', 'Name'], ['company', 'Company'], ['email', 'Email'], ['phone', 'Phone'], ['message', 'Message'], ['note', 'Private note'], ['emailed', 'Notification emailed'], ['bundle', 'Packing list']];
   // quote every cell, and neutralise a leading = + - @ so spreadsheets never run it as a formula
   const cell = (v) => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
   const value = (r, k) => {
@@ -264,6 +373,7 @@ function csv() {
     if (k === 'market') return sc.details.market?.name || '';
     if (k === 'port') return sc.details.port || '';
     if (k === 'volume') return sc.details.volume || '';
+    if (k === 'bundle') return bundleText(r);
     if (k === 'firstResponse') { const x = firstResponseHours(r); return x == null ? '' : x.toFixed(1); }
     return r[k];
   };

@@ -1,7 +1,8 @@
 // Packaging workspace: Mockups. The same renderer as the public studio, with
 // the client's own files as logo sources and saving the result to the enquiry.
 import { $, $$, h, api, toast } from '../admin/api.js';
-import { SIZES, defaultDesign, prepare, render, toArtboard, clampDesign, exportImage, specLine, saveBlob, usableInStudio, onThemeChange } from '../mockup/engine.js';
+import { sizesOf, defaultDesign, prepare, render, toArtboard, clampDesign, snapDesign, drawGuides, exportImage, specLine, saveBlob, usableInStudio, onThemeChange } from '../mockup/engine.js';
+import { checkLogo, removeBox } from '../mockup/logo-check.js';
 import { leads, putLead, OPEN, session } from './session.js';
 import { fileBlob, replace as replaceLead } from './inbox.js';
 
@@ -10,6 +11,8 @@ let bags = [];
 let all = [];
 const state = { bag: null, lead: '', logoName: '', ...defaultDesign() };
 let current = null, pending = 0;
+let guides = null;     // centre lines shown while a drag is snapped to them
+let logoCheck = null;  // what the logo check found in the logo on the bag
 const canvas = () => $('#tmCanvas');
 const say = (msg) => { const s = $('#tmStatus'); s.textContent = ''; setTimeout(() => { s.textContent = msg; }, 50); };
 const bag = () => bags.find((b) => b.id === state.bag) || bags[0];
@@ -34,9 +37,11 @@ export async function show({ params }) {
 function renderBags() {
   $('#tmBags').replaceChildren(...bags.map((b) => {
     const input = h('input', { type: 'radio', name: 'tmBag', value: b.id, checked: b.id === state.bag || null });
-    input.addEventListener('change', () => { if (input.checked) { state.bag = b.id; state.dx = 0; state.dy = 0; draw(); say(`Bag changed to ${b.name}.`); } });
-    return h('label', { class: 'opt' }, input, h('span', {}, b.name));
+    input.addEventListener('change', () => { if (input.checked) { state.bag = b.id; state.dx = 0; state.dy = 0; buildSizes(); draw(); say(`Changed to ${b.name}.`); } });
+    // chosen by its picture, on the website's stage colour
+    return h('label', { class: 't-bag', title: b.name }, input, b.image ? h('img', { src: b.image, alt: '', loading: 'lazy', decoding: 'async' }) : null, h('span', {}, b.name));
   }));
+  buildSizes();
 }
 
 function renderLeads() {
@@ -63,17 +68,34 @@ async function pickLead(id, applyDesign) {
   if (!l) return;
   if (applyDesign && l.design) {
     const d = l.design;
-    Object.assign(state, { size: SIZES[d.size] ? d.size : state.size, ink: d.ink || state.ink, text1: d.text1 ?? '', text2: d.text2 ?? '', scale: d.scale || 1, dx: d.dx || 0, dy: d.dy || 0, oneInk: !!d.oneInk });
-    if (bags.some((b) => b.id === d.template)) state.bag = d.template;
+    Object.assign(state, { size: d.size || state.size, ink: d.ink || state.ink, text1: d.text1 ?? '', text2: d.text2 ?? '', scale: d.scale || 1, dx: d.dx || 0, dy: d.dy || 0, oneInk: !!d.oneInk });
+    if (bags.some((b) => b.id === d.template)) { state.bag = d.template; renderBags(); }
     syncControls();
     renderBags();
     const logo = images.find((f) => f.kind === 'logo');
     if (logo) { fromLead.value = logo.id; await useLeadFile(l, logo); }
-    say('The design the client made in the studio is loaded.');
+    if (d.boxRemoved && state.logo && logoCheck?.boxed) {
+      await fixBox();
+      say('The design the client made in the studio is loaded, with the white box they removed from the logo removed here too.');
+    } else say('The design the client made in the studio is loaded.');
   }
 }
 
+// the product's own sizes (set in the admin); the three bag sizes for older products
+function buildSizes() {
+  const b = bag();
+  if (!b) return;
+  const sizes = sizesOf(b);
+  if (!sizes.some((z) => z.id === state.size)) state.size = (sizes.find((z) => z.id === 'medium') || sizes[0]).id;
+  $('#tmSizes').replaceChildren(...sizes.map((z) => {
+    const input = h('input', { type: 'radio', name: 'tmSize', value: z.id, checked: z.id === state.size || null });
+    input.addEventListener('change', () => { if (input.checked) { state.size = z.id; draw(); } });
+    return h('label', { class: 'opt', title: z.dims || null }, input, h('span', {}, z.label));
+  }));
+}
+
 function syncControls() {
+  buildSizes();
   $$('input[name="tmSize"]').forEach((r) => { r.checked = r.value === state.size; });
   $$('input[name="tmInk"]').forEach((r) => { r.checked = r.value === state.ink; });
   $('#tmText1').value = state.text1; $('#tmText2').value = state.text2;
@@ -90,7 +112,7 @@ async function useLeadFile(l, f) {
 function setLogo(blob, name) {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(blob), img = new Image();
-    img.onload = () => { state.logo = img; state.logoName = name; $('#tmDropTitle').textContent = name; $('#tmRemoveLogo').hidden = false; draw(); say(`Logo ${name} is on the bag.`); resolve(); };
+    img.onload = () => { state.logo = img; state.logoName = name; $('#tmDropTitle').textContent = name; $('#tmRemoveLogo').hidden = false; readLogo(img); draw(); say(`Logo ${name} is on the bag.`); resolve(); };
     img.onerror = () => { URL.revokeObjectURL(url); toast('That image could not be read. Try a PNG or SVG export.', 'error'); resolve(); };
     img.src = url;
   });
@@ -104,26 +126,50 @@ async function draw() {
     const B = await prepare(b);
     if (id !== pending) return;
     current = B;
-    render(canvas().getContext('2d'), B, state);
+    const ctx = canvas().getContext('2d');
+    render(ctx, B, state);
+    drawGuides(ctx, B, guides, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#186078');
     $('#tmInfo').textContent = specLine(b, state);
   } catch (e) { $('#tmInfo').textContent = e.message; }
 }
 
+/* the same logo check as the public studio: a white box, or a logo too pale for kraft */
+function readLogo(img) {
+  try { logoCheck = checkLogo(img); } catch (e) { logoCheck = null; }
+  advise();
+}
+function advise() {
+  const c = state.logo && logoCheck;
+  const boxed = !!(c && c.boxed), pale = !!(c && !c.boxed && c.light && !state.oneInk);
+  $('#tmLogoAdvice').hidden = !boxed && !pale;
+  $('#tmFixBox').hidden = !boxed;
+  $('#tmFixInk').hidden = !pale;
+  $('#tmLogoAdviceText').textContent = boxed
+    ? 'This logo sits on a white box, which prints as a patch on kraft. Remove it for the mockup, and ask the client for a transparent PNG or vector file for print.'
+    : pale ? 'This logo is very pale and will hardly show on kraft. Print it in the ink colour, or ask the client for a darker version.' : '';
+}
+async function fixBox() {
+  if (!state.logo || !logoCheck?.boxed) return;
+  try { state.logo = await removeBox(state.logo, logoCheck.bg); readLogo(state.logo); draw(); }
+  catch (e) { toast(e.message, 'error'); }
+}
+
 function bind() {
+  $('#tmFixBox').addEventListener('click', async () => { await fixBox(); say('White box removed from the logo on the mockup.'); ($('#tmFixInk').hidden ? $('#tmOneInk') : $('#tmFixInk')).focus(); });
+  $('#tmFixInk').addEventListener('click', () => { const box = $('#tmOneInk'); box.checked = true; box.dispatchEvent(new Event('change', { bubbles: true })); box.focus(); });
   $('#tmLead').addEventListener('change', (e) => pickLead(e.target.value, true));
   $('#tmFromLead').addEventListener('change', (e) => {
     const l = all.find((x) => x.id === state.lead), f = l?.files?.find((x) => x.id === e.target.value);
     if (l && f) useLeadFile(l, f);
   });
-  $$('input[name="tmSize"]').forEach((r) => r.addEventListener('change', () => { if (r.checked) { state.size = r.value; draw(); } }));
   $$('input[name="tmInk"]').forEach((r) => r.addEventListener('change', () => { if (r.checked) { state.ink = r.value; draw(); } }));
   $('#tmText1').addEventListener('input', (e) => { state.text1 = e.target.value; draw(); });
   $('#tmText2').addEventListener('input', (e) => { state.text2 = e.target.value; draw(); });
   $('#tmText1').value = state.text1; $('#tmText2').value = state.text2;
   $('#tmScale').addEventListener('input', (e) => { state.scale = +e.target.value / 100; e.target.setAttribute('aria-valuetext', `${e.target.value} percent`); draw(); });
-  $('#tmOneInk').addEventListener('change', (e) => { state.oneInk = e.target.checked; draw(); });
+  $('#tmOneInk').addEventListener('change', (e) => { state.oneInk = e.target.checked; draw(); advise(); });
   $('#tmCentre').addEventListener('click', () => { state.dx = 0; state.dy = 0; draw(); say('Design centred.'); });
-  $('#tmRemoveLogo').addEventListener('click', () => { state.logo = null; state.logoName = ''; $('#tmDropTitle').textContent = 'Upload a logo'; $('#tmRemoveLogo').hidden = true; $('#tmFromLead').value = ''; draw(); say('Logo removed.'); });
+  $('#tmRemoveLogo').addEventListener('click', () => { state.logo = null; state.logoName = ''; logoCheck = null; advise(); $('#tmDropTitle').textContent = 'Upload a logo'; $('#tmRemoveLogo').hidden = true; $('#tmFromLead').value = ''; draw(); say('Logo removed.'); });
   const file = $('#tmLogoFile'), drop = $('#tmDrop');
   const take = (f) => {
     if (!f || !/^image\/(png|jpeg|svg\+xml|webp)$/.test(f.type)) return toast('Choose a PNG, JPG, SVG or WebP image.', 'error');
@@ -148,9 +194,11 @@ function bind() {
   c.addEventListener('pointermove', (e) => {
     if (!drag) return;
     const a = toArtboard(current, ...toCanvas(e));
-    state.dx = drag.dx + a[0] - drag.a[0]; state.dy = drag.dy + a[1] - drag.a[1]; clampDesign(current, state); draw();
+    const s = snapDesign(current, drag.dx + a[0] - drag.a[0], drag.dy + a[1] - drag.a[1]);
+    guides = { x: s.x, y: s.y };
+    state.dx = s.dx; state.dy = s.dy; clampDesign(current, state); draw();
   });
-  const end = () => { if (drag) { drag = null; c.classList.remove('is-dragging'); } };
+  const end = () => { if (drag) { drag = null; guides = null; c.classList.remove('is-dragging'); draw(); } };
   c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
   c.addEventListener('keydown', (e) => {
     const step = e.shiftKey ? 60 : 15;

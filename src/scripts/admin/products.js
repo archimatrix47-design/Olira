@@ -1,12 +1,15 @@
-// Products: the agriculture page's stack, in order.
+// Products: the agriculture page's stack, in order. The list on the left; the
+// chosen product (or a new one) in the editor beside it.
 import { $, h, api, toast, confirmDialog, busy, uploadImage } from './api.js';
 import * as store from './store.js';
 import { scrollBehavior } from './motion.js';
+import { watch, clean, touch, mayLeave } from './tools.js';
 import { sparkline, deltaChip, empty } from './charts.js';
 import { int, decimal, delta, NO_DATA } from './format.js';
 
 let items = [];
 let editingId = null;
+let mode = null; // null (nothing open), 'add' or 'edit'
 let bound = false;
 const form = $('#productForm');
 const field = (name) => form.elements.namedItem(name);
@@ -81,25 +84,24 @@ const iconBtn = (label, path, onclick, disabled) => h('button', { class: 'btn bt
 function renderList(focusId, focusWhich) {
   const list = $('#productList');
   if (!items.length) {
-    list.replaceChildren(h('li', { class: 'a-empty' }, h('strong', {}, 'No products yet'), 'Add the first product with the form.'));
+    list.replaceChildren(h('li', { class: 'a-empty' }, h('strong', {}, 'No products yet'), 'Add the first product with Add product.'));
     return;
   }
   list.replaceChildren(...items.map((p, i) => h('li', { class: `a-prow${p.id === editingId ? ' is-editing' : ''}`, 'data-id': p.id },
-    h('span', { class: 'pos', 'aria-hidden': 'true' }, String(i + 1)),
-    p.image ? h('img', { src: p.image, alt: '', width: '64', height: '64', loading: 'lazy' }) : h('span', { class: 'ph' }, 'No photo'),
-    h('div', {},
-      h('h3', {}, p.name),
-      h('p', {}, [p.category, p.purity && `Purity ${p.purity}`, p.moq && `Min. ${p.moq}`].filter(Boolean).join(', '))),
+    h('button', { class: 'a-prow-open', type: 'button', 'aria-label': `Edit ${p.name}`, 'aria-current': p.id === editingId ? 'true' : null, onclick: () => edit(p) },
+      h('span', { class: 'pos', 'aria-hidden': 'true' }, String(i + 1)),
+      p.image ? h('img', { src: p.image, alt: '', width: '52', height: '52', loading: 'lazy' }) : h('span', { class: 'ph' }, 'No photo'),
+      h('span', { class: 'a-prow-text' },
+        h('h3', {}, p.name),
+        h('p', {}, [p.category, p.purity && `Purity ${p.purity}`, p.moq && `Min. ${p.moq}`].filter(Boolean).join(', ')))),
     h('div', { class: 'a-prow-actions' },
       iconBtn(`Move ${p.name} up`, 'M12 19V5M6 11l6-6 6 6', () => move(i, -1), i === 0),
-      iconBtn(`Move ${p.name} down`, 'M12 5v14M6 13l6 6 6-6', () => move(i, 1), i === items.length - 1),
-      h('button', { class: 'btn btn-secondary btn-sm', type: 'button', onclick: () => edit(p), 'aria-label': `Edit ${p.name}` }, 'Edit'),
-      h('button', { class: 'btn btn-danger-quiet btn-sm', type: 'button', onclick: () => remove(p), 'aria-label': `Delete ${p.name}` }, 'Delete')))));
+      iconBtn(`Move ${p.name} down`, 'M12 5v14M6 13l6 6 6-6', () => move(i, 1), i === items.length - 1)))));
   if (focusId) {
     const row = list.querySelector(`[data-id="${CSS.escape(focusId)}"]`);
     const btns = row?.querySelectorAll('.btn-icon');
-    const target = btns && (focusWhich === 'up' ? btns[0] : btns[1]);
-    (target && !target.disabled ? target : row?.querySelector('.btn-secondary'))?.focus();
+    const target = btns && (focusWhich === 'up' ? btns[0] : focusWhich === 'down' ? btns[1] : null);
+    (target && !target.disabled ? target : row?.querySelector('.a-prow-open'))?.focus();
   }
 }
 
@@ -121,8 +123,13 @@ async function move(i, dir) {
 
 /* ---------- editor ---------- */
 function bind() {
-  $('#productNew').addEventListener('click', () => { reset(); field('name').focus(); });
-  $('#productCancel').addEventListener('click', reset);
+  watch(form);
+  const add = async () => { if (await mayLeave($('#productEditor'))) { startAdd(); field('name').focus(); } };
+  $('#productNew').addEventListener('click', add);
+  $('[data-add="product"]').addEventListener('click', add);
+  $('#productCancel').addEventListener('click', async () => { if (await mayLeave($('#productEditor'))) close(); });
+  $('[data-back="product"]').addEventListener('click', async () => { if (await mayLeave($('#productEditor'))) close(); });
+  $('#productDelete').addEventListener('click', () => { const p = items.find((x) => x.id === editingId); if (p) remove(p); });
   for (const n of ['name', 'category']) field(n).addEventListener('input', preview);
 
   const file = $('#pImage'), drop = $('#pDrop');
@@ -130,7 +137,7 @@ function bind() {
   ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('is-over'); }));
   drop.addEventListener('drop', (e) => { if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]); });
   file.addEventListener('change', () => { if (file.files[0]) upload(file.files[0]); });
-  $('#pImageClear').addEventListener('click', () => { field('image').value = ''; preview(); });
+  $('#pImageClear').addEventListener('click', () => { field('image').value = ''; field('image').dispatchEvent(new Event('change', { bubbles: true })); preview(); });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -142,7 +149,7 @@ function bind() {
       if (msg) { input.setAttribute('aria-invalid', 'true'); first ||= input; } else input.removeAttribute('aria-invalid');
     }
     if (first) return first.focus();
-    const specs = field('specs').value.split('\n').map((s) => s.trim()).filter(Boolean);
+    const specs = field('specs').value.split('\n').map((x) => x.trim()).filter(Boolean);
     if (specs.length > 20) return toast('Keep the key points to 20 lines or fewer.', 'error');
     // the server files a new product under a slug of its name; never overwrite another product that way
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
@@ -165,13 +172,14 @@ function bind() {
       const idx = items.findIndex((p) => p.id === saved.id);
       if (idx >= 0) items[idx] = saved; else items.push(saved);
       toast(idx >= 0 ? `${saved.name} saved.` : `${saved.name} added at the end of the stack.`);
-      reset();
+      done();
+      // the saved product stays open, as it now is on the website
+      fill(saved);
       renderList(saved.id);
       store.invalidate('products'); renderPerformance();
-    } catch (x) { toast(x.message, 'error'); }
-    finally { done(); }
+    } catch (x) { toast(x.message, 'error'); done(); }
   });
-  reset();
+  close();
 }
 
 async function upload(fileObj) {
@@ -182,6 +190,7 @@ async function upload(fileObj) {
   try {
     const r = await uploadImage(fileObj, editingId || field('name').value || 'product');
     field('image').value = r.path;
+    touch(form);
     preview();
     toast('Photo uploaded. Save the product to use it.');
   } catch (e) { toast(e.message, 'error'); }
@@ -197,7 +206,15 @@ function preview() {
   $('#pImageClear').hidden = !path;
 }
 
-function edit(p) {
+/** Show the editor (or, with nothing open, its empty state), and on a phone the editor alone. */
+function showEditor(open) {
+  $('#productEmpty').hidden = open;
+  form.hidden = !open;
+  $('#productPanes').classList.toggle('is-detail', open);
+}
+
+function fill(p) {
+  mode = 'edit';
   editingId = p.id;
   field('id').value = p.id;
   field('name').value = p.name || '';
@@ -207,23 +224,50 @@ function edit(p) {
   field('description').value = p.description || '';
   field('specs').value = (p.specs || []).join('\n');
   field('image').value = p.image || '';
-  $('#editorTitle').textContent = `Edit ${p.name}`;
+  $('#editorTitle').textContent = p.name;
   $('#productSave').textContent = 'Save changes';
-  $('#productCancel').hidden = false;
-  clearErrors(); preview(); renderList();
-  $('.a-editor').scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
+  $('#productDangerZone').hidden = false;
+  clearErrors(); preview();
+  showEditor(true);
+  clean(form);
+}
+
+async function edit(p) {
+  if (editingId === p.id && mode === 'edit') { field('name').focus(); return; }
+  if (!(await mayLeave($('#productEditor')))) return;
+  fill(p);
+  renderList();
+  $('#productEditor').scrollTop = 0;
+  if (matchMedia('(max-width: 760px)').matches) scrollTo({ top: 0, behavior: scrollBehavior() });
+  else $('#productEditor').scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
   field('name').focus({ preventScroll: true });
 }
 
-function reset() {
+function startAdd() {
+  mode = 'add';
   editingId = null;
   form.reset();
   field('id').value = ''; field('image').value = '';
   $('#editorTitle').textContent = 'Add product';
   $('#productSave').textContent = 'Save product';
-  $('#productCancel').hidden = true;
+  $('#productDangerZone').hidden = true;
   clearErrors(); preview();
+  showEditor(true);
+  clean(form);
   if (items.length) renderList();
+}
+
+/** Nothing open: the editor shows how to start. */
+function close() {
+  const was = editingId;
+  mode = null;
+  editingId = null;
+  form.reset();
+  field('id').value = ''; field('image').value = '';
+  clearErrors(); preview();
+  showEditor(false);
+  clean(form);
+  if (items.length) renderList(was || undefined);
 }
 function clearErrors() {
   for (const id of ['pNameErr', 'pDescErr']) { $(`#${id}`).hidden = true; }
@@ -236,8 +280,7 @@ async function remove(p) {
   try {
     await api(`/api/products/${encodeURIComponent(p.id)}`, { method: 'DELETE' });
     items = items.filter((x) => x.id !== p.id);
-    if (editingId === p.id) reset();
-    renderList();
+    if (editingId === p.id) { clean(form); close(); } else renderList();
     toast(`${p.name} deleted.`);
     store.invalidate('products'); renderPerformance();
   } catch (e) { toast(e.message, 'error'); }

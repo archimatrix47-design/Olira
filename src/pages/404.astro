@@ -1,22 +1,24 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
-import SiteNav from '../components/site/SiteNav.astro';
+import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 ---
 <SiteLayout title="Page not found, Olira Agro Industry" description="The page you are looking for could not be found." noindex>
-  <SiteNav links={[{ href: '/agriculture/', label: 'Agriculture' }, { href: '/packaging/', label: 'Packaging' }]} cta={{ href: '/agriculture/#contact', label: 'Talk to sales' }} />
+  <SiteHeader groups={[[{ href: '/agriculture/', label: 'Agriculture' }, { href: '/packaging/', label: 'Packaging' }]]} />
   <main id="main">
-    <section class="container page-hero" style="min-height: 56svh">
-      <span class="line-label">404</span>
-      <h1>We could not find that page</h1>
-      <p class="lede">The link may be old, or the page has moved. Choose where you want to go.</p>
-      <div class="row" style="--gap:10px;margin-top:28px;flex-wrap:wrap">
-        <a class="btn btn-lg btn-primary" href="/agriculture/">Agricultural exports</a>
-        <a class="btn btn-lg btn-secondary" href="/packaging/">Kraft paper bags</a>
-        <a class="btn btn-lg btn-secondary" href="/">Home</a>
+    <section class="lost">
+      <div class="wrap">
+        <span class="big" aria-hidden="true">404</span>
+        <h1>We could not find that page</h1>
+        <p class="sub">The link may be old, or the page has moved. Choose where you want to go.</p>
+        <div class="acts">
+          <a class="act fill" href="/agriculture/">Agricultural exports</a>
+          <a class="act" href="/packaging/">Printed packaging</a>
+          <a class="act" href="/">Home</a>
+        </div>
       </div>
     </section>
   </main>
   <SiteFooter note="Olira Agro Industry, Addis Ababa." />
-  <script>import '../scripts/common.js';</script>
+  <script>import '../scripts/common.js'; import '../scripts/motion.js';</script>
 </SiteLayout>

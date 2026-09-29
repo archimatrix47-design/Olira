@@ -1,13 +1,40 @@
 ---
-// Home: two halves, one per business, and contact details only.
+// Home: both businesses side by side, each showing its own products, and the
+// visitor chooses. Nothing else competes with that choice; the footer carries the
+// ways to ask and every other link.
 import SiteLayout from '../layouts/SiteLayout.astro';
-import ThemeButton from '../components/site/ThemeButton.astro';
-import ReachIcons from '../components/site/ReachIcons.astro';
-import { contact, SITE } from '../lib/site-data';
-import contoursUrl from '../data/burayu-contours.json?url';
+import SiteHeader from '../components/site/SiteHeader.astro';
+import SiteFooter from '../components/site/SiteFooter.astro';
+import { contact, SITE, packagingProducts, partners } from '../lib/site-data';
+import { cutoutOf, standHTML } from '../scripts/catalogue-panel.js';
 
-const lat = contact.factory.lat, lng = contact.factory.lng;
-const coord = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(2)} ${v >= 0 ? pos : neg}`;
+// A product that still carries its standard photo, as a cut-out at a relative height.
+const stood = (id: string, h: number) => {
+  const p = packagingProducts.find((x) => x.id === id);
+  const c = p && cutoutOf(p);
+  return c ? { p, c, h } : null;
+};
+type Stood = { p: any; c: any; h: number; w: number };
+// Each product's share of its row (--w, percent), from its true height and its
+// cut-out's proportions, so a row of products always fits and stays in scale.
+const pick = (list: [string, number][], fill = 100, gap = 1.6) => {
+  const got = list.map(([id, h]) => stood(id, h)).filter(Boolean) as Stood[];
+  const units = got.map((x) => x.h * x.c.width / x.c.height);
+  const total = units.reduce((a, b) => a + b, 0) || 1;
+  const room = fill - gap * (got.length - 1);
+  return got.map((x, i) => ({ ...x, w: +(units[i] / total * room).toFixed(2) }));
+};
+
+// the agriculture door's product lines, each opening that product in the range
+const PRODUCE = [
+  { p: 'sesame', name: 'Humera sesame', img: '/products/photos/sesame-natural.webp' },
+  { p: 'pulses', name: 'Pulses', img: '/products/photos/pulses.webp' },
+  { p: 'spices', name: 'Spices', img: '/products/photos/spices.webp' },
+  { p: 'coffee', name: 'Coffee', img: '/products/photos/coffee.webp' },
+];
+
+// the packaging door's lineup, tallest to smallest, heights true to each other
+const lineup = pick([['pk_twisted', 100], ['pk_foil', 86], ['pk_pouch', 74], ['pk_fries', 56]], 100, 4);
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -19,121 +46,98 @@ const jsonLd = {
   email: contact.email,
   // no telephone: the numbers are kept out of the page source (see ReachIcons.astro)
   address: { '@type': 'PostalAddress', streetAddress: 'Soreti Building, 2nd Floor, Room 214, Lemi Kura Subcity, Woreda 08', postOfficeBoxNumber: '46325', addressLocality: 'Addis Ababa', addressCountry: 'ET' },
-  location: { '@type': 'Place', name: 'Olira processing facility', address: { '@type': 'PostalAddress', addressLocality: 'Burayu', addressRegion: 'Oromia', addressCountry: 'ET' }, geo: { '@type': 'GeoCoordinates', latitude: lat, longitude: lng } },
+  location: { '@type': 'Place', name: 'Olira processing facility', address: { '@type': 'PostalAddress', addressLocality: 'Burayu', addressRegion: 'Oromia', addressCountry: 'ET' }, geo: { '@type': 'GeoCoordinates', latitude: contact.factory.lat, longitude: contact.factory.lng } },
   contactPoint: { '@type': 'ContactPoint', contactType: 'sales', email: contact.email },
   makesOffer: [
     { '@type': 'Offer', url: `${SITE}/agriculture/`, itemOffered: { '@type': 'Product', name: 'Agricultural exports', description: 'Humera sesame, pulses, spices and coffee from Ethiopia.' } },
-    { '@type': 'Offer', url: `${SITE}/packaging/`, itemOffered: { '@type': 'Product', name: 'Kraft paper bags', description: 'Twisted and flat handle kraft paper bags, custom printed with your logo.' } },
+    { '@type': 'Offer', url: `${SITE}/packaging/`, itemOffered: { '@type': 'Product', name: 'Printed packaging', description: 'Paper bags, bakery and food boxes, medical packets and aluminium foil bags, custom printed with your logo.' } },
   ],
 };
 ---
 <SiteLayout
-  title="Olira Agro Industry, agricultural exports and kraft paper bags"
-  description="Olira Agro Industry exports Humera sesame, pulses, spices and coffee from Ethiopia, and makes custom printed kraft paper bags. Addis Ababa, since 2008."
+  title="Olira Agro Industry, agricultural exports and printed packaging"
+  description="Olira Agro Industry exports Humera sesame, pulses, spices and coffee from Ethiopia, and makes paper bags, food boxes, medical packets and foil bags printed with your logo. Addis Ababa, since 2008."
   ogImage="/og-home.jpg"
-  ogImageAlt="Olira Agro Industry: agricultural exports and kraft paper bags"
-  bodyClass="split-body"
+  ogImageAlt="Olira Agro Industry: agricultural exports and printed packaging"
   jsonLd={jsonLd}
 >
-  <Fragment slot="head">
-    <link rel="preload" as="image" href="/images/home/sesame-natural-800.avif" type="image/avif" fetchpriority="high">
-    <link rel="expect" href="#main" blocking="render">
-    <script is:inline>
-      // Page transitions (styles in site.css). The half that leads to the other
-      // page becomes the moving photo; the other half slides off its own side.
-      // Names are set only for the transition in progress, so they never clash.
-      (function () {
-        function line(url) {
-          if (!url) return null;
-          var p = new URL(url, location.href).pathname;
-          return /^\/agriculture/.test(p) ? 'agri' : /^\/packaging/.test(p) ? 'pack' : null;
-        }
-        function mark(to) {
-          var agri = document.querySelector('.half-agri'), pack = document.querySelector('.half-pack');
-          if (!agri || !pack) return;
-          agri.style.viewTransitionName = to === 'agri' ? 'agri-photo' : to === 'pack' ? 'side-left' : '';
-          pack.style.viewTransitionName = to === 'pack' ? 'pack-photo' : to === 'agri' ? 'side-right' : '';
-        }
-        addEventListener('pageswap', function (e) {
-          if (e.viewTransition) mark(line(e.activation && e.activation.entry && e.activation.entry.url));
-        });
-        addEventListener('pagereveal', function (e) {
-          mark(null);
-          if (!e.viewTransition) return;
-          var from = window.navigation && navigation.activation && navigation.activation.from;
-          mark(line(from && from.url));
-          e.viewTransition.finished.then(function () { mark(null); });
-        });
-      })();
-    </script>
-  </Fragment>
+  <link slot="head" rel="preload" as="image" href="/products/photos/sesame-natural.webp" fetchpriority="high">
 
-  <header class="split-top">
-    <a class="brand" href="/"><img src="/logo.png" alt="Olira Agro Industry, home" width="80" height="38" data-brand-logo></a>
-    <ThemeButton />
-  </header>
+  <SiteHeader groups={[[{ href: '/packaging/', label: 'Packaging' }, { href: '/packaging/#studio', label: 'Mockup studio' }, { href: '/agriculture/', label: 'Agriculture' }, { href: '/packaging/#quote', label: 'Contact' }]]} current="/" />
 
-  <main class="split" id="main">
-    <h1 class="sr-only">Olira Agro Industry</h1>
-
-    <article class="half half-agri" aria-labelledby="agri-title">
-      <picture class="half-bg">
-        <source type="image/avif" srcset="/images/home/sesame-natural-800.avif 800w" sizes="(max-width: 760px) 100vw, 50vw">
-        <img src="/images/home/sesame-natural-800.webp" srcset="/images/home/sesame-natural-800.webp 800w" sizes="(max-width: 760px) 100vw, 50vw" alt="" width="800" height="600" fetchpriority="high">
-      </picture>
-      <!-- the product a visitor points at in the index below shows here -->
-      <div class="half-peek" aria-hidden="true"><img alt="" width="800" height="600" decoding="async"></div>
-      <p class="coords"><b>Burayu, Oromia</b>{coord(lat, 'N', 'S')}, {coord(lng, 'E', 'W')}<br>2,600 m above sea level</p>
-      <div class="half-inner">
-        <span class="half-label">Olira Agro</span>
-        <h2 id="agri-title">Agricultural exports</h2>
-        <p>Grown in the Ethiopian highlands, cleaned and tested in Burayu, shipped to importers in more than 50 countries.</p>
-        <ul class="index" aria-label="Product lines">
-          <li><a href="/agriculture/?p=sesame#range" data-photo="/products/photos/sesame-natural.webp">Humera sesame</a></li>
-          <li><a href="/agriculture/?p=pulses#range" data-photo="/products/photos/pulses.webp">Pulses</a></li>
-          <li><a href="/agriculture/?p=spices#range" data-photo="/products/photos/spices.webp">Spices</a></li>
-          <li><a href="/agriculture/?p=coffee#range" data-photo="/products/photos/coffee.webp">Coffee</a></li>
-        </ul>
-        <a class="half-cta" href="/agriculture/" aria-describedby="agri-title">View the range</a>
+  <main id="main">
+    <!-- the first view: both businesses, side by side; the visitor chooses -->
+    <section class="choose" aria-label="Our two businesses">
+      <h1 class="sr-only">Olira Agro Industry</h1>
+      <div class="wrap choose-grid">
+        <!-- both doors have the same shape: the words on top, the products below -->
+        <article class="door door-agri" aria-labelledby="doorAgri">
+          <div class="door-copy">
+            <span class="label">Olira Agro</span>
+            <h2 class="headline" id="doorAgri">Agricultural <span class="grad-leaf">exports.</span></h2>
+            <p class="sub">Humera sesame, pulses, spices and coffee from the Ethiopian highlands.</p>
+            <div class="acts">
+              <a class="act fill" href="/agriculture/" aria-describedby="doorAgri">View the range</a>
+              <a class="act" href="/agriculture/#contact">Talk to sales</a>
+            </div>
+          </div>
+          <ul class="produce" aria-label="Product lines">
+            {PRODUCE.map((x, i) => (
+              <li>
+                <a href={`/agriculture/?p=${x.p}#range`} class:list={['produce-tile', { 'is-lead': i === 0 }]}>
+                  <img src={x.img} alt="" width="800" height="600" decoding="async" fetchpriority={i === 0 ? 'high' : undefined} loading={i === 0 ? 'eager' : 'lazy'}>
+                  <span>{x.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </article>
+        <article class="door door-pack" aria-labelledby="packTitle">
+          <div class="door-copy">
+            <span class="label">Olira Packaging</span>
+            <h2 class="headline" id="packTitle">Printed <span class="grad">packaging.</span></h2>
+            <p class="sub">Paper bags, boxes, packets and foil bags, made to your size and printed with your logo.</p>
+            <div class="acts">
+              <a class="act fill" href="/packaging/" aria-describedby="packTitle">See the catalogue</a>
+              <a class="act" href="/packaging/#studio">Open the studio</a>
+            </div>
+          </div>
+          <div class="lineup" data-lineup aria-hidden="true">
+            {lineup.map(({ c, p, w, h }, i) => (
+              <div class="item" style={`--w:${w}`} data-name={p.name} data-id={p.id} data-h={h}>
+                <Fragment set:html={standHTML(c, p.name, { eager: i < 3 })} />
+              </div>
+            ))}
+          </div>
+        </article>
       </div>
-    </article>
+    </section>
 
-    <article class="half half-pack" aria-labelledby="pack-title">
-      <picture class="half-bg">
-        <source type="image/avif" srcset="/images/packaging/packaging-hero-720.avif 720w, /images/packaging/packaging-hero-1080.avif 1080w, /images/packaging/packaging-hero-1440.avif 1440w" sizes="(max-width: 760px) 100vw, 50vw">
-        <img src="/images/packaging/packaging-hero-1080.webp" srcset="/images/packaging/packaging-hero-720.webp 720w, /images/packaging/packaging-hero-1080.webp 1080w, /images/packaging/packaging-hero-1440.webp 1440w" sizes="(max-width: 760px) 100vw, 50vw" alt="" width="1080" height="1440" fetchpriority="high">
-      </picture>
-      <div class="half-inner">
-        <span class="half-label">Olira Packaging</span>
-        <h2 id="pack-title">Kraft paper bags</h2>
-        <p>Twisted and flat handle paper bags, made to your size and printed with your logo.</p>
-        <ul class="index" aria-label="Bag options">
-          <li><a href="/packaging/?handle=twisted#studio">Twisted handles</a></li>
-          <li><a href="/packaging/?handle=flat#studio">Flat handles</a></li>
-          <li><a href="/packaging/#studio">Custom print</a></li>
-        </ul>
-        <a class="half-cta" href="/packaging/" aria-describedby="pack-title">Design your bag</a>
+    <!-- the organisations Olira has worked with: logos only, moving slowly right to
+         left; hidden until the marketing team has added some (home.js keeps it live) -->
+    <section class="partners" aria-labelledby="partnersTitle" data-partners hidden={partners.length === 0}>
+      <div class="wrap">
+        <h2 class="partners-title" id="partnersTitle">Organisations we have worked with</h2>
       </div>
-    </article>
-
-    <svg class="contours" data-contours={contoursUrl} aria-hidden="true" focusable="false"></svg>
+      <div class="marquee" data-marquee>
+        <div class="marquee-track">
+          <ul class="marquee-set" aria-label="Partner organisations">
+            {partners.map((p) => (
+              <li>{p.url
+                ? <a href={p.url} target="_blank" rel="noopener"><img src={p.logo} alt={p.name} width={p.width || 160} height={p.height || 40} loading="lazy" decoding="async"></a>
+                : <img src={p.logo} alt={p.name} width={p.width || 160} height={p.height || 40} loading="lazy" decoding="async">}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <button class="marquee-toggle" type="button" aria-pressed="false" aria-label="Pause the moving logos">
+        <svg class="i-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+        <svg class="i-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>
+      </button>
+    </section>
   </main>
 
-  <footer class="split-contact">
-    <address class="items">
-      <span class="reach-inline"><span class="k">Call or message</span><ReachIcons dir="up" /></span>
-      <a href={`mailto:${contact.email}`} data-contact="email"><span class="k">Email</span><span>{contact.email}</span></a>
-      <span><span class="k">Office</span><span data-contact="office-short">{contact.officeShort}</span></span>
-    </address>
-    <div class="split-end">
-      <nav class="staff" aria-label="Staff sign in">
-        <span class="k">Staff</span>
-        <a href="/team/" rel="nofollow">Team sign in</a>
-        <a href="/admin/" rel="nofollow">Admin</a>
-      </nav>
-      <span class="note">© <span data-year>{new Date().getFullYear()}</span> Olira Agro Industry</span>
-    </div>
-  </footer>
+  <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." />
 
-  <script>import '../scripts/common.js'; import '../scripts/home.js';</script>
+  <script>import '../scripts/common.js'; import '../scripts/home.js'; import '../scripts/live-print.js'; import '../scripts/motion.js';</script>
 </SiteLayout>

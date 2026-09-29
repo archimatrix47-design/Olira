@@ -25,6 +25,7 @@ export function show() {
       const r = await api('/api/team/password', { method: 'POST', body: { current: cur.value, next: next.value } });
       setToken(r.token);
       form.reset();
+      form.dispatchEvent(new Event('saved'));
       toast('Password changed. You stay signed in here; other devices are signed out.');
     } catch (x) { fail(cur, x.message); }
     finally { done(); }

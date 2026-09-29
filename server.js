@@ -10,7 +10,9 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import sharp from 'sharp';
 import { registerWorkspace, lineOfProduct } from './lib/workspace.js';
-import { registerPackaging } from './lib/packaging.js';
+import { SOCIAL_KEYS, sanitizeSocialUrl } from './lib/social.js';
+import { registerPartners } from './lib/partners.js';
+import { registerPackaging, checkBundle, mergeSeedCatalogue } from './lib/packaging.js';
 
 // Load environment variables from .env file (if it exists)
 dotenv.config();
@@ -848,9 +850,27 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
     return res.status(400).json({ error: 'Invalid phone field' });
   }
 
+  // A quote bundle (several packaging products, sizes and quantities) is checked
+  // against the live catalogue, including each product's minimum order. The page
+  // checks the same minimums, but only this check counts.
+  let bundle = null;
+  if (req.body.bundle !== undefined && req.body.bundle !== '') {
+    let raw = req.body.bundle;
+    if (typeof raw === 'string') { try { raw = raw.length <= 8000 ? JSON.parse(raw) : null; } catch { raw = null; } }
+    const r = checkBundle(raw, packaging.catalogue());
+    if (r.error) return res.status(400).json({ error: r.error, ...(r.code ? { code: r.code, productId: r.productId, min: r.min } : {}) });
+    bundle = r.items;
+  }
+
+  // Which team gets it: the page says so (data-line), a bundle is always
+  // packaging, and a product named in the packaging catalogue is packaging even
+  // when its name has no "bag" in it (pizza boxes, foil bags).
+  const catalogueNames = new Set(packaging.catalogue().map((p) => p.name.toLowerCase()));
+  const line = req.body.line === 'pack' || bundle || catalogueNames.has(String(product || '').toLowerCase()) ? 'pack'
+    : req.body.line === 'agri' ? 'agri' : lineOfProduct(product);
+
   // Files and the studio design are only taken with a packaging request, and
   // only when the visitor ticked the box to send them.
-  const line = lineOfProduct(product);
   if (uploads.length && line !== 'pack') {
     return res.status(400).json({ error: 'Files can only be sent with a packaging request.' });
   }
@@ -863,7 +883,7 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
   }
 
   // The lead is saved before any email is attempted, so a mail problem never loses it.
-  const rec = recordInquiryRecord({ name, email, company, message, product, phone, design }, false);
+  const rec = recordInquiryRecord({ name, email, company, message, product, phone, design, bundle, line }, false);
   let fileNote = '';
   if (rec && uploads.length) {
     const r = workspace.saveIntakeFiles(rec, uploads);
@@ -884,6 +904,8 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
     // Still capture the lead so a mail-config gap never loses a customer; the
     // admin can see it (flagged un-emailed) in the Inquiries inbox.
     recordInquiry(product, req);
+    // saved: the visitor's request is in, so they are not told to send it again
+    if (rec) return res.json({ success: true, saved: true, emailed: false, message: 'Inquiry received' });
     return res.status(500).json({ error: 'Email not configured' });
   }
 
@@ -920,6 +942,16 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
           <strong style="color: #39572f;">Message:</strong><br/>
           ${sanitizedMessage}
         </div>
+        ${bundle ? `<div style="margin-bottom: 15px;">
+          <strong style="color: #39572f;">Quote bundle:</strong>
+          <table style="border-collapse: collapse; margin-top: 6px; font-size: 14px;">
+            ${bundle.map((b) => `<tr>
+              <td style="padding: 4px 12px 4px 0;">${sanitizeHtml(b.name)}${b.size ? `, ${sanitizeHtml(b.size)}` : ''}${b.dims ? ` <span style="color:#666">(${sanitizeHtml(b.dims)})</span>` : ''}</td>
+              <td style="padding: 4px 12px 4px 0; text-align: right;">${b.qty.toLocaleString('en-US')}</td>
+              <td style="padding: 4px 0; color: #666;">${b.colours === 0 ? 'plain' : b.colours ? `${b.colours} colour print` : ''}</td>
+            </tr>`).join('')}
+          </table>
+        </div>` : ''}
         ${fileNote || design ? `<div style="margin-bottom: 15px;">
           <strong style="color: #39572f;">Design and files:</strong><br/>
           ${sanitizeHtml([design ? 'Bag design from the mockup studio' : '', fileNote].filter(Boolean).join(', '))}
@@ -961,6 +993,9 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
     // Email delivery failed, but the lead is already saved (emailed: false) and
     // can be actioned from the admin panel and the team workspace.
     recordInquiry(product, req);
+    // A request that is saved has arrived, whatever the mail server did; telling
+    // the visitor it failed made them send it again (a duplicate lead).
+    if (rec) return res.json({ success: true, saved: true, emailed: false, message: 'Inquiry received' });
     res.status(500).json({ error: 'Failed to send inquiry. Please try again.' });
   }
 });
@@ -1168,11 +1203,12 @@ function recordInquiryRecord(data, emailed) {
       product: String(data.product || '').trim().slice(0, 200),
       phone: String(data.phone || '').trim().slice(0, 40),
       message: String(data.message || '').trim().slice(0, 2000),
-      line: lineOfProduct(data.product),
+      line: data.line === 'pack' || data.line === 'agri' ? data.line : lineOfProduct(data.product),
       emailed: !!emailed,
       status: 'new'
     };
     if (data.design) rec.design = data.design;
+    if (data.bundle?.length) rec.bundle = data.bundle;
     list.unshift(rec);
     if (list.length > MAX_INQUIRIES) {
       for (const old of list.slice(MAX_INQUIRIES)) if (old.files?.length) workspace.removeLeadFiles(old.id);
@@ -1207,11 +1243,16 @@ function cleanDesign(d) {
   const numIn = (v, lo, hi, dflt) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt; };
   return {
     template: str(d.template, 40), templateName: str(d.templateName, 60),
-    size: ['small', 'medium', 'large'].includes(d.size) ? d.size : 'medium',
+    // a size id from the product's own sizes (small, medium, large for older bags)
+    size: str(d.size, 30).toLowerCase().replace(/[^a-z0-9-]/g, '') || 'medium',
     ink: ['black', 'teal', 'leaf', 'red', 'white'].includes(d.ink) ? d.ink : 'black',
     text1: str(d.text1, 18), text2: str(d.text2, 28),
     scale: numIn(d.scale, 0.5, 1.4, 1), dx: numIn(d.dx, -400, 400, 0), dy: numIn(d.dy, -600, 600, 0),
     oneInk: d.oneInk === true, hasLogo: d.hasLogo === true,
+    // what the studio's logo check found in the file, and whether the visitor
+    // removed a white box from it on the preview (the file sent is the original)
+    logoCheck: ['boxed', 'light'].includes(d.logoCheck) ? d.logoCheck : '',
+    boxRemoved: d.boxRemoved === true,
   };
 }
 
@@ -1458,15 +1499,12 @@ app.post('/api/branding', adminAuth, (req, res) => {
 
 // ----- SOCIAL LINKS -----
 
-const SOCIAL_PLATFORMS = ['facebook', 'linkedin', 'x', 'youtube', 'telegram', 'whatsapp'];
-
-// Accept only empty string or a valid http(s) URL (≤300 chars) per platform.
-function sanitizeSocialUrl(v) {
-  if (typeof v !== 'string') return '';
-  const s = v.trim().slice(0, 300);
-  if (s === '') return '';
-  if (/^https?:\/\/[^\s]+$/i.test(s)) return s;
-  return ''; // reject anything that isn't a clean http(s) URL
+// The platforms and the link check live in lib/social.js (one list for the
+// server, the admin, the marketing workspaces and the public pages).
+function cleanSocial(body) {
+  const data = {};
+  for (const key of SOCIAL_KEYS) data[key] = sanitizeSocialUrl(body?.[key]);
+  return data;
 }
 
 app.get('/api/social-links', (req, res) => {
@@ -1478,14 +1516,11 @@ app.get('/api/social-links', (req, res) => {
 });
 
 app.post('/api/social-links', adminAuth, (req, res) => {
-  const body = req.body || {};
-  const data = {};
-  for (const key of SOCIAL_PLATFORMS) {
-    data[key] = sanitizeSocialUrl(body[key]);
-  }
+  const data = cleanSocial(req.body);
   if (!writeJsonFile(socialPath, data)) {
     return res.status(500).json({ error: 'Failed to save social links' });
   }
+  audit('social_links_saved', req, { by: 'admin' });
   res.json({ success: true, data });
 });
 
@@ -1596,7 +1631,11 @@ function eatHeatKey(now = Date.now()) {
   const t = new Date(now + 3 * 3600000);
   return `${t.getUTCDay()}-${t.getUTCHours()}`;
 }
-const TRACK_EVENTS = new Set(['reveal_phone', 'reveal_whatsapp', 'telegram', 'email', 'studio_logo', 'studio_download', 'studio_quote', 'studio_change', 'form_start', 'form_invalid', 'form_fail']);
+// studio_quote_only: asked for a quote on a bag that has no photo in the studio yet.
+// studio_logo_warn / studio_logo_fix: the logo check flagged an upload, and the
+// visitor applied its one-click fix. home_product: pointed at a product on the
+// home page to see its photo.
+const TRACK_EVENTS = new Set(['reveal_phone', 'reveal_whatsapp', 'telegram', 'email', 'studio_logo', 'studio_download', 'studio_quote', 'studio_change', 'studio_quote_only', 'studio_logo_warn', 'studio_logo_fix', 'home_product', 'bundle_add', 'bundle_remove', 'bundle_below_min', 'bundle_send', 'catalogue_filter', 'form_start', 'form_invalid', 'form_fail']);
 
 function pruneAnalytics() {
   const cutoff = new Date(Date.now() - ANALYTICS_RETENTION_DAYS * 86400000);
@@ -1990,7 +2029,34 @@ const workspace = registerWorkspace(app, {
   verifyTokenDetailed, generateToken, checkOrigin, clientIp, makeRateLimiter,
   inquiriesPath, isLoginDisabled: () => adminLoginDisabled, siteUrl,
 });
-registerPackaging(app, {
+// catalogue products added to the repo after this data folder was first seeded
+const seededPackaging = mergeSeedCatalogue(dataDir, REPO_DATA_DIR, { readJsonFile, writeJsonFile, logError });
+if (seededPackaging.length) console.log(`Packaging catalogue: added ${seededPackaging.join(', ')}`);
+// Both marketing teams (agriculture and packaging) look after the contact links
+// and social pages too, from their workspaces. The full record, WhatsApp link
+// included, is for signed-in staff only.
+function marketingTeam(req, res, next) {
+  const r = workspace.resolveUser(req);
+  if (!r.user) return res.status(401).json({ error: 'Unauthorized' });
+  if (!['admin', 'agri', 'pack'].includes(r.user.role)) return res.status(403).json({ error: 'Contact links are looked after by the marketing teams.' });
+  req.teamUser = r.user;
+  next();
+}
+app.get('/api/team/social-links', marketingTeam, (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(cleanSocial(readJsonFile(socialPath, {})));
+});
+app.post('/api/team/social-links', marketingTeam, (req, res) => {
+  const data = cleanSocial(req.body);
+  if (!writeJsonFile(socialPath, data)) return res.status(500).json({ error: 'The links could not be saved.' });
+  audit('social_links_saved', req, { by: req.teamUser.id, role: req.teamUser.role });
+  res.json({ success: true, data });
+});
+
+// partner logos on the home page, looked after by both marketing teams
+registerPartners(app, { dataDir, uploadsDir, readJsonFile, writeJsonFile, audit, logError, resolveUser: workspace.resolveUser });
+
+const packaging = registerPackaging(app, {
   dataDir, uploadsDir, publicDirs: [path.join(__dirname, 'dist'), path.join(__dirname, 'public')],
   readJsonFile, writeJsonFile, audit, logError, adminAuth, resolveUser: workspace.resolveUser,
 });

@@ -3,6 +3,7 @@
 // and studio design, reply by email, quote, log a call, and the timeline.
 // Enquiry text comes from strangers, so it is only ever written as text.
 import { $, $$, h, api, getToken, toast, confirmDialog, formatDate, timeAgo } from '../admin/api.js';
+import { bundleTable, bundleCount } from './bundle-view.js';
 import { STAGES, scoreOf, BAND_LABEL, firstResponseHours, median, ageHours } from '../admin/leads.js';
 import { hours, int } from '../admin/format.js';
 import { session, leads, putLead, OPEN, CLOSED, isMine, toAccept as waiting, stageName, followupsOf } from './session.js';
@@ -10,6 +11,7 @@ import { composer } from './compose.js';
 import { confirmSelect } from '../admin/stage-control.js';
 import { scrollBehavior, captureFocus, restoreFocus } from '../admin/motion.js';
 import { quoteBuilder } from './quote.js';
+import { arrowKeys, backButton } from '../admin/tools.js';
 
 let all = [];
 let bound = false;
@@ -35,6 +37,8 @@ export async function show({ params }) {
     $('#inboxSort').addEventListener('change', () => { renderList(); writeUrl(); });
     let t; $('#inboxSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { renderList(); writeUrl(); }, 200); });
     $('#inboxRefresh').addEventListener('click', () => load(true));
+    // up and down move through the enquiries, as in Mail
+    arrowKeys($('#inboxList'), '.t-row', (id) => select(id, { push: false }));
     // coming back to the tab after a while picks up new enquiries without a click
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && !$('[data-view="inbox"]').hidden && Date.now() - loadedAt > 60000) load(true, { quiet: true });
@@ -161,7 +165,7 @@ function renderList() {
       l.files?.length ? `${l.files.length} file${l.files.length === 1 ? '' : 's'}` : null,
       `Received ${timeAgo(l.createdAt)}`,
     ].filter(Boolean).join('. ');
-    const btn = h('button', { type: 'button', class: 't-row', 'aria-label': spoken, 'aria-current': l.id === selectedId ? 'true' : null, onclick: (e) => select(l.id, { focus: true, scroll: true, event: e }) },
+    const btn = h('button', { type: 'button', class: 't-row', 'data-id': l.id, 'aria-label': spoken, 'aria-current': l.id === selectedId ? 'true' : null, onclick: (e) => select(l.id, { focus: true, scroll: true, event: e }) },
       h('span', { class: 't-row-top' },
         h('strong', {}, l.name || 'Unknown'),
         h('time', { datetime: l.createdAt, title: formatDate(l.createdAt) }, timeAgo(l.createdAt))),
@@ -171,19 +175,28 @@ function renderList() {
         h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, String(sc.score), h('span', { class: 'sr-only' }, ` out of 100, ${BAND_LABEL[sc.band]}`)),
         l.assignee ? h('span', { class: 't-owner' }, isMine(l) ? 'You' : l.assignee.name) : null,
         l.files?.length ? h('span', { class: 't-files' }, `${l.files.length} file${l.files.length === 1 ? '' : 's'}`) : null,
-        l.design ? h('span', { class: 't-files' }, 'Studio design') : null));
+        l.design ? h('span', { class: 't-files' }, 'Studio design') : null,
+        bundleCount(l) ? h('span', { class: 't-files' }, `Packing list, ${bundleCount(l)}`) : null));
     return h('li', { class: waiting(l) ? 'is-new' : '', 'data-focus-scope': `row-${l.id}` }, btn);
   }));
 }
 
-function select(id, { focus, scroll, event } = {}) {
+const panes = () => $('[data-view="inbox"] .t-inbox');
+function select(id, { focus, scroll, event, push = true } = {}) {
   selectedId = id;
   renderList();
   renderDetail();
   writeUrl();
+  // on a phone the enquiry takes the screen, with a way back to the list
+  if (push) panes().classList.add('is-detail');
   const d = $('#leadDetail');
-  if (scroll && matchMedia('(max-width: 1100px)').matches) d.scrollIntoView({ block: 'start', behavior: scrollBehavior(event) });
-  if (focus) { const hd = $('h2', d); if (hd) { hd.tabIndex = -1; hd.focus({ preventScroll: !scroll }); } }
+  if (scroll && push && matchMedia('(max-width: 760px)').matches) scrollTo({ top: 0, behavior: scrollBehavior(event) });
+  if (focus) { const hd = $('h2', d); if (hd) { hd.tabIndex = -1; hd.focus({ preventScroll: true }); } }
+}
+function back() {
+  panes().classList.remove('is-detail');
+  const row = $(`#inboxList .t-row[data-id="${CSS.escape(selectedId || '')}"]`);
+  if (row) { row.focus({ preventScroll: true }); row.scrollIntoView({ block: 'center' }); }
 }
 
 /* ---------- detail ---------- */
@@ -213,7 +226,7 @@ const bytes = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.m
 function renderDetail() {
   const box = $('#leadDetail');
   const l = all.find((x) => x.id === selectedId);
-  if (!l) { box.replaceChildren(h('div', { class: 'a-empty' }, h('strong', {}, 'Choose an enquiry'), 'Its details, files and reply tools open here.')); return; }
+  if (!l) { panes().classList.remove('is-detail'); box.replaceChildren(h('div', { class: 'a-empty' }, h('strong', {}, 'Choose an enquiry'), 'Its details, files and reply tools open here. Arrow keys move through the list.')); return; }
   // keep what someone is typing when the enquiry re-renders after an action
   const keep = captureDrafts(box, l.id);
   const sc = scoreOf(l), d = sc.details;
@@ -245,6 +258,7 @@ function renderDetail() {
     fact('Received', `${formatDate(l.createdAt)}, ${timeAgo(l.createdAt)}`));
 
   const parts = [
+    backButton('Inbox', back),
     h('header', { class: 't-detail-head', 'data-focus-scope': `head-${l.id}` },
       h('div', {},
         h('h2', {}, l.name || 'Unknown'),
@@ -260,6 +274,7 @@ function renderDetail() {
         h('ul', { class: 'a-why' }, sc.checks.map((c) => h('li', { class: c.ok ? '' : 'miss' }, h('span', { class: 'pts' }, c.ok ? `+${c.pts}` : '0'), c.label))))),
     section('Message', h('p', { class: 'a-lead-msg' }, String(l.message || '').trim() || 'No message.')),
   ];
+  if (bundleCount(l)) parts.push(section('Packing list', bundleTable(l)));
   if (l.design) parts.push(section('Design from the studio', designSummary(l)));
   if (pack() || l.files?.length) parts.push(section('Files', filesPanel(l)));
   parts.push(
@@ -328,6 +343,11 @@ function designSummary(l) {
     ['Logo', d.hasLogo ? 'Sent, see Files' : 'Not sent'], d.oneInk ? ['Logo colour', 'In the ink colour'] : null,
   ].filter(Boolean);
   const wrap = h('div', { class: 't-design' }, h('div', { class: 'a-chips' }, chips.map(([k, v]) => h('span', { class: 'a-chip' }, h('b', {}, k), v))));
+  // the studio's logo check on the file the client sent: tells the team to ask for better artwork
+  const logoNote = d.logoCheck === 'boxed'
+    ? `The logo file sits on a white box, which would print as a patch on kraft.${d.boxRemoved ? ' The client removed the box on the preview, but the file they sent still has it.' : ''} Ask for a transparent PNG or a vector file.`
+    : d.logoCheck === 'light' ? `The logo is very pale and will hardly show on kraft.${d.oneInk ? ' The client chose to print it in the ink colour.' : ' Suggest printing it in the ink colour, or ask for a darker version.'}` : '';
+  if (logoNote) wrap.append(h('p', { class: 't-logo-note' }, logoNote));
   if (pack()) wrap.append(h('a', { class: 'btn btn-secondary btn-sm', href: `#mockups?lead=${encodeURIComponent(l.id)}` }, 'Open in Mockups'));
   return wrap;
 }

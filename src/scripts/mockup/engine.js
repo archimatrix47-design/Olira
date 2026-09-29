@@ -77,17 +77,18 @@ export function loadImage(src) {
 
 /**
  * Prepare a product for rendering. `p` is { image, imageDark?, quad: [[u, v] x 4]
- * as fractions of the photo, safeTop }. Cached per photo and corners, so moving
+ * as fractions of the photo, safeTop }; width is the canvas width (1200 for the
+ * studio, less for small live previews). Cached per photo, corners and width, so moving
  * a corner in the editor re-prepares only that product.
  */
 const prepared = new Map();
-export async function prepare(p, { dark = isDarkTheme() } = {}) {
+export async function prepare(p, { dark = isDarkTheme(), width = CANVAS_W } = {}) {
   const src = photoFor(p, dark);
-  const key = `${src}|${JSON.stringify(p.quad)}|${p.safeTop}`;
+  const key = `${src}|${JSON.stringify(p.quad)}|${p.safeTop}|${width}`;
   if (prepared.has(key)) return prepared.get(key);
   const job = (async () => {
     const img = await loadImage(src);
-    const cw = CANVAS_W, ch = Math.round(CANVAS_W * (img.naturalHeight / img.naturalWidth));
+    const cw = width, ch = Math.round(width * (img.naturalHeight / img.naturalWidth));
     const quad = p.quad.map(([u, v]) => [u * cw, v * ch]);
     const photo = makeCanvas(cw, ch), g = photo.getContext('2d', { willReadFrequently: true });
     g.drawImage(img, 0, 0, cw, ch);
@@ -142,8 +143,16 @@ export function drawArt(B, d) {
   let size2 = Math.min(AW * 0.062 * s, size1 * 0.62);
   a.font = `500 ${size2}px "Hanken Grotesk", sans-serif`;
   const w2 = a.measureText(d.text2).width; if (w2 > maxW) size2 *= maxW / w2;
-  const gap = AW * 0.06 * s;
-  const total = logoH + (d.text1 ? gap + size1 : 0) + (d.text2 ? gap * 0.55 + size2 : 0);
+  let gap = AW * 0.06 * s;
+  let total = logoH + (d.text1 ? gap + size1 : 0) + (d.text2 ? gap * 0.55 + size2 : 0);
+  // Sizes above follow the panel's width. A wide, short panel (the front of a
+  // box, an envelope) cannot hold that stack, so the whole design is scaled down
+  // to the panel's height instead of running off it. Tall bag panels already fit.
+  const room = AH * (1 - B.safeTop) * 0.9;
+  if (total > room) {
+    const f = room / total;
+    logoW *= f; logoH *= f; size1 *= f; size2 *= f; gap *= f; total = room;
+  }
   const cx = AW / 2 + d.dx;
   let y = AH * (B.safeTop + (1 - B.safeTop) * 0.44) + d.dy - total / 2;
 
@@ -159,7 +168,7 @@ export function drawArt(B, d) {
   } else if (d.placeholder !== false) {
     a.save(); a.strokeStyle = ink; a.globalAlpha = 0.65; a.lineWidth = 5; a.setLineDash([16, 12]);
     a.beginPath(); a.roundRect(cx - logoW / 2, y, logoW, logoH, 18); a.stroke();
-    a.setLineDash([]); a.globalAlpha = 0.85; a.fillStyle = ink; a.font = `600 ${Math.round(AW * 0.052 * s)}px "Hanken Grotesk", sans-serif`;
+    a.setLineDash([]); a.globalAlpha = 0.85; a.fillStyle = ink; a.font = `600 ${Math.round(Math.min(AW * 0.052 * s, logoH * 0.3))}px "Hanken Grotesk", sans-serif`;
     a.textAlign = 'center'; a.textBaseline = 'middle'; a.fillText('YOUR LOGO', cx, y + logoH / 2); a.restore();
   }
   y += logoH;
@@ -241,6 +250,24 @@ export function toArtboard(B, x, y) {
   const [u, v] = B.H.back(x, y);
   return [u * B.AW, v * B.AH];
 }
+/** A dragged offset settles on a centre line within 2.5% of the panel width of it. */
+export function snapDesign(B, dx, dy) {
+  const near = B.AW * 0.025;
+  const x = Math.abs(dx) < near, y = Math.abs(dy) < near;
+  return { dx: x ? 0 : dx, dy: y ? 0 : dy, x, y };
+}
+/** The printable panel's centre lines in perspective, shown while a drag is snapped to them. */
+export function drawGuides(ctx, B, guides, color) {
+  if (!guides || (!guides.x && !guides.y)) return;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.setLineDash([14, 10]);
+  const line = (a, b) => { ctx.beginPath(); ctx.moveTo(...B.H.fwd(...a)); ctx.lineTo(...B.H.fwd(...b)); ctx.stroke(); };
+  if (guides.x) line([0.5, 0.02], [0.5, 0.98]);
+  // the design's resting height, the same one drawArt centres it on
+  if (guides.y) { const v = B.safeTop + (1 - B.safeTop) * 0.44; line([0.02, v], [0.98, v]); }
+  ctx.restore();
+}
 export function clampDesign(B, d) {
   const lx = B.AW * 0.34, ly = B.AH * 0.34;
   d.dx = Math.max(-lx, Math.min(lx, d.dx)); d.dy = Math.max(-ly, Math.min(ly, d.dy));
@@ -258,9 +285,27 @@ export async function exportImage(B, design, { type = 'png', scale = 1 } = {}) {
   return new Promise((resolve, reject) => out.toBlob((b) => (b ? resolve(b) : reject(new Error('The image could not be created.'))), type === 'jpg' ? 'image/jpeg' : 'image/png', 0.92));
 }
 
+/**
+ * A product's size by id, as { id, label, dims }. Products carry their own sizes
+ * (set in the admin); a product without any uses the three original bag sizes.
+ * dims is '' when the packaging team has not entered measurements yet.
+ */
+export function sizesOf(p) {
+  const own = Array.isArray(p?.sizes) ? p.sizes.filter((s) => s && s.id && s.label) : [];
+  if (own.length) return own.map((s) => ({ id: s.id, label: s.label, w: s.w, d: s.d, h: s.h, minOrder: s.minOrder ?? null, dims: s.w && s.h ? `${[s.w, s.d, s.h].filter(Boolean).join(' x ')} cm` : '' }));
+  return Object.entries(SIZES).map(([id, s]) => { const [w, d, h] = s.dims.match(/[\d.]+/g).map(Number); return { id, label: s.label, w, d, h, minOrder: null, dims: s.dims }; });
+}
+export function sizeOf(p, id) {
+  const all = sizesOf(p);
+  return all.find((s) => s.id === id) || all.find((s) => s.id === 'medium') || all[0];
+}
+
+/** "Pizza boxes" -> "pizza box", "Flat handle bags" -> "flat handle bag". */
+export const singular = (name) => String(name || '').toLowerCase().replace(/(x|ch|sh|ss)es$/, '$1').replace(/([^s])s$/, '$1');
+
 export function specLine(p, design) {
-  const s = SIZES[design.size] || SIZES.medium;
-  return `${s.label} ${(p?.name || 'kraft bags').replace(/s$/, '').toLowerCase()}, ${s.dims}, ${(INKS[design.ink]?.[0] || 'black').toLowerCase()} ink`;
+  const s = sizeOf(p, design.size);
+  return `${s.label} ${singular(p?.name || 'kraft bags')}${s.dims ? `, ${s.dims}` : ''}, ${(INKS[design.ink]?.[0] || 'black').toLowerCase()} ink`;
 }
 
 export function saveBlob(blob, filename) {

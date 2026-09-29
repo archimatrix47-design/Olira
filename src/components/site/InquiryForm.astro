@@ -51,9 +51,15 @@ const { prefix: p, line, labelledBy, extra, messagePlaceholder, messageRequired,
     </div>
   ) : (
     <div class="field">
-      <label for={`${p}-qty`}>Quantity in bags</label>
+      <label for={`${p}-qty`}>Quantity</label>
       <input id={`${p}-qty`} name="qty" maxlength="40" inputmode="numeric" autocomplete="off" placeholder="For example 20000" aria-describedby={`${p}-qty-hint`}>
       <p class="note" id={`${p}-qty-hint`} style="margin:0;font-weight:400">An estimate is fine.</p>
+    </div>
+  )}
+  {attachments && (
+    <div class="pl-summary" data-pl-summary hidden>
+      <div class="pl-summary-head"><span>Packing list, <span id="plSummaryCount">0 products</span></span><button class="link-btn" type="button" data-pl-edit>Edit packing list</button></div>
+      <table><tbody id="plSummaryBody"></tbody></table>
     </div>
   )}
   <div class="field">

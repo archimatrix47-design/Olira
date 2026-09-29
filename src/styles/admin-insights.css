@@ -2,24 +2,9 @@
    Encoding, the same in every view: agriculture = accent, packaging = leaf and
    hatched where the two meet, previous period and context = ink-3, and one
    sequential ramp built from the accent for intensity. */
-.admin-body {
-  --viz-a: var(--accent);
-  --viz-b: var(--leaf);
-  --viz-context: var(--ink-3);
-  --ramp-1: color-mix(in oklab, var(--accent) 14%, var(--surface));
-  --ramp-2: color-mix(in oklab, var(--accent) 32%, var(--surface));
-  --ramp-3: color-mix(in oklab, var(--accent) 52%, var(--surface));
-  --ramp-4: color-mix(in oklab, var(--accent) 74%, var(--surface));
-  --ramp-5: var(--accent);
-  --good: #2E6B2F;
-  --warn: #9A6212;
-  --bad: var(--danger);
-}
-:root[data-theme="dark"] .admin-body { --viz-b: var(--leaf-text); --good: #9FD49A; --warn: #E7B45F; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .admin-body { --viz-b: var(--leaf-text); --good: #9FD49A; --warn: #E7B45F; } }
 
 .a-period { display: inline-flex; align-items: center; gap: 8px; font-size: .875rem; font-weight: 600; color: var(--ink-2); }
-.a-period .input { height: 40px; width: auto; min-width: 150px; }
+.a-period .input { width: auto; min-width: 150px; }
 .a-freshness { font-size: .8125rem; color: var(--ink-2); margin-top: -10px; min-height: 1.2em; }
 .a-grid12 { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .admin-body h3.a-label { font-family: var(--font-sans); font-size: .875rem; font-weight: 600; line-height: 1.4; color: var(--ink); }
@@ -40,7 +25,7 @@
 @media (max-width: 420px) { .k-card { padding: 14px; } .k-value { font-size: 1.75rem; } }
 .k-card { padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
 .k-card > p { font-size: .875rem; font-weight: 500; color: var(--ink-2); }
-.k-value { font-family: var(--font-display); font-size: clamp(1.875rem, 1.4rem + 1vw, 2.375rem); line-height: 1.05; font-variant-numeric: tabular-nums; color: var(--ink); }
+.k-value { font-family: var(--font-display); font-weight: 600; letter-spacing: -.02em; font-size: clamp(1.875rem, 1.4rem + 1vw, 2.375rem); line-height: 1.05; font-variant-numeric: tabular-nums; color: var(--ink); }
 .k-value.is-nodata { font-family: var(--font-sans); font-size: 1rem; font-weight: 600; color: var(--ink-2); padding-block: 10px; }
 .k-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; }
 .k-card small { font-size: .8125rem; color: var(--ink-2); line-height: 1.4; }
@@ -90,7 +75,7 @@
 /* shared chart furniture */
 .v-empty { color: var(--ink-2); font-size: .9375rem; padding: 18px 0; }
 .v-table { margin-top: 12px; font-size: .875rem; }
-.v-table summary { cursor: pointer; color: var(--accent); font-weight: 600; width: max-content; min-height: 32px; display: flex; align-items: center; }
+.v-table summary { cursor: pointer; color: var(--accent); font-weight: 600; width: max-content; min-height: var(--ctl); display: flex; align-items: center; }
 .v-table-scroll { overflow-x: auto; margin-top: 8px; }
 .a-table th.num, .a-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .a-table tbody th { font-weight: 500; color: var(--ink); text-align: left; border-bottom: 1px solid var(--line); padding: 10px 12px 10px 0; }
@@ -182,14 +167,10 @@
 .v-pipe li.is-won i b { background: var(--good); }
 .v-pipe li > span:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .v-bigstat { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-.v-bigstat strong { font-family: var(--font-display); font-weight: 400; font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.v-bigstat strong { font-family: var(--font-display); font-weight: 600; font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .v-bigstat span { font-size: .875rem; color: var(--ink-2); }
 
-/* inbox extras */
-.a-inbox-head { display: grid; gap: 12px; }
-.a-inbox-head h2 { font-size: 1.25rem; }
-.a-check { display: inline-flex; align-items: center; gap: 8px; font-size: .875rem; min-height: 40px; }
-.a-check input { width: 18px; height: 18px; accent-color: var(--accent); }
+/* inbox extras (the list and detail pane are in admin.css) */
 .a-score { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding-inline: 9px; border-radius: 999px; font-size: .75rem; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--fill-2); color: var(--ink); }
 .a-score::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--ink-3); }
 .a-score.strong::before { background: var(--good); border-radius: 50%; }
@@ -197,7 +178,6 @@
 .a-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .a-chip { display: inline-flex; gap: 6px; align-items: baseline; padding: 3px 10px; border-radius: 8px; background: var(--fill-1); font-size: .8125rem; }
 .a-chip b { font-weight: 600; color: var(--ink-2); font-size: .75rem; }
-.a-lead details > summary { cursor: pointer; font-size: .875rem; font-weight: 600; color: var(--accent); min-height: 32px; display: flex; align-items: center; }
 .a-why { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: .8125rem; }
 .a-why li { display: flex; gap: 8px; }
 .a-why .pts { width: 34px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -205,11 +185,6 @@
 .a-history { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: .8125rem; color: var(--ink-2); }
 .a-note-form { display: grid; gap: 8px; }
 .a-note-form textarea.input { min-height: 72px; }
-.a-stage { display: grid; gap: 6px; font-size: .875rem; font-weight: 600; }
-.a-stage select.input { height: 40px; }
-.a-lead-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: 16px; align-items: start; }
-.a-lead-side { display: grid; gap: 12px; }
-@media (max-width: 900px) { .a-lead-grid { grid-template-columns: 1fr; } }
 
 /* product performance */
 .a-perf .flag { display: inline-block; margin: 2px 0 0 6px; font-size: .75rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--danger-subtle); color: var(--danger); white-space: nowrap; }

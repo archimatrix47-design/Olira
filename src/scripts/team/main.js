@@ -9,6 +9,7 @@ import * as inbox from './inbox.js';
 import * as lists from './lists.js';
 import * as account from './account.js';
 import { session } from './session.js';
+import { initShell, watch } from '../admin/tools.js';
 
 const LINE = document.body.dataset.line;               // 'agri' | 'pack'
 const PAGE = { agri: '/team/agriculture/', pack: '/team/packaging/' };
@@ -17,11 +18,18 @@ const VIEWS = {
   followups: lists.showFollowups,
   quotes: lists.showQuotes,
   account: account.show,
+  social: () => import('./social.js').then((m) => m.show()),
+  partners: () => import('./partners.js').then((m) => m.show()),
 };
 if (LINE === 'pack') VIEWS.mockups = (opts) => import('./mockups.js').then((m) => m.show(opts));
+if (LINE === 'pack') VIEWS.minimums = () => import('./minimums.js').then((m) => m.show());
+if (LINE === 'pack') VIEWS.photos = () => import('./photos.js').then((m) => m.show());
 
 const login = $('#teamLogin'), panel = $('#teamPanel'), signOut = $('#teamSignOut'), backToAdmin = $('#backToAdmin');
 const initialised = new Set();
+const shell = initShell({ panel, route: () => route() });
+// every settings form says when it has unsaved changes
+$$('#teamPanel form.a-form, #teamPanel form.t-min').forEach(watch);
 
 // the team session wins; otherwise an admin session may be used
 const TEAM_KEY = 'teamToken';
@@ -86,6 +94,8 @@ whenSessionExpires(() => {
 function route() {
   if (panel.hidden) return;
   const [requested] = location.hash.slice(1).split('?');
+  // on a phone, the list of sections
+  if (shell.menu(requested)) return;
   const name = VIEWS[requested] ? requested : 'inbox';
   for (const v of $$('[data-view]')) v.hidden = v.dataset.view !== name;
   for (const a of $$('[data-nav]')) { if (a.dataset.nav === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
@@ -96,11 +106,14 @@ function route() {
   VIEWS[name]({ first, params: new URLSearchParams(location.hash.split('?')[1] || '') });
 }
 addEventListener('hashchange', () => {
-  const prevView = document.querySelector('[data-view]:not([hidden])')?.dataset.view;
+  const prevView = document.querySelector('[data-view]:not([hidden])')?.dataset.view || 'menu';
   route();
-  const now = document.querySelector('[data-view]:not([hidden])')?.dataset.view;
+  const now = document.querySelector('[data-view]:not([hidden])')?.dataset.view || 'menu';
   // moving to another section: focus its heading; opening a lead inside the inbox is handled there
-  if (!panel.hidden && prevView !== now) { const hd = $('[data-view]:not([hidden]) h1'); if (hd) { hd.tabIndex = -1; hd.focus({ preventScroll: true }); scrollTo({ top: 0 }); } }
+  if (!panel.hidden && prevView !== now) {
+    const hd = now === 'menu' ? $('.a-nav-link[aria-current="page"]') || $('.a-nav-link') : $('[data-view]:not([hidden]) h1');
+    if (hd) { if (hd.tagName === 'H1') hd.tabIndex = -1; hd.focus({ preventScroll: true }); scrollTo({ top: 0 }); }
+  }
 });
 
 signOut.addEventListener('click', async () => {
