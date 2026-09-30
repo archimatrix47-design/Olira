@@ -6,16 +6,23 @@ import fs from 'node:fs';
 import { SOCIAL_PAGES } from '../../lib/social.js';
 import path from 'node:path';
 
-const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
+const repoData = path.join(process.cwd(), 'data');
+const dataDir = process.env.DATA_DIR || repoData;
 
+// The live copy (DATA_DIR) wins. A file the live folder does not have yet falls
+// back to the repo's copy: on a fresh deploy the build runs before the server's
+// first start seeds DATA_DIR, and without this the build saw no packaging
+// products at all (an empty home page lineup and catalogue).
 function read<T>(file: string, fallback: T): T {
-  try {
-    const p = path.join(dataDir, file);
-    return fs.existsSync(p) ? (JSON.parse(fs.readFileSync(p, 'utf8')) as T) : fallback;
-  } catch (err) {
-    console.error(`Failed to read data/${file}:`, err);
-    return fallback;
+  for (const dir of dataDir === repoData ? [repoData] : [dataDir, repoData]) {
+    try {
+      const p = path.join(dir, file);
+      if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8')) as T;
+    } catch (err) {
+      console.error(`Failed to read ${dir}/${file}:`, err);
+    }
   }
+  return fallback;
 }
 
 export interface Product {
