@@ -2187,11 +2187,16 @@ function validateStartup() {
 // wrote into public/ — which is read-only on some hosts (cPanel/containers).
 // Runtime uploads are still converted inline by the sharp pipeline above.
 
-// Only run startup side effects (validation, email init, listen) when this file
-// is executed directly — NOT when it's imported (e.g. by the test suite). This
-// is what makes the app testable: `import { app } from './server.js'` builds the
-// Express app without binding a port or exiting the process.
+// Run the startup side effects (validation, email init, listen) unless the test
+// suite imported this file: `import { app } from './server.js'` in a test builds
+// the Express app without binding a port.
+//
+// "Executed directly" is not enough on its own. cPanel's Node.js hosting
+// (LiteSpeed lsnode.js, and Passenger) loads the startup file through its own
+// wrapper, so argv[1] is the wrapper, not server.js. With only that check the
+// app never listened there, and every request got a 503.
 const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const underTest = process.env.NODE_ENV === 'test' || Boolean(process.env.NODE_TEST_CONTEXT);
 
 function startServer() {
   logConfigSummary();
@@ -2214,7 +2219,7 @@ function startServer() {
   });
 }
 
-if (isMainModule) {
+if (isMainModule || !underTest) {
   startServer();
 }
 
