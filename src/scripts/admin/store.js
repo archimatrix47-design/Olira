@@ -1,5 +1,6 @@
-// Shared admin state. The period lives in the URL (#overview?days=30) so a view
-// can be bookmarked or shared, and every section reads the same data for it.
+// Shared state for the admin panel and the workspaces. The period lives in the
+// URL (#dashboard?days=30) so a view can be bookmarked or shared, and every
+// section reads the same data for it.
 import { api } from './api.js';
 
 export const RANGES = [7, 30, 90, 365];
@@ -28,18 +29,20 @@ function cached(key, loader, ttl = 60000) {
 }
 export const invalidate = (prefix) => { for (const k of cache.keys()) if (k.startsWith(prefix)) cache.delete(k); };
 
+// traffic and every enquiry in both lines: the manager's
 export const analytics = (days = getDays()) => cached(`analytics:${days}`, () => api(`/api/analytics?days=${days}`));
-export const inquiries = () => cached('inquiries', () => api('/api/admin/inquiries'), 15000);
+export const inquiries = () => cached('inquiries', () => api('/api/team/inquiries'), 15000);
 export const products = () => cached('products', () => api('/api/products'));
-// every packaging product, including hidden ones: which bags the studio can show
-export const packaging = () => cached('packaging', () => api('/api/packaging-products?scope=all'));
+// the packaging products on the website (the packaging team's editor loads hidden ones too)
+export const packaging = () => cached('packaging', () => api('/api/packaging-products'));
 export const setup = () => cached('setup', async () => {
   const safe = (p) => p.catch(() => null);
-  const [certs, email, integrations, branding, social, contacts] = await Promise.all([
+  const [certs, email, integrations, branding, social, contacts, status, team] = await Promise.all([
     safe(api('/api/certifications')), safe(api('/api/email-config')), safe(api('/api/integrations')),
     safe(api('/api/branding')), safe(api('/api/social-links')), safe(api('/api/contact-details')),
+    safe(api('/api/admin/site-status')), safe(api('/api/admin/team')),
   ]);
-  return { certs, email, integrations, branding, social, contacts };
+  return { certs, email, integrations, branding, social, contacts, status, team };
 });
 
 /** A period picker bound to the URL; calls onChange(days). */

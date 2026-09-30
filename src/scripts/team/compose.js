@@ -4,16 +4,16 @@
 // member's own mail app and can be logged on the timeline.
 import { h, api, toast, confirmDialog } from '../admin/api.js';
 import { scoreOf } from '../admin/leads.js';
-import { session } from './session.js';
+import { session, lineOf } from './session.js';
 
 const first = (name) => String(name || '').trim().split(/\s+/)[0] || '';
-const signOff = () => `Kind regards,\n${session.isAdmin ? 'The Olira team' : session.user.name}\n${session.line === 'pack' ? 'Olira Packaging' : 'Olira Agro Industry'}`;
-const productOf = (l) => (l.product && !/^(Agricultural products|Packaging|Kraft paper bags)$/i.test(l.product) ? l.product : session.line === 'pack' ? 'kraft paper bags' : 'our products');
+const signOff = (l) => `Kind regards,\n${session.user.name}\n${lineOf(l) === 'pack' ? 'Olira Packaging' : 'Olira Agro Industry'}`;
+const productOf = (l) => (l.product && !/^(Agricultural products|Packaging|Kraft paper bags)$/i.test(l.product) ? l.product : lineOf(l) === 'pack' ? 'kraft paper bags' : 'our products');
 
 // what the buyer did not tell us, phrased as questions
 function missingQuestions(l) {
   const sc = scoreOf(l), gaps = new Set(sc.checks.filter((c) => !c.ok).map((c) => c.gap));
-  if (session.line === 'pack') {
+  if (lineOf(l) === 'pack') {
     const d = l.design;
     return [
       !d ? 'the bag type and size, or the dimensions you need' : null,
@@ -40,25 +40,25 @@ export function templatesFor(l) {
     followup: {
       label: 'Follow up on a quote',
       subject: `Following up: ${product}`,
-      body: `${hi}\n\nI am following up on our offer for ${product}. Do you have any questions, or shall we go ahead and reserve ${session.line === 'pack' ? 'production time' : 'volume'} for you?\n\n${signOff()}`,
+      body: `${hi}\n\nI am following up on our offer for ${product}. Do you have any questions, or shall we go ahead and reserve ${lineOf(l) === 'pack' ? 'production time' : 'volume'} for you?\n\n${signOff(l)}`,
     },
   };
-  if (session.line === 'pack') {
+  if (lineOf(l) === 'pack') {
     return {
       details: {
         label: 'Thank you, and a few details',
         subject: `Your request for ${product}`,
-        body: `${hi}\n\nThank you for your request. So we can quote accurately, could you confirm:\n${bullets(missingQuestions(l))}\n\n${hasArtwork ? 'We have received your artwork and will send a mockup for your approval.' : 'Please also send your logo as a PDF, AI, EPS or SVG file so we can prepare a mockup.'}\n\n${signOff()}`,
+        body: `${hi}\n\nThank you for your request. So we can quote accurately, could you confirm:\n${bullets(missingQuestions(l))}\n\n${hasArtwork ? 'We have received your artwork and will send a mockup for your approval.' : 'Please also send your logo as a PDF, AI, EPS or SVG file so we can prepare a mockup.'}\n\n${signOff(l)}`,
       },
       mockup: {
         label: 'Mockup for approval',
         subject: `Mockup of your ${product}`,
-        body: `${hi}\n\nPlease find attached a mockup of your bag with your design. Let us know if you would like any changes to the size, position or colours of the print, and we will update it.\n\n${signOff()}`,
+        body: `${hi}\n\nPlease find attached a mockup of your bag with your design. Let us know if you would like any changes to the size, position or colours of the print, and we will update it.\n\n${signOff(l)}`,
       },
       quote: {
         label: 'Send the quote',
         subject: `Quote for ${product}`,
-        body: `${hi}\n\nThank you for your interest. Our quote is below.\n\n[quote]\n\n${signOff()}`,
+        body: `${hi}\n\nThank you for your interest. Our quote is below.\n\n[quote]\n\n${signOff(l)}`,
       },
       ...common,
     };
@@ -67,17 +67,17 @@ export function templatesFor(l) {
     details: {
       label: 'Thank you, and a few details',
       subject: `Your enquiry about ${product}`,
-      body: `${hi}\n\nThank you for your enquiry about ${product}. To prepare a price, could you confirm:\n${bullets(missingQuestions(l))}\n\nWe quote as soon as we have these details.\n\n${signOff()}`,
+      body: `${hi}\n\nThank you for your enquiry about ${product}. To prepare a price, could you confirm:\n${bullets(missingQuestions(l))}\n\nWe quote as soon as we have these details.\n\n${signOff(l)}`,
     },
     quote: {
       label: 'Send the quote',
       subject: `Offer for ${product}`,
-      body: `${hi}\n\nThank you for your interest in ${product}. Our offer is below.\n\n[quote]\n\n${signOff()}`,
+      body: `${hi}\n\nThank you for your interest in ${product}. Our offer is below.\n\n[quote]\n\n${signOff(l)}`,
     },
     samples: {
       label: 'Offer a sample',
       subject: `Sample of ${product}`,
-      body: `${hi}\n\nWe would be glad to send a sample of ${product} for your quality evaluation. Please send the delivery address and, if you have one, your courier account number.\n\n${signOff()}`,
+      body: `${hi}\n\nWe would be glad to send a sample of ${product} for your quality evaluation. Please send the delivery address and, if you have one, your courier account number.\n\n${signOff(l)}`,
     },
     ...common,
   };

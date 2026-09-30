@@ -6,9 +6,6 @@
 @media (max-width: 520px) { .t-user { display: none; } }
 
 /* sign in: the administrator's choice of workspace, and the link inside a note */
-.t-choice { display: grid; gap: var(--s-4); }
-.a-linkbtn { font: inherit; color: inherit; background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.a-linkbtn:hover { color: var(--ink); }
 
 /* ---------- inbox head: title, one line of numbers, refresh ---------- */
 .t-inbox-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-8); }
@@ -52,7 +49,6 @@
 .t-design { display: grid; gap: 10px; justify-items: start; }
 /* the studio's logo check, carried to the team with the client's design */
 .t-logo-note { max-width: 62ch; padding: 10px 12px; border-radius: var(--t-radius-sm); background: var(--accent-subtle); color: var(--ink); font-size: .875rem; line-height: 1.5; }
-.t-admin-note { padding-top: var(--s-5); border-top: 1px solid var(--line); }
 
 /* files */
 .t-files-panel { display: grid; gap: var(--s-5); }
@@ -221,26 +217,52 @@
 .t-pt-actions { display: flex; align-items: center; gap: 2px; }
 @media (max-width: 640px) { .t-pt-item { grid-template-columns: minmax(0, 1fr); } .t-pt-actions { justify-content: flex-end; } }
 
-/* product photos: the products on the left, the chosen one's editor on the right */
-.t-ph-layout { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 16px; align-items: start; }
-@media (max-width: 960px) { .t-ph-layout { grid-template-columns: minmax(0, 1fr); } }
-.t-ph-list { list-style: none; margin: 0; padding: 6px; display: grid; background: var(--surface); border-radius: var(--t-radius); box-shadow: 0 0 0 1px var(--line); position: sticky; top: var(--t-sticky); max-height: calc(100svh - var(--t-sticky) - 16px); overflow: auto; }
-@media (max-width: 960px) { .t-ph-list { position: static; max-height: none; } }
-.t-ph-item { width: 100%; display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center; padding: 7px 10px 7px 7px; border: 0; border-radius: 9px; background: none; color: var(--ink); text-align: left; font: inherit; cursor: pointer; transition: background-color var(--dur-micro) var(--ease); }
-.t-ph-item:hover { background: var(--fill-1); }
-.t-ph-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.t-ph-item.is-open { background: var(--row-sel); }
-.t-ph-item img, .t-ph-none { width: 52px; height: 52px; border-radius: 8px; object-fit: contain; background: var(--site-stage); display: block; }
-.t-ph-text { display: grid; gap: 2px; min-width: 0; }
-.t-ph-text strong { font-size: .9375rem; font-weight: 600; }
-.t-ph-text span { font-size: .8125rem; color: var(--ink-2); }
-.t-ph-editor { display: grid; gap: 18px; position: sticky; top: var(--t-sticky); }
-@media (max-width: 960px) { .t-ph-editor { position: static; } }
-.t-ph-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.t-ph-head h2 { font-size: 1.25rem; }
-.t-ph-work { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.t-ph-work > .a-field:last-child { grid-column: 1 / -1; }
-@media (max-width: 720px) { .t-ph-work { grid-template-columns: minmax(0, 1fr); } }
-/* a transparent image is shown on the website's warm stage colour, as visitors see it */
-.t-ph-stage.is-cutout, .t-ph-preview canvas.is-cutout { background: var(--site-stage); }
 .t-ph-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+/* the packaging editor: a transparent image is shown on the website's warm stage colour, as visitors see it */
+.a-corner-stage.is-cutout, .a-preview-stage canvas.is-cutout { background: var(--site-stage); }
+
+/* ---------- manager ---------- */
+/* the team strip on the dashboard: what is loose, and who holds what */
+.t-team-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--s-4); }
+.t-team-chip { display: inline-flex; align-items: baseline; gap: 8px; padding: 8px 14px; border-radius: 999px; background: var(--fill-1); color: var(--ink-2); text-decoration: none; font-size: .875rem; transition: background-color var(--dur-micro) var(--ease); }
+.t-team-chip strong { color: var(--ink); font-size: 1rem; font-variant-numeric: tabular-nums; }
+.t-team-chip:hover { background: var(--fill-2); }
+.t-team-chip.is-warn strong { color: var(--danger); }
+.t-team-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 4px 16px; }
+.t-team-list .t-team-link { display: flex; align-items: center; gap: 12px; padding: 8px 10px; margin-inline: -10px; border-radius: 10px; color: inherit; text-decoration: none; transition: background-color var(--dur-micro) var(--ease); }
+.t-team-list .t-team-link:hover { background: var(--fill-1); }
+.t-team-list .a-avatar { width: 34px; height: 34px; font-size: .75rem; }
+.t-team-list .grow { display: grid; min-width: 0; }
+.t-team-list .grow strong { font-size: .9375rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-team-list .grow span { font-size: .8125rem; color: var(--ink-2); }
+.t-team-n { font-size: .8125rem; color: var(--ink-2); white-space: nowrap; }
+.t-team-n strong { font-size: .9375rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* the pipeline board: one column per stage, scrolling sideways inside itself on narrow screens */
+.t-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(212px, 1fr); gap: 12px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding-bottom: 8px; margin-top: var(--s-4); }
+.t-col { scroll-snap-align: start; display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px; border-radius: var(--t-radius); background: var(--fill-1); }
+.t-col header { display: grid; gap: 2px; padding: 2px 4px 6px; }
+.t-col h2 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: .9375rem; font-weight: 650; }
+.t-col h2 b { font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.t-col header p { font-size: .8125rem; color: var(--ink-2); }
+.t-col ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.t-col-empty { font-size: .8125rem; color: var(--ink-2); padding: 4px; }
+.t-card { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 6px; padding: 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(0,0,0,.04); color: var(--ink); text-decoration: none; transition: box-shadow var(--dur-micro) var(--ease), transform var(--dur-micro) var(--ease); }
+.t-card:hover { box-shadow: 0 0 0 1px var(--line-strong), 0 6px 16px -8px rgba(0,0,0,.18); }
+.t-card:active { transform: scale(.985); }
+html[data-input="keyboard"] .t-card:active { transform: none; }
+.t-card.is-late { box-shadow: inset 3px 0 0 var(--danger), 0 0 0 1px var(--line); }
+.t-card-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.t-card-top strong { font-size: .9375rem; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-card-top time { font-size: .75rem; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.t-card-co { font-size: .8125rem; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.t-card-money { font-size: .8125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.t-card-owner { display: flex; justify-content: space-between; gap: 8px; font-size: .8125rem; color: var(--ink-2); }
+.t-card-owner em { font-style: normal; font-weight: 600; color: var(--danger); }
+.t-col > .btn { justify-self: start; }
+@media (prefers-reduced-motion: reduce) { .t-card, .t-team-chip, .t-team-link { transition: none; } .t-card:active { transform: none; } }
+
+/* team performance: the quote value sits under the count */
+.t-people td small { display: block; font-size: .75rem; color: var(--ink-2); white-space: nowrap; }
+.t-person { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }

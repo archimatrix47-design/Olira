@@ -1,4 +1,4 @@
-// Logo, social links, email delivery, marketing tags and password.
+// Logo, email delivery, marketing tags and password.
 import { $, $$, api, toast, save } from './api.js';
 
 const once = new Set();
@@ -58,27 +58,6 @@ async function loadLogo() {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-/* ---------- social ---------- */
-export async function showSocial() {
-  const form = $('#socialForm');
-  bindOnce('social', () => form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const body = {};
-    for (const el of form.querySelectorAll('input')) {
-      const v = el.value.trim();
-      if (v && !/^https?:\/\/\S+$/i.test(v)) return invalid(el, `${el.labels[0].textContent} must be a full link starting with https://`, $('#socialErr'));
-      body[el.name] = v;
-    }
-    $('#socialErr').hidden = true;
-    await save(form.querySelector('button[type=submit]'), () => api('/api/social-links', { method: 'POST', body }), 'Social links saved.');
-  }));
-  try {
-    const d = await api('/api/social-links');
-    for (const el of form.querySelectorAll('input')) el.value = d?.[el.name] || '';
-  } catch (e) { toast(e.message, 'error'); }
-}
-
-/* ---------- email ---------- */
 export async function showEmail() {
   const form = $('#emailForm');
   bindOnce('email', () => form.addEventListener('submit', async (e) => {

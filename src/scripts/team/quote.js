@@ -2,25 +2,26 @@
 // enquiry (moves it to Quoted) and printed as a one-page quote, which the
 // browser can save as a PDF. No phone numbers are printed on the quote.
 import { $, h, api, toast } from '../admin/api.js';
-import { session } from './session.js';
+import { session, lineOf } from './session.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const inDays = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
 const money = (cur, n) => `${cur} ${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-let catalogue = null;
-async function productNames() {
-  if (catalogue) return catalogue;
+// product names for the line's datalist; the public lists, so a manager can quote both lines
+const catalogues = {};
+async function productNames(line) {
+  if (catalogues[line]) return catalogues[line];
   try {
-    catalogue = session.line === 'pack'
-      ? (await api('/api/packaging-products?scope=team')).map((p) => p.name)
+    catalogues[line] = line === 'pack'
+      ? (await api('/api/packaging-products')).map((p) => p.name)
       : (await api('/api/products')).map((p) => p.name);
-  } catch (e) { catalogue = []; }
-  return catalogue;
+  } catch (e) { catalogues[line] = []; }
+  return catalogues[line];
 }
 
 function defaults(l) {
-  const pack = session.line === 'pack';
+  const pack = lineOf(l) === 'pack';
   const prev = l.quote;
   if (prev) return JSON.parse(JSON.stringify(prev));
   const port = (String(l.message || '').match(/Destination port:\s*(.+)/i) || [])[1]?.trim() || '';
@@ -36,13 +37,13 @@ function defaults(l) {
 }
 
 export function quoteBuilder(l, { onSaved, draft } = {}) {
-  const pack = session.line === 'pack';
+  const pack = lineOf(l) === 'pack';
   const q = draft || defaults(l);
   const wrap = h('details', { class: 't-quote', 'data-quote': '', open: draft || !l.quote ? null : null });
   const summary = h('summary', {}, l.quote ? `Quote ${l.quote.number}, ${money(l.quote.currency, l.quote.total)}, saved ${new Date(l.quote.at).toLocaleDateString()}` : 'Build a quote');
   const listId = `names-${l.id}`;
   const datalist = h('datalist', { id: listId });
-  productNames().then((names) => datalist.replaceChildren(...names.map((n) => h('option', { value: n }))));
+  productNames(lineOf(l)).then((names) => datalist.replaceChildren(...names.map((n) => h('option', { value: n }))));
 
   const rows = h('div', { class: 't-lines' });
   const total = h('strong', { class: 't-quote-total' });
@@ -170,7 +171,7 @@ async function companyDetails() {
 export async function printQuote(l, q) {
   if (!q) return toast('Save the quote first.', 'error');
   const c = await companyDetails();
-  const pack = q.line === 'pack' || session.line === 'pack';
+  const pack = (q.line || lineOf(l)) === 'pack';
   const sheet = $('#printSheet');
   const date = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   const t = q.terms || {};
@@ -203,7 +204,8 @@ export async function printQuote(l, q) {
     h('footer', { class: 'p-foot' }, `Prepared by ${q.by?.name || session.user?.name || 'Olira'}${session.user?.email && q.by?.id === session.user.id ? `, ${session.user.email}` : ''}.`));
   const img = sheet.querySelector('img');
   await new Promise((r) => { if (img.complete) r(); else { img.onload = r; img.onerror = r; } });
+  const title = document.title;
   document.title = `${q.number} ${l.company || l.name || ''}`.trim();
   window.print();
-  document.title = `${session.line === 'pack' ? 'Packaging' : 'Agriculture'} workspace, Olira`;
+  document.title = title;
 }

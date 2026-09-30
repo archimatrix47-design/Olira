@@ -1,11 +1,10 @@
-// Products: the agriculture page's stack, in order. The list on the left; the
-// chosen product (or a new one) in the editor beside it.
-import { $, h, api, toast, confirmDialog, busy, uploadImage } from './api.js';
-import * as store from './store.js';
-import { scrollBehavior } from './motion.js';
-import { watch, clean, touch, mayLeave } from './tools.js';
-import { sparkline, deltaChip, empty } from './charts.js';
-import { int, decimal, delta, NO_DATA } from './format.js';
+// Agriculture products: the agriculture page's stack, in order, looked after
+// by the agriculture team. The list on the left; the chosen product (or a new
+// one) in the editor beside it. How the products perform is on the manager's
+// Products page.
+import { $, h, api, toast, confirmDialog, busy, uploadImage } from '../admin/api.js';
+import { scrollBehavior } from '../admin/motion.js';
+import { watch, clean, touch, mayLeave } from '../admin/tools.js';
 
 let items = [];
 let editingId = null;
@@ -16,58 +15,7 @@ const field = (name) => form.elements.namedItem(name);
 
 export async function show() {
   if (!bound) { bound = true; bind(); }
-  const sel = $('[data-view="products"] [data-period]');
-  store.periodSelect(sel, () => renderPerformance());
-  sel.value = String(store.getDays());
   await load();
-  renderPerformance();
-}
-
-/* ---------- performance ---------- */
-// Content completeness, out of 100: what a buyer needs to judge the product.
-function contentScore(p) {
-  const checks = [
-    [30, !!p.image, 'photo'],
-    [20, String(p.description || '').length >= 120, 'a fuller description (120 characters or more)'],
-    [10, !!p.purity, 'purity'],
-    [10, !!p.moq, 'minimum order'],
-    [20, (p.specs || []).length >= 3, 'at least 3 key points'],
-    [10, /^(sesame|pulses|spices|coffee|specialty)$/i.test(p.category || ''), 'a standard category'],
-  ];
-  return { score: checks.reduce((n, [pts, ok]) => n + (ok ? pts : 0), 0), missing: checks.filter(([, ok]) => !ok).map(([, , label]) => label) };
-}
-
-async function renderPerformance() {
-  const box = $('#prPerformance');
-  try {
-    const a = await store.analytics();
-    const stats = new Map((a.products || []).map((x) => [x.name, x]));
-    const rows = items.map((p) => {
-      const s = stats.get(p.name) || { clicks: 0, inquiries: 0, prevClicks: 0, daily: [] };
-      return { p, s, c: contentScore(p) };
-    }).sort((x, y) => y.s.clicks - x.s.clicks || y.s.inquiries - x.s.inquiries);
-    if (!rows.length) { box.replaceChildren(empty('Add products to see how they perform.')); return; }
-    const table = h('table', { class: 'a-table a-perf' },
-      h('caption', { class: 'sr-only' }, 'Product performance'),
-      h('thead', {}, h('tr', {}, ['Product', 'Details opened', 'Enquiries', 'Enquiries per 100 opens', 'Trend', 'Content'].map((t, i) => h('th', { scope: 'col', class: i && i < 4 ? 'num' : '' }, t)))),
-      h('tbody', {}, rows.map(({ p, s, c }) => {
-        const flags = [];
-        if (s.clicks >= 10 && !s.inquiries) flags.push(h('span', { class: 'flag' }, 'Interest, no enquiries'));
-        if (!p.image) flags.push(h('span', { class: 'flag' }, 'No photo'));
-        if (!s.clicks) flags.push(h('span', { class: 'flag info' }, 'Not opened'));
-        const meter = h('i'); const fill = h('b'); fill.style.width = `${c.score}%`; meter.append(fill);
-        return h('tr', {},
-          h('th', { scope: 'row' }, p.name, ...flags),
-          h('td', { class: 'num' }, int(s.clicks), deltaChip(delta(s.clicks, s.prevClicks), true)),
-          h('td', { class: 'num' }, int(s.inquiries)),
-          h('td', { class: 'num' }, s.clicks ? decimal((s.inquiries / s.clicks) * 100) : NO_DATA),
-          h('td', {}, s.daily?.some(Boolean) ? sparkline(s.daily, { width: 110, height: 28, label: `${p.name} opened per day` }) : h('span', { class: 'a-note' }, 'No opens')),
-          h('td', {}, h('span', { class: 'v-meter', title: c.missing.length ? `Add ${c.missing.join(', ')}` : 'Complete' }, meter, `${c.score}`, h('span', { class: 'sr-only' }, c.missing.length ? ` out of 100. Missing ${c.missing.join(', ')}` : ' out of 100, complete'))));
-      })));
-    const incomplete = rows.filter((r) => r.c.missing.length);
-    box.replaceChildren(h('div', { class: 'a-scroll' }, table),
-      incomplete.length ? h('p', { class: 'v-note' }, `To strengthen: ${incomplete.slice(0, 3).map((r) => `${r.p.name} needs ${r.c.missing.join(', ')}`).join('. ')}.`) : h('p', { class: 'v-note' }, 'Every product has a photo, a full description, purity, minimum order and key points.'));
-  } catch (e) { if (e.status !== 401) box.replaceChildren(empty('Performance could not load.')); }
 }
 
 async function load() {
@@ -176,7 +124,6 @@ function bind() {
       // the saved product stays open, as it now is on the website
       fill(saved);
       renderList(saved.id);
-      store.invalidate('products'); renderPerformance();
     } catch (x) { toast(x.message, 'error'); done(); }
   });
   close();
@@ -282,6 +229,5 @@ async function remove(p) {
     items = items.filter((x) => x.id !== p.id);
     if (editingId === p.id) { clean(form); close(); } else renderList();
     toast(`${p.name} deleted.`);
-    store.invalidate('products'); renderPerformance();
   } catch (e) { toast(e.message, 'error'); }
 }

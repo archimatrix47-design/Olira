@@ -1,12 +1,14 @@
 // Inbox: the team's enquiries on the left, the selected one on the right with
 // everything needed to work it: accept, stage, buyer details, the client's files
 // and studio design, reply by email, quote, log a call, and the timeline.
+// For a manager it is the CRM for both lines: filter by line and owner, hand an
+// enquiry to someone on its team, delete it, and download the list.
 // Enquiry text comes from strangers, so it is only ever written as text.
 import { $, $$, h, api, getToken, toast, confirmDialog, formatDate, timeAgo } from '../admin/api.js';
-import { bundleTable, bundleCount } from './bundle-view.js';
+import { bundleTable, bundleCount, bundleText } from './bundle-view.js';
 import { STAGES, scoreOf, BAND_LABEL, firstResponseHours, median, ageHours } from '../admin/leads.js';
 import { hours, int } from '../admin/format.js';
-import { session, leads, putLead, OPEN, CLOSED, isMine, toAccept as waiting, stageName, followupsOf } from './session.js';
+import { session, leads, putLead, dropLead, OPEN, CLOSED, isMine, toAccept as waiting, stageName, followupsOf, lineOf, LINE_LABEL, LINE_NAME, teamOf } from './session.js';
 import { composer } from './compose.js';
 import { confirmSelect } from '../admin/stage-control.js';
 import { scrollBehavior, captureFocus, restoreFocus } from '../admin/motion.js';
@@ -16,7 +18,9 @@ import { arrowKeys, backButton } from '../admin/tools.js';
 let all = [];
 let bound = false;
 let selectedId = null;
-const pack = () => session.line === 'pack';
+// the enquiry's own line decides its templates, files and wording (a manager sees both)
+const isPack = (l) => lineOf(l) === 'pack';
+const boss = () => session.oversees;
 
 export async function refreshCounts() {
   try { all = await leads(); setCounts(); } catch (e) {}
@@ -24,7 +28,7 @@ export async function refreshCounts() {
 function setCounts() {
   const toAccept = all.filter(waiting).length;
   const badge = $('[data-count="inbox"]');
-  badge.hidden = !toAccept; badge.textContent = toAccept > 99 ? '99+' : String(toAccept || ''); badge.setAttribute('aria-label', `${toAccept} to accept`);
+  badge.hidden = !toAccept; badge.textContent = toAccept > 99 ? '99+' : String(toAccept || ''); badge.setAttribute('aria-label', `${toAccept} ${boss() ? 'not handed out' : 'to accept'}`);
   const due = followupsOf(all).length;
   const fb = $('[data-count="followups"]');
   fb.hidden = !due; fb.textContent = String(due || ''); fb.setAttribute('aria-label', `${due} follow-ups due`);
@@ -37,6 +41,11 @@ export async function show({ params }) {
     $('#inboxSort').addEventListener('change', () => { renderList(); writeUrl(); });
     let t; $('#inboxSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { renderList(); writeUrl(); }, 200); });
     $('#inboxRefresh').addEventListener('click', () => load(true));
+    if (boss()) {
+      ['#inboxLine', '#inboxOwner'].forEach((sel) => $(sel).addEventListener('change', () => { renderList(); writeUrl(); }));
+      $('#inboxCsv').addEventListener('click', csv);
+      fillOwners();
+    }
     // up and down move through the enquiries, as in Mail
     arrowKeys($('#inboxList'), '.t-row', (id) => select(id, { push: false }));
     // coming back to the tab after a while picks up new enquiries without a click
@@ -49,6 +58,11 @@ export async function show({ params }) {
   if (f && $(`input[name="inboxFilter"][value="${CSS.escape(f)}"]`)) $(`input[name="inboxFilter"][value="${CSS.escape(f)}"]`).checked = true;
   if (s && $(`#inboxSort option[value="${CSS.escape(s)}"]`)) $('#inboxSort').value = s;
   if (q != null) $('#inboxSearch').value = q;
+  if (boss()) {
+    const ln = params.get('line'), owner = params.get('owner');
+    $('#inboxLine').value = ln === 'agri' || ln === 'pack' ? ln : 'all';
+    $('#inboxOwner').value = owner && $(`#inboxOwner option[value="${CSS.escape(owner)}"]`) ? owner : '';
+  }
   await load();
   const want = params.get('lead');
   if (want && all.some((l) => l.id === want)) {
@@ -59,10 +73,11 @@ export async function show({ params }) {
       const filter = waiting(l) ? 'unassigned' : OPEN.includes(l.status) ? (isMine(l) ? 'mine' : 'open') : 'closed';
       $(`input[name="inboxFilter"][value="${filter}"]`).checked = true;
       $('#inboxSearch').value = '';
+      if (boss()) { $('#inboxLine').value = 'all'; $('#inboxOwner').value = ''; }
     }
     renderList();
     select(want, { focus: true });
-  } else if (!selectedId && !f) {
+  } else if (!selectedId && !f && !boss()) {
     const mine = all.filter((l) => isMine(l) && OPEN.includes(l.status)).length;
     const toAccept = all.filter(waiting).length;
     if (!toAccept && mine) { $('input[name="inboxFilter"][value="mine"]').checked = true; renderList(); }
@@ -98,6 +113,8 @@ function writeUrl() {
   if (f !== 'unassigned') p.set('filter', f);
   if (s !== 'newest') p.set('sort', s);
   if (q) p.set('q', q);
+  if (boss() && $('#inboxLine').value !== 'all') p.set('line', $('#inboxLine').value);
+  if (boss() && $('#inboxOwner').value) p.set('owner', $('#inboxOwner').value);
   if (selectedId) p.set('lead', selectedId);
   const qs = p.toString();
   history.replaceState(null, '', `#inbox${qs ? `?${qs}` : ''}`);
@@ -107,11 +124,11 @@ function writeUrl() {
 function renderKpis() {
   const mineOpen = all.filter((l) => isMine(l) && OPEN.includes(l.status));
   const toAccept = all.filter(waiting);
-  const quotes = all.filter((l) => l.status === 'quoted' && (session.isAdmin || isMine(l)));
+  const quotes = all.filter((l) => l.status === 'quoted' && (boss() || isMine(l)));
   const month = Date.now() - 30 * 86400000;
-  const recent = all.filter((l) => Date.parse(l.createdAt) > month && (session.isAdmin || isMine(l)));
+  const recent = all.filter((l) => Date.parse(l.createdAt) > month && (boss() || isMine(l)));
   const resp = median(recent.map(firstResponseHours));
-  const won = all.filter((l) => l.status === 'won' && (session.isAdmin || isMine(l)) && Date.parse(l.history?.at(-1)?.at || l.createdAt) > month).length;
+  const won = all.filter((l) => l.status === 'won' && (boss() || isMine(l)) && Date.parse(l.history?.at(-1)?.at || l.createdAt) > month).length;
   const oldest = toAccept.length ? Math.max(...toAccept.map(ageHours)) : null;
   const due = followupsOf(all).length;
   // [value, label, note, overdue]; overdue is said in words, not only in colour
@@ -120,11 +137,11 @@ function renderKpis() {
     return h('li', { class: `t-stat${overdue ? ' is-warn' : ''}` }, href ? h('a', { class: 't-stat-link', href }, ...body) : body);
   };
   $('#inboxKpis').replaceChildren(
-    stat(int(toAccept.length), 'to accept', oldest != null ? `oldest ${hours(oldest)}` : null, oldest != null && oldest > 4),
-    stat(int(session.isAdmin ? all.filter((l) => OPEN.includes(l.status)).length : mineOpen.length), session.isAdmin ? 'open' : 'mine, open', null, false),
+    stat(int(toAccept.length), boss() ? 'not handed out' : 'to accept', oldest != null ? `oldest ${hours(oldest)}` : null, oldest != null && oldest > 4),
+    stat(int(boss() ? all.filter((l) => OPEN.includes(l.status)).length : mineOpen.length), boss() ? 'open' : 'mine, open', null, false),
     stat(int(quotes.length), 'quotes out', null, false),
     stat(int(due), due === 1 ? 'follow-up due' : 'follow-ups due', null, due > 0, '#followups'),
-    h('li', { class: 't-stat t-stat-quiet' }, h('span', {}, session.isAdmin ? 'First response' : 'My first response'), resp == null ? h('em', {}, 'not enough data yet') : h('strong', {}, hours(resp)), won ? h('em', {}, `${won} won in 30 days`) : null),
+    h('li', { class: 't-stat t-stat-quiet' }, h('span', {}, boss() ? 'Team first response' : 'My first response'), resp == null ? h('em', {}, 'not enough data yet') : h('strong', {}, hours(resp)), won ? h('em', {}, `${won} won in 30 days`) : null),
   );
 }
 
@@ -137,9 +154,13 @@ function filtered() {
     mine: (l) => isMine(l) && OPEN.includes(l.status),
     open: (l) => OPEN.includes(l.status),
     closed: (l) => CLOSED.includes(l.status),
+    all: () => true,
   };
-  for (const [k, fn] of Object.entries(test)) { const b = $(`[data-filter-count="${k}"]`); if (b) b.textContent = String(all.filter(fn).length); }
-  let list = all.filter(test[f]).filter((l) => !q || [l.name, l.company, l.email, l.phone, l.product, l.message, l.assignee?.name].some((v) => String(v || '').toLowerCase().includes(q)));
+  // the line and owner narrow the list first, so the counts on the filters match what shows
+  const ln = boss() ? $('#inboxLine').value : 'all', owner = boss() ? $('#inboxOwner').value : '';
+  const scoped = all.filter((l) => (ln === 'all' || lineOf(l) === ln) && (!owner || (owner === 'none' ? !l.assignee : l.assignee?.id === owner)));
+  for (const [k, fn] of Object.entries(test)) { const b = $(`[data-filter-count="${k}"]`); if (b) b.textContent = String(scoped.filter(fn).length); }
+  let list = scoped.filter(test[f] || test.open).filter((l) => !q || [l.name, l.company, l.email, l.phone, l.product, l.message, l.assignee?.name].some((v) => String(v || '').toLowerCase().includes(q)));
   if (sort === 'oldest') list.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
   else if (sort === 'score') list.sort((a, b) => scoreOf(b).score - scoreOf(a).score);
   else list.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
@@ -149,9 +170,9 @@ function filtered() {
 function renderList() {
   const list = filtered(), ul = $('#inboxList');
   const f = $('input[name="inboxFilter"]:checked').value;
-  $('#inboxSummary').textContent = `${list.length} shown of ${all.length} ${session.line === 'pack' ? 'packaging' : 'agriculture'} ${all.length === 1 ? 'enquiry' : 'enquiries'}.`;
+  $('#inboxSummary').textContent = `${list.length} shown of ${all.length} ${boss() ? '' : `${LINE_NAME[session.line]} `}${all.length === 1 ? 'enquiry' : 'enquiries'}.`;
   if (!list.length) {
-    const msg = { unassigned: ['Nothing to accept', 'New enquiries from the website appear here.'], mine: ['Nothing open for you', 'Accept an enquiry in To accept to make it yours.'], open: ['No open enquiries', 'Everything has been won, lost or archived.'], closed: ['Nothing closed yet', 'Enquiries marked Won, Lost or Archived appear here.'] }[f];
+    const msg = { unassigned: boss() ? ['Nothing to hand out', 'Every open enquiry has someone on it.'] : ['Nothing to accept', 'New enquiries from the website appear here.'], mine: ['Nothing open for you', 'Accept an enquiry in To accept to make it yours.'], open: ['No open enquiries', 'Everything has been won, lost or archived.'], closed: ['Nothing closed yet', 'Enquiries marked Won, Lost or Archived appear here.'], all: ['No enquiries', 'Try another line, owner or search.'] }[f];
     ul.replaceChildren(h('li', { class: 't-list-empty' }, h('strong', {}, msg[0]), msg[1]));
     return;
   }
@@ -161,7 +182,8 @@ function renderList() {
       [l.name || 'Unknown', l.company].filter(Boolean).join(', '),
       stageName(l.status),
       `Lead score ${sc.score}, ${BAND_LABEL[sc.band].toLowerCase()}`,
-      l.assignee ? (isMine(l) ? 'Accepted by you' : `Accepted by ${l.assignee.name}`) : null,
+      boss() ? LINE_LABEL[lineOf(l)] : null,
+      l.assignee ? (isMine(l) ? 'Accepted by you' : `Held by ${l.assignee.name}`) : boss() && OPEN.includes(l.status) ? 'Not handed out' : null,
       l.files?.length ? `${l.files.length} file${l.files.length === 1 ? '' : 's'}` : null,
       `Received ${timeAgo(l.createdAt)}`,
     ].filter(Boolean).join('. ');
@@ -169,7 +191,10 @@ function renderList() {
       h('span', { class: 't-row-top' },
         h('strong', {}, l.name || 'Unknown'),
         h('time', { datetime: l.createdAt, title: formatDate(l.createdAt) }, timeAgo(l.createdAt))),
-      h('span', { class: 't-row-sub' }, [l.company, l.product && !/^(Agricultural products|Packaging)$/i.test(l.product) ? l.product : null].filter(Boolean).join(', ') || l.email),
+      h('span', { class: 't-row-sub' },
+        // for a manager the line leads the second line, as it can also filter by it
+        boss() ? h('b', { class: `t-line-${lineOf(l)}` }, LINE_LABEL[lineOf(l)]) : null,
+        `${boss() ? ', ' : ''}${[l.company, l.product && !/^(Agricultural products|Packaging)$/i.test(l.product) ? l.product : null].filter(Boolean).join(', ') || l.email || ''}`),
       h('span', { class: 't-row-meta' },
         h('span', { class: `a-tag stage-${l.status}` }, stageName(l.status)),
         h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, String(sc.score), h('span', { class: 'sr-only' }, ` out of 100, ${BAND_LABEL[sc.band]}`)),
@@ -235,14 +260,14 @@ function renderDetail() {
   const digits = String(l.phone || '').replace(/[^\d+]/g, '');
 
   const ownerBar = h('div', { class: 't-owner-bar', 'data-focus-scope': `owner-${l.id}` },
-    !l.assignee && OPEN.includes(l.status) && !session.isAdmin
+    !l.assignee && OPEN.includes(l.status) && !boss()
       ? h('button', { class: 'btn btn-primary', type: 'button', onclick: () => update(l, { assign: 'me' }, `You accepted the enquiry from ${who}.`) }, 'Accept this enquiry')
-      : h('p', { class: 'a-note' }, l.assignee ? (mine ? 'You accepted this enquiry.' : `Accepted by ${l.assignee.name}.`) : session.isAdmin ? 'Not accepted by anyone yet.' : 'Closed.'),
-    mine || (session.isAdmin && l.assignee) ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: async () => {
-      const ok = await confirmDialog({ title: 'Release this enquiry?', body: `It goes back to To accept so someone else on the team can take it.`, confirm: 'Release' });
+      : h('p', { class: 'a-note' }, l.assignee ? (mine ? 'You accepted this enquiry.' : `Held by ${l.assignee.name}.`) : boss() ? 'Not handed out yet.' : 'Closed.'),
+    mine || (boss() && l.assignee) ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: async () => {
+      const ok = await confirmDialog({ title: 'Release this enquiry?', body: `It goes back to To accept so someone else on the ${LINE_NAME[lineOf(l)]} team can take it.`, confirm: 'Release' });
       if (ok) update(l, { assign: 'none' }, 'Released. It is back in To accept.');
     } }, 'Release') : null,
-    session.isAdmin ? assignSelect(l) : null,
+    boss() ? assignSelect(l) : null,
     (() => {
       const stage = confirmSelect({ options: STAGES.map((s) => [s.id, s.label]), value: l.status, label: `Stage for ${who}`, onConfirm: (v) => update(l, { status: v }, `Moved to ${stageName(v)}.`) });
       return h('div', { class: 't-stage' }, h('label', { class: 'a-stage' }, 'Stage', stage.select), stage.button);
@@ -253,7 +278,7 @@ function renderDetail() {
     fact('Phone', l.phone ? h('span', { class: 't-inline' }, h('a', { href: `tel:${digits}` }, l.phone), digits ? h('a', { class: 'btn btn-ghost btn-sm', href: `https://wa.me/${digits.replace('+', '')}`, target: '_blank', rel: 'noopener' }, 'WhatsApp') : null) : 'Not given'),
     fact('Asked about', l.product || 'Not specified'),
     d.market ? fact('Market', `${d.market.name}, from the ${d.market.from}`) : null,
-    d.port ? fact(pack() ? 'Delivery' : 'Destination port', d.port) : null,
+    d.port ? fact(isPack(l) ? 'Delivery' : 'Destination port', d.port) : null,
     d.volume ? fact('Quantity', d.volume) : null,
     fact('Received', `${formatDate(l.createdAt)}, ${timeAgo(l.createdAt)}`));
 
@@ -264,6 +289,7 @@ function renderDetail() {
         h('h2', {}, l.name || 'Unknown'),
         h('p', {}, [l.company, l.email].filter(Boolean).join(', '))),
       h('div', { class: 'a-lead-meta' },
+        boss() ? h('span', { class: `a-tag ${lineOf(l)}` }, LINE_LABEL[lineOf(l)]) : null,
         h('span', { class: `a-tag stage-${l.status}` }, stageName(l.status)),
         h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, `${sc.score}`, h('span', { class: 'sr-only' }, ` out of 100, ${BAND_LABEL[sc.band]}`)),
         l.emailed === false ? h('span', { class: 'a-tag warn', title: 'The notification email failed. The enquiry is safe here.' }, 'Notification not delivered') : null)),
@@ -276,14 +302,16 @@ function renderDetail() {
   ];
   if (bundleCount(l)) parts.push(section('Packing list', bundleTable(l)));
   if (l.design) parts.push(section('Design from the studio', designSummary(l)));
-  if (pack() || l.files?.length) parts.push(section('Files', filesPanel(l)));
+  if (isPack(l) || l.files?.length) parts.push(section('Files', filesPanel(l)));
   parts.push(
     section('Reply by email', composer(l, { onSent: replace, draft: keep.reply })),
     section('Quote', quoteBuilder(l, { onSaved: replace, draft: keep.quote })),
     section('Log a call, message or note', logForm(l, keep.log)),
     section('Timeline', timeline(l)),
   );
-  if (session.isAdmin) parts.push(h('p', { class: 'a-note t-admin-note' }, 'You are viewing this workspace as the administrator. Delete enquiries from the admin panel.'));
+  if (boss()) parts.push(h('div', { class: 't-section a-danger-zone', 'data-focus-scope': `foot-${l.id}` },
+    h('button', { class: 'btn btn-danger-quiet btn-sm', type: 'button', onclick: () => remove(l) }, 'Delete enquiry'),
+    h('span', { class: 'a-note' }, 'Removes it and its files for good. Mark it Lost or Archived to keep it.')));
   box.replaceChildren(...parts);
 }
 
@@ -303,7 +331,7 @@ function jumpBar(l) {
   const targets = [
     ['Reply', 'Reply by email', '[data-compose] [name=body]'],
     ['Quote', 'Quote', '.t-quote > summary'],
-    ...(pack() || l.files?.length ? [['Files', 'Files', null]] : []),
+    ...(isPack(l) || l.files?.length ? [['Files', 'Files', null]] : []),
     ['Log contact', 'Log a call, message or note', '[data-log] [name=text]'],
     ['Timeline', 'Timeline', null],
   ];
@@ -325,14 +353,71 @@ function section(title, ...children) {
 }
 
 function assignSelect(l) {
-  const members = session.members.filter((m) => m.role === session.line);
-  if (!members.length) return null;
+  const members = teamOf(lineOf(l));
+  if (!members.length) return h('p', { class: 'a-note' }, `No one is on the ${LINE_NAME[lineOf(l)]} team yet. Ask the site administrator to add someone.`);
   const hand = confirmSelect({
-    options: [['', 'Hand to a team member'], ...members.map((m) => [m.id, m.name])],
+    options: [['', `Hand to someone in ${LINE_NAME[lineOf(l)]}`], ...members.map((m) => [m.id, m.name])],
     value: l.assignee?.id || '', label: 'Hand this enquiry to', verb: 'Hand',
-    onConfirm: (v) => update(l, { assign: v }, 'Handed over.'),
+    onConfirm: (v) => update(l, { assign: v }, `Handed to ${members.find((m) => m.id === v)?.name || 'them'}.`),
   });
   return h('div', { class: 't-stage' }, hand.select, hand.button);
+}
+
+/** The owner filter: everyone who can hold an enquiry, by team. */
+function fillOwners() {
+  const sel = $('#inboxOwner');
+  const group = (line) => {
+    const people = teamOf(line);
+    return people.length ? h('optgroup', { label: LINE_LABEL[line] }, people.map((m) => h('option', { value: m.id }, m.name))) : null;
+  };
+  sel.replaceChildren(h('option', { value: '' }, 'Anyone'), h('option', { value: 'none' }, 'Nobody yet'), ...[group('agri'), group('pack')].filter(Boolean));
+}
+
+async function remove(l) {
+  const ok = await confirmDialog({ title: 'Delete this enquiry?', body: `The enquiry from ${l.name || 'this visitor'} and its files are removed for good. Mark it Lost or Archived instead if you may need it later.` });
+  if (!ok) return;
+  try {
+    await api(`/api/team/inquiries/${encodeURIComponent(l.id)}`, { method: 'DELETE' });
+    // the next enquiry in the list takes its place, as in Mail
+    const ids = $$('#inboxList .t-row').map((b) => b.dataset.id);
+    const at = ids.indexOf(l.id);
+    all = all.filter((x) => x.id !== l.id);
+    dropLead(l.id);
+    selectedId = ids[at + 1] || ids[at - 1] || null;
+    setCounts(); renderKpis(); renderList(); renderDetail(); writeUrl();
+    const next = selectedId && $(`#inboxList .t-row[data-id="${CSS.escape(selectedId)}"]`);
+    (next || $('#inboxSearch')).focus({ preventScroll: true });
+    toast('Enquiry deleted.');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/** The enquiries in view, as a spreadsheet. */
+function csv() {
+  const rows = filtered();
+  if (!rows.length) return toast('There are no enquiries in this view to download.', 'error');
+  const cols = [['createdAt', 'Date'], ['status', 'Stage'], ['line', 'Business line'], ['owner', 'Handled by'], ['product', 'Product'], ['score', 'Lead score'], ['market', 'Market'], ['port', 'Destination port'], ['volume', 'Volume'], ['firstResponse', 'First response (hours)'], ['quote', 'Latest quote'], ['name', 'Name'], ['company', 'Company'], ['email', 'Email'], ['phone', 'Phone'], ['message', 'Message'], ['emailed', 'Notification emailed'], ['bundle', 'Packing list']];
+  // quote every cell, and neutralise a leading = + - @ so spreadsheets never run it as a formula
+  const cell = (v) => { let t = String(v ?? ''); if (/^[=+\-@\t\r]/.test(t)) t = `'${t}`; return `"${t.replace(/"/g, '""')}"`; };
+  const value = (r, k) => {
+    const sc = scoreOf(r);
+    if (k === 'line') return LINE_LABEL[lineOf(r)];
+    if (k === 'owner') return r.assignee?.name || '';
+    if (k === 'status') return stageName(r.status);
+    if (k === 'score') return sc.score;
+    if (k === 'market') return sc.details.market?.name || '';
+    if (k === 'port') return sc.details.port || '';
+    if (k === 'volume') return sc.details.volume || '';
+    if (k === 'bundle') return bundleText(r);
+    if (k === 'quote') return r.quote ? `${r.quote.number} ${r.quote.currency} ${r.quote.total}` : '';
+    if (k === 'firstResponse') { const x = firstResponseHours(r); return x == null ? '' : x.toFixed(1); }
+    return r[k];
+  };
+  const text = [cols.map((c) => cell(c[1])).join(','), ...rows.map((r) => cols.map(([k]) => cell(value(r, k))).join(','))].join('\r\n');
+  const url = URL.createObjectURL(new Blob(['\uFEFF' + text], { type: 'text/csv;charset=utf-8' }));
+  const a = h('a', { href: url, download: `olira-enquiries-${new Date().toISOString().slice(0, 10)}.csv` });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast(`${rows.length} ${rows.length === 1 ? 'enquiry' : 'enquiries'} downloaded.`);
 }
 
 function designSummary(l) {
@@ -352,7 +437,8 @@ function designSummary(l) {
     ? `The logo file sits on a white box, which would print as a patch on kraft.${d.boxRemoved ? ' The client removed the box on the preview, but the file they sent still has it.' : ''} Ask for a transparent PNG or a vector file.`
     : d.logoCheck === 'light' ? `The logo is very pale and will hardly show on kraft.${d.oneInk ? ' The client chose to print it in the ink colour.' : ' Suggest printing it in the ink colour, or ask for a darker version.'}` : '';
   if (logoNote) wrap.append(h('p', { class: 't-logo-note' }, logoNote));
-  if (pack()) wrap.append(h('a', { class: 'btn btn-secondary btn-sm', href: `#mockups?lead=${encodeURIComponent(l.id)}` }, 'Open in Mockups'));
+  // Mockups live in the packaging team's workspace
+  if (isPack(l) && session.line === 'pack') wrap.append(h('a', { class: 'btn btn-secondary btn-sm', href: `#mockups?lead=${encodeURIComponent(l.id)}` }, 'Open in Mockups'));
   return wrap;
 }
 
@@ -380,7 +466,7 @@ function filesPanel(l) {
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
       } catch (e) { toast(e.message, 'error'); }
     });
-    const canRemove = f.source !== 'client' || session.isAdmin;
+    const canRemove = f.source !== 'client' || boss();
     grid.append(h('li', { class: 't-file' }, thumb,
       h('div', { class: 't-file-body' },
         h('strong', {}, f.name),
@@ -400,7 +486,7 @@ function filesPanel(l) {
   const add = h('label', { class: 'btn btn-secondary btn-sm', for: `addFile-${l.id}` }, 'Add a file');
   const note = l.filesRejected?.length ? h('p', { class: 'a-warn' }, `The client also tried to send ${l.filesRejected.length} file${l.filesRejected.length === 1 ? '' : 's'} that could not be accepted: ${l.filesRejected.join(', ')}. Ask them to email it.`) : null;
   return h('div', { class: 't-files-panel' },
-    files.length ? grid : h('p', { class: 'a-note' }, pack() ? 'No files yet. The client can attach artwork to the quote form, and mockups you save appear here.' : 'No files on this enquiry.'),
+    files.length ? grid : h('p', { class: 'a-note' }, isPack(l) ? 'No files yet. The client can attach artwork to the quote form, and mockups saved in Mockups appear here.' : 'No files on this enquiry.'),
     note, h('div', { class: 'row', style: '--gap:8px' }, input, add));
 }
 
@@ -452,7 +538,7 @@ function timeline(l) {
     else if (a.type !== 'accepted') items.push({ at: a.at, title: `${label[a.type] || a.type}${by}`, text: a.text, kind: a.type === 'note' ? 'note' : 'contact' });
     else items.push({ at: a.at, title: `Accepted${by}` });
   }
-  if (l.note) items.push({ at: l.noteAt || l.createdAt, title: 'Note from the admin panel', text: l.note, kind: 'note' });
+  if (l.note) items.push({ at: l.noteAt || l.createdAt, title: 'Earlier note', text: l.note, kind: 'note' });
   items.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
   return h('ol', { class: 't-timeline' }, items.map((it) => h('li', { class: it.kind ? `is-${it.kind}` : '' },
     h('div', { class: 't-tl-head' }, h('strong', {}, it.title), h('time', { datetime: it.at, title: formatDate(it.at) }, timeAgo(it.at))),

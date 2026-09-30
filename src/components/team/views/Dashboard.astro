@@ -1,0 +1,58 @@
+---
+// Manager: the dashboard. Filled in by scripts/team/manager/dashboard.js.
+---
+<!-- DASHBOARD: how both businesses are doing, and what needs the manager -->
+<section class="a-view" data-view="dashboard" aria-labelledby="h-dashboard" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-dashboard">Dashboard</h1>
+      <p>How both businesses are doing, compared with the period before, and what needs your attention today.</p>
+    </div>
+    <label class="a-period"><span>Period</span>
+      <select class="input" data-period>
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="365">Last 12 months</option>
+      </select>
+    </label>
+  </div>
+  <p class="a-freshness" data-freshness aria-live="polite"></p>
+
+  <div class="a-card a-attention" aria-labelledby="h-attention">
+    <h2 id="h-attention">Needs attention</h2>
+    <ul class="a-alerts" id="ovAttention"><li class="v-skeleton"></li></ul>
+  </div>
+
+  <div class="a-kpis a-kpis-5" id="ovKpis" aria-label="Key numbers"></div>
+
+  <div class="a-card">
+    <div class="a-card-head"><div><h2>The team today</h2><p>Open enquiries each person holds, what is overdue, and enquiries nobody has taken yet.</p></div><a class="btn btn-secondary btn-sm" href="#people">Team performance</a></div>
+    <div id="ovTeam"></div>
+  </div>
+
+  <div class="a-grid12">
+    <div class="a-card span-8">
+      <div class="a-card-head">
+        <div><h2>Visitors and enquiries</h2><p>Daily visitors against the same number of days before. Dots below the axis are days with enquiries.</p></div>
+      </div>
+      <div id="ovTrend" class="v-block"></div>
+    </div>
+    <div class="a-card span-4">
+      <div class="a-card-head"><div><h2>At a glance</h2><p>The strongest signal in each area for this period.</p></div></div>
+      <dl class="a-facts" id="ovFacts"></dl>
+    </div>
+  </div>
+
+  <div class="a-grid12">
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Agriculture journey</h2><p>Visitors who reached each step on the same day. Steps can be skipped, so read it as reach, not a strict path.</p></div></div>
+      <div id="ovFunnelAgri"></div>
+    </div>
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Packaging journey</h2><p>Visitors who reached each step on the same day.</p></div></div>
+      <div id="ovFunnelPack"></div>
+    </div>
+  </div>
+
+</section>

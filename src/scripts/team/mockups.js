@@ -23,7 +23,7 @@ export async function show({ params }) {
     [bags, all] = await Promise.all([api('/api/packaging-products?scope=team').then((l) => l.filter(usableInStudio)), leads()]);
   } catch (e) { if (e.status !== 401) toast(e.message, 'error'); return; }
   if (!bags.length) {
-    $('#tmBags').replaceChildren(h('p', { class: 'a-note' }, 'No bags are set up for mockups yet. The administrator adds them under Packaging products.'));
+    $('#tmBags').replaceChildren(h('p', { class: 'a-note' }, 'No bags are set up for mockups yet. Give a product a photo and its print corners under Packaging products.'));
     return;
   }
   if (!bags.some((b) => b.id === state.bag)) state.bag = bags[0].id;

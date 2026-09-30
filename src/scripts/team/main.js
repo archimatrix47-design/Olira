@@ -1,44 +1,58 @@
-// Team workspace entry: session and the section router. Signing in happens once
-// at /team/, which opens the workspace the account is on.
-// A team member's session is kept under its own key; an administrator who is
-// signed in to the admin panel can open either workspace with that session.
+// Workspace entry: session and the section router. Signing in happens once at
+// /team/, which opens the workspace the account's role belongs to: the
+// agriculture team, the packaging team, or the manager. The administrator's
+// session does not open a workspace; the admin panel is for running the site.
 import '../common.js'; // theme toggle and the live logo
 import '../admin/motion.js'; // keyboard or pointer, for motion decisions
-import { $, $$, api, useTokenKey, getToken, setToken, readStoredToken, whenSessionExpires } from '../admin/api.js';
+import { $, $$, api, useTokenKey, getToken, setToken, whenSessionExpires } from '../admin/api.js';
 import * as inbox from './inbox.js';
 import * as lists from './lists.js';
 import * as account from './account.js';
+import * as store from '../admin/store.js';
 import { session } from './session.js';
 import { initShell, watch } from '../admin/tools.js';
 
-const LINE = document.body.dataset.line;               // 'agri' | 'pack'
-const PAGE = { agri: '/team/agriculture/', pack: '/team/packaging/' };
+const LINE = document.body.dataset.line;               // 'agri' | 'pack' | 'manager'
+const PAGE = { agri: '/team/agriculture/', pack: '/team/packaging/', manager: '/team/manager/' };
 const VIEWS = {
   inbox: inbox.show,
   followups: lists.showFollowups,
   quotes: lists.showQuotes,
   account: account.show,
-  social: () => import('./social.js').then((m) => m.show()),
-  partners: () => import('./partners.js').then((m) => m.show()),
 };
-if (LINE === 'pack') VIEWS.mockups = (opts) => import('./mockups.js').then((m) => m.show(opts));
-if (LINE === 'pack') VIEWS.minimums = () => import('./minimums.js').then((m) => m.show());
-if (LINE === 'pack') VIEWS.photos = () => import('./photos.js').then((m) => m.show());
+if (LINE === 'manager') {
+  Object.assign(VIEWS, {
+    dashboard: (opts) => import('./manager/dashboard.js').then((m) => m.show(opts)),
+    pipeline: (opts) => import('./manager/pipeline.js').then((m) => m.show(opts)),
+    people: (opts) => import('./manager/people.js').then((m) => m.show(opts)),
+    report: (opts) => import('./manager/report.js').then((m) => m.show(opts)),
+    traffic: (opts) => import('./manager/traffic.js').then((m) => m.show(opts)),
+    products: (opts) => import('./manager/products.js').then((m) => m.show(opts)),
+  });
+} else {
+  VIEWS.social = () => import('./social.js').then((m) => m.show());
+  VIEWS.partners = () => import('./partners.js').then((m) => m.show());
+}
+if (LINE === 'agri') VIEWS.products = (opts) => import('./agri-products.js').then((m) => m.show(opts));
+if (LINE === 'pack') {
+  VIEWS.products = (opts) => import('./pack-products.js').then((m) => m.show(opts));
+  VIEWS.mockups = (opts) => import('./mockups.js').then((m) => m.show(opts));
+  VIEWS.minimums = () => import('./minimums.js').then((m) => m.show());
+}
+const HOME = LINE === 'manager' ? 'dashboard' : 'inbox';
 
-const login = $('#teamLogin'), panel = $('#teamPanel'), signOut = $('#teamSignOut'), backToAdmin = $('#backToAdmin');
+const login = $('#teamLogin'), panel = $('#teamPanel'), signOut = $('#teamSignOut');
 const initialised = new Set();
 const shell = initShell({ panel, route: () => route() });
-// every settings form says when it has unsaved changes
+// every settings form and editor says when it has unsaved changes
 $$('#teamPanel form.a-form, #teamPanel form.t-min').forEach(watch);
 
-// the team session wins; otherwise an admin session may be used
 const TEAM_KEY = 'teamToken';
-const usingAdmin = !readStoredToken(TEAM_KEY) && !!readStoredToken('adminToken');
-useTokenKey(usingAdmin ? 'adminToken' : TEAM_KEY);
+useTokenKey(TEAM_KEY);
 
 /** Hide the workspace and show the small card in its place. */
 function showGate(note, label, onAction) {
-  panel.hidden = true; signOut.hidden = true; backToAdmin.hidden = true; $('#teamUser').hidden = true;
+  panel.hidden = true; signOut.hidden = true; $('#teamUser').hidden = true;
   login.hidden = false;
   $('#teamGateNote').textContent = note;
   const action = $('#teamGateAction');
@@ -46,10 +60,9 @@ function showGate(note, label, onAction) {
   action.onclick = onAction ? (e) => { e.preventDefault(); onAction(); } : null;
 }
 
-// Signing in lives at /team/, which sends the member straight back to the
+// Signing in lives at /team/, which sends the person straight back to the
 // workspace their account is on. This page only ever hands over.
 function toSignIn(reason) {
-  useTokenKey(TEAM_KEY);
   showGate('Taking you to sign in.', 'Sign in');
   const q = new URLSearchParams({ next: location.pathname + location.hash });
   if (reason) q.set('m', reason);
@@ -60,17 +73,20 @@ async function start() {
   try {
     const me = await api('/api/team/me');
     const role = me.user.role;
-    if (role !== 'admin' && role !== LINE) {
-      // a member of the other team: take them to their own workspace
-      location.replace(PAGE[role] + location.hash);
+    if (role !== LINE) {
+      // another role's page, for example a link from a notification email:
+      // open the same place in the workspace this account belongs to
+      if (PAGE[role] && location.pathname !== PAGE[role]) { location.replace(PAGE[role] + location.hash); return; }
+      if (!PAGE[role]) { setToken(null); toSignIn(); return; }
+      // already on the right page but it does not say which workspace it is: stop, never loop
+      showGate('This workspace could not start. Reload the page.', 'Reload', () => location.reload());
       return;
     }
-    Object.assign(session, { user: me.user, members: me.members, line: LINE, isAdmin: role === 'admin' });
+    Object.assign(session, { user: me.user, members: me.members, line: LINE, oversees: role === 'manager' });
     const chip = $('#teamUser');
-    chip.textContent = role === 'admin' ? 'Administrator' : me.user.name;
+    chip.textContent = me.user.name;
     chip.hidden = false;
-    signOut.hidden = role === 'admin';
-    backToAdmin.hidden = role !== 'admin';
+    signOut.hidden = false;
     login.hidden = true; panel.hidden = false;
     route();
     inbox.refreshCounts();
@@ -94,9 +110,11 @@ whenSessionExpires(() => {
 function route() {
   if (panel.hidden) return;
   const [requested] = location.hash.slice(1).split('?');
+  // the manager's numbers keep the chosen period when moving between sections
+  if (LINE === 'manager') for (const a of $$('[data-nav]')) a.setAttribute('href', `#${a.dataset.nav}?days=${store.getDays()}`);
   // on a phone, the list of sections
   if (shell.menu(requested)) return;
-  const name = VIEWS[requested] ? requested : 'inbox';
+  const name = VIEWS[requested] ? requested : HOME;
   for (const v of $$('[data-view]')) v.hidden = v.dataset.view !== name;
   for (const a of $$('[data-nav]')) { if (a.dataset.nav === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
   // on a phone the section tabs scroll sideways: keep the current one in view
@@ -105,6 +123,15 @@ function route() {
   initialised.add(name);
   VIEWS[name]({ first, params: new URLSearchParams(location.hash.split('?')[1] || '') });
 }
+// charts are drawn at their real width, so redraw (from cache) after a real resize
+let lastWidth = innerWidth, resizeTimer;
+if (LINE === 'manager') addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const now = document.querySelector('[data-view]:not([hidden])')?.dataset.view;
+    if (Math.abs(innerWidth - lastWidth) > 40 && ['dashboard', 'report', 'traffic', 'people', 'products'].includes(now)) { lastWidth = innerWidth; route(); }
+  }, 250);
+});
 addEventListener('hashchange', () => {
   const prevView = document.querySelector('[data-view]:not([hidden])')?.dataset.view || 'menu';
   route();

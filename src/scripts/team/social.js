@@ -1,6 +1,6 @@
 // Both marketing workspaces: the contact links (WhatsApp, Telegram and the social
-// pages) in the website's floating contact button and footer. The administrator
-// can change the same links in the admin panel; the last save wins.
+// pages) in the website's floating contact button and footer. Both teams edit
+// the same links; the last save wins.
 //   GET/POST /api/team/social-links
 import { $, api, toast, busy } from '../admin/api.js';
 

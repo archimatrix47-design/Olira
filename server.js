@@ -655,6 +655,10 @@ const adminAuth = (req, res, next) => {
   next();
 };
 function isAdminPayload(p) { return !!p && (!p.role || p.role === 'admin'); }
+// Routes for staff accounts: roles are 'manager', 'agri' and 'pack' (lib/workspace.js).
+// The workspace module is set up further down; this runs per request, after it.
+const staffOnly = (roles, message) => (req, res, next) => workspace.roleAuth(roles, message)(req, res, next);
+const AGRI_ONLY = 'Agriculture products are looked after by the agriculture team.';
 
 // Verify token. Used by the admin page on load to decide whether to show
 // login or dashboard. All failure modes (missing/invalid/expired/revoked/
@@ -687,65 +691,21 @@ app.post('/api/admin/change-password', adminAuth, (req, res) => {
   res.json({ success: true, message: 'Password updated. Use it on your next login.' });
 });
 
-// ----- INQUIRIES INBOX (admin) -----
-// The public /api/inquiry handler persists every lead to inquiries.json. These
-// endpoints let the admin review, triage (new → read → archived), and remove
-// them from the panel, so inquiries are no longer email-only.
-
-// List all inquiries, newest first, with per-status counts for the UI badges.
-app.get('/api/admin/inquiries', adminAuth, (req, res) => {
+// Enquiries are worked in the team workspaces and the manager's CRM
+// (lib/workspace.js); the administrator runs the site and does not see them.
+// The admin's overview gets counts only, to know that email delivery works.
+app.get('/api/admin/site-status', adminAuth, (req, res) => {
   const list = readJsonFile(inquiriesPath, []);
-  const arr = Array.isArray(list) ? list : [];
-  const counts = { total: arr.length, new: 0, read: 0, contacted: 0, quoted: 0, won: 0, lost: 0, archived: 0 };
-  for (const i of arr) {
-    if (counts[i.status] === undefined) counts[i.status] = 0;
-    counts[i.status]++;
-  }
-  res.json({ inquiries: arr, counts });
-});
-
-// Update one inquiry's triage status.
-// Sales pipeline: new -> read (opened) -> contacted -> quoted -> won / lost,
-// plus archived. Every change is appended to `history` with a timestamp so the
-// panel can measure how fast leads are answered; `note` is a private note.
-const INQUIRY_STATUSES = ['new', 'read', 'contacted', 'quoted', 'won', 'lost', 'archived'];
-app.post('/api/admin/inquiries/:id', adminAuth, (req, res) => {
-  const { status, note } = req.body || {};
-  if (status === undefined && note === undefined) {
-    return res.status(400).json({ error: 'Send a status, a note, or both.' });
-  }
-  if (status !== undefined && !INQUIRY_STATUSES.includes(status)) {
-    return res.status(400).json({ error: `Invalid status. Use ${INQUIRY_STATUSES.join(', ')}.` });
-  }
-  if (note !== undefined && (typeof note !== 'string' || note.length > 2000)) {
-    return res.status(400).json({ error: 'A note is text up to 2000 characters.' });
-  }
-  const list = readJsonFile(inquiriesPath, []);
-  if (!Array.isArray(list)) return res.status(500).json({ error: 'Inquiry store unreadable.' });
-  const rec = list.find((i) => i.id === req.params.id);
-  if (!rec) return res.status(404).json({ error: 'Inquiry not found.' });
-  const at = new Date().toISOString();
-  if (status !== undefined && status !== rec.status) {
-    if (!Array.isArray(rec.history)) rec.history = [];
-    rec.history.push({ status, at, from: rec.status || 'new' });
-    if (rec.history.length > 50) rec.history.splice(0, rec.history.length - 50);
-    rec.status = status;
-  }
-  if (note !== undefined) { rec.note = note.trim(); rec.noteAt = at; }
-  if (!writeJsonFile(inquiriesPath, list)) return res.status(500).json({ error: 'Failed to save.' });
-  res.json({ success: true, inquiry: rec });
-});
-
-// Delete one inquiry.
-app.delete('/api/admin/inquiries/:id', adminAuth, (req, res) => {
-  const list = readJsonFile(inquiriesPath, []);
-  if (!Array.isArray(list)) return res.status(500).json({ error: 'Inquiry store unreadable.' });
-  const next = list.filter((i) => i.id !== req.params.id);
-  if (next.length === list.length) return res.status(404).json({ error: 'Inquiry not found.' });
-  if (!writeJsonFile(inquiriesPath, next)) return res.status(500).json({ error: 'Failed to delete.' });
-  workspace.removeLeadFiles(req.params.id);
-  audit('inquiry_deleted', req, { id: req.params.id });
-  res.json({ success: true });
+  const since = Date.now() - 30 * 86400000;
+  const recent = (Array.isArray(list) ? list : []).filter((i) => Date.parse(i.createdAt) >= since);
+  let formFails = 0;
+  try { formFails = aggregateAnalytics(30, 0).events?.form_fail || 0; } catch (e) { logError('site_status_analytics', e); }
+  res.json({
+    enquiries30: recent.length,
+    undelivered30: recent.filter((i) => i.emailed === false).length,
+    lastEnquiryAt: recent.reduce((t, i) => (i.createdAt > t ? i.createdAt : t), '') || null,
+    formFails30: formFails,
+  });
 });
 
 // Get email configuration (admin only)
@@ -965,7 +925,7 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
   `;
 
   try {
-    // the sales team for this line gets the notification too, on blind copy
+    // the sales team for this line and the managers get the notification too, on blind copy
     const teamCopies = workspace.teamEmailsFor(line).filter((m) => m.toLowerCase() !== String(config.recipientEmail).toLowerCase());
     await sendEmail(config.recipientEmail, `New Product Inquiry: ${sanitizedProduct}`, htmlContent, teamCopies.length ? { bcc: teamCopies.join(', ') } : {});
 
@@ -991,7 +951,7 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
   } catch (error) {
     console.error('Email send error:', error);
     // Email delivery failed, but the lead is already saved (emailed: false) and
-    // can be actioned from the admin panel and the team workspace.
+    // can be actioned from the team workspace and the manager's.
     recordInquiry(product, req);
     // A request that is saved has arrived, whatever the mail server did; telling
     // the visitor it failed made them send it again (a duplicate lead).
@@ -1278,23 +1238,19 @@ app.get('/api/products', (req, res) => {
   res.json(products);
 });
 
-// POST /api/products (admin) — replace entire list OR upsert single
-// Body: { products: [...] } to replace all
-//   OR  { product: {...} } to add/update a single product (matched by id)
-app.post('/api/products', adminAuth, (req, res) => {
-  const { products, product } = req.body;
-
-  if (Array.isArray(products)) {
-    if (!writeJsonFile(productsPath, products)) {
-      return res.status(500).json({ error: 'Failed to save products' });
-    }
-    return res.json({ success: true, count: products.length });
-  }
+// POST /api/products (agriculture team) — add or update one product (matched by id)
+// Body: { product: {...} }
+const PRODUCT_IMAGE_RE = /^\/(?:uploads\/products|products\/photos|images)\/[\w.-]+(?:\/[\w.-]+)*$/;
+app.post('/api/products', staffOnly(['agri'], AGRI_ONLY), (req, res) => {
+  const { product } = req.body || {};
 
   if (product && typeof product === 'object') {
     // Validate required fields
     if (!product.name || !product.description) {
       return res.status(400).json({ error: 'Product name and description are required' });
+    }
+    if (product.image != null && product.image !== '' && (typeof product.image !== 'string' || !PRODUCT_IMAGE_RE.test(product.image) || product.image.includes('..'))) {
+      return res.status(400).json({ error: 'Upload the photo again.' });
     }
     const list = readJsonFile(productsPath, []);
     const id = product.id || makeSlug(product.name);
@@ -1309,6 +1265,7 @@ app.post('/api/products', adminAuth, (req, res) => {
       specs: Array.isArray(product.specs) ? product.specs.slice(0, 20).map(s => String(s).slice(0, 200)) : [],
       image: product.image || null
     };
+    audit('product_saved', req, { id, by: req.teamUser.id });
     if (idx >= 0) list[idx] = normalized;
     else list.push(normalized);
 
@@ -1318,14 +1275,14 @@ app.post('/api/products', adminAuth, (req, res) => {
     return res.json({ success: true, product: normalized });
   }
 
-  res.status(400).json({ error: 'Body must contain either { products: [...] } or { product: {...} }' });
+  res.status(400).json({ error: 'Body must contain { product: {...} }' });
 });
 
-// POST /api/products/order (admin) — body { ids: [...] }. Reorders the existing
-// products only (unknown ids are ignored, missing ones keep their relative order
-// at the end), so a stale admin tab can never drop or invent a product. The
-// first product is the front card of the agriculture page's stack.
-app.post('/api/products/order', adminAuth, (req, res) => {
+// POST /api/products/order (agriculture team) — body { ids: [...] }. Reorders the
+// existing products only (unknown ids are ignored, missing ones keep their relative
+// order at the end), so a stale tab can never drop or invent a product. The first
+// product is the front card of the agriculture page's stack.
+app.post('/api/products/order', staffOnly(['agri'], AGRI_ONLY), (req, res) => {
   const { ids } = req.body || {};
   if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string')) {
     return res.status(400).json({ error: 'Body must be { ids: [string, ...] }' });
@@ -1344,8 +1301,8 @@ app.post('/api/products/order', adminAuth, (req, res) => {
   res.json({ success: true, ids: ordered.map((p) => p.id) });
 });
 
-// DELETE /api/products/:id (admin)
-app.delete('/api/products/:id', adminAuth, (req, res) => {
+// DELETE /api/products/:id (agriculture team)
+app.delete('/api/products/:id', staffOnly(['agri'], AGRI_ONLY), (req, res) => {
   const list = readJsonFile(productsPath, []);
   const next = list.filter(p => p.id !== req.params.id);
   if (next.length === list.length) {
@@ -1354,6 +1311,7 @@ app.delete('/api/products/:id', adminAuth, (req, res) => {
   if (!writeJsonFile(productsPath, next)) {
     return res.status(500).json({ error: 'Failed to delete' });
   }
+  audit('product_deleted', req, { id: req.params.id, by: req.teamUser.id });
   res.json({ success: true });
 });
 
@@ -1512,21 +1470,12 @@ function cleanSocial(body) {
   return data;
 }
 
+// The marketing teams edit these from their workspaces (/api/team/social-links).
 app.get('/api/social-links', (req, res) => {
   const data = readJsonFile(socialPath, {});
-  if (isAdminRequest(req)) return res.json(data);
   // a WhatsApp link carries a phone number; the public gets it via /api/contact/reveal
   const { whatsapp, ...rest } = data;
   res.json({ ...rest, whatsapp: whatsapp ? 'set' : '' });
-});
-
-app.post('/api/social-links', adminAuth, (req, res) => {
-  const data = cleanSocial(req.body);
-  if (!writeJsonFile(socialPath, data)) {
-    return res.status(500).json({ error: 'Failed to save social links' });
-  }
-  audit('social_links_saved', req, { by: 'admin' });
-  res.json({ success: true, data });
 });
 
 // ============================================
@@ -1851,9 +1800,9 @@ function summaryOf(a) {
   };
 }
 
-// GET /api/analytics?days=30 (admin) — aggregated summary for the period and
+// GET /api/analytics?days=30 (manager) — aggregated summary for the period and
 // the one before it. Visitor hashes are counted server-side and never returned.
-app.get('/api/analytics', adminAuth, (req, res) => {
+app.get('/api/analytics', staffOnly(['manager'], 'Traffic reports are for managers.'), (req, res) => {
   const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
   const cur = aggregateAnalytics(days, 0);
   const prev = aggregateAnalytics(days, days);
@@ -1971,8 +1920,8 @@ async function processAndSaveImage(buffer, mimeType, outputDir, baseName, option
   return { fullPath: fullName, thumbPath: thumbName };
 }
 
-// POST /api/upload/product-image (admin) — auto-resize to 1200px WebP + 480px thumb
-app.post('/api/upload/product-image', adminAuth, (req, res) => {
+// POST /api/upload/product-image (agriculture team) — auto-resize to 1200px WebP + 480px thumb
+app.post('/api/upload/product-image', staffOnly(['agri'], AGRI_ONLY), (req, res) => {
   memoryUpload.single('image')(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -2038,15 +1987,9 @@ const workspace = registerWorkspace(app, {
 const seededPackaging = mergeSeedCatalogue(dataDir, REPO_DATA_DIR, { readJsonFile, writeJsonFile, logError });
 if (seededPackaging.length) console.log(`Packaging catalogue: added ${seededPackaging.join(', ')}`);
 // Both marketing teams (agriculture and packaging) look after the contact links
-// and social pages too, from their workspaces. The full record, WhatsApp link
-// included, is for signed-in staff only.
-function marketingTeam(req, res, next) {
-  const r = workspace.resolveUser(req);
-  if (!r.user) return res.status(401).json({ error: 'Unauthorized' });
-  if (!['admin', 'agri', 'pack'].includes(r.user.role)) return res.status(403).json({ error: 'Contact links are looked after by the marketing teams.' });
-  req.teamUser = r.user;
-  next();
-}
+// and social pages, from their workspaces. The full record, WhatsApp link
+// included, is for them only.
+const marketingTeam = staffOnly(['agri', 'pack'], 'Contact links are looked after by the marketing teams.');
 app.get('/api/team/social-links', marketingTeam, (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json(cleanSocial(readJsonFile(socialPath, {})));
@@ -2059,11 +2002,11 @@ app.post('/api/team/social-links', marketingTeam, (req, res) => {
 });
 
 // partner logos on the home page, looked after by both marketing teams
-registerPartners(app, { dataDir, uploadsDir, readJsonFile, writeJsonFile, audit, logError, resolveUser: workspace.resolveUser });
+registerPartners(app, { dataDir, uploadsDir, readJsonFile, writeJsonFile, audit, logError, roleAuth: workspace.roleAuth });
 
 const packaging = registerPackaging(app, {
   dataDir, uploadsDir, publicDirs: [path.join(__dirname, 'dist'), path.join(__dirname, 'public')],
-  readJsonFile, writeJsonFile, audit, logError, adminAuth, resolveUser: workspace.resolveUser,
+  readJsonFile, writeJsonFile, audit, logError, roleAuth: workspace.roleAuth,
 });
 
 // Health check

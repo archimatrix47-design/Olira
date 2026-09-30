@@ -1,14 +1,13 @@
-// Packaging products: the catalogue on the packaging page, managed like the
-// agriculture products. Each has a group (family), its sizes, a minimum order
-// and how many print colours it takes. A product with a white background photo
-// and the four corners of its printable panel is also in the mockup studio and
-// in the packaging team's workspace.
-import { $, $$, h, api, toast, confirmDialog, busy } from './api.js';
+// Packaging products: the catalogue on the packaging page, looked after by the
+// packaging team. Each has a group (family), its sizes, a minimum order and how
+// many print colours it takes. A product with a photo and the four corners of
+// its printable panel is also in the mockup studio and in Mockups here.
+import { $, $$, h, api, toast, confirmDialog, busy } from '../admin/api.js';
 import { prepare, render, defaultDesign } from '../mockup/engine.js';
-import { scrollBehavior } from './motion.js';
-import * as store from './store.js';
-import { DEFAULT_QUAD, convex, cornerEditor } from './corners.js';
-import { watch, clean, touch, mayLeave } from './tools.js';
+import { scrollBehavior } from '../admin/motion.js';
+import * as store from '../admin/store.js';
+import { DEFAULT_QUAD, convex, cornerEditor } from '../admin/corners.js';
+import { watch, clean, touch, mayLeave } from '../admin/tools.js';
 
 let items = [];
 let bound = false;
@@ -56,7 +55,7 @@ function renderList(focusId, which) {
         p.site === false ? 'Hidden on the website' : null,
         usable(p) ? (p.imageDark ? 'Visitors can design it in the studio, with a dark mode photo' : 'Visitors can design it in the studio')
           : p.image ? 'Quote only on the website: place the print corners to put it in the studio' : 'Quote only on the website: add a photo to put it in the studio',
-        p.team === false ? 'not in the packaging workspace' : null,
+        p.team === false ? 'not in Mockups' : null,
       ].filter(Boolean).join(', ')))),
     h('div', { class: 'a-prow-actions' },
       h('button', { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': `Move ${p.name} up`, title: 'Move up', disabled: i === 0 || null, onclick: () => move(i, -1) }, svgIcon('M12 19V5M6 11l6-6 6 6')),
@@ -76,17 +75,17 @@ async function move(i, dir) {
   [items[i], items[j]] = [items[j], items[i]];
   renderList(items[j].id, dir < 0 ? 'up' : 'down');
   try {
-    await api('/api/admin/packaging-products/order', { method: 'POST', body: { ids: items.map((p) => p.id) } });
+    await api('/api/team/packaging-products/order', { method: 'POST', body: { ids: items.map((p) => p.id) } });
     store.invalidate('packaging');
     $('#packLive').textContent = `${items[j].name} moved to position ${j + 1} of ${items.length}.`;
   } catch (e) { items = before; renderList(); toast(e.message, 'error'); }
 }
 
 async function remove(p) {
-  const ok = await confirmDialog({ title: `Delete ${p.name}?`, body: 'It is removed from the packaging page, the mockup studio and the packaging workspace straight away.' });
+  const ok = await confirmDialog({ title: `Delete ${p.name}?`, body: 'It is removed from the packaging page, the mockup studio and Mockups straight away.' });
   if (!ok) return;
   try {
-    await api(`/api/admin/packaging-products/${encodeURIComponent(p.id)}`, { method: 'DELETE' });
+    await api(`/api/team/packaging-products/${encodeURIComponent(p.id)}`, { method: 'DELETE' });
     store.invalidate('packaging');
     items = items.filter((x) => x.id !== p.id);
     if (draft?.id === p.id) { clean(form()); close(); } else renderList();
@@ -195,14 +194,19 @@ async function edit(p) {
   field('name').focus({ preventScroll: true });
 }
 
+// a transparent image (a mockup export) stands on the site's stage colour and needs no dark photo
+const isCutout = (image) => /^\/uploads\/packaging\/[\w.-]+-cutout-\d+\.webp$|\/cutouts\//.test(image || '');
+
 function syncPhoto() {
-  const has = !!draft.image;
+  const has = !!draft.image, cut = has && isCutout(draft.image);
   const lightImg = $('#packImg-light'), darkImg = $('#packImg-dark');
   lightImg.hidden = !has; if (has) lightImg.src = draft.image; else lightImg.removeAttribute('src');
   darkImg.hidden = !draft.imageDark; if (draft.imageDark) darkImg.src = draft.imageDark; else darkImg.removeAttribute('src');
   $('#packClearPhoto').hidden = !has;
   $('#packClearDark').hidden = !draft.imageDark;
-  $('#packDarkWrap').hidden = !has;
+  $('#packDarkWrap').hidden = !has || cut;
+  $('#packStage').classList.toggle('is-cutout', cut);
+  $('#packPreview').classList.toggle('is-cutout', cut);
   $('#packStudio').hidden = !has;
   $('#packWarn').hidden = true;
   if (has) {
@@ -225,13 +229,14 @@ async function upload(file, variant) {
   fd.append('name', field('name').value || 'bag');
   if (variant === 'dark') fd.append('light', draft.image);
   try {
-    const r = await api('/api/admin/packaging-products/image', { method: 'POST', form: fd });
+    const r = await api('/api/team/packaging-products/image', { method: 'POST', form: fd });
     touch(form());
     if (variant === 'light') {
       const changedShape = draft.width && Math.abs(r.width / r.height - draft.width / draft.height) > 0.01;
       Object.assign(draft, { image: r.path, width: r.width, height: r.height });
       if (!draft.quad || changedShape) draft.quad = DEFAULT_QUAD.map((p) => p.slice());
-      if (changedShape || (draft.imageDark && changedShape)) draft.imageDark = null;
+      // a dark photo was checked against the old shot, so it goes with it
+      draft.imageDark = null;
       syncPhoto();
       if (r.warning) { $('#packWarn').textContent = r.warning; $('#packWarn').hidden = false; }
       toast(r.cutout ? 'Transparent image uploaded: it stands on the site like the other cut-outs and needs no dark photo. Place the four print corners, then save.' : 'Photo uploaded. Place the four print corners, then save.');
@@ -245,7 +250,7 @@ async function upload(file, variant) {
   finally { label.textContent = text; }
 }
 
-/* ---------------- corners (shared with the packaging team's photo tool) ---------------- */
+/* ---------------- corners ---------------- */
 let corners = null;
 const placeHandles = () => corners?.place();
 
@@ -325,7 +330,7 @@ async function submit(e) {
   };
   const done = busy($('#packSave'));
   try {
-    const r = await api('/api/admin/packaging-products', { method: 'POST', body: { product } });
+    const r = await api('/api/team/packaging-products', { method: 'POST', body: { product } });
     store.invalidate('packaging');
     const idx = items.findIndex((p) => p.id === r.product.id);
     if (idx >= 0) items[idx] = r.product; else items.push(r.product);
