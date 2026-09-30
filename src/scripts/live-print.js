@@ -6,7 +6,8 @@
 // an edge. The result is then trimmed to the product's own outline.
 //
 // The brand is kept in this browser (localStorage), so it follows the visitor
-// from the home page to the catalogue and into the studio.
+// from the catalogue into the studio. A canvas with data-brand="olira" (the home
+// page's products) shows Olira's own logo instead, whatever is typed.
 import { prepare, render, defaultDesign, INKS } from './mockup/engine.js';
 
 const KEY = 'olira-brand';
@@ -19,6 +20,23 @@ try { brand = (localStorage.getItem(KEY) || '').slice(0, MAX); } catch (e) { bra
 const text = () => (brand.trim() || FALLBACK).slice(0, MAX);
 
 const canvases = () => [...document.querySelectorAll('canvas[data-print]')];
+const own = (c) => c.dataset.brand === 'olira';
+// what a canvas should show: Olira's own print, or the visitor's brand
+const wanted = (c) => (own(c) ? 'olira' : text());
+
+// Olira's logo: the one uploaded in the admin (Logo), else the shipped one
+let logo = null;
+function oliraLogo() {
+  logo ||= fetch('/api/branding').then((r) => (r.ok ? r.json() : {})).catch(() => ({}))
+    .then((b) => new Promise((resolve) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => resolve(img);
+      img.onerror = () => { if (img.src.endsWith('/logo.png')) resolve(null); else img.src = '/logo.png'; };
+      img.src = b?.logo || '/logo.png';
+    }));
+  return logo;
+}
 
 function productOf(c) {
   try {
@@ -31,14 +49,19 @@ const drawn = new WeakMap();
 async function paint(c) {
   const p = productOf(c);
   if (!p?.image || !Array.isArray(p.quad) || p.quad.length !== 4) return;
-  const want = text();
+  const want = wanted(c);
   drawn.set(c, want);
   try {
-    const B = await prepare(p, { dark: false, width: WIDTH });
+    const [B, mark] = await Promise.all([prepare(p, { dark: false, width: WIDTH }), own(c) ? oliraLogo() : null]);
     if (drawn.get(c) !== want) return; // typed again while the photo loaded
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, c.width, c.height);
-    render(ctx, B, { ...defaultDesign(), ink: INKS[c.dataset.ink] ? c.dataset.ink : 'teal', text1: want.toUpperCase(), text2: '', placeholder: false });
+    const ink = INKS[c.dataset.ink] ? c.dataset.ink : 'teal';
+    const design = own(c)
+      // Olira's own: the logo alone, in its colours (it already spells the name)
+      ? { ...defaultDesign(), ink: 'teal', logo: mark, text1: '', text2: '', placeholder: false }
+      : { ...defaultDesign(), ink, text1: want.toUpperCase(), text2: '', placeholder: false };
+    render(ctx, B, design);
     // the print is multiplied onto the photo; where the photo is transparent that
     // would leave ink in the air, so keep only what lies on the product itself
     ctx.save();
@@ -54,7 +77,7 @@ async function paint(c) {
 
 // only what is on screen (or about to be) is printed; the rest waits until it scrolls in
 const io = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
-  for (const e of entries) if (e.isIntersecting && drawn.get(e.target) !== text()) paint(e.target);
+  for (const e of entries) if (e.isIntersecting && drawn.get(e.target) !== wanted(e.target)) paint(e.target);
 }, { rootMargin: '300px 0px' }) : null;
 const watch = () => canvases().forEach((c) => { if (io) io.observe(c); else paint(c); });
 
@@ -83,7 +106,8 @@ function setBrand(value, from) {
   echo();
   toStudio();
   cancelAnimationFrame(frame);
-  frame = requestAnimationFrame(() => canvases().forEach((c) => { if (near(c)) paint(c); else drawn.delete(c); }));
+  // Olira's own prints do not change with what is typed
+  frame = requestAnimationFrame(() => canvases().filter((c) => !own(c)).forEach((c) => { if (near(c)) paint(c); else drawn.delete(c); }));
   document.dispatchEvent(new CustomEvent('brand:change', { detail: { brand: text() } }));
 }
 

@@ -55,7 +55,7 @@ if (lineup) {
       const now = el.querySelector('.cutimg')?.getAttribute('src');
       if (!c) { el.remove(); changed = true; continue; }
       if (c.cutout === now && JSON.stringify(c.quad) === el.querySelector('canvas')?.dataset.quad) continue;
-      el.innerHTML = standHTML(c, p.name);
+      el.innerHTML = standHTML(c, p.name, { brand: 'olira' });
       el.dataset.ratio = String(c.width / c.height);
       changed = true;
     }

@@ -1,7 +1,7 @@
 // Packaging workspace: Mockups. The same renderer as the public studio, with
 // the client's own files as logo sources and saving the result to the enquiry.
 import { $, $$, h, api, toast } from '../admin/api.js';
-import { sizesOf, defaultDesign, prepare, render, toArtboard, clampDesign, snapDesign, drawGuides, exportImage, specLine, saveBlob, usableInStudio, onThemeChange } from '../mockup/engine.js';
+import { sizesOf, defaultDesign, prepare, render, toArtboard, clampDesign, snapDesign, drawGuides, exportImage, specLine, saveBlob, usableInStudio, onThemeChange, artworkAdvice } from '../mockup/engine.js';
 import { checkLogo, removeBox } from '../mockup/logo-check.js';
 import { leads, putLead, OPEN, session } from './session.js';
 import { fileBlob, replace as replaceLead } from './inbox.js';
@@ -9,7 +9,7 @@ import { fileBlob, replace as replaceLead } from './inbox.js';
 let bound = false;
 let bags = [];
 let all = [];
-const state = { bag: null, lead: '', logoName: '', ...defaultDesign() };
+const state = { bag: null, lead: '', logoName: '', artworkName: '', ...defaultDesign() };
 let current = null, pending = 0;
 let guides = null;     // centre lines shown while a drag is snapped to them
 let logoCheck = null;  // what the logo check found in the logo on the bag
@@ -65,9 +65,25 @@ async function pickLead(id, applyDesign) {
   fromLead.replaceChildren(h('option', { value: '' }, images.length ? 'Choose a file' : 'No image files to use'),
     ...images.map((f) => h('option', { value: f.id }, `${f.name} (${f.kind})`)),
     ...others.map((f) => h('option', { value: '', disabled: true }, `${f.name}: download it and export a PNG or SVG`)));
+  const artFrom = $('#tmArtFromLead');
+  $('#tmArtFromLeadWrap').hidden = !images.length;
+  artFrom.replaceChildren(h('option', { value: '' }, 'Choose a file'), ...images.map((f) => h('option', { value: f.id }, `${f.name} (${f.kind})`)));
   if (!l) return;
+  if (applyDesign && l.design?.mode === 'artwork') {
+    // the client sent a full artwork: show it the way they placed it
+    const d = l.design;
+    Object.assign(state, { size: d.size || state.size, scale: d.scale || 1, dx: d.dx || 0, dy: d.dy || 0, fit: d.fit === 'contain' ? 'contain' : 'cover' });
+    if (bags.some((b) => b.id === d.template)) state.bag = d.template;
+    setMode('artwork', { quiet: true });
+    syncControls(); renderBags();
+    const art = images.find((f) => f.kind === 'artwork');
+    if (art) { artFrom.value = art.id; await useLeadArtwork(l, art); }
+    say(art ? 'The full artwork the client sent is on the mockup, placed as they placed it.' : 'The client chose full artwork, but no image file came with it. Ask them for a PNG or PDF.');
+    return;
+  }
   if (applyDesign && l.design) {
     const d = l.design;
+    setMode('brand', { quiet: true });
     Object.assign(state, { size: d.size || state.size, ink: d.ink || state.ink, text1: d.text1 ?? '', text2: d.text2 ?? '', scale: d.scale || 1, dx: d.dx || 0, dy: d.dy || 0, oneInk: !!d.oneInk });
     if (bags.some((b) => b.id === d.template)) { state.bag = d.template; renderBags(); }
     syncControls();
@@ -98,6 +114,8 @@ function syncControls() {
   buildSizes();
   $$('input[name="tmSize"]').forEach((r) => { r.checked = r.value === state.size; });
   $$('input[name="tmInk"]').forEach((r) => { r.checked = r.value === state.ink; });
+  $$('input[name="tmMode"]').forEach((r) => { r.checked = r.value === state.mode; });
+  $$('input[name="tmFit"]').forEach((r) => { r.checked = r.value === state.fit; });
   $('#tmText1').value = state.text1; $('#tmText2').value = state.text2;
   $('#tmScale').value = Math.round(state.scale * 100);
   $('#tmOneInk').checked = state.oneInk;
@@ -118,6 +136,25 @@ function setLogo(blob, name) {
   });
 }
 
+/* ---------- full artwork ---------- */
+function setMode(mode, { quiet } = {}) {
+  state.mode = mode;
+  for (const el of $$('[data-tm-mode]')) el.hidden = el.dataset.tmMode !== mode;
+  $$('input[name="tmMode"]').forEach((r) => { r.checked = r.value === mode; });
+  if (!quiet) { state.dx = 0; state.dy = 0; state.scale = 1; $('#tmScale').value = 100; draw(); say(mode === 'artwork' ? 'Full artwork.' : 'Logo and text.'); }
+}
+function setArtwork(blob, name) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(blob), img = new Image();
+    img.onload = () => { state.artwork = img; state.artworkName = name; state.dx = 0; state.dy = 0; $('#tmArtTitle').textContent = name; $('#tmRemoveArt').hidden = false; draw(); say(`Artwork ${name} is on the mockup.`); resolve(); };
+    img.onerror = () => { URL.revokeObjectURL(url); toast('That image could not be read. Export the page as a PNG or JPG.', 'error'); resolve(); };
+    img.src = url;
+  });
+}
+async function useLeadArtwork(l, f) {
+  try { await setArtwork(await fileBlob(l, f), f.name); } catch (e) { toast(e.message, 'error'); }
+}
+
 async function draw() {
   const b = bag();
   if (!b) return;
@@ -128,8 +165,13 @@ async function draw() {
     current = B;
     const ctx = canvas().getContext('2d');
     render(ctx, B, state);
-    drawGuides(ctx, B, guides, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#186078');
+    drawGuides(ctx, B, guides, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#186078', state.mode);
     $('#tmInfo').textContent = specLine(b, state);
+    if (state.mode === 'artwork') {
+      const a = artworkAdvice(b, B, state);
+      $('#tmArtHint').textContent = `Print area: ${a.shape}. ${a.size}`.trim();
+      $('#tmArtAdvice').hidden = !a.warnings.length; $('#tmArtAdvice').textContent = a.warnings.join(' ');
+    }
   } catch (e) { $('#tmInfo').textContent = e.message; }
 }
 
@@ -158,6 +200,24 @@ function bind() {
   $('#tmFixBox').addEventListener('click', async () => { await fixBox(); say('White box removed from the logo on the mockup.'); ($('#tmFixInk').hidden ? $('#tmOneInk') : $('#tmFixInk')).focus(); });
   $('#tmFixInk').addEventListener('click', () => { const box = $('#tmOneInk'); box.checked = true; box.dispatchEvent(new Event('change', { bubbles: true })); box.focus(); });
   $('#tmLead').addEventListener('change', (e) => pickLead(e.target.value, true));
+  $$('input[name="tmMode"]').forEach((r) => r.addEventListener('change', () => { if (r.checked) setMode(r.value); }));
+  $$('input[name="tmFit"]').forEach((r) => r.addEventListener('change', () => { if (r.checked) { state.fit = r.value; state.dx = 0; state.dy = 0; draw(); } }));
+  $('#tmArtFromLead').addEventListener('change', (e) => {
+    const l = all.find((x) => x.id === state.lead), f = l?.files?.find((x) => x.id === e.target.value);
+    if (l && f) useLeadArtwork(l, f);
+  });
+  {
+    const file = $('#tmArtFile'), drop = $('#tmArtDrop');
+    const take = (f) => {
+      if (!f || !/^image\/(png|jpeg|svg\+xml|webp)$/.test(f.type)) return toast('Choose a PNG, JPG, WebP or SVG of the artwork. For a PDF, export the page as an image.', 'error');
+      setArtwork(f, f.name);
+    };
+    file.addEventListener('change', () => { take(file.files[0]); file.value = ''; });
+    ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('is-over'); }));
+    ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('is-over'); }));
+    drop.addEventListener('drop', (e) => take(e.dataTransfer.files[0]));
+  }
+  $('#tmRemoveArt').addEventListener('click', () => { state.artwork = null; state.artworkName = ''; $('#tmArtTitle').textContent = 'Upload the artwork'; $('#tmRemoveArt').hidden = true; $('#tmArtFromLead').value = ''; draw(); say('Artwork removed.'); });
   $('#tmFromLead').addEventListener('change', (e) => {
     const l = all.find((x) => x.id === state.lead), f = l?.files?.find((x) => x.id === e.target.value);
     if (l && f) useLeadFile(l, f);

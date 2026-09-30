@@ -5,7 +5,7 @@
 //   1. base     the product photo on its plain white background (or the same
 //               shot on black in dark mode, when the admin added one)
 //   2. design   logo and text laid out on a flat artboard the shape of the
-//               bag's front panel
+//               bag's front panel, or the visitor's own full artwork filling it
 //   3. warp     the artboard is bent into the panel's four corners (set in the
 //               admin) with a perspective mesh, so the print follows the photo
 //   4. blend    coloured ink is multiplied into the paper so fibres, creases and
@@ -21,7 +21,9 @@ export const SIZES = {
   large: { label: 'Large', dims: '32 x 12 x 42 cm' },
 };
 export const INKS = { black: ['Black', '#1E1B16'], teal: ['Teal', '#186078'], leaf: ['Leaf green', '#4A5E17'], red: ['Red', '#A3301E'], white: ['White', '#FAF7F0'] };
-export const defaultDesign = () => ({ size: 'medium', ink: 'teal', logo: null, oneInk: false, text1: 'YOUR BRAND', text2: 'yourbrand.com', scale: 1, dx: 0, dy: 0 });
+// mode 'brand' is a logo and two lines of text in one ink; mode 'artwork' is the
+// visitor's own finished design (a full page) printed in full colour across the panel
+export const defaultDesign = () => ({ size: 'medium', ink: 'teal', logo: null, oneInk: false, text1: 'YOUR BRAND', text2: 'yourbrand.com', scale: 1, dx: 0, dy: 0, mode: 'brand', artwork: null, fit: 'cover' });
 export const usableInStudio = (p) => !!(p && p.image && Array.isArray(p.quad) && p.quad.length === 4);
 
 export const makeCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
@@ -128,6 +130,7 @@ export async function prepare(p, { dark = isDarkTheme(), width = CANVAS_W } = {}
 /* ---------------- artboard ---------------- */
 let tint = null;
 export function drawArt(B, d) {
+  if (d.mode === 'artwork') return drawArtwork(B, d);
   const { art, AW, AH } = B, a = art.getContext('2d');
   a.clearRect(0, 0, AW, AH);
   const s = d.scale, ink = INKS[d.ink]?.[1] || INKS.black[1], maxW = AW * 0.84;
@@ -175,6 +178,36 @@ export function drawArt(B, d) {
   a.fillStyle = ink; a.textAlign = 'center'; a.textBaseline = 'top';
   if (d.text1) { y += gap; a.font = `700 ${size1}px "Hanken Grotesk", sans-serif`; a.fillText(d.text1, cx, y); y += size1; }
   if (d.text2) { y += gap * 0.55; a.font = `500 ${size2}px "Hanken Grotesk", sans-serif`; a.fillText(d.text2, cx, y); }
+}
+
+/** Where the artwork sits on the artboard: filling it (cover) or all of it inside (contain), then scaled and moved. */
+export function artworkBox(B, d) {
+  const img = d.artwork;
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+  const base = d.fit === 'contain' ? Math.min(B.AW / iw, B.AH / ih) : Math.max(B.AW / iw, B.AH / ih);
+  const w = iw * base * d.scale, h = ih * base * d.scale;
+  return { x: (B.AW - w) / 2 + d.dx, y: (B.AH - h) / 2 + d.dy, w, h };
+}
+function drawArtwork(B, d) {
+  const { art, AW, AH } = B, a = art.getContext('2d');
+  a.clearRect(0, 0, AW, AH);
+  if (!d.artwork) {
+    // before an upload: the whole print area, outlined, is where the artwork goes
+    if (d.placeholder === false) return;
+    const ink = INKS.teal[1];
+    a.save(); a.strokeStyle = ink; a.globalAlpha = 0.6; a.lineWidth = 6; a.setLineDash([18, 12]);
+    a.strokeRect(10, 10, AW - 20, AH - 20);
+    a.setLineDash([]); a.globalAlpha = 0.85; a.fillStyle = ink; a.textAlign = 'center'; a.textBaseline = 'middle';
+    a.font = `700 ${Math.round(Math.min(AW * 0.075, AH * 0.08))}px "Hanken Grotesk", sans-serif`;
+    a.fillText('YOUR ARTWORK', AW / 2, AH / 2 - AW * 0.035);
+    a.font = `500 ${Math.round(Math.min(AW * 0.038, AH * 0.04))}px "Hanken Grotesk", sans-serif`;
+    a.fillText('fills this print area', AW / 2, AH / 2 + AW * 0.045);
+    a.restore();
+    return;
+  }
+  const r = artworkBox(B, d);
+  a.imageSmoothingQuality = 'high';
+  a.drawImage(d.artwork, r.x, r.y, r.w, r.h);
 }
 
 /* ---------------- perspective warp ---------------- */
@@ -232,7 +265,7 @@ export function render(ctx, B, design) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
   ctx.drawImage(B.photo, 0, 0);
-  if (design.ink === 'white') {
+  if (design.mode !== 'artwork' && design.ink === 'white') {
     ctx.globalAlpha = 0.93; ctx.drawImage(pr, 0, 0); ctx.globalAlpha = 1;
     shaded = sized(shaded, B.cw, B.ch);
     const s = shaded.getContext('2d');
@@ -240,7 +273,8 @@ export function render(ctx, B, design) {
     s.globalCompositeOperation = 'source-in'; s.drawImage(B.shade, 0, 0);
     ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(shaded, 0, 0);
   } else {
-    ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.94; ctx.drawImage(pr, 0, 0);
+    // full-colour artwork is multiplied in whole, so the paper's grain and folds show through it
+    ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = design.mode === 'artwork' ? 1 : 0.94; ctx.drawImage(pr, 0, 0);
   }
   ctx.restore();
 }
@@ -257,7 +291,7 @@ export function snapDesign(B, dx, dy) {
   return { dx: x ? 0 : dx, dy: y ? 0 : dy, x, y };
 }
 /** The printable panel's centre lines in perspective, shown while a drag is snapped to them. */
-export function drawGuides(ctx, B, guides, color) {
+export function drawGuides(ctx, B, guides, color, mode = 'brand') {
   if (!guides || (!guides.x && !guides.y)) return;
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -265,11 +299,14 @@ export function drawGuides(ctx, B, guides, color) {
   const line = (a, b) => { ctx.beginPath(); ctx.moveTo(...B.H.fwd(...a)); ctx.lineTo(...B.H.fwd(...b)); ctx.stroke(); };
   if (guides.x) line([0.5, 0.02], [0.5, 0.98]);
   // the design's resting height, the same one drawArt centres it on
-  if (guides.y) { const v = B.safeTop + (1 - B.safeTop) * 0.44; line([0.02, v], [0.98, v]); }
+  // (artwork is centred on the whole panel)
+  if (guides.y) { const v = mode === 'artwork' ? 0.5 : B.safeTop + (1 - B.safeTop) * 0.44; line([0.02, v], [0.98, v]); }
   ctx.restore();
 }
 export function clampDesign(B, d) {
-  const lx = B.AW * 0.34, ly = B.AH * 0.34;
+  // artwork may be moved further, up to half the panel, to choose which part shows
+  const k = d.mode === 'artwork' ? 0.5 : 0.34;
+  const lx = B.AW * k, ly = B.AH * k;
   d.dx = Math.max(-lx, Math.min(lx, d.dx)); d.dy = Math.max(-ly, Math.min(ly, d.dy));
 }
 
@@ -305,7 +342,32 @@ export const singular = (name) => String(name || '').toLowerCase().replace(/(x|c
 
 export function specLine(p, design) {
   const s = sizeOf(p, design.size);
-  return `${s.label} ${singular(p?.name || 'kraft bags')}${s.dims ? `, ${s.dims}` : ''}, ${(INKS[design.ink]?.[0] || 'black').toLowerCase()} ink`;
+  const print = design.mode === 'artwork' ? 'your artwork in full colour' : `${(INKS[design.ink]?.[0] || 'black').toLowerCase()} ink`;
+  return `${s.label} ${singular(p?.name || 'kraft bags')}${s.dims ? `, ${s.dims}` : ''}, ${print}`;
+}
+
+/**
+ * What to tell someone about their artwork on this product: the shape of the print
+ * area, the pixel size that prints sharp (when the bag's width and height are
+ * known), and anything that will not come out as they expect.
+ */
+export function artworkAdvice(p, B, design) {
+  const ratio = B.AW / B.AH;
+  const shape = Math.abs(ratio - 1) < 0.06 ? 'square' : ratio < 1 ? 'portrait (taller than wide)' : 'landscape (wider than tall)';
+  const s = sizeOf(p, design.size);
+  const bag = /bag/i.test(p?.name || '') && s.w && s.h;
+  const px = (cm) => Math.round((cm / 2.54) * 300);
+  const out = { shape, size: bag ? `Front panel about ${s.w} x ${s.h} cm: ${px(s.w).toLocaleString('en-US')} x ${px(s.h).toLocaleString('en-US')} px prints sharp.` : '', warnings: [] };
+  const img = design.artwork;
+  if (img) {
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    const ir = iw / ih;
+    if (design.fit !== 'contain' && Math.abs(Math.log(ir / ratio)) > 0.15) {
+      out.warnings.push(ir > ratio ? 'Your artwork is wider than the print area, so its left and right edges are cut off. Choose "Show all of it" to see the whole page.' : 'Your artwork is taller than the print area, so its top and bottom are cut off. Choose "Show all of it" to see the whole page.');
+    }
+    if (bag && !/svg/i.test(img.src || '') && iw < px(s.w) * 0.5) out.warnings.push(`At ${iw.toLocaleString('en-US')} px wide it may print soft at this size. A larger export, or a PDF sent with your request, prints sharper.`);
+  }
+  return out;
 }
 
 export function saveBlob(blob, filename) {

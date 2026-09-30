@@ -6,34 +6,20 @@
   "description": "A lighter, lower-cost bag with flat paper handles for everyday retail and takeaway.",
   "moq": "",
   "specs": [],
-  "image": "/images/packaging/products/flat-handle-bag-v2.webp",
+  "image": null,
   "imageDark": null,
-  "width": 1200,
-  "height": 1500,
-  "quad": [
-   [
-    0.2412,
-    0.301
-   ],
-   [
-    0.7613,
-    0.301
-   ],
-   [
-    0.7613,
-    0.856
-   ],
-   [
-    0.2412,
-    0.856
-   ]
-  ],
+  "width": null,
+  "height": null,
+  "quad": null,
   "safeTop": 0.08,
   "site": true,
   "team": true,
   "createdAt": "2026-09-15T00:00:00.000Z",
-  "updatedAt": "2026-09-15T00:00:00.000Z",
-  "family": "bags"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "family": "bags",
+  "imageWas": [
+   "/images/packaging/products/flat-handle-bag-v2.webp"
+  ]
  },
  {
   "id": "pk_wide",
@@ -42,34 +28,20 @@
   "description": "A lower, wider bag with flat paper handles.",
   "moq": "",
   "specs": [],
-  "image": "/images/packaging/products/wide-flat-handle-bag-v2.webp",
+  "image": null,
   "imageDark": null,
-  "width": 1200,
-  "height": 1500,
-  "quad": [
-   [
-    0.1488,
-    0.3429
-   ],
-   [
-    0.8514,
-    0.3448
-   ],
-   [
-    0.8491,
-    0.8499
-   ],
-   [
-    0.1523,
-    0.8499
-   ]
-  ],
+  "width": null,
+  "height": null,
+  "quad": null,
   "safeTop": 0.08,
   "site": true,
   "team": true,
   "createdAt": "2026-09-15T00:00:00.000Z",
-  "updatedAt": "2026-09-15T00:00:00.000Z",
-  "family": "bags"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "family": "bags",
+  "imageWas": [
+   "/images/packaging/products/wide-flat-handle-bag-v2.webp"
+  ]
  },
  {
   "id": "pk_twisted",
@@ -78,33 +50,33 @@
   "description": "Strong kraft bags with twisted paper handles, in small, medium and large.",
   "moq": "",
   "specs": [],
-  "image": "/images/packaging/products/twisted-handle-bag-v2.webp",
+  "image": "/images/packaging/products/twisted-handle-bag-v3.webp",
   "imageDark": null,
   "width": 1200,
   "height": 1500,
   "quad": [
    [
-    0.2421,
-    0.3272
+    0.3826,
+    0.3626
    ],
    [
-    0.7579,
-    0.3272
+    0.7193,
+    0.3534
    ],
    [
-    0.7579,
-    0.6593
+    0.7164,
+    0.7997
    ],
    [
-    0.2421,
-    0.6593
+    0.3841,
+    0.8597
    ]
   ],
   "safeTop": 0.04,
   "site": true,
   "team": true,
   "createdAt": "2026-09-15T00:00:00.000Z",
-  "updatedAt": "2026-09-15T00:00:00.000Z",
+  "updatedAt": "2026-09-29T00:00:00.000Z",
   "family": "bags"
  },
  {
@@ -151,33 +123,19 @@
   "minOrder": null,
   "printColours": null,
   "specs": [],
-  "image": "/images/packaging/products/square-bottom-bag-v2.webp",
+  "image": null,
   "imageDark": null,
-  "width": 1200,
-  "height": 1500,
-  "quad": [
-   [
-    0.186,
-    0.3496
-   ],
-   [
-    0.8181,
-    0.3496
-   ],
-   [
-    0.8181,
-    0.6914
-   ],
-   [
-    0.186,
-    0.6914
-   ]
-  ],
+  "width": null,
+  "height": null,
+  "quad": null,
   "safeTop": 0.04,
   "site": true,
   "team": true,
   "createdAt": "2026-09-27T00:00:00.000Z",
-  "updatedAt": "2026-09-27T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "imageWas": [
+   "/images/packaging/products/square-bottom-bag-v2.webp"
+  ]
  },
  {
   "id": "pk_vbottom",
@@ -215,33 +173,19 @@
   "minOrder": null,
   "printColours": null,
   "specs": [],
-  "image": "/images/packaging/products/v-bottom-bag-v2.webp",
+  "image": null,
   "imageDark": null,
-  "width": 1200,
-  "height": 1500,
-  "quad": [
-   [
-    0.3228,
-    0.3658
-   ],
-   [
-    0.6756,
-    0.3658
-   ],
-   [
-    0.6756,
-    0.8003
-   ],
-   [
-    0.3228,
-    0.8003
-   ]
-  ],
+  "width": null,
+  "height": null,
+  "quad": null,
   "safeTop": 0.02,
   "site": true,
   "team": true,
   "createdAt": "2026-09-27T00:00:00.000Z",
-  "updatedAt": "2026-09-27T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "imageWas": [
+   "/images/packaging/products/v-bottom-bag-v2.webp"
+  ]
  },
  {
   "id": "pk_bakery",
@@ -279,33 +223,19 @@
   "minOrder": null,
   "printColours": null,
   "specs": [],
-  "image": "/images/packaging/products/bakery-window-box-v2.webp",
+  "image": null,
   "imageDark": null,
-  "width": 1200,
-  "height": 1500,
-  "quad": [
-   [
-    0.4388,
-    0.7495
-   ],
-   [
-    0.7465,
-    0.6283
-   ],
-   [
-    0.7465,
-    0.7116
-   ],
-   [
-    0.4435,
-    0.8328
-   ]
-  ],
+  "width": null,
+  "height": null,
+  "quad": null,
   "safeTop": 0.02,
   "site": true,
   "team": true,
   "createdAt": "2026-09-27T00:00:00.000Z",
-  "updatedAt": "2026-09-27T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "imageWas": [
+   "/images/packaging/products/bakery-window-box-v2.webp"
+  ]
  },
  {
   "id": "pk_pizza",
@@ -343,16 +273,19 @@
   "minOrder": null,
   "printColours": null,
   "specs": [],
-  "image": "/images/packaging/products/pizza-box-v2.webp",
+  "image": null,
   "imageDark": null,
-  "width": 1200,
-  "height": 1500,
+  "width": null,
+  "height": null,
   "quad": null,
   "safeTop": 0.1,
   "site": true,
   "team": true,
   "createdAt": "2026-09-27T00:00:00.000Z",
-  "updatedAt": "2026-09-27T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "imageWas": [
+   "/images/packaging/products/pizza-box-v2.webp"
+  ]
  },
  {
   "id": "pk_burger",
@@ -382,33 +315,33 @@
   "minOrder": null,
   "printColours": null,
   "specs": [],
-  "image": "/images/packaging/products/burger-box-v2.webp",
+  "image": "/images/packaging/products/burger-box-v3.webp",
   "imageDark": null,
   "width": 1200,
   "height": 1500,
   "quad": [
    [
-    0.3483,
-    0.743
+    0.4814,
+    0.4307
    ],
    [
-    0.8016,
-    0.6674
+    0.8114,
+    0.5427
    ],
    [
-    0.8016,
-    0.7618
+    0.514,
+    0.6944
    ],
    [
-    0.3625,
-    0.8374
+    0.1875,
+    0.5583
    ]
   ],
   "safeTop": 0.02,
   "site": true,
   "team": true,
   "createdAt": "2026-09-27T00:00:00.000Z",
-  "updatedAt": "2026-09-27T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z"
  },
  {
   "id": "pk_medical",
@@ -446,33 +379,19 @@
   "minOrder": null,
   "printColours": null,
   "specs": [],
-  "image": "/images/packaging/products/medical-packet-v2.webp",
+  "image": null,
   "imageDark": null,
-  "width": 1200,
-  "height": 1500,
-  "quad": [
-   [
-    0.4314,
-    0.5506
-   ],
-   [
-    0.7991,
-    0.5506
-   ],
-   [
-    0.7991,
-    0.7788
-   ],
-   [
-    0.4314,
-    0.7788
-   ]
-  ],
+  "width": null,
+  "height": null,
+  "quad": null,
   "safeTop": 0.02,
   "site": true,
   "team": true,
   "createdAt": "2026-09-27T00:00:00.000Z",
-  "updatedAt": "2026-09-27T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "imageWas": [
+   "/images/packaging/products/medical-packet-v2.webp"
+  ]
  },
  {
   "id": "pk_foil",
@@ -516,27 +435,47 @@
   "height": 1500,
   "quad": [
    [
-    0.3523,
-    0.1971
+    0.4138,
+    0.398
    ],
    [
-    0.6769,
-    0.2103
+    0.671,
+    0.398
    ],
    [
-    0.7155,
-    0.8527
+    0.671,
+    0.827
    ],
    [
-    0.3944,
-    0.8632
+    0.4138,
+    0.827
    ]
   ],
   "safeTop": 0.12,
   "site": true,
   "team": true,
   "createdAt": "2026-09-27T00:00:00.000Z",
-  "updatedAt": "2026-09-28T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "quadWas": [
+   [
+    [
+     0.3523,
+     0.1971
+    ],
+    [
+     0.6769,
+     0.2103
+    ],
+    [
+     0.7155,
+     0.8527
+    ],
+    [
+     0.3944,
+     0.8632
+    ]
+   ]
+  ]
  },
  {
   "id": "pk_blockbottom",
@@ -574,33 +513,33 @@
   "minOrder": null,
   "printColours": null,
   "specs": [],
-  "image": "/images/packaging/products/block-bottom-bag-v2.webp",
+  "image": "/images/packaging/products/block-bottom-bag-v3.webp",
   "imageDark": null,
   "width": 1200,
   "height": 1500,
   "quad": [
    [
-    0.3753,
-    0.2262
+    0.2341,
+    0.2481
    ],
    [
-    0.6355,
-    0.1943
+    0.7615,
+    0.2523
    ],
    [
-    0.6767,
-    0.8084
+    0.7601,
+    0.8604
    ],
    [
-    0.4415,
-    0.8609
+    0.2341,
+    0.8604
    ]
   ],
   "safeTop": 0.06,
   "site": true,
   "team": true,
   "createdAt": "2026-09-28T00:00:00.000Z",
-  "updatedAt": "2026-09-28T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z"
  },
  {
   "id": "pk_pouch",
@@ -644,27 +583,47 @@
   "height": 1500,
   "quad": [
    [
-    0.3484,
-    0.1979
+    0.3988,
+    0.464
    ],
    [
-    0.6994,
-    0.1979
+    0.6784,
+    0.464
    ],
    [
-    0.7027,
-    0.8506
+    0.6784,
+    0.8138
    ],
    [
-    0.3492,
-    0.8662
+    0.3988,
+    0.8138
    ]
   ],
   "safeTop": 0.08,
   "site": true,
   "team": true,
   "createdAt": "2026-09-28T00:00:00.000Z",
-  "updatedAt": "2026-09-28T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "quadWas": [
+   [
+    [
+     0.3484,
+     0.1979
+    ],
+    [
+     0.6994,
+     0.1979
+    ],
+    [
+     0.7027,
+     0.8506
+    ],
+    [
+     0.3492,
+     0.8662
+    ]
+   ]
+  ]
  },
  {
   "id": "pk_zipfoil",
@@ -702,33 +661,33 @@
   "minOrder": null,
   "printColours": null,
   "specs": [],
-  "image": "/images/packaging/products/zip-foil-pouch-v2.webp",
+  "image": "/images/packaging/products/zip-foil-pouch-v3.webp",
   "imageDark": null,
   "width": 1200,
   "height": 1500,
   "quad": [
    [
-    0.2467,
-    0.2005
+    0.2307,
+    0.1923
    ],
    [
-    0.753,
-    0.2005
+    0.7707,
+    0.1923
    ],
    [
-    0.753,
-    0.86
+    0.7485,
+    0.8634
    ],
    [
-    0.2471,
-    0.86
+    0.2572,
+    0.8634
    ]
   ],
   "safeTop": 0.1,
   "site": true,
   "team": true,
   "createdAt": "2026-09-28T00:00:00.000Z",
-  "updatedAt": "2026-09-28T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z"
  },
  {
   "id": "pk_sachet",
@@ -900,27 +859,47 @@
   "height": 1500,
   "quad": [
    [
-    0.2626,
-    0.1998
+    0.3255,
+    0.7181
    ],
    [
-    0.7369,
-    0.1998
+    0.6743,
+    0.7181
    ],
    [
-    0.7369,
-    0.8596
+    0.6743,
+    0.7908
    ],
    [
-    0.2629,
-    0.8596
+    0.3255,
+    0.7908
    ]
   ],
   "safeTop": 0.04,
   "site": true,
   "team": true,
   "createdAt": "2026-09-28T00:00:00.000Z",
-  "updatedAt": "2026-09-28T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "quadWas": [
+   [
+    [
+     0.2626,
+     0.1998
+    ],
+    [
+     0.7369,
+     0.1998
+    ],
+    [
+     0.7369,
+     0.8596
+    ],
+    [
+     0.2629,
+     0.8596
+    ]
+   ]
+  ]
  },
  {
   "id": "pk_tray",
@@ -1028,26 +1007,46 @@
   "height": 1500,
   "quad": [
    [
-    0.1489,
-    0.3409
+    0.1989,
+    0.4804
    ],
    [
-    0.8514,
-    0.3409
+    0.8014,
+    0.4804
    ],
    [
-    0.8514,
-    0.8592
+    0.7839,
+    0.8311
    ],
    [
-    0.149,
-    0.8592
+    0.2164,
+    0.8311
    ]
   ],
   "safeTop": 0.04,
   "site": true,
   "team": true,
   "createdAt": "2026-09-28T00:00:00.000Z",
-  "updatedAt": "2026-09-28T00:00:00.000Z"
+  "updatedAt": "2026-09-29T00:00:00.000Z",
+  "quadWas": [
+   [
+    [
+     0.1489,
+     0.3409
+    ],
+    [
+     0.8514,
+     0.3409
+    ],
+    [
+     0.8514,
+     0.8592
+    ],
+    [
+     0.149,
+     0.8592
+    ]
+   ]
+  ]
  }
 ]

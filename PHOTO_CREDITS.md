@@ -8,8 +8,6 @@ https://www.pexels.com/license/
 | File | Photographer | Source |
 |---|---|---|
 | `public/images/packaging/packaging-hero-*` | Hanafi Mellek | https://www.pexels.com/photo/32166686/ |
-| `public/images/packaging/products/flat-handle-bag-v2.webp` | Mr. Mockup | https://www.pexels.com/photo/12024975/ (right-hand bag, cropped) |
-| `public/images/packaging/products/wide-flat-handle-bag-v2.webp` | Mr. Mockup | https://www.pexels.com/photo/12024975/ (left-hand bag, cropped) |
 
 The bags in the mockup studio are the packaging products managed in the admin
 (Website, Packaging products). Each has a photo on a plain white background,
@@ -17,31 +15,16 @@ an optional identical shot on black for dark mode, and the four print corners
 set with the corner editor. Replace these stock photos with Olira's own bags
 from there; no code change is needed.
 
-## Unsplash (catalogue products, 2026-09-27)
+## Removed photos (2026-09-29)
 
-Licensed under the Unsplash License (free commercial use and modification, no
-attribution required; do not sell unaltered copies or compile them into a
-competing photo service). https://unsplash.com/license
+Photos cut out of real photographs by script (from Pexels and Unsplash, 2026-09-27)
+were withdrawn because the removed backgrounds left visible marks: the flat,
+wide flat, twisted handle, square bottom and V-bottom bags, the bakery box, burger
+box, medical packet and pizza box. Those products show a placeholder until the
+marketing team uploads a proper photo in Product photos.
 
-| File | Photographer | Source |
-|---|---|---|
-| `public/images/packaging/products/twisted-handle-bag-v2.webp` | Dmitry Mashkin | https://unsplash.com/photos/adCT4qOQeY4 |
-| `public/images/packaging/products/square-bottom-bag-v2.webp` | Brando Makes Branding | https://unsplash.com/photos/Dk7vG3MJ3hU |
-| `public/images/packaging/products/v-bottom-bag-v2.webp` | Gabre Cameron | https://unsplash.com/photos/bjVCeJNsLCU |
-| `public/images/packaging/products/bakery-window-box-v2.webp` | Tanaphong Toochinda | https://unsplash.com/photos/_f8S_o9xQK8 |
-| `public/images/packaging/products/burger-box-v2.webp` | Christopher Bill | https://unsplash.com/photos/BZq-W3x6r24 |
-| `public/images/packaging/products/medical-packet-v2.webp` | Brando Makes Branding | https://unsplash.com/photos/pbA1c4RN63A (small maker's mark retouched out) |
-| `public/images/packaging/products/pizza-box-v2.webp` | Karsten Winegeart | https://unsplash.com/photos/tTJfjOpt2kE (printed lid: catalogue photo only, not in the studio) |
-
-These are stock photos standing in for Olira's own products. Pizza boxes are
-not in the mockup studio because none of the approved photos shows a blank lid;
-upload a photo of a plain lid in the admin and place the four print corners to
-add them.
-
-All product photos follow one standard, applied by a script to the photos above:
-cut out from their original background, straightened to face the camera where
-the product is flat (the V-bottom bag and the envelope), light evened across the
-product, and set on the same light studio backdrop at the same scale, on the
+All product photos follow one standard, applied by a script: the product alone,
+light evened across it, and set on the same light studio backdrop at the same scale, on the
 same floor line, with the same soft shadow (1200 x 1500 pixels). Photos of
 Olira's own products should be taken the same way: straight on, at bag height,
 on a plain white or light grey background, in soft even light.
@@ -75,3 +58,18 @@ put through the same photo standard as the photos above.
 | `pillow-window-box-v2.webp` | https://mockups-design.com/packaging/kraft-paper-pillow-box-with-window-mockup/ |
 | `food-tray-v2.webp` | https://mockups-design.com/packaging/kraft-paper-food-tray-mockup/ |
 | `fries-carton-v2.webp` | https://mockups-design.com/packaging/french-fries-carton-mockup/ |
+
+## Found through unblast.com (2026-09-29)
+
+Found through https://unblast.com/mockups/packages/ and downloaded from each
+maker's own site, after checking the maker's own licence (unblast's labels can be
+out of date). Rendered with the sample artwork switched off and put through the
+same photo standard as above. The PSD files are not in this repository: none of
+these licences allow them to be shared.
+
+| File (products/ and cutouts/) | Mockup | Licence |
+|---|---|---|
+| `burger-box-v3.webp` | https://mockups-design.com/burger-box-mockup/ | mockups-design.com: royalty free, commercial use, no attribution required |
+| `twisted-handle-bag-v3.webp` | https://mockups-design.com/twisted-handle-paper-bag-mockup/ (recoloured to kraft) | mockups-design.com, as above |
+| `block-bottom-bag-v3.webp` | https://pixpine.com/free-lunch-paper-bag-mockup/ | Pixpine: personal and commercial use; no resale or redistribution of the files |
+| `zip-foil-pouch-v3.webp` | https://www.mockupspace.com/free-stand-up-pouch-packaging-mockup/ (recoloured to silver foil) | Mockup Space: free for personal and commercial use |

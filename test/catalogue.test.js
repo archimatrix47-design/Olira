@@ -210,6 +210,28 @@ test('boot merge: new catalogue products reach a live folder once; deleted ones 
   assert.deepEqual(mergeSeedCatalogue(live, repo, io), ['pk_flat (photo)']);
   const f2 = io.readJsonFile(path.join(live, 'packaging-products.json'))[0];
   assert.deepEqual([f2.image, f2.width, f2.height, f2.quad], ['/images/packaging/products/flat-v2.webp', 1200, 1500, q2]);
+  // a print area corrected in the repo reaches a live product still on its shipped corners, once
+  const old = [[0.15, 0.34], [0.85, 0.34], [0.85, 0.86], [0.15, 0.86]], fixed = [[0.2, 0.48], [0.8, 0.48], [0.78, 0.83], [0.22, 0.83]];
+  write(live, [{ id: 'pk_fries', image: '/images/packaging/products/fries.webp', quad: old }]);
+  write(repo, [{ id: 'pk_fries', image: '/images/packaging/products/fries.webp', quad: fixed, quadWas: [old] }]);
+  assert.deepEqual(mergeSeedCatalogue(live, repo, io), ['pk_fries (print area)']);
+  assert.deepEqual(io.readJsonFile(path.join(live, 'packaging-products.json'))[0].quad, fixed);
+  assert.deepEqual(mergeSeedCatalogue(live, repo, io), [], 'nothing to do the second time');
+  // corners the team moved themselves are kept
+  const theirs = [[0.21, 0.5], [0.79, 0.5], [0.77, 0.82], [0.23, 0.82]];
+  write(live, [{ id: 'pk_fries', image: '/images/packaging/products/fries.webp', quad: theirs }]);
+  assert.deepEqual(mergeSeedCatalogue(live, repo, io), []);
+  assert.deepEqual(io.readJsonFile(path.join(live, 'packaging-products.json'))[0].quad, theirs);
+  // a shipped photo withdrawn from the repo is removed from a live product still showing it
+  write(live, [{ id: 'pk_sos', name: 'Square', image: '/images/packaging/products/sos-v2.webp', width: 1200, height: 1500, quad, minOrder: 3000 }]);
+  write(repo, [{ id: 'pk_sos', image: null, quad: null, imageWas: ['/images/packaging/products/sos-v2.webp'] }]);
+  assert.deepEqual(mergeSeedCatalogue(live, repo, io), ['pk_sos (photo removed)']);
+  const s2 = io.readJsonFile(path.join(live, 'packaging-products.json'))[0];
+  assert.deepEqual([s2.image, s2.quad, s2.name, s2.minOrder], [null, null, 'Square', 3000], 'only the photo goes');
+  // a photo the team uploaded in its place is theirs
+  write(live, [{ id: 'pk_sos', image: '/uploads/packaging/theirs-cutout-1.webp', quad }]);
+  assert.deepEqual(mergeSeedCatalogue(live, repo, io), []);
+  assert.equal(io.readJsonFile(path.join(live, 'packaging-products.json'))[0].image, '/uploads/packaging/theirs-cutout-1.webp');
   // a live product that has its own photo is never touched
   write(live, [{ id: 'pk_twisted', image: '/uploads/packaging/own.webp' }]);
   write(repo, [{ id: 'pk_twisted', image: '/images/packaging/products/new.webp', quad }]);

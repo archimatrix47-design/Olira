@@ -383,6 +383,11 @@ fieldset.choice { border: 0; margin: 0; padding: 0; min-width: 0; }
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .two > * { min-width: 0; }
 .panel-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+/* the studio's two ways of designing: logo and text, or a full artwork */
+.mode-part { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.art-hint:empty { display: none; }
+.art-hint { margin-top: 8px; }
+.art-fit { margin-top: 12px; }
 @media (max-width: 520px) { .panel-actions { grid-template-columns: minmax(0, 1fr); } }
 .panel-actions .btn { width: 100%; }
 .nudge { display: grid; grid-template-columns: repeat(4, 44px) 1fr; gap: 6px; align-items: center; }

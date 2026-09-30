@@ -76,7 +76,8 @@ export function mountFlow(root, { products = [], onDetail, onOpen } = {}) {
   function set(next, keepId = list[active]?.id) {
     list = next; N = next.length;
     const k = next.findIndex((p) => p.id === keepId);
-    active = k >= 0 ? k : 0;
+    // otherwise the first product with a photo comes to the front, not a placeholder
+    active = k >= 0 ? k : Math.max(0, next.findIndex((p) => p.image));
     prevOffset = new Array(N).fill(null);
     track.innerHTML = next.map((p, i) => cardHTML(p, i, active, N)).join('');
     dots.replaceChildren(...next.map((p) => { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', p.name); return b; }));

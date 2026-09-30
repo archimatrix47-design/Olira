@@ -337,7 +337,11 @@ function assignSelect(l) {
 
 function designSummary(l) {
   const d = l.design;
-  const chips = [
+  // a full artwork (printed in full colour across the print area), or a logo and text in one ink
+  const chips = d.mode === 'artwork' ? [
+    ['Bag', d.templateName || d.template], ['Size', d.size], ['Design', 'Full artwork, full colour'],
+    ['Artwork', d.hasArtwork ? 'Sent, see Files' : 'Not sent'], ['Fit', d.fit === 'contain' ? 'Whole page shown' : 'Fills the print area'],
+  ] : [
     ['Bag', d.templateName || d.template], ['Size', d.size], ['Ink', d.ink],
     d.text1 ? ['Main text', d.text1] : null, d.text2 ? ['Second line', d.text2] : null,
     ['Logo', d.hasLogo ? 'Sent, see Files' : 'Not sent'], d.oneInk ? ['Logo colour', 'In the ink colour'] : null,
