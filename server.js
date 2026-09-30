@@ -1247,12 +1247,17 @@ function cleanDesign(d) {
     size: str(d.size, 30).toLowerCase().replace(/[^a-z0-9-]/g, '') || 'medium',
     ink: ['black', 'teal', 'leaf', 'red', 'white'].includes(d.ink) ? d.ink : 'black',
     text1: str(d.text1, 18), text2: str(d.text2, 28),
-    scale: numIn(d.scale, 0.5, 1.4, 1), dx: numIn(d.dx, -400, 400, 0), dy: numIn(d.dy, -600, 600, 0),
+    // full artwork may be moved further than a logo (up to half the panel)
+    scale: numIn(d.scale, 0.5, 1.4, 1), dx: numIn(d.dx, -600, 600, 0), dy: numIn(d.dy, -1600, 1600, 0),
     oneInk: d.oneInk === true, hasLogo: d.hasLogo === true,
     // what the studio's logo check found in the file, and whether the visitor
     // removed a white box from it on the preview (the file sent is the original)
     logoCheck: ['boxed', 'light'].includes(d.logoCheck) ? d.logoCheck : '',
     boxRemoved: d.boxRemoved === true,
+    // a logo and text, or the visitor's own full artwork (sent as a file) across the print area
+    mode: d.mode === 'artwork' ? 'artwork' : 'brand',
+    fit: d.fit === 'contain' ? 'contain' : 'cover',
+    hasArtwork: d.mode === 'artwork' && d.hasArtwork === true,
   };
 }
 

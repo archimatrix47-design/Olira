@@ -216,6 +216,7 @@ for (const form of $$('form[data-endpoint]')) {
       if (extras) {
         fd.append('design', JSON.stringify(extras.design));
         if (extras.logo) fd.append('logo', extras.logo, extras.logo.name);
+        if (extras.artwork) fd.append('artwork', extras.artwork, extras.artwork.name);
         if (extras.mockup) fd.append('mockup', extras.mockup, 'studio-mockup.png');
       }
       body = fd; headers = {};

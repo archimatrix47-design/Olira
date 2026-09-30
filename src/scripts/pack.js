@@ -4,7 +4,7 @@
 // with the packaging team's workspace. Products without a photo yet are in the
 // catalogue and the packing list, and join the studio as soon as the admin adds one.
 import { $, $$, h, prefill, track, formHooks } from './common.js';
-import { INKS, defaultDesign, prepare, render, toArtboard, clampDesign, snapDesign, drawGuides, exportImage, specLine, saveBlob, usableInStudio, onThemeChange, sizesOf, sizeOf, singular } from './mockup/engine.js';
+import { INKS, defaultDesign, prepare, render, toArtboard, clampDesign, snapDesign, drawGuides, exportImage, specLine, saveBlob, usableInStudio, onThemeChange, sizesOf, sizeOf, singular, artworkAdvice } from './mockup/engine.js';
 import { getProducts, onProducts } from './packaging-data.js';
 import { checkLogo, removeBox } from './mockup/logo-check.js';
 
@@ -19,7 +19,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
 let products = getProducts();
 let templates = products.filter(usableInStudio);
-const state = { template: templates[0]?.id || null, logoFile: null, ...defaultDesign() };
+const state = { template: templates[0]?.id || null, logoFile: null, artworkFile: null, ...defaultDesign() };
 
 // ?handle=twisted (home page links) picks the first bag with that handle; ?bag=<id> picks one exactly
 const params = new URLSearchParams(location.search);
@@ -50,10 +50,11 @@ async function draw() {
   if (id !== pending) return;
   current = B;
   render(ctx, B, state);
-  drawGuides(ctx, B, guides, accent());
+  drawGuides(ctx, B, guides, accent(), state.mode);
   canvas.parentElement.style.backgroundColor = backdrop(B);
   $('#stageInfo').textContent = specLine(t, state);
   updateSummary();
+  if (state.mode === 'artwork') adviseArtwork();
 }
 // The frame around the fitted photo takes the colour of the photo's own edge, so
 // the backdrop the bag was photographed on simply continues to the frame.
@@ -111,6 +112,7 @@ bindTemplateChips();
 // The size, ink and text chosen in the studio carry over to the request.
 function quoteMessage(p) {
   const sz = sizeOf(p, state.size);
+  if (state.mode === 'artwork') return `Quote for ${sz.label.toLowerCase()} ${singular(p?.name || 'kraft paper bags')}s${sz.dims ? ` (${sz.dims})` : ''}. Print: ${state.artworkFile ? `our full artwork (${state.artworkFile.name})` : 'full artwork to follow'}, in full colour.`;
   return `Quote for ${sz.label.toLowerCase()} ${singular(p?.name || 'kraft paper bags')}s${sz.dims ? ` (${sz.dims})` : ''}. Print: ${state.logo ? 'our logo' : 'logo to follow'}, "${state.text1}" and "${state.text2}", ${INKS[state.ink][0].toLowerCase()} ink${state.oneInk && state.logo ? ', logo in one colour' : ''}.`;
 }
 
@@ -225,6 +227,70 @@ $('#removeLogo').addEventListener('click', () => {
   advise(); draw(); announce('Logo removed.'); $('#logoFile').focus();
 });
 
+/* ---------------- full artwork: a finished design printed across the print area ---------------- */
+function setMode(mode, { say = true } = {}) {
+  state.mode = mode;
+  for (const part of $$('.mode-part')) part.hidden = part.dataset.mode !== mode;
+  // each way of designing starts centred at its natural size
+  state.dx = 0; state.dy = 0; state.scale = 1;
+  const sc = $('#scale'); sc.value = 100; sc.setAttribute('aria-valuetext', '100 percent');
+  draw();
+  if (say) announce(mode === 'artwork' ? 'Full artwork. Upload a finished design to see it across the print area.' : 'Logo and text.');
+  noteChange();
+}
+$$('input[name="designMode"]').forEach((r) => r.addEventListener('change', () => { if (r.checked) setMode(r.value); }));
+$$('input[name="artFit"]').forEach((r) => r.addEventListener('change', () => {
+  if (!r.checked) return;
+  state.fit = r.value; state.dx = 0; state.dy = 0; draw();
+  announce(r.value === 'contain' ? 'The whole artwork is shown inside the print area.' : 'The artwork fills the print area.');
+}));
+
+function adviseArtwork() {
+  if (!current || !tpl()) return;
+  const a = artworkAdvice(tpl(), current, state);
+  $('#artHint').textContent = `The print area on this ${singular(tpl().name)} is ${a.shape}. ${a.size}`.trim();
+  const box = $('#artAdvice');
+  box.hidden = !a.warnings.length;
+  $('#artAdviceText').textContent = a.warnings.join(' ');
+}
+
+const ART_MAX = 10 * 1024 * 1024; // the most a quote request accepts for one file
+function loadArtwork(file) {
+  const sub = $('#artSub');
+  if (!file) return;
+  if (file.type === 'application/pdf') {
+    sub.textContent = 'A PDF cannot be previewed here yet. Export the page as a PNG or JPG to see it on the bag; you can attach the PDF itself to your quote request.';
+    announce(sub.textContent); return;
+  }
+  if (!/^image\/(png|jpeg|svg\+xml|webp)$/.test(file.type)) { sub.textContent = 'Please choose a PNG, JPG, WebP or SVG image of your design.'; announce(sub.textContent); return; }
+  if (file.size > ART_MAX) { sub.textContent = 'That file is over 10 MB. Export a smaller copy to preview and send it.'; announce(sub.textContent); return; }
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => {
+    state.artwork = img; state.artworkFile = file; state.dx = 0; state.dy = 0;
+    $('#artTitle').textContent = file.name; sub.textContent = 'Choose or drop another file to replace it.';
+    $('#removeArt').hidden = false;
+    draw().then(() => announce(`Artwork added: ${file.name}. It is on the preview.${$('#artAdvice').hidden ? '' : ` ${$('#artAdviceText').textContent}`}`));
+    track({ event: 'studio_artwork' });
+    noteChange();
+  };
+  img.onerror = () => { sub.textContent = 'That image could not be read. Try a PNG or JPG.'; announce(sub.textContent); URL.revokeObjectURL(url); };
+  img.src = url;
+}
+$('#artFile').addEventListener('change', (e) => loadArtwork(e.target.files[0]));
+{
+  const artDrop = $('#artDrop');
+  ['dragenter', 'dragover'].forEach((ev) => artDrop.addEventListener(ev, (e) => { e.preventDefault(); artDrop.classList.add('is-over'); }));
+  ['dragleave', 'drop'].forEach((ev) => artDrop.addEventListener(ev, (e) => { e.preventDefault(); artDrop.classList.remove('is-over'); }));
+  artDrop.addEventListener('drop', (e) => loadArtwork(e.dataTransfer.files[0]));
+}
+$('#removeArt').addEventListener('click', () => {
+  state.artwork = null; state.artworkFile = null; $('#artFile').value = '';
+  $('#artTitle').textContent = 'Upload your artwork';
+  $('#artSub').textContent = 'A finished design, the whole page: PNG, JPG, WebP or SVG, up to 10 MB.';
+  $('#removeArt').hidden = true;
+  draw(); announce('Artwork removed.'); $('#artFile').focus();
+});
+
 /* moving the design: drag on the bag, arrow keys on the preview, or the buttons */
 function move(x, y, say) { state.dx += x; state.dy += y; if (current) clampDesign(current, state); draw(); if (say) announce(say); }
 
@@ -290,14 +356,20 @@ const sendDesign = $('[data-send-design]');
 function updateSummary() {
   const out = $('[data-design-summary]');
   if (!out || !tpl()) return;
-  out.textContent = `${specLine(tpl(), state)}${state.logoFile ? `, with your logo (${state.logoFile.name})` : ', no logo yet'}. A picture of the mockup is included.`;
+  const what = state.mode === 'artwork'
+    ? (state.artworkFile ? `, with your artwork (${state.artworkFile.name})` : ', no artwork yet')
+    : (state.logoFile ? `, with your logo (${state.logoFile.name})` : ', no logo yet');
+  out.textContent = `${specLine(tpl(), state)}${what}. A picture of the mockup is included.`;
 }
 formHooks.design = async () => {
   if (!current || !sendDesign?.checked) return null;
   const t = tpl();
   return {
-    design: { template: t.id, templateName: t.name, size: state.size, ink: state.ink, text1: state.text1, text2: state.text2, scale: state.scale, dx: Math.round(state.dx), dy: Math.round(state.dy), oneInk: state.oneInk, hasLogo: !!state.logoFile, logoCheck: state.logoFile ? uploadCheck : '', boxRemoved: !!state.logoFile && boxRemoved },
-    logo: state.logoFile,
+    design: { template: t.id, templateName: t.name, size: state.size, ink: state.ink, text1: state.text1, text2: state.text2, scale: state.scale, dx: Math.round(state.dx), dy: Math.round(state.dy), oneInk: state.oneInk, hasLogo: !!state.logoFile, logoCheck: state.logoFile ? uploadCheck : '', boxRemoved: !!state.logoFile && boxRemoved,
+      mode: state.mode, fit: state.fit, hasArtwork: state.mode === 'artwork' && !!state.artworkFile },
+    // only the files the chosen design uses
+    logo: state.mode === 'brand' ? state.logoFile : null,
+    artwork: state.mode === 'artwork' ? state.artworkFile : null,
     mockup: await exportImage(current, state, { type: 'png', scale: 0.8 }),
   };
 };

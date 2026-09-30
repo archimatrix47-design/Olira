@@ -175,7 +175,34 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
               <!-- the chosen product's own sizes, filled in by mockups.js -->
               <div class="chips" id="tmSizes"></div>
             </fieldset>
-            <div class="a-field">
+            <fieldset class="a-fieldset a-field">
+              <legend class="a-label">Design</legend>
+              <div class="a-seg" role="radiogroup" aria-label="Design">
+                <label><input type="radio" name="tmMode" value="brand" checked><span>Logo and text</span></label>
+                <label><input type="radio" name="tmMode" value="artwork"><span>Full artwork</span></label>
+              </div>
+            </fieldset>
+            <!-- full artwork: the client's finished design across the print area -->
+            <div class="a-field" data-tm-mode="artwork" hidden>
+              <span class="a-label" id="tmArtLabel">Artwork</span>
+              <label class="a-drop" id="tmArtDrop">
+                <input type="file" id="tmArtFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" aria-labelledby="tmArtLabel tmArtTitle" aria-describedby="tmArtHint">
+                <strong id="tmArtTitle">Upload the artwork</strong>
+                <span>The finished design, the whole page: PNG, JPG, WebP or SVG.</span>
+              </label>
+              <div class="a-field" id="tmArtFromLeadWrap" hidden>
+                <label for="tmArtFromLead">Or use a file the client sent</label>
+                <select class="input" id="tmArtFromLead"></select>
+              </div>
+              <div class="a-seg" role="radiogroup" aria-label="Fit">
+                <label><input type="radio" name="tmFit" value="cover" checked><span>Fill the print area</span></label>
+                <label><input type="radio" name="tmFit" value="contain"><span>Show all of it</span></label>
+              </div>
+              <p class="a-note" id="tmArtHint"></p>
+              <p class="t-logo-note" id="tmArtAdvice" hidden></p>
+              <button class="btn btn-ghost btn-sm" type="button" id="tmRemoveArt" hidden style="justify-self:start">Remove artwork</button>
+            </div>
+            <div class="a-field" data-tm-mode="brand">
               <span class="a-label" id="tmLogoLabel">Logo</span>
               <div class="t-logo-sources">
                 <label class="a-drop" id="tmDrop">
@@ -201,11 +228,11 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
                 <button class="btn btn-ghost btn-sm" type="button" id="tmRemoveLogo" hidden>Remove logo</button>
               </div>
             </div>
-            <div class="a-two">
+            <div class="a-two" data-tm-mode="brand">
               <div class="a-field"><label for="tmText1">Main text</label><input class="input" id="tmText1" maxlength="18" autocomplete="off"></div>
               <div class="a-field"><label for="tmText2">Second line</label><input class="input" id="tmText2" maxlength="28" autocomplete="off"></div>
             </div>
-            <fieldset class="a-fieldset a-field">
+            <fieldset class="a-fieldset a-field" data-tm-mode="brand">
               <legend class="a-label">Ink colour</legend>
               <div class="chips">
                 <label class="opt opt-swatch" title="Black"><input type="radio" name="tmInk" value="black"><span style="--sw:#1E1B16"></span><b class="sr-only">Black</b></label>

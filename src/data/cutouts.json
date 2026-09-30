@@ -1,145 +1,49 @@
 {
  "pk_twisted": {
-  "image": "/images/packaging/products/twisted-handle-bag-v2.webp",
-  "cutout": "/images/packaging/cutouts/twisted-handle-bag-v2.webp",
-  "width": 660,
+  "image": "/images/packaging/products/twisted-handle-bag-v3.webp",
+  "cutout": "/images/packaging/cutouts/twisted-handle-bag-v3.webp",
+  "width": 537,
   "height": 990,
   "quad": [
    [
-    0.0311,
-    0.1927
+    0.2367,
+    0.2464
    ],
    [
-    0.9683,
-    0.1927
+    0.9887,
+    0.2324
    ],
    [
-    0.9683,
-    0.6959
+    0.9823,
+    0.9087
    ],
    [
-    0.0311,
-    0.6959
-   ]
-  ]
- },
- "pk_sos": {
-  "image": "/images/packaging/products/square-bottom-bag-v2.webp",
-  "cutout": "/images/packaging/cutouts/square-bottom-bag-v2.webp",
-  "width": 833,
-  "height": 990,
-  "quad": [
-   [
-    0.047,
-    0.2266
-   ],
-   [
-    0.9573,
-    0.2266
-   ],
-   [
-    0.9573,
-    0.7446
-   ],
-   [
-    0.047,
-    0.7446
-   ]
-  ]
- },
- "pk_vbottom": {
-  "image": "/images/packaging/products/v-bottom-bag-v2.webp",
-  "cutout": "/images/packaging/cutouts/v-bottom-bag-v2.webp",
-  "width": 560,
-  "height": 990,
-  "quad": [
-   [
-    0.1202,
-    0.2512
-   ],
-   [
-    0.8758,
-    0.2512
-   ],
-   [
-    0.8758,
-    0.9095
-   ],
-   [
-    0.1202,
-    0.9095
-   ]
-  ]
- },
- "pk_bakery": {
-  "image": "/images/packaging/products/bakery-window-box-v2.webp",
-  "cutout": "/images/packaging/cutouts/bakery-window-box-v2.webp",
-  "width": 840,
-  "height": 910,
-  "quad": [
-   [
-    0.4125,
-    0.8174
-   ],
-   [
-    0.8521,
-    0.6177
-   ],
-   [
-    0.8521,
-    0.755
-   ],
-   [
-    0.4193,
-    0.9547
+    0.2399,
+    0.9996
    ]
   ]
  },
  "pk_burger": {
-  "image": "/images/packaging/products/burger-box-v2.webp",
-  "cutout": "/images/packaging/cutouts/burger-box-v2.webp",
+  "image": "/images/packaging/products/burger-box-v3.webp",
+  "cutout": "/images/packaging/cutouts/burger-box-v3.webp",
   "width": 840,
-  "height": 864,
+  "height": 628,
   "quad": [
    [
-    0.2833,
-    0.7967
+    0.4735,
+    -0.0253
    ],
    [
-    0.9309,
-    0.6656
+    0.9448,
+    0.2424
    ],
    [
-    0.9309,
-    0.8295
+    0.52,
+    0.6049
    ],
    [
-    0.3035,
-    0.9607
-   ]
-  ]
- },
- "pk_medical": {
-  "image": "/images/packaging/products/medical-packet-v2.webp",
-  "cutout": "/images/packaging/cutouts/medical-packet-v2.webp",
-  "width": 840,
-  "height": 599,
-  "quad": [
-   [
-    0.402,
-    0.2251
-   ],
-   [
-    0.9273,
-    0.2251
-   ],
-   [
-    0.9273,
-    0.7961
-   ],
-   [
-    0.402,
-    0.7961
+    0.0535,
+    0.2795
    ]
   ]
  },
@@ -150,99 +54,44 @@
   "height": 990,
   "quad": [
    [
-    0.106,
-    -0.0045
+    0.27,
+    0.3
    ],
    [
-    0.9706,
-    0.0156
+    0.955,
+    0.3
    ],
    [
-    1.0736,
-    0.9889
+    0.955,
+    0.95
    ],
    [
-    0.2183,
-    1.0048
-   ]
-  ]
- },
- "pk_pizza": {
-  "image": "/images/packaging/products/pizza-box-v2.webp",
-  "cutout": "/images/packaging/cutouts/pizza-box-v2.webp",
-  "width": 840,
-  "height": 852,
-  "quad": null
- },
- "pk_flat": {
-  "image": "/images/packaging/products/flat-handle-bag-v2.webp",
-  "cutout": "/images/packaging/cutouts/flat-handle-bag-v2.webp",
-  "width": 621,
-  "height": 990,
-  "quad": [
-   [
-    -0.001,
-    0.1531
-   ],
-   [
-    1.004,
-    0.1531
-   ],
-   [
-    1.004,
-    0.9939
-   ],
-   [
-    -0.001,
-    0.9939
-   ]
-  ]
- },
- "pk_wide": {
-  "image": "/images/packaging/products/wide-flat-handle-bag-v2.webp",
-  "cutout": "/images/packaging/cutouts/wide-flat-handle-bag-v2.webp",
-  "width": 840,
-  "height": 982,
-  "quad": [
-   [
-    -0.0017,
-    0.2101
-   ],
-   [
-    1.0021,
-    0.213
-   ],
-   [
-    0.9987,
-    0.9845
-   ],
-   [
-    0.0033,
-    0.9845
+    0.27,
+    0.95
    ]
   ]
  },
  "pk_blockbottom": {
-  "image": "/images/packaging/products/block-bottom-bag-v2.webp",
-  "cutout": "/images/packaging/cutouts/block-bottom-bag-v2.webp",
-  "width": 386,
+  "image": "/images/packaging/products/block-bottom-bag-v3.webp",
+  "cutout": "/images/packaging/cutouts/block-bottom-bag-v3.webp",
+  "width": 635,
   "height": 990,
   "quad": [
    [
-    0.1121,
-    0.0397
+    -0.0017,
+    0.0729
    ],
    [
-    0.9202,
-    -0.0087
+    0.995,
+    0.0793
    ],
    [
-    1.0481,
-    0.9219
+    0.9924,
+    1.0007
    ],
    [
-    0.3177,
-    1.0014
+    -0.0017,
+    1.0007
    ]
   ]
  },
@@ -253,44 +102,44 @@
   "height": 990,
   "quad": [
    [
-    0.1246,
-    -0.0032
+    0.25,
+    0.4
    ],
    [
-    0.9974,
-    -0.0032
+    0.945,
+    0.4
    ],
    [
-    1.0055,
-    0.9857
+    0.945,
+    0.93
    ],
    [
-    0.1266,
-    1.0094
+    0.25,
+    0.93
    ]
   ]
  },
  "pk_zipfoil": {
-  "image": "/images/packaging/products/zip-foil-pouch-v2.webp",
-  "cutout": "/images/packaging/cutouts/zip-foil-pouch-v2.webp",
-  "width": 606,
+  "image": "/images/packaging/products/zip-foil-pouch-v3.webp",
+  "cutout": "/images/packaging/cutouts/zip-foil-pouch-v3.webp",
+  "width": 632,
   "height": 990,
   "quad": [
    [
-    -0.0016,
-    0.0007
+    -0.0113,
+    -0.0117
    ],
    [
-    1.0015,
-    0.0007
+    1.0133,
+    -0.0117
    ],
    [
-    1.0015,
-    1.0001
+    0.9713,
+    1.0052
    ],
    [
-    -0.0009,
-    1.0001
+    0.039,
+    1.0052
    ]
   ]
  },
@@ -349,20 +198,20 @@
   "height": 990,
   "quad": [
    [
-    -0.0034,
-    -0.0003
+    0.13,
+    0.785
    ],
    [
-    1.0027,
-    -0.0003
+    0.87,
+    0.785
    ],
    [
-    1.0027,
-    0.9993
+    0.87,
+    0.895
    ],
    [
-    -0.0027,
-    0.9993
+    0.13,
+    0.895
    ]
   ]
  },
@@ -397,20 +246,20 @@
   "height": 965,
   "quad": [
    [
-    -0.0015,
-    0.1931
+    0.07,
+    0.41
    ],
    [
-    1.002,
-    0.1931
+    0.93,
+    0.41
    ],
    [
-    1.002,
-    0.9986
+    0.905,
+    0.955
    ],
    [
-    -0.0014,
-    0.9986
+    0.095,
+    0.955
    ]
   ]
  }

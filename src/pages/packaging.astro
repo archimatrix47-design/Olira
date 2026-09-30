@@ -32,6 +32,9 @@ const jsonLd = {
     itemOffered: { '@type': 'Product', name: p.name, category: families[p.family || 'bags'], description: p.description, brand: { '@type': 'Brand', name: 'Olira Packaging' }, ...(p.image ? { image: `${SITE}${p.image}` } : {}) },
   })),
 };
+// the catalogue opens on the first product with a photo, not on a placeholder
+const catalogueItems = packagingProducts.map((p) => flowItem(p, families));
+const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
 ---
 <SiteLayout
   title="Printed packaging, Olira Packaging"
@@ -76,7 +79,7 @@ const jsonLd = {
         <p class="sr-only" id="catalogueStatus" role="status" aria-live="polite"></p>
         <!-- the catalogue: the same carousel and detail panel as the agriculture range -->
         <div id="catalogue" class="catalogue-flow" data-families={JSON.stringify(families)} data-flexo-max={FLEXO_MAX_COLOURS}>
-          <ProductFlow items={packagingProducts.map((p) => flowItem(p, families))} label="Packaging products" kind="pack" prefix="pk">
+          <ProductFlow items={catalogueItems} start={catalogueStart} label="Packaging products" kind="pack" prefix="pk">
             <canvas slot="media" class="flow-print" aria-hidden="true" width="960" height="1200"></canvas>
             <div class="pk-actions">
               <button class="pp-add" type="button" data-id="" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add to packing list</span></button>
@@ -111,7 +114,7 @@ const jsonLd = {
           </div>
 
           <div class="sheet panel">
-            <p class="note panel-intro">Choose a bag, add your logo and text, and move the design into place. Download the mockup or send the design with your quote request.</p>
+            <p class="note panel-intro">Choose a bag, add your logo and text or your own full artwork, and move the design into place. Download the mockup or send the design with your quote request.</p>
             <p class="sr-only" id="studioStatus" role="status" aria-live="polite"></p>
 
             <fieldset class="choice">
@@ -149,6 +152,37 @@ const jsonLd = {
               </div>
             </fieldset>
 
+            <fieldset class="choice">
+              <legend class="field-label">Your design</legend>
+              <div class="chips" id="designMode">
+                <label class="opt"><input type="radio" name="designMode" value="brand" checked><span>Logo and text</span></label>
+                <label class="opt"><input type="radio" name="designMode" value="artwork"><span>Full artwork</span></label>
+              </div>
+            </fieldset>
+
+            <!-- full artwork: a finished design, a whole page, printed across the print area -->
+            <div class="mode-part" data-mode="artwork" hidden>
+              <span class="field-label" id="artLbl">Your artwork</span>
+              <label class="drop" id="artDrop">
+                <input type="file" id="artFile" accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" aria-labelledby="artLbl artTitle" aria-describedby="artSub artHint">
+                <strong id="artTitle">Upload your artwork</strong>
+                <span id="artSub">A finished design, the whole page: PNG, JPG, WebP or SVG, up to 10 MB.</span>
+              </label>
+              <p class="note art-hint" id="artHint"></p>
+              <div class="logo-advice" id="artAdvice" hidden><p id="artAdviceText"></p></div>
+              <fieldset class="choice art-fit">
+                <legend class="field-label">Fit</legend>
+                <div class="chips">
+                  <label class="opt"><input type="radio" name="artFit" value="cover" checked><span>Fill the print area</span></label>
+                  <label class="opt"><input type="radio" name="artFit" value="contain"><span>Show all of it</span></label>
+                </div>
+              </fieldset>
+              <div class="row" style="justify-content:flex-end;margin-top:6px">
+                <button class="btn btn-ghost btn-sm" type="button" id="removeArt" hidden>Remove artwork</button>
+              </div>
+            </div>
+
+            <div class="mode-part" data-mode="brand">
             <div>
               <span class="field-label" id="logoLbl">Your logo</span>
               <label class="drop" id="drop">
@@ -184,6 +218,7 @@ const jsonLd = {
                 <label class="opt opt-swatch" title="White"><input type="radio" name="ink" value="white"><span style="--sw:#FAF7F0"></span><b class="sr-only">White</b></label>
               </div>
             </fieldset>
+            </div>
 
             <div>
               <label class="field-label" for="scale">Design size</label>
@@ -206,7 +241,7 @@ const jsonLd = {
               <button class="btn btn-lg btn-secondary" type="button" id="download" aria-describedby="downloadHint">Download PNG</button>
               <a class="btn btn-lg btn-primary" href="#quote" id="useDesign">Quote this design</a>
             </div>
-            <p class="note" id="downloadHint">Your logo stays in your browser unless you choose to send it with a quote request. Bag photos are for preview; production finish and print can vary.</p>
+            <p class="note" id="downloadHint">Your logo and artwork stay in your browser unless you choose to send them with a quote request. Bag photos are for preview; production finish and print can vary.</p>
           </div>
         </div>
       </div>

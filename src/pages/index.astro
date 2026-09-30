@@ -34,7 +34,7 @@ const PRODUCE = [
 ];
 
 // the packaging door's lineup, tallest to smallest, heights true to each other
-const lineup = pick([['pk_twisted', 100], ['pk_foil', 86], ['pk_pouch', 74], ['pk_fries', 56]], 100, 4);
+const lineup = pick([['pk_twisted', 100], ['pk_foil', 86], ['pk_pouch', 74], ['pk_burger', 50]], 100, 4);
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -105,7 +105,7 @@ const jsonLd = {
           <div class="lineup" data-lineup aria-hidden="true">
             {lineup.map(({ c, p, w, h }, i) => (
               <div class="item" style={`--w:${w}`} data-name={p.name} data-id={p.id} data-h={h}>
-                <Fragment set:html={standHTML(c, p.name, { eager: i < 3 })} />
+                <Fragment set:html={standHTML(c, p.name, { eager: i < 3, brand: 'olira' })} />
               </div>
             ))}
           </div>
