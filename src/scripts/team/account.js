@@ -6,10 +6,8 @@ let bound = false;
 export function show() {
   const u = session.user;
   $('#accountProfile').replaceChildren(
-    ...[['Name', u.name], ['Email', u.email || 'Not set'], ['Team', u.roleLabel]].map(([k, v]) => h('div', {}, h('dt', {}, k), h('dd', {}, v))));
+    ...[['Name', u.name], ['Email', u.email || 'Not set'], ['Role', u.roleLabel]].map(([k, v]) => h('div', {}, h('dt', {}, k), h('dd', {}, v))));
   const form = $('#accountPassForm');
-  form.hidden = session.isAdmin;
-  if (session.isAdmin) return;
   if (bound) return;
   bound = true;
   form.addEventListener('submit', async (e) => {

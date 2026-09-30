@@ -74,14 +74,81 @@ test('file sniffing trusts bytes, not names (self-test of the matcher)', async (
 test('team tokens cannot use admin endpoints or see phone numbers', async () => {
   const admin = await adminToken();
   const a = await member(admin, { name: 'Abebe', email: 'abebe@example.com', role: 'agri' });
-  assert.equal((await req('GET', '/api/admin/inquiries', { token: a.token })).status, 403);
-  assert.equal((await req('GET', '/api/admin/verify', { token: a.token })).status, 401);
-  assert.equal((await req('POST', '/api/products', { token: a.token, body: { product: { name: 'X', description: 'Y' } } })).status, 403);
-  const cd = await json(await req('GET', '/api/contact-details', { token: a.token }));
-  assert.deepEqual(cd.phones, [], 'a team token must not unlock phone numbers');
-  assert.equal((await req('GET', '/api/admin/team', { token: a.token })).status, 403);
+  const boss = await member(admin, { name: 'Meron', email: 'meron@example.com', role: 'manager' });
+  for (const t of [a.token, boss.token]) {
+    assert.equal((await req('GET', '/api/admin/verify', { token: t })).status, 401);
+    assert.equal((await req('GET', '/api/admin/team', { token: t })).status, 403);
+    assert.equal((await req('POST', '/api/admin/team', { token: t, body: { member: { name: 'X', email: 'x@example.com', role: 'manager', password: 'long-enough-password' } } })).status, 403);
+    assert.equal((await req('GET', '/api/email-config', { token: t })).status, 403);
+    assert.equal((await req('POST', '/api/contact-details', { token: t, body: { phones: [] } })).status, 403);
+    assert.equal((await req('POST', '/api/integrations/analytics', { token: t, body: { measurementId: 'G-ABCDEFGHIJ' } })).status, 403);
+    const cd = await json(await req('GET', '/api/contact-details', { token: t }));
+    assert.deepEqual(cd.phones, [], 'a team token must not unlock phone numbers');
+  }
   const me = await json(await req('GET', '/api/team/me', { token: a.token }));
   assert.equal(me.user.role, 'agri');
+  assert.equal((await json(await req('GET', '/api/team/me', { token: boss.token }))).user.roleLabel, 'Manager');
+  // an unknown role is refused when the account is saved
+  const odd = await req('POST', '/api/admin/team', { token: admin, body: { member: { name: 'Odd', email: 'odd@example.com', role: 'admin', password: 'long-enough-password' } } });
+  assert.equal(odd.status, 400);
+});
+
+test('the administrator runs the site and does not work enquiries', async () => {
+  const admin = await adminToken();
+  const sesame = await lead('Humera sesame');
+  assert.equal((await req('GET', '/api/team/me', { token: admin })).status, 403);
+  assert.equal((await req('GET', '/api/team/inquiries', { token: admin })).status, 403);
+  assert.equal((await req('POST', `/api/team/inquiries/${sesame.id}`, { token: admin, body: { status: 'read' } })).status, 403);
+  assert.equal((await req('DELETE', `/api/team/inquiries/${sesame.id}`, { token: admin })).status, 403);
+  assert.equal((await req('GET', '/api/admin/inquiries', { token: admin })).status, 404, 'the old admin inbox is gone');
+  assert.equal((await req('GET', '/api/analytics', { token: admin })).status, 403, 'traffic is for managers');
+  // the admin still manages accounts, including managers
+  assert.equal((await req('GET', '/api/admin/team', { token: admin })).status, 200);
+});
+
+test('a manager works every enquiry in both lines: hands them out, deletes them, sees traffic', async () => {
+  const admin = await adminToken();
+  const boss = await member(admin, { name: 'Selam', email: 'selam@example.com', role: 'manager' });
+  const agri = await member(admin, { name: 'Agri Crm', email: 'agricrm@example.com', role: 'agri' });
+  const pack = await member(admin, { name: 'Pack Crm', email: 'packcrm@example.com', role: 'pack' });
+  const sesame = await lead('Humera sesame');
+  const bags = await lead('Kraft paper bags');
+
+  const both = await json(await req('GET', '/api/team/inquiries', { token: boss.token }));
+  assert.equal(both.line, null);
+  assert.ok(both.inquiries.some((i) => i.id === sesame.id) && both.inquiries.some((i) => i.id === bags.id), 'both lines');
+  const onlyPack = await json(await req('GET', '/api/team/inquiries?line=pack', { token: boss.token }));
+  assert.ok(onlyPack.inquiries.length && onlyPack.inquiries.every((i) => i.line === 'pack'), 'a line filter narrows it');
+
+  // a manager hands enquiries out rather than taking them
+  assert.equal((await req('POST', `/api/team/inquiries/${sesame.id}`, { token: boss.token, body: { assign: 'me' } })).status, 400);
+  assert.equal((await req('POST', `/api/team/inquiries/${sesame.id}`, { token: boss.token, body: { assign: pack.id } })).status, 400, 'only to a member of the enquiry\'s team');
+  const handed = await json(await req('POST', `/api/team/inquiries/${sesame.id}`, { token: boss.token, body: { assign: agri.id } }));
+  assert.equal(handed.inquiry.assignee.id, agri.id);
+  assert.equal(handed.inquiry.activity.at(-1).type, 'assigned');
+  assert.equal(handed.inquiry.status, 'read', 'a handed-out enquiry leaves New, as an accepted one does');
+  assert.equal(handed.inquiry.history.at(-1).by.id, boss.id);
+  // a team member cannot hand it on, and cannot release someone else's
+  assert.equal((await req('POST', `/api/team/inquiries/${bags.id}`, { token: pack.token, body: { assign: pack.id } })).status, 403);
+  const note = await json(await req('POST', `/api/team/inquiries/${sesame.id}/activity`, { token: boss.token, body: { type: 'call', text: 'Checked in with the buyer' } }));
+  assert.equal(note.inquiry.assignee.id, agri.id, 'the manager working it leaves the owner in place');
+  const released = await json(await req('POST', `/api/team/inquiries/${sesame.id}`, { token: boss.token, body: { assign: 'none' } }));
+  assert.equal(released.inquiry.assignee, undefined);
+
+  // deleting is for managers only, and removes the files too
+  assert.equal((await req('DELETE', `/api/team/inquiries/${bags.id}`, { token: pack.token })).status, 403);
+  assert.equal((await req('DELETE', `/api/team/inquiries/${bags.id}`, { token: boss.token })).status, 200);
+  assert.ok(!JSON.parse(fs.readFileSync(path.join(tmp, 'inquiries.json'), 'utf8')).some((i) => i.id === bags.id));
+  assert.equal((await req('DELETE', `/api/team/inquiries/${bags.id}`, { token: boss.token })).status, 404);
+
+  // traffic for the manager; not for the marketing teams
+  assert.equal((await req('GET', '/api/analytics?days=7', { token: boss.token })).status, 200);
+  assert.equal((await req('GET', '/api/analytics?days=7', { token: agri.token })).status, 403);
+  // the catalogue is the marketing teams' work: the manager reads it but does not edit it
+  assert.equal((await req('GET', '/api/packaging-products?scope=all', { token: boss.token })).status, 200);
+  assert.equal((await req('POST', '/api/team/packaging-products', { token: boss.token, body: { product: { name: 'X', description: 'Y' } } })).status, 403);
+  assert.equal((await req('POST', '/api/products', { token: boss.token, body: { product: { name: 'X', description: 'Y' } } })).status, 403);
+  assert.equal((await req('POST', '/api/team/partners', { token: boss.token, body: { partners: [] } })).status, 403);
 });
 
 test('each team sees only its own line, and accepting is first come first served', async () => {
@@ -188,7 +255,9 @@ test('packaging quote requests carry files only with consent, stored privately',
 
   const dir = path.join(tmp, 'client-files', rec.id);
   assert.ok(fs.existsSync(dir));
-  assert.equal((await req('DELETE', `/api/admin/inquiries/${rec.id}`, { token: admin })).status, 200);
+  const boss = await member(admin, { name: 'Files Manager', email: 'filesboss@example.com', role: 'manager' });
+  assert.equal((await req('GET', `/api/team/inquiries/${rec.id}/files/${f.id}`, { token: boss.token })).status, 200, 'a manager opens the client\'s files');
+  assert.equal((await req('DELETE', `/api/team/inquiries/${rec.id}`, { token: boss.token })).status, 200);
   assert.ok(!fs.existsSync(dir), 'deleting the enquiry deletes its files');
 });
 
@@ -210,7 +279,10 @@ test('photo checks: white background, and a dark photo must be the same shot', a
   assert.ok(other < 0.6, `different shot scores ${other}`);
 
   const admin = await adminToken();
-  const up = (buf, variant, extra = {}) => { const fd = new FormData(); fd.append('image', new Blob([buf], { type: 'image/png' }), 'bag.png'); fd.append('variant', variant); for (const [k, v] of Object.entries(extra)) fd.append(k, v); return req('POST', '/api/admin/packaging-products/image', { token: admin, form: fd }); };
+  const team = (await member(admin, { name: 'Pack Photos', email: 'packphotos@example.com', role: 'pack' })).token;
+  const up = (buf, variant, extra = {}, token = team) => { const fd = new FormData(); fd.append('image', new Blob([buf], { type: 'image/png' }), 'bag.png'); fd.append('variant', variant); for (const [k, v] of Object.entries(extra)) fd.append(k, v); return req('POST', '/api/team/packaging-products/image', { token, form: fd }); };
+  assert.equal((await up(bagOnWhite, 'light', {}, admin)).status, 403, 'the packaging catalogue is the packaging team\'s');
+  assert.equal((await req('POST', '/api/admin/packaging-products', { token: admin, body: { product: { name: 'Old route', description: 'x' } } })).status, 404);
   const light = await json(await up(bagOnWhite, 'light'));
   assert.equal(light.background, 'light');
   assert.equal(light.warning, null);
@@ -220,13 +292,20 @@ test('photo checks: white background, and a dark photo must be the same shot', a
   assert.equal((await up(otherOnBlack, 'dark', { light: light.path })).status, 422);
   assert.equal((await up(await png(560, 400, '#050505', { x: 80, y: 100, w: 240, h: 200, color: '#c9a27a' }), 'dark', { light: light.path })).status, 422, 'different proportions');
 
-  const bad = await req('POST', '/api/admin/packaging-products', { token: admin, body: { product: { name: 'Bad', description: 'x', image: '/uploads/packaging/../../server.js', quad: [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]] } } });
+  const bad = await req('POST', '/api/team/packaging-products', { token: team, body: { product: { name: 'Bad', description: 'x', image: '/uploads/packaging/../../server.js', quad: [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]] } } });
   assert.equal(bad.status, 400);
-  const created = await json(await req('POST', '/api/admin/packaging-products', { token: admin, body: { product: { name: 'Test bags', description: 'For tests', image: light.path, width: 400, height: 560, quad: [[0.2, 0.25], [0.8, 0.25], [0.8, 0.89], [0.2, 0.89]], site: false } } }));
+  const created = await json(await req('POST', '/api/team/packaging-products', { token: team, body: { product: { name: 'Test bags', description: 'For tests', image: light.path, width: 400, height: 560, quad: [[0.2, 0.25], [0.8, 0.25], [0.8, 0.89], [0.2, 0.89]], site: false } } }));
   assert.ok(created.product.id);
   const publicList = await json(await req('GET', '/api/packaging-products'));
   assert.ok(!publicList.some((p) => p.id === created.product.id), 'hidden products stay off the public list');
-  const all = await json(await req('GET', '/api/packaging-products?scope=all', { token: admin }));
+  const all = await json(await req('GET', '/api/packaging-products?scope=all', { token: team }));
   assert.ok(all.some((p) => p.id === created.product.id));
   assert.equal((await req('GET', '/api/packaging-products?scope=all')).status, 401);
+  assert.equal((await req('GET', '/api/packaging-products?scope=all', { token: admin })).status, 403);
+  // reorder and delete are the team's too
+  assert.equal((await req('POST', '/api/team/packaging-products/order', { token: admin, body: { ids: [created.product.id] } })).status, 403);
+  assert.equal((await req('POST', '/api/team/packaging-products/order', { token: team, body: { ids: [created.product.id] } })).status, 200);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(tmp, 'packaging-products.json'), 'utf8'))[0].id, created.product.id);
+  assert.equal((await req('DELETE', `/api/team/packaging-products/${created.product.id}`, { token: admin })).status, 403);
+  assert.equal((await req('DELETE', `/api/team/packaging-products/${created.product.id}`, { token: team })).status, 200);
 });

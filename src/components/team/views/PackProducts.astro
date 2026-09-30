@@ -1,0 +1,166 @@
+---
+// Packaging team: the catalogue on the packaging page. scripts/team/pack-products.js.
+---
+<!-- PACKAGING PRODUCTS: the catalogue, looked after by the packaging team -->
+<section class="a-view" data-view="products" aria-labelledby="h-packaging" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-packaging">Packaging products</h1>
+      <p>The catalogue on the packaging page, in this order, grouped by family. Every product can be added to a visitor's packing list and sent for one quote, at the sizes and minimum orders set here. With a photo and its print corners, a product can also be designed in the mockup studio and in Mockups.</p>
+    </div>
+    <button class="btn btn-primary" type="button" id="packNew">Add packaging product</button>
+  </div>
+  <div class="a-products" id="packPanes">
+    <div class="a-card">
+      <h2>Order on the website</h2>
+      <p>The first product with a photo is the bag the mockup studio opens with.</p>
+      <ol class="a-plist" id="packList"></ol>
+      <p class="sr-only" id="packLive" role="status" aria-live="polite"></p>
+    </div>
+    <div class="a-card a-editor a-pack-editor" id="packEditor">
+      <div class="a-empty a-editor-empty" id="packEmpty">
+        <strong>Choose a product</strong>
+        Its sizes, minimum order, photo and print corners open here to edit.
+        <div><button class="btn btn-secondary" type="button" data-add="pack">Add packaging product</button></div>
+      </div>
+      <form class="a-form" id="packForm" novalidate hidden aria-labelledby="packTitle">
+        <button class="md-back" type="button" data-back="pack">Packaging products</button>
+        <div class="a-editor-head">
+          <h2 id="packTitle">Add packaging product</h2>
+        </div>
+        <p class="sr-only" id="packStatus" role="status" aria-live="polite"></p>
+        <div class="a-field">
+          <label for="pkName">Name</label>
+          <input class="input" id="pkName" name="name" required maxlength="120" placeholder="Twisted handle bags" aria-describedby="pkNameErr">
+          <p class="err" id="pkNameErr" hidden></p>
+        </div>
+        <div class="a-two">
+          <div class="a-field">
+            <label for="pkFamily">Group</label>
+            <select class="input" id="pkFamily" name="family">
+              <option value="bags">Paper bags</option>
+              <option value="food">Bakery and food boxes</option>
+              <option value="medical">Medical packets</option>
+              <option value="foil">Aluminium foil bags</option>
+            </select>
+          </div>
+          <div class="a-field">
+            <label for="pkHandle">Short code</label>
+            <input class="input" id="pkHandle" name="handle" maxlength="30" placeholder="twisted" aria-describedby="pkHandleHint">
+            <p class="hint" id="pkHandleHint">Optional. Links like /packaging/?handle=twisted open this product in the studio, or show it in the catalogue while it has no photo.</p>
+          </div>
+        </div>
+        <div class="a-two">
+          <div class="a-field">
+            <label for="pkMin">Minimum order</label>
+            <input class="input" id="pkMin" name="minOrder" inputmode="numeric" maxlength="12" placeholder="For example 5,000" aria-describedby="pkMinHint pkMinErr">
+            <p class="hint" id="pkMinHint">Units. Visitors cannot send a packing list below it. Leave blank to confirm it with each quote.</p>
+            <p class="err" id="pkMinErr" hidden></p>
+          </div>
+          <div class="a-field">
+            <label for="pkColours">Print colours</label>
+            <select class="input" id="pkColours" name="printColours" aria-describedby="pkColoursHint">
+              <option value="">Standard, up to 4</option>
+              <option value="0">Plain only, no print</option>
+              <option value="1">Up to 1</option><option value="2">Up to 2</option><option value="3">Up to 3</option>
+              <option value="4">Up to 4</option><option value="5">Up to 5</option><option value="6">Up to 6</option>
+            </select>
+            <p class="hint" id="pkColoursHint">Flexographic print colours visitors can choose for this product.</p>
+          </div>
+        </div>
+        <fieldset class="a-field a-sizes">
+          <legend class="a-label">Sizes</legend>
+          <p class="hint" id="pkSizesHint">In centimetres, width x depth (gusset) x height. A size's own minimum replaces the product minimum. Leave the measurements blank if you do not want them shown.</p>
+          <div class="a-size-head" aria-hidden="true"><span>Name</span><span>W</span><span>D</span><span>H</span><span>Minimum</span><span></span></div>
+          <ol class="a-size-list" id="pkSizes"></ol>
+          <button class="btn btn-secondary btn-sm" type="button" id="pkAddSize">Add a size</button>
+        </fieldset>
+        <div class="a-field">
+          <label for="pkDesc">Description</label>
+          <textarea class="input" id="pkDesc" name="description" required maxlength="1000" aria-describedby="pkDescErr"></textarea>
+          <p class="err" id="pkDescErr" hidden></p>
+        </div>
+        <div class="a-field">
+          <label for="pkSpecs">Key points</label>
+          <textarea class="input" id="pkSpecs" name="specs" aria-describedby="pkSpecsHint" style="min-height:96px"></textarea>
+          <p class="hint" id="pkSpecsHint">One per line, up to 12. For example sizes, paper and print colours.</p>
+        </div>
+
+        <div class="a-field">
+          <span class="a-label" id="pkPhotoLabel">Product image</span>
+          <div class="a-photo-pair">
+            <div class="a-photo-slot">
+              <label class="a-drop" id="packDrop-light">
+                <input type="file" id="packFile-light" accept="image/jpeg,image/png,image/webp" aria-labelledby="pkPhotoLabel" aria-describedby="pkPhotoHint">
+                <img id="packImg-light" alt="" hidden>
+                <strong>Upload the image</strong>
+                <span id="pkPhotoHint">Best: the product on a transparent background, a PNG or WebP exported from a mockup. It stands on the website like the other products and works in dark mode as it is. A photo on plain white also works: straight on, at the product's height, in soft even light. Up to 15 MB.</span>
+              </label>
+              <button class="btn btn-ghost btn-sm" type="button" id="packClearPhoto" hidden>Remove photo</button>
+            </div>
+            <div class="a-photo-slot" id="packDarkWrap" hidden>
+              <label class="a-drop a-drop-dark" id="packDrop-dark">
+                <input type="file" id="packFile-dark" accept="image/jpeg,image/png,image/webp" aria-describedby="pkDarkHint">
+                <img id="packImg-dark" alt="" hidden>
+                <strong>Dark mode photo (optional)</strong>
+                <span id="pkDarkHint">The same shot on a black background, cropped the same way. Without it the white photo is used in dark mode too.</span>
+              </label>
+              <button class="btn btn-ghost btn-sm" type="button" id="packClearDark" hidden>Remove dark photo</button>
+            </div>
+          </div>
+          <p class="a-warn" id="packWarn" role="alert" hidden></p>
+        </div>
+
+        <div class="a-studio-setup" id="packStudio" hidden>
+          <div class="a-field">
+            <span class="a-label" id="pkCornersLabel">Print corners</span>
+            <p class="hint" id="pkCornersHint">Drag the four dots onto the corners of the front panel: 1 top left, 2 top right, 3 bottom right, 4 bottom left. Or select a dot and use the arrow keys, holding Shift to move further.</p>
+            <div class="a-corner-stage" id="packStage" role="group" aria-labelledby="pkCornersLabel" aria-describedby="pkCornersHint">
+              <img id="packStageImg" alt="">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon id="packPoly" points=""/></svg>
+              <button type="button" class="a-corner" data-corner="0">1</button>
+              <button type="button" class="a-corner" data-corner="1">2</button>
+              <button type="button" class="a-corner" data-corner="2">3</button>
+              <button type="button" class="a-corner" data-corner="3">4</button>
+            </div>
+            <button class="btn btn-ghost btn-sm" type="button" id="packResetCorners" style="justify-self:start">Reset the corners</button>
+          </div>
+          <div class="a-field">
+            <span class="a-label">Preview</span>
+            <div class="a-two">
+              <div class="a-field"><label for="packSample">Sample text</label><input class="input" id="packSample" maxlength="18" value="YOUR BRAND"></div>
+              <div class="a-field"><label for="packInk">Ink</label>
+                <select class="input" id="packInk"><option value="teal">Teal</option><option value="black">Black</option><option value="leaf">Leaf green</option><option value="red">Red</option><option value="white">White</option></select>
+              </div>
+            </div>
+            <div class="a-seg" role="radiogroup" aria-label="Preview theme">
+              <label><input type="radio" name="packPreviewTheme" value="light" checked><span>Light mode</span></label>
+              <label><input type="radio" name="packPreviewTheme" value="dark"><span>Dark mode</span></label>
+            </div>
+            <div class="a-preview-stage"><canvas id="packPreview" width="1200" height="1680" role="img" aria-label="Preview of the product with a sample design"></canvas></div>
+            <p class="err" id="packPreviewMsg" role="alert" hidden></p>
+          </div>
+          <div class="a-field">
+            <label for="packSafe">Space above the design</label>
+            <input class="range" id="packSafe" type="range" min="0" max="40" value="10" aria-valuetext="10 percent" aria-describedby="packSafeHint">
+            <p class="hint" id="packSafeHint">Moves the design down when the top of the panel has a fold or handles.</p>
+          </div>
+        </div>
+
+        <fieldset class="a-field a-fieldset">
+          <legend class="a-label">Where it shows</legend>
+          <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="site" checked> Packaging page and mockup studio</label>
+          <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="team" checked> Mockups in this workspace</label>
+        </fieldset>
+        <div class="a-danger-zone" id="packDangerZone" hidden>
+          <button class="btn btn-danger-quiet btn-sm" type="button" id="packDelete">Delete product</button>
+        </div>
+        <div class="a-actions a-savebar">
+          <span class="a-dirty a-grow">Unsaved changes</span>
+          <button class="btn btn-ghost" type="button" id="packCancel">Cancel</button>
+          <button class="btn btn-primary" type="submit" id="packSave">Save product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>

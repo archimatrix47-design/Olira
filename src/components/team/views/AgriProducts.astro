@@ -1,0 +1,92 @@
+---
+// Agriculture team: the products on the agriculture page. scripts/team/agri-products.js.
+---
+<!-- PRODUCTS: the agriculture page's stack, looked after by the agriculture team -->
+<section class="a-view" data-view="products" aria-labelledby="h-products" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-products">Agriculture products</h1>
+      <p>The agricultural products in the stack on the agriculture page, in this order. The first product is the card in front.</p>
+    </div>
+    <button class="btn btn-primary" type="button" id="productNew">Add product</button>
+  </div>
+  <div class="a-products" id="productPanes">
+    <div class="a-card">
+      <h2>Order on the website</h2>
+      <p>Home page links open the first product whose category is Sesame, Pulses, Spices or Coffee, so keep those category names.</p>
+      <ol class="a-plist" id="productList"></ol>
+      <p class="sr-only" id="productLive" role="status" aria-live="polite"></p>
+    </div>
+    <div class="a-card a-editor" id="productEditor">
+      <div class="a-empty a-editor-empty" id="productEmpty">
+        <strong>Choose a product</strong>
+        Its details and photo open here to edit.
+        <div><button class="btn btn-secondary" type="button" data-add="product">Add product</button></div>
+      </div>
+      <form class="a-form" id="productForm" novalidate hidden aria-labelledby="editorTitle">
+        <button class="md-back" type="button" data-back="product">Products</button>
+        <div class="a-editor-head">
+          <h2 id="editorTitle">Add product</h2>
+        </div>
+        <input type="hidden" name="id">
+        <div class="a-field">
+          <label for="pName">Name</label>
+          <input class="input" id="pName" name="name" required maxlength="200" aria-describedby="pNameErr">
+          <p class="err" id="pNameErr" hidden></p>
+        </div>
+        <div class="a-two">
+          <div class="a-field">
+            <label for="pCategory">Category</label>
+            <input class="input" id="pCategory" name="category" maxlength="50" list="categoryList">
+            <datalist id="categoryList"><option value="Sesame"></option><option value="Pulses"></option><option value="Spices"></option><option value="Coffee"></option><option value="Specialty"></option></datalist>
+          </div>
+          <div class="a-field">
+            <label for="pPurity">Purity</label>
+            <input class="input" id="pPurity" name="purity" maxlength="50" placeholder="99.95%">
+          </div>
+        </div>
+        <div class="a-field">
+          <label for="pMoq">Minimum order</label>
+          <input class="input" id="pMoq" name="moq" maxlength="50" placeholder="10 MT">
+        </div>
+        <div class="a-field">
+          <label for="pDesc">Description</label>
+          <textarea class="input" id="pDesc" name="description" required maxlength="2000" aria-describedby="pDescErr"></textarea>
+          <p class="err" id="pDescErr" hidden></p>
+        </div>
+        <div class="a-field">
+          <label for="pSpecs">Key points</label>
+          <textarea class="input" id="pSpecs" name="specs" aria-describedby="pSpecsHint" style="min-height:96px"></textarea>
+          <p class="hint" id="pSpecsHint">One per line, up to 20. Shown as a list in the product details.</p>
+        </div>
+        <div class="a-field">
+          <span class="a-label" id="pImageLabel">Photo</span>
+          <div class="a-image-row">
+            <figure class="a-preview" id="pPreview" aria-hidden="true">
+              <img alt="" hidden>
+              <span class="ph">No photo</span>
+              <figcaption><em style="font-style:normal" data-preview-name>Product name</em><span data-preview-cat>Category</span></figcaption>
+            </figure>
+            <div>
+              <label class="a-drop" id="pDrop">
+                <input type="file" id="pImage" accept="image/jpeg,image/png,image/webp" aria-labelledby="pImageLabel" aria-describedby="pImageHint">
+                <strong>Upload a photo</strong>
+                <span id="pImageHint">JPG, PNG or WebP up to 10 MB. Saved at 1200 px. The card shows the centre in portrait.</span>
+              </label>
+              <button class="btn btn-ghost btn-sm" type="button" id="pImageClear" hidden>Remove photo</button>
+              <input type="hidden" name="image">
+            </div>
+          </div>
+        </div>
+        <div class="a-danger-zone" id="productDangerZone" hidden>
+          <button class="btn btn-danger-quiet btn-sm" type="button" id="productDelete">Delete product</button>
+        </div>
+        <div class="a-actions a-savebar">
+          <span class="a-dirty a-grow">Unsaved changes</span>
+          <button class="btn btn-ghost" type="button" id="productCancel">Cancel</button>
+          <button class="btn btn-primary" type="submit" id="productSave">Save product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>

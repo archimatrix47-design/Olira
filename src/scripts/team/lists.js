@@ -1,7 +1,7 @@
 // Follow-ups (what is waiting on the team) and Quotes (every saved quote).
 import { $, h, toast, formatDate, timeAgo } from '../admin/api.js';
 import { hours } from '../admin/format.js';
-import { session, leads, followupsOf, isMine, stageName } from './session.js';
+import { session, leads, followupsOf, isMine, stageName, lineOf, LINE_LABEL } from './session.js';
 import { printQuote } from './quote.js';
 
 // the same 400ms rule as the inbox: a skeleton only when the wait is noticeable
@@ -21,7 +21,7 @@ export async function showFollowups() {
     const due = followupsOf(all);
     if (!due.length) {
       sum.replaceChildren();
-      box.replaceChildren(h('div', { class: 'a-card a-empty' }, h('strong', {}, 'Nothing is waiting on you'), 'New enquiries, quiet buyers and quotes that need a nudge will appear here.'));
+      box.replaceChildren(h('div', { class: 'a-card a-empty' }, h('strong', {}, session.oversees ? 'Nothing is waiting' : 'Nothing is waiting on you'), 'New enquiries, quiet buyers and quotes that need a nudge will appear here.'));
       return;
     }
     const groups = [
@@ -38,7 +38,7 @@ export async function showFollowups() {
         h('a', { class: 'a-row-link', href: `#inbox?lead=${encodeURIComponent(l.id)}` },
           h('div', { class: 'grow' },
             h('strong', {}, `${l.name || 'Unknown'}${l.company ? `, ${l.company}` : ''}`),
-            h('span', {}, `${stageName(l.status)}${l.assignee ? `, ${isMine(l) ? 'yours' : l.assignee.name}` : ''}. Arrived ${timeAgo(l.createdAt)}.`)),
+            h('span', {}, `${session.oversees ? `${LINE_LABEL[lineOf(l)]}, ` : ''}${stageName(l.status)}${l.assignee ? `, ${isMine(l) ? 'yours' : l.assignee.name}` : session.oversees ? ', not handed out' : ''}. Arrived ${timeAgo(l.createdAt)}.`)),
           h('span', { class: 't-follow-when' }, `Due ${hours((Date.now() - at) / 3600000)} ago`)))));
       const more = items.length > SHOWN ? h('button', {
         class: 'btn btn-ghost btn-sm t-follow-more', type: 'button', 'aria-expanded': 'false',
@@ -70,10 +70,11 @@ export async function showQuotes() {
     const money = (q) => `${q.currency} ${Number(q.total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     box.replaceChildren(h('table', { class: 'a-table t-quotes' },
       h('caption', { class: 'sr-only' }, 'Quotes'),
-      h('thead', {}, h('tr', {}, ['Quote', 'Buyer', 'Total', 'Saved', 'Enquiry stage', ''].map((t, i) => h('th', { scope: 'col', class: i === 2 ? 'num' : '' }, t)))),
+      h('thead', {}, h('tr', {}, ['Quote', 'Buyer', ...(session.oversees ? ['Line'] : []), 'Total', 'Saved', 'Enquiry stage', ''].map((t) => h('th', { scope: 'col', class: t === 'Total' ? 'num' : '' }, t)))),
       h('tbody', {}, rows.map(({ l, q, current }) => h('tr', {},
         h('th', { scope: 'row' }, q.number, current ? null : h('span', { class: 'flag info' }, 'Earlier version')),
         h('td', {}, `${l.name || 'Unknown'}${l.company ? `, ${l.company}` : ''}`),
+        session.oversees ? h('td', {}, LINE_LABEL[lineOf(l)]) : null,
         h('td', { class: 'num' }, money(q)),
         h('td', {}, h('time', { datetime: q.at, title: formatDate(q.at) }, `${timeAgo(q.at)}${q.by ? `, ${q.by.name}` : ''}`)),
         h('td', {}, stageName(l.status)),

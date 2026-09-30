@@ -1,10 +1,10 @@
 // Traffic: where visitors come from, what they read, when they visit, and what
 // they do on the page.
-import { $, h, toast } from './api.js';
-import * as store from './store.js';
-import { barList, stackBar, heatmap, tableFor, empty } from './charts.js';
-import { kpiCard, freshness } from './widgets.js';
-import { int, pct, duration, delta, NO_DATA, WEEKDAYS, hourLabel, CHANNEL_NAMES, CHANNEL_HELP, countryName, languageName, pageName } from './format.js';
+import { $, h, toast } from '../../admin/api.js';
+import * as store from '../../admin/store.js';
+import { barList, stackBar, heatmap, tableFor, empty } from '../../admin/charts.js';
+import { kpiCard, freshness } from '../../admin/widgets.js';
+import { int, pct, duration, delta, NO_DATA, WEEKDAYS, hourLabel, CHANNEL_NAMES, CHANNEL_HELP, countryName, languageName, pageName } from '../../admin/format.js';
 
 const view = () => $('[data-view="traffic"]');
 

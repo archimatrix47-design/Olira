@@ -50,6 +50,20 @@ const post = (p, body, headers = {}) =>
     body: JSON.stringify(body)
   });
 const get = (p, headers = {}) => fetch(base + p, { headers: { 'User-Agent': BROWSER_UA, ...headers } });
+const adminLogin = async () => (await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json()).token;
+// staff accounts: a manager (enquiries and traffic) and the two marketing teams
+const staff = {};
+async function staffAuth(role) {
+  if (staff[role]) return staff[role];
+  const admin = await adminLogin();
+  const email = `${role}.api@example.com`, password = `${role}-api-password-1`;
+  const saved = await post('/api/admin/team', { member: { name: `${role} tester`, email, role, password } }, { Authorization: `Bearer ${admin}` });
+  assert.equal(saved.status, 200, `the admin can add a ${role} account`);
+  const { token } = await (await post('/api/team/login', { email, password })).json();
+  assert.ok(token, `${role} can sign in`);
+  staff[role] = { Authorization: `Bearer ${token}` };
+  return staff[role];
+}
 
 // ---- Health (F5) ----
 test('GET /api/health returns 200 with checks', async () => {
@@ -126,13 +140,14 @@ test('GET /api/analytics requires auth (401 without token)', async () => {
   assert.equal(r.status, 401);
 });
 
-test('GET /api/analytics accepts a valid token', async () => {
-  const login = await post('/api/admin/login', { password: 'test_admin_password_123' });
-  const { token } = await login.json();
-  const r = await get('/api/analytics?days=7', { Authorization: `Bearer ${token}` });
+test('GET /api/analytics is for managers: the admin and the marketing teams are refused', async () => {
+  const r = await get('/api/analytics?days=7', await staffAuth('manager'));
   assert.equal(r.status, 200);
   const b = await r.json();
   assert.ok(b.totals && typeof b.totals.views === 'number');
+  assert.equal((await get('/api/analytics?days=7', { Authorization: `Bearer ${await adminLogin()}` })).status, 403);
+  assert.equal((await get('/api/analytics?days=7', await staffAuth('agri'))).status, 403);
+  assert.equal((await get('/api/analytics?days=7', await staffAuth('pack'))).status, 403);
 });
 
 // ---- Admin rebuild (2026-09) ----
@@ -148,15 +163,29 @@ test('admin can save integrations with a token', async () => {
   assert.equal((await (await get('/api/integrations')).json()).analytics.measurementId, 'G-ABCDEFGHIJ');
 });
 
-test('products can be reordered without dropping or inventing items', async () => {
-  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
-  const auth = { Authorization: `Bearer ${token}` };
-  await post('/api/products', { products: [{ id: 'a', name: 'A', description: 'a' }, { id: 'b', name: 'B', description: 'b' }, { id: 'c', name: 'C', description: 'c' }] }, auth);
+test('agriculture products belong to the agriculture team, and reorder without dropping or inventing items', async () => {
+  const auth = await staffAuth('agri');
+  const before = (await (await get('/api/products')).json()).map((p) => p.id);
+  for (const id of ['a', 'b', 'c']) assert.equal((await post('/api/products', { product: { id, name: id.toUpperCase(), description: id } }, auth)).status, 200);
+  // the old replace-everything body is gone: one product at a time
+  assert.equal((await post('/api/products', { products: [{ id: 'z', name: 'Z', description: 'z' }] }, auth)).status, 400);
+  // a photo must be one of ours
+  assert.equal((await post('/api/products', { product: { id: 'd', name: 'D', description: 'd', image: 'https://evil.example/x.png' } }, auth)).status, 400);
+  assert.equal((await post('/api/products', { product: { id: 'd', name: 'D', description: 'd', image: '/uploads/products/../../server.js' } }, auth)).status, 400);
+  // nobody else edits them: not the admin, the packaging team or the manager
+  for (const who of [{ Authorization: `Bearer ${await adminLogin()}` }, await staffAuth('pack'), await staffAuth('manager')]) {
+    assert.equal((await post('/api/products', { product: { id: 'x', name: 'X', description: 'x' } }, who)).status, 403);
+    assert.equal((await post('/api/products/order', { ids: ['a'] }, who)).status, 403);
+    assert.equal((await fetch(`${base}/api/products/a`, { method: 'DELETE', headers: { 'User-Agent': BROWSER_UA, ...who } })).status, 403);
+  }
   assert.equal((await post('/api/products/order', { ids: ['a'] })).status, 401);
   const r = await post('/api/products/order', { ids: ['c', 'ghost', 'a', 'c'] }, auth);
   assert.equal(r.status, 200);
-  assert.deepEqual((await (await get('/api/products')).json()).map((p) => p.id), ['c', 'a', 'b']);
+  const ids = (await (await get('/api/products')).json()).map((p) => p.id);
+  assert.deepEqual(ids, ['c', 'a', ...before, 'b']);
   assert.equal((await post('/api/products/order', { ids: 'c' }, auth)).status, 400);
+  const del = await fetch(`${base}/api/products/b`, { method: 'DELETE', headers: { 'User-Agent': BROWSER_UA, ...auth } });
+  assert.equal(del.status, 200);
 });
 
 test('contact details keep only clean place fields and numeric coordinates', async () => {
@@ -180,7 +209,12 @@ test('PRIVACY: public contact details and social links carry no phone number', a
   const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
   const auth = { Authorization: `Bearer ${token}` };
   await post('/api/contact-details', { phones: ['+251-900 12 34 56', '+251 110 00 11 22'], emails: ['info@example.com'] }, auth);
-  await post('/api/social-links', { whatsapp: 'https://wa.me/251900000001', telegram: 'https://t.me/olira_test' }, auth);
+  // contact links belong to the marketing teams now; the admin's old route is gone
+  assert.equal((await post('/api/social-links', { telegram: 'https://t.me/admin_try' }, auth)).status, 404);
+  const team = await staffAuth('pack');
+  assert.equal((await post('/api/team/social-links', { whatsapp: 'https://wa.me/251900000001', telegram: 'https://t.me/olira_test' }, team)).status, 200);
+  assert.equal((await post('/api/team/social-links', { telegram: 'https://t.me/nope' }, auth)).status, 403, 'the admin does not edit contact links');
+  assert.equal((await post('/api/team/social-links', { telegram: 'https://t.me/nope' }, await staffAuth('manager'))).status, 403, 'nor does the manager');
   const digitsOf = (s) => s.replace(/\D/g, '');
   // the matcher must see a formatted number, or a clean result means nothing
   assert.ok(digitsOf('+251-900 12 34 56').includes('900123456'));
@@ -193,10 +227,11 @@ test('PRIVACY: public contact details and social links carry no phone number', a
   }
   assert.equal(JSON.parse(pubSocial).telegram, 'https://t.me/olira_test'); // not a phone, stays public
 
-  // the admin still sees and edits the real values
+  // the admin still sees and edits the company numbers; the marketing team sees its WhatsApp link
   const adminContacts = await (await get('/api/contact-details', auth)).json();
   assert.deepEqual(adminContacts.phones, ['+251-900 12 34 56', '+251 110 00 11 22']);
-  assert.equal((await (await get('/api/social-links', auth)).json()).whatsapp, 'https://wa.me/251900000001');
+  assert.equal((await (await get('/api/team/social-links', team)).json()).whatsapp, 'https://wa.me/251900000001');
+  assert.equal((await (await get('/api/social-links', auth)).json()).whatsapp, 'set', 'the public route never returns the number, even to the admin');
 });
 
 test('PRIVACY: numbers are revealed only by POST from a browser, never to bots', async () => {
@@ -225,8 +260,7 @@ test('track records channel, campaign, language, entry page, time of day and eng
   for (const event of ['studio_quote_only', 'studio_logo_warn', 'studio_logo_fix', 'home_product']) await post('/api/track', { event, path: event === 'home_product' ? '/' : '/packaging/' }, ua);
   await post('/api/track', { event: 'product', product: 'Ethiopian Coffee', path: '/agriculture/' }, ua);
 
-  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
-  const a = await (await get('/api/analytics?days=7', { Authorization: `Bearer ${token}` })).json();
+  const a = await (await get('/api/analytics?days=7', await staffAuth('manager'))).json();
   assert.ok(a.channels.search >= 1, 'google.com.et counts as search');
   assert.ok(a.channels.email >= 1, 'utm medium email counts as email');
   assert.ok(a.campaigns.some((c) => c.name === 'newsletter / email / septscript'), 'campaign tag stripped of markup');
@@ -245,8 +279,8 @@ test('track records channel, campaign, language, entry page, time of day and eng
 });
 
 test('every captured enquiry counts, even when the notification email fails', async () => {
-  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
-  const before = (await (await get('/api/analytics?days=1', { Authorization: `Bearer ${token}` })).json()).totals.inquiries;
+  const manager = await staffAuth('manager');
+  const before = (await (await get('/api/analytics?days=1', manager)).json()).totals.inquiries;
   // the test server has no email configured, so this lead is captured but not
   // emailed; the visitor is told it arrived (it did), so they do not send it twice
   const r = await post('/api/inquiry', { name: 'Insight Buyer', email: 'buyer@example.com', message: 'Need 25 MT sesame to Jebel Ali', product: 'Kraft paper bags' });
@@ -254,27 +288,28 @@ test('every captured enquiry counts, even when the notification email fails', as
   const body = await r.json();
   assert.equal(body.saved, true);
   assert.equal(body.emailed, false);
-  const after = await (await get('/api/analytics?days=1', { Authorization: `Bearer ${token}` })).json();
+  const after = await (await get('/api/analytics?days=1', manager)).json();
   assert.equal(after.totals.inquiries, before + 1);
   assert.ok(after.inquiryLines.pack >= 1);
 });
 
-test('enquiry pipeline keeps a dated history and a private note', async () => {
-  const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
-  const auth = { Authorization: `Bearer ${token}` };
-  const { inquiries } = await (await get('/api/admin/inquiries', auth)).json();
+test('enquiry pipeline keeps a dated history and notes; the admin does not see enquiries', async () => {
+  const admin = { Authorization: `Bearer ${await adminLogin()}` };
+  assert.equal((await get('/api/admin/inquiries', admin)).status, 404, 'the admin enquiry routes are gone');
+  assert.equal((await get('/api/team/inquiries', admin)).status, 403, 'the admin cannot use the team routes either');
+  const auth = await staffAuth('manager');
+  const { inquiries } = await (await get('/api/team/inquiries', auth)).json();
   const id = inquiries.find((i) => i.name === 'Insight Buyer').id;
-  assert.equal((await post(`/api/admin/inquiries/${id}`, { status: 'contacted' }, auth)).status, 200);
-  assert.equal((await post(`/api/admin/inquiries/${id}`, { status: 'quoted', note: 'Sent CIF price for 25 MT' }, auth)).status, 200);
-  assert.equal((await post(`/api/admin/inquiries/${id}`, { status: 'shipped' }, auth)).status, 400);
-  assert.equal((await post(`/api/admin/inquiries/${id}`, { note: 'x'.repeat(2001) }, auth)).status, 400);
-  const rec = (await (await get('/api/admin/inquiries', auth)).json()).inquiries.find((i) => i.id === id);
+  assert.equal((await post(`/api/team/inquiries/${id}`, { status: 'contacted' }, auth)).status, 200);
+  assert.equal((await post(`/api/team/inquiries/${id}`, { status: 'quoted' }, auth)).status, 200);
+  assert.equal((await post(`/api/team/inquiries/${id}/activity`, { type: 'note', text: 'Sent CIF price for 25 MT' }, auth)).status, 200);
+  assert.equal((await post(`/api/team/inquiries/${id}`, { status: 'shipped' }, auth)).status, 400);
+  const rec = (await (await get('/api/team/inquiries', auth)).json()).inquiries.find((i) => i.id === id);
   assert.deepEqual(rec.history.map((h) => h.status), ['contacted', 'quoted']);
   assert.equal(rec.history[0].from, 'new');
   assert.ok(!Number.isNaN(Date.parse(rec.history[1].at)));
-  assert.equal(rec.note, 'Sent CIF price for 25 MT');
-  const counts = (await (await get('/api/admin/inquiries', auth)).json()).counts;
-  assert.ok(counts.quoted >= 1 && counts.won === 0);
+  assert.equal(rec.activity.find((a) => a.type === 'note').text, 'Sent CIF price for 25 MT');
+  assert.equal(rec.assignee, undefined, 'a manager working an enquiry does not take it over');
 });
 
 // ---- Restart-free admin credentials ----

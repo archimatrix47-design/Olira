@@ -1,5 +1,6 @@
-// Team accounts: the people who answer enquiries in the agriculture and
-// packaging workspaces. Each signs in with their own email and password.
+// Staff accounts: the marketing teams (agriculture, packaging) and the
+// managers. Each signs in at /team/ with their own email and password, and the
+// role decides which workspace opens.
 import { $, h, api, toast, confirmDialog, busy, timeAgo } from './api.js';
 import { mayLeave } from './tools.js';
 
@@ -7,7 +8,8 @@ let members = [];
 let editingId = null;
 let bound = false;
 const form = () => $('#teamForm');
-const TEAM = { agri: 'Agriculture', pack: 'Packaging' };
+const TEAM = { agri: 'Agriculture team', pack: 'Packaging team', manager: 'Manager' };
+const ORDER = { manager: 0, agri: 1, pack: 2 };
 
 export async function show() {
   if (!bound) { bound = true; bind(); }
@@ -21,14 +23,13 @@ export async function show() {
 function renderList() {
   const ul = $('#teamList');
   const count = (role) => members.filter((m) => m.role === role && m.active).length;
-  $('#teamSummary').textContent = members.length
-    ? `${count('agri')} active in agriculture, ${count('pack')} active in packaging.`
-    : '';
+  const n = (k) => `${count(k)} ${k === 'manager' ? (count(k) === 1 ? 'manager' : 'managers') : `in ${k === 'agri' ? 'agriculture' : 'packaging'}`}`;
+  $('#teamSummary').textContent = members.length ? `Active: ${n('manager')}, ${n('agri')}, ${n('pack')}.` : '';
   if (!members.length) {
-    ul.replaceChildren(h('li', { class: 'a-empty', style: 'display:block' }, h('strong', {}, 'No team accounts yet'), 'Until you add someone, enquiries are answered from this admin panel only.'));
+    ul.replaceChildren(h('li', { class: 'a-empty', style: 'display:block' }, h('strong', {}, 'No staff accounts yet'), 'Add the marketing teams and a manager. Enquiries are worked in their workspaces, not here.'));
     return;
   }
-  const sorted = members.slice().sort((a, b) => a.role.localeCompare(b.role) || a.name.localeCompare(b.name));
+  const sorted = members.slice().sort((a, b) => (ORDER[a.role] ?? 9) - (ORDER[b.role] ?? 9) || a.name.localeCompare(b.name));
   ul.replaceChildren(...sorted.map((m) => h('li', { class: editingId === m.id ? 'is-editing' : '' },
     h('span', { class: `a-avatar ${m.role}`, 'aria-hidden': 'true' }, initials(m.name)),
     h('div', { class: 'grow' },
@@ -72,8 +73,8 @@ function generatePassword() {
 function reset() {
   editingId = null;
   form().reset();
-  $('#teamTitle').textContent = 'Add a team member';
-  $('#teamSave').textContent = 'Add team member';
+  $('#teamTitle').textContent = 'Add a person';
+  $('#teamSave').textContent = 'Add person';
   $('#teamCancel').hidden = true;
   $('#teamPwHint').textContent = 'At least 12 characters. Create one and share it privately; they can change it after signing in.';
   form().elements.active.checked = true;
@@ -93,7 +94,7 @@ async function edit(m) {
   $('#teamTitle').textContent = `Edit ${m.name}`;
   $('#teamSave').textContent = 'Save changes';
   $('#teamCancel').hidden = false;
-  $('#teamPwHint').textContent = 'Leave blank to keep the current password. A new password, a new team or switching the account off signs them out everywhere.';
+  $('#teamPwHint').textContent = 'Leave blank to keep the current password. A new password, a new role or switching the account off signs them out everywhere.';
   f.dispatchEvent(new Event('saved'));
   renderList();
   f.elements.name.focus();
@@ -108,9 +109,9 @@ async function submit(e) {
     active: f.elements.active.checked, password: f.elements.password.value,
   };
   const fail = (el, msg) => { toast(msg, 'error'); el.setAttribute('aria-invalid', 'true'); el.addEventListener('input', () => el.removeAttribute('aria-invalid'), { once: true }); el.focus(); };
-  if (!member.name) return fail(f.elements.name, 'Give the team member a name.');
+  if (!member.name) return fail(f.elements.name, 'Give the person a name.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(member.email)) return fail(f.elements.email, 'Enter their work email address. Buyers\' replies go to it.');
-  if (!member.role) return fail(f.querySelector('input[name=role]'), 'Choose the Agriculture team or the Packaging team.');
+  if (!member.role) return fail(f.querySelector('input[name=role]'), 'Choose the Agriculture team, the Packaging team or Manager.');
   if (!editingId && member.password.length < 12) return fail(f.elements.password, 'Set a first password of at least 12 characters.');
   if (editingId && member.password && member.password.length < 12) return fail(f.elements.password, 'The new password needs at least 12 characters.');
   const done = busy($('#teamSave'));
@@ -118,7 +119,7 @@ async function submit(e) {
     const r = await api('/api/admin/team', { method: 'POST', body: { member } });
     const idx = members.findIndex((m) => m.id === r.member.id);
     if (idx >= 0) members[idx] = r.member; else members.push(r.member);
-    toast(idx >= 0 ? `${r.member.name} saved.` : `${r.member.name} can now sign in at /team/${r.member.role === 'pack' ? 'packaging' : 'agriculture'}/.`);
+    toast(idx >= 0 ? `${r.member.name} saved.` : `${r.member.name} can now sign in at /team/.`);
     reset();
   } catch (x) { toast(x.message, 'error'); }
   finally { done(); }

@@ -1,4 +1,4 @@
-// What every staff tool does the same way, in the admin panel and both
+// What every staff tool does the same way, in the admin panel and the
 // workspaces: forms know when they have unsaved changes (they say so beside
 // Save, and ask before the work is left behind), Ctrl+S or Cmd+S saves, "/"
 // goes to the search field, arrow keys move through a list, and on a phone the

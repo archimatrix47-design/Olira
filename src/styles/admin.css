@@ -296,6 +296,7 @@ html[data-input="keyboard"] :is(.t-row, .a-prow-open, .a-row-link):active { tran
 .a-tag { display: inline-flex; align-items: center; height: 22px; padding-inline: 8px; border-radius: 999px; font-size: .75rem; font-weight: 600; background: var(--fill-2, var(--fill-1)); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .a-tag.agri { background: var(--accent-subtle); color: var(--accent-hover); box-shadow: none; }
 .a-tag.pack { background: color-mix(in srgb, var(--leaf) 16%, transparent); color: var(--leaf-text); box-shadow: none; }
+.a-tag.manager { background: color-mix(in srgb, var(--ink) 9%, transparent); color: var(--ink); box-shadow: none; }
 .a-tag.warn { background: var(--danger-subtle); color: var(--danger); box-shadow: none; }
 .a-tag.stage-new { background: var(--accent-subtle); color: var(--accent-hover); box-shadow: none; }
 .a-tag.stage-won { background: color-mix(in srgb, var(--leaf) 18%, transparent); color: var(--leaf-text); box-shadow: none; }
@@ -421,6 +422,7 @@ html[data-input="keyboard"] .a-dialog, html[data-input="keyboard"] .a-dialog::ba
 .a-row-actions { display: flex; gap: 6px; margin-left: auto; align-items: center; }
 .a-avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: .8125rem; font-weight: 700; background: var(--accent-subtle); color: var(--accent-hover); }
 .a-avatar.pack { background: color-mix(in srgb, var(--leaf) 18%, transparent); color: var(--leaf-text); }
+.a-avatar.manager { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
 
 /* packaging product sizes: one row per size, like a line on a spec sheet */
 .a-sizes { border: 0; margin: 0; padding: 0; min-width: 0; }

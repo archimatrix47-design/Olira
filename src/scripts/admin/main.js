@@ -1,29 +1,20 @@
 // Admin entry: sign in, sign out and the section router (#overview, ...).
+// The admin runs the website; enquiries and catalogues are in /team/.
 import '../common.js'; // theme toggle and the live logo
 import './motion.js'; // keyboard or pointer, for motion decisions
 import { $, $$, api, getToken, setToken, whenSessionExpires, toast } from './api.js';
-import * as overview from './overview.js';
-import * as enquiries from './enquiries.js';
-import * as products from './products.js';
+import * as setup from './setup.js';
 import * as company from './company.js';
 import * as settings from './settings.js';
-import * as traffic from './traffic.js';
-import * as store from './store.js';
-import * as packaging from './packaging.js';
 import * as team from './team.js';
 import { initShell, watch } from './tools.js';
 
 const VIEWS = {
-  overview: overview.show,
-  traffic: traffic.show,
-  enquiries: enquiries.show,
-  products: products.show,
-  packaging: packaging.show,
+  overview: setup.show,
   team: team.show,
   company: company.show,
   certifications: company.showCertifications,
   logo: settings.showLogo,
-  social: settings.showSocial,
   email: settings.showEmail,
   marketing: settings.showMarketing,
   security: settings.showSecurity,
@@ -45,7 +36,6 @@ function showLogin(message) {
 function showPanel() {
   loginView.hidden = true; panel.hidden = false; signOut.hidden = false;
   route();
-  enquiries.refreshBadge();
 }
 
 let expiredShown = false;
@@ -59,8 +49,6 @@ whenSessionExpires(() => {
 function route() {
   if (panel.hidden) return;
   const requested = location.hash.slice(1).split('?')[0];
-  // links keep the chosen period when moving between sections
-  for (const a of $$('[data-nav]')) a.setAttribute('href', `#${a.dataset.nav}?days=${store.getDays()}`);
   // on a phone, the list of sections
   if (shell.menu(requested)) return;
   const name = VIEWS[requested] ? requested : 'overview';

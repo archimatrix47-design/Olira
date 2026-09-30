@@ -26,7 +26,7 @@ export async function show() {
     const list = await api('/api/packaging-products?scope=team');
     rows = (Array.isArray(list) ? list : []).map(rowFor);
     form().querySelector('.a-savebar').hidden = !rows.length;
-    if (!rows.length) { box.replaceChildren(h('p', { class: 'note' }, 'No packaging products yet. The administrator adds them in the admin panel.')); return; }
+    if (!rows.length) { box.replaceChildren(h('p', { class: 'note' }, 'No packaging products yet. Add them under Packaging products.')); return; }
     const families = [...new Set(rows.map((r) => r.p.family || 'bags'))];
     box.replaceChildren(...families.map((f) => h('section', { class: 'a-card t-min-group', 'aria-labelledby': `minfam-${f}` },
       h('h2', { id: `minfam-${f}` }, FAMILY[f] || f),

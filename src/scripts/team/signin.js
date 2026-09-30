@@ -1,26 +1,26 @@
-// The single sign in for both marketing workspaces.
-// The server returns the member's role, set by the administrator on the account,
+// The single sign in for the staff workspaces: the two marketing teams and the
+// managers. The server returns the account's role, set by the administrator,
 // and that decides which workspace opens. Nobody has to know which link to pick.
 import '../common.js'; // theme toggle and the live logo
 import '../admin/motion.js'; // keyboard or pointer, for motion decisions
 import { $, api, useTokenKey, setToken, readStoredToken } from '../admin/api.js';
 
-const PAGE = { agri: '/team/agriculture/', pack: '/team/packaging/' };
+const PAGE = { agri: '/team/agriculture/', pack: '/team/packaging/', manager: '/team/manager/' };
 const TEAM_KEY = 'teamToken';
 
-const form = $('#teamLoginForm'), choice = $('#adminChoice'), busy = $('#signinBusy'), err = $('#tLoginError');
+const form = $('#teamLoginForm'), busy = $('#signinBusy'), err = $('#tLoginError');
 const q = new URLSearchParams(location.search);
 
 /** Where a workspace sent us back from, honoured only when the role may open it. */
 function destination(role) {
   const next = q.get('next');
   const safe = next && next.startsWith('/team/') && !next.startsWith('//');
-  if (safe && (role === 'admin' || next.startsWith(PAGE[role]))) return next;
-  return PAGE[role] || '/admin/#enquiries';
+  if (safe && PAGE[role] && next.startsWith(PAGE[role])) return next;
+  return PAGE[role] || '/team/';
 }
 
 function showForm(message) {
-  busy.hidden = true; choice.hidden = true; form.hidden = false;
+  busy.hidden = true; form.hidden = false;
   err.hidden = !message; err.textContent = message || '';
   ($('#tEmail').value ? $('#tPass') : $('#tEmail')).focus();
 }
@@ -28,10 +28,6 @@ function showForm(message) {
 function showNote(text) {
   const note = $('#signinNote');
   note.hidden = !text; note.textContent = text || '';
-}
-function showChoice() {
-  busy.hidden = true; form.hidden = true; choice.hidden = false;
-  choice.querySelector('a').focus();
 }
 
 const startMessage = q.get('m') === 'expired' ? 'Your session has ended. Sign in again to continue.' : '';
@@ -43,20 +39,17 @@ async function resume() {
     useTokenKey(TEAM_KEY);
     try {
       const me = await api('/api/team/me');
-      location.replace(destination(me.user.role));
-      return;
+      if (PAGE[me.user.role]) { location.replace(destination(me.user.role)); return; }
+      setToken(null);
     } catch (e) {
       setToken(null); // the token is stale, fall through to the form
     }
   }
-  // an administrator signed in to the admin panel may open either workspace
-  if (readStoredToken('adminToken')) { showChoice(); return; }
   showForm(startMessage);
 }
 useTokenKey(TEAM_KEY);
 resume();
 
-$('#notMe').addEventListener('click', () => showForm(''));
 
 /* ---------- sign in ---------- */
 $('#tTogglePass').addEventListener('click', (e) => {
@@ -83,6 +76,7 @@ form.addEventListener('submit', async (e) => {
       useTokenKey(TEAM_KEY); setToken(data.token);
       // straight into the workspace the administrator put this account on
       location.replace(destination(data.member?.role));
+      return;
       return;
     }
     err.textContent = data.error || (res.status === 429 ? 'Too many attempts. Wait a few minutes and try again.' : 'That email and password do not match.');

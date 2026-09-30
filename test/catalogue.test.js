@@ -117,8 +117,9 @@ test('the packaging team sets minimums; the agriculture team cannot', async () =
   const stored = JSON.parse(fs.readFileSync(path.join(tmp, 'packaging-products.json'), 'utf8')).find((p) => p.id === 'pk_pizza');
   assert.equal(stored.name, 'Pizza boxes');
   assert.equal(stored.description.startsWith('Folding pizza boxes'), true);
-  // the administrator can clear it again
-  const c = await json(await req('POST', url, { token: admin, body: { minOrder: '' } }));
+  // the administrator no longer edits the catalogue; the team clears it again
+  assert.equal((await req('POST', url, { token: admin, body: { minOrder: '' } })).status, 403);
+  const c = await json(await req('POST', url, { token: pack, body: { minOrder: '' } }));
   assert.equal(c.product.minOrder, null);
   await req('POST', url, { token: pack, body: { minOrder: 2000 } });
 });

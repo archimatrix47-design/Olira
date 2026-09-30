@@ -174,13 +174,14 @@ path, since neither is in git.
 
 ## Why `DATA_DIR` and `UPLOADS_DIR` must be outside the repo
 
-Everything the admin panel manages — products, certifications, contact details,
-branding, social links, uploaded images, and analytics history — is stored as
-files, not in a database.
+Everything edited on the site — in the admin panel (certifications, contact
+details, branding, staff accounts), the marketing workspaces (products, social
+links, partner logos) and the manager's workspace (enquiries) — together with
+uploaded images and analytics history, is stored as files, not in a database.
 
 `data/*.json` is **tracked in git**. If `DATA_DIR` pointed at the repo folder,
 the next deploy would check out the committed versions over the live ones and
-silently reset every edit made through the admin panel. Uploaded images, which
+silently reset every edit made through the admin panel and the workspaces. Uploaded images, which
 are not in git at all, would be deleted outright.
 
 Pointing both variables outside the repo keeps live content on a completely

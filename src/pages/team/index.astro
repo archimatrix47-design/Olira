@@ -1,6 +1,7 @@
 ---
-// The one door into the marketing workspaces. A team member signs in here and
-// the account's role, set by the administrator, decides which workspace opens.
+// The one door into the staff workspaces: the agriculture and packaging
+// marketing teams, and the managers. The account's role, set by the
+// administrator, decides which workspace opens.
 // The workspace pages themselves carry no password field any more: an unsigned
 // visit to one of them comes back here.
 import '../../styles/tokens.css';
@@ -36,7 +37,7 @@ import ThemeButton from '../../components/site/ThemeButton.astro';
   <form class="a-card a-login-card" id="teamLoginForm" novalidate hidden>
     <div>
       <h1>Sign in</h1>
-      <p>One sign in for the marketing team. Your workspace opens on the team your account is on.</p>
+      <p>One sign in for the marketing teams and managers. Your workspace opens on the role your account has.</p>
       <p class="a-note" id="signinNote" role="status" hidden></p>
     </div>
     <div class="a-field">
@@ -52,21 +53,8 @@ import ThemeButton from '../../components/site/ThemeButton.astro';
       <p class="err" id="tLoginError" role="alert" hidden></p>
     </div>
     <button class="btn btn-primary btn-lg" type="submit">Sign in</button>
-    <p class="a-note">The site administrator creates team accounts and resets passwords.</p>
+    <p class="a-note">The site administrator creates staff accounts and resets passwords.</p>
   </form>
-
-  <!-- an administrator is already signed in: both workspaces are open to them -->
-  <div class="a-card a-login-card" id="adminChoice" hidden>
-    <div>
-      <h1>Open a workspace</h1>
-      <p>You are signed in as the administrator, so both teams are open to you.</p>
-    </div>
-    <div class="t-choice">
-      <a class="btn btn-primary btn-lg" href="/team/agriculture/">Agriculture workspace</a>
-      <a class="btn btn-secondary btn-lg" href="/team/packaging/">Packaging workspace</a>
-    </div>
-    <p class="a-note"><a href="/admin/#enquiries">Back to the admin panel</a>, or <button class="a-linkbtn" type="button" id="notMe">sign in as a team member</button>.</p>
-  </div>
 
   <p class="a-note" id="signinBusy">Checking your session…</p>
 </main>

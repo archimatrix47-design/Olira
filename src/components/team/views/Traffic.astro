@@ -1,0 +1,72 @@
+---
+// Manager: where visitors come from. Filled in by scripts/team/manager/traffic.js.
+---
+<!-- TRAFFIC: where visitors come from, what they read, when -->
+<section class="a-view" data-view="traffic" aria-labelledby="h-traffic" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-traffic">Traffic</h1>
+      <p>Where visitors come from, which pages hold their attention, when they visit and what they do. No cookies are used and no IP addresses are stored.</p>
+    </div>
+    <label class="a-period"><span>Period</span>
+      <select class="input" data-period>
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="365">Last 12 months</option>
+      </select>
+    </label>
+  </div>
+  <p class="a-freshness" data-freshness aria-live="polite"></p>
+  <div class="a-kpis a-kpis-5" id="trKpis" aria-label="Traffic numbers"></div>
+
+  <div class="a-grid12">
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Where visitors come from</h2><p>Share of page views by source, with the change on the previous period.</p></div></div>
+      <div id="trChannels"></div>
+    </div>
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Referring websites</h2><p>Sites that linked to you. WhatsApp and most apps hide the link, so those visits count as direct.</p></div></div>
+      <div id="trReferrers"></div>
+    </div>
+  </div>
+
+  <div class="a-card">
+    <div class="a-card-head"><div><h2>Pages</h2><p>Engaged means the page stayed open 15 seconds or was scrolled halfway. Time bands run from under 10 seconds (lightest) to over 3 minutes (darkest).</p></div></div>
+    <div id="trPages"></div>
+  </div>
+
+  <div class="a-grid12">
+    <div class="a-card span-8">
+      <div class="a-card-head"><div><h2>When visitors arrive</h2><p>Page views by weekday and hour, Addis Ababa time.</p></div></div>
+      <div id="trHeat"></div>
+    </div>
+    <div class="a-card span-4">
+      <div class="a-card-head"><div><h2>Markets</h2><p>Browser language is a rough guide to where buyers are: Arabic suggests the Gulf, Chinese suggests China.</p></div></div>
+      <div id="trMarkets"></div>
+    </div>
+  </div>
+
+  <div class="a-grid12">
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Contact actions</h2><p>People reaching for a phone number, WhatsApp, email or the enquiry form.</p></div></div>
+      <div id="trContact"></div>
+    </div>
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Bag designer</h2><p>How visitors use the mockup studio on the packaging page.</p></div></div>
+      <div id="trStudio"></div>
+    </div>
+  </div>
+
+  <div class="a-grid12">
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Campaigns</h2><p>Visits from links tagged with utm_source, utm_medium and utm_campaign.</p></div></div>
+      <div id="trCampaigns"></div>
+    </div>
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Devices and first pages</h2><p>What visitors use, and the page they landed on first.</p></div></div>
+      <div id="trDevices"></div>
+      <div id="trEntries" style="margin-top:18px"></div>
+    </div>
+  </div>
+</section>

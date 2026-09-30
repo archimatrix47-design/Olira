@@ -1,34 +1,28 @@
 ---
-// Admin panel. One page; each section is a view picked from the URL hash
-// (#overview, #enquiries, ...). All data comes from the same API the website
-// reads, so changes here show on the site without a rebuild.
+// Admin panel: the website itself. Company details, logo, certifications,
+// email delivery, Google tags, and the staff accounts. Enquiries, traffic and
+// the product catalogues are worked in the manager's and the marketing teams'
+// workspaces (/team/). One page; each section is a view picked from the URL hash.
 import '../styles/tokens.css';
 import '../styles/ambient.css';
 import '../styles/site.css';
 import '../styles/admin.css';
 import '../styles/admin-insights.css';
 import ThemeButton from '../components/site/ThemeButton.astro';
-import { SOCIAL_PLATFORMS } from '../../lib/social.js';
 
 const icon: Record<string, string> = {
   overview: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
-  traffic: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
-  enquiries: '<path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/>',
-  products: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
   company: '<path d="M4 21V5l8-2v18M12 8l8 3v10M8 9h.01M8 13h.01M8 17h.01M16 14h.01M16 18h.01"/>',
   certifications: '<circle cx="12" cy="9" r="5"/><path d="M9 13.5L8 21l4-2 4 2-1-7.5"/>',
   logo: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
-  social: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>',
   email: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
   marketing: '<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',
   security: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 118 0v3"/>',
-  packaging: '<path d="M6 8h12l1.2 12.5a1 1 0 01-1 1.1H5.8a1 1 0 01-1-1.1z"/><path d="M9 8V6.5a3 3 0 016 0V8"/>',
   team: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0111 0"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15.5 14.4A4.5 4.5 0 0121 18.8"/>',
 };
 const nav = [
-  { label: 'Daily', items: [['overview', 'Overview'], ['enquiries', 'Enquiries'], ['traffic', 'Traffic']] },
-  { label: 'Website', items: [['products', 'Agriculture products'], ['packaging', 'Packaging products'], ['company', 'Company details'], ['certifications', 'Certifications'], ['logo', 'Logo'], ['social', 'Contact and social links']] },
-  { label: 'Settings', items: [['team', 'Team accounts'], ['email', 'Email delivery'], ['marketing', 'Marketing tags'], ['security', 'Password']] },
+  { label: 'Website', items: [['overview', 'Overview'], ['company', 'Company details'], ['certifications', 'Certifications'], ['logo', 'Logo']] },
+  { label: 'Settings', items: [['team', 'Staff accounts'], ['email', 'Email delivery'], ['marketing', 'Marketing tags'], ['security', 'Password']] },
 ];
 const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon[name]}</svg>`;
 ---
@@ -62,7 +56,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
   <form class="a-card a-login-card" id="loginForm" novalidate>
     <div>
       <h1>Sign in</h1>
-      <p>Manage enquiries, products and company details for oliraagroindustry.com.</p>
+      <p>Company details, email, Google tags and staff accounts for oliraagroindustry.com. Managers and the marketing teams sign in at <a href="/team/">/team/</a>.</p>
     </div>
     <div class="a-field">
       <label for="password">Admin password</label>
@@ -86,7 +80,6 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
         {g.items.map(([id, label]) => (
           <a class="a-nav-link" href={`#${id}`} data-nav={id}>
             <Fragment set:html={Svg(id)} />{label}
-            {id === 'enquiries' && <span class="a-count" id="newCount" hidden></span>}
           </a>
         ))}
       </div>
@@ -96,489 +89,28 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
   <main id="adminMain" tabindex="-1">
     <a class="a-back" href="#menu">All sections</a>
 
-    <!-- OVERVIEW: is everything fine, and what needs doing -->
+    <!-- OVERVIEW: the website's setup, and the accounts that run it -->
     <section class="a-view" data-view="overview" aria-labelledby="h-overview" hidden>
       <div class="a-head">
         <div>
           <h1 id="h-overview">Overview</h1>
-          <p>How the website is doing for both businesses, compared with the period before, and what needs your attention.</p>
+          <p>What the website needs to run well, and the accounts that work it. Enquiries, traffic and the product catalogues are in the manager's and the teams' workspaces.</p>
         </div>
-        <label class="a-period"><span>Period</span>
-          <select class="input" data-period>
-            <option value="7">Last 7 days</option>
-            <option value="30" selected>Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option value="365">Last 12 months</option>
-          </select>
-        </label>
       </div>
-      <p class="a-freshness" data-freshness aria-live="polite"></p>
 
       <div class="a-card a-attention" aria-labelledby="h-attention">
         <h2 id="h-attention">Needs attention</h2>
         <ul class="a-alerts" id="ovAttention"><li class="v-skeleton"></li></ul>
       </div>
 
-      <div class="a-kpis a-kpis-5" id="ovKpis" aria-label="Key numbers"></div>
-
       <div class="a-grid12">
         <div class="a-card span-8">
-          <div class="a-card-head">
-            <div><h2>Visitors and enquiries</h2><p>Daily visitors against the same number of days before. Dots below the axis are days with enquiries.</p></div>
-          </div>
-          <div id="ovTrend" class="v-block"></div>
+          <div class="a-card-head"><div><h2>Website setup</h2><p>Your settings, and the content the teams keep up to date.</p></div></div>
+          <ul class="a-checklist" id="ovHealth"></ul>
         </div>
         <div class="a-card span-4">
-          <div class="a-card-head"><div><h2>At a glance</h2><p>The strongest signal in each area for this period.</p></div></div>
-          <dl class="a-facts" id="ovFacts"></dl>
-        </div>
-      </div>
-
-      <div class="a-grid12">
-        <div class="a-card span-6">
-          <div class="a-card-head"><div><h2>Agriculture journey</h2><p>Visitors who reached each step on the same day. Steps can be skipped, so read it as reach, not a strict path.</p></div></div>
-          <div id="ovFunnelAgri"></div>
-        </div>
-        <div class="a-card span-6">
-          <div class="a-card-head"><div><h2>Packaging journey</h2><p>Visitors who reached each step on the same day.</p></div></div>
-          <div id="ovFunnelPack"></div>
-        </div>
-      </div>
-
-      <div class="a-card">
-        <div class="a-card-head"><div><h2>Website setup</h2><p>What the site needs to turn visits into enquiries.</p></div></div>
-        <ul class="a-checklist" id="ovHealth"></ul>
-      </div>
-    </section>
-
-    <!-- TRAFFIC: where visitors come from, what they read, when -->
-    <section class="a-view" data-view="traffic" aria-labelledby="h-traffic" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-traffic">Traffic</h1>
-          <p>Where visitors come from, which pages hold their attention, when they visit and what they do. No cookies are used and no IP addresses are stored.</p>
-        </div>
-        <label class="a-period"><span>Period</span>
-          <select class="input" data-period>
-            <option value="7">Last 7 days</option>
-            <option value="30" selected>Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option value="365">Last 12 months</option>
-          </select>
-        </label>
-      </div>
-      <p class="a-freshness" data-freshness aria-live="polite"></p>
-      <div class="a-kpis a-kpis-5" id="trKpis" aria-label="Traffic numbers"></div>
-
-      <div class="a-grid12">
-        <div class="a-card span-6">
-          <div class="a-card-head"><div><h2>Where visitors come from</h2><p>Share of page views by source, with the change on the previous period.</p></div></div>
-          <div id="trChannels"></div>
-        </div>
-        <div class="a-card span-6">
-          <div class="a-card-head"><div><h2>Referring websites</h2><p>Sites that linked to you. WhatsApp and most apps hide the link, so those visits count as direct.</p></div></div>
-          <div id="trReferrers"></div>
-        </div>
-      </div>
-
-      <div class="a-card">
-        <div class="a-card-head"><div><h2>Pages</h2><p>Engaged means the page stayed open 15 seconds or was scrolled halfway. Time bands run from under 10 seconds (lightest) to over 3 minutes (darkest).</p></div></div>
-        <div id="trPages"></div>
-      </div>
-
-      <div class="a-grid12">
-        <div class="a-card span-8">
-          <div class="a-card-head"><div><h2>When visitors arrive</h2><p>Page views by weekday and hour, Addis Ababa time.</p></div></div>
-          <div id="trHeat"></div>
-        </div>
-        <div class="a-card span-4">
-          <div class="a-card-head"><div><h2>Markets</h2><p>Browser language is a rough guide to where buyers are: Arabic suggests the Gulf, Chinese suggests China.</p></div></div>
-          <div id="trMarkets"></div>
-        </div>
-      </div>
-
-      <div class="a-grid12">
-        <div class="a-card span-6">
-          <div class="a-card-head"><div><h2>Contact actions</h2><p>People reaching for a phone number, WhatsApp, email or the enquiry form.</p></div></div>
-          <div id="trContact"></div>
-        </div>
-        <div class="a-card span-6">
-          <div class="a-card-head"><div><h2>Bag designer</h2><p>How visitors use the mockup studio on the packaging page.</p></div></div>
-          <div id="trStudio"></div>
-        </div>
-      </div>
-
-      <div class="a-grid12">
-        <div class="a-card span-6">
-          <div class="a-card-head"><div><h2>Campaigns</h2><p>Visits from links tagged with utm_source, utm_medium and utm_campaign.</p></div></div>
-          <div id="trCampaigns"></div>
-        </div>
-        <div class="a-card span-6">
-          <div class="a-card-head"><div><h2>Devices and first pages</h2><p>What visitors use, and the page they landed on first.</p></div></div>
-          <div id="trDevices"></div>
-          <div id="trEntries" style="margin-top:18px"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ENQUIRIES: the inbox (a list, and the chosen enquiry beside it), or the report -->
-    <section class="a-view" data-view="enquiries" aria-labelledby="h-enquiries" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-enquiries">Enquiries</h1>
-          <p>Every message sent from the website, kept here even when the notification email fails. Move each one through the pipeline as you work it.</p>
-        </div>
-        <div class="a-head-tools">
-          <div class="a-seg" role="radiogroup" aria-label="Show">
-            <label><input type="radio" name="enTab" value="inbox" checked><span>Inbox</span></label>
-            <label><input type="radio" name="enTab" value="report"><span>Report</span></label>
-          </div>
-          <label class="a-period"><span>Period</span>
-            <select class="input" data-period>
-              <option value="7">Last 7 days</option>
-              <option value="30" selected>Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="365">Last 12 months</option>
-            </select>
-          </label>
-          <button class="btn btn-secondary" type="button" id="leadsCsv">Download CSV</button>
-          <button class="btn btn-secondary" type="button" id="leadsRefresh">Refresh</button>
-        </div>
-      </div>
-
-      <div class="a-view-part" data-en-tab="report" hidden>
-        <div class="a-kpis a-kpis-5" id="enKpis" aria-label="Enquiry numbers"></div>
-        <div class="a-grid12">
-          <div class="a-card span-8">
-            <div class="a-card-head"><div><h2>Enquiries over time</h2><p>By business line. Packaging is hatched.</p></div></div>
-            <div id="enVolume"></div>
-          </div>
-          <div class="a-card span-4">
-            <div class="a-card-head"><div><h2>Pipeline</h2><p>Where this period's enquiries are now.</p></div></div>
-            <div id="enPipeline"></div>
-          </div>
-        </div>
-        <div class="a-grid12">
-          <div class="a-card span-4">
-            <div class="a-card-head"><div><h2>Response speed</h2><p>Time from arrival to the first move out of New.</p></div></div>
-            <div id="enSpeed"></div>
-          </div>
-          <div class="a-card span-4">
-            <div class="a-card-head"><div><h2>Lead quality</h2><p>Scored on the details a buyer gave. Open an enquiry to see why.</p></div></div>
-            <div id="enQuality"></div>
-          </div>
-          <div class="a-card span-4">
-            <div class="a-card-head"><div><h2>Markets and products</h2><p>From phone codes and email domains, and what was asked for.</p></div></div>
-            <div id="enMarkets"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="a-view-part" data-en-tab="inbox">
-        <div class="a-card t-toolbar">
-          <div class="a-seg" role="radiogroup" aria-label="Business line">
-            <label><input type="radio" name="leadLine" value="all" checked><span>Both lines</span></label>
-            <label><input type="radio" name="leadLine" value="agri"><span>Agriculture</span></label>
-            <label><input type="radio" name="leadLine" value="pack"><span>Packaging</span></label>
-          </div>
-          <div class="t-toolbar-row">
-            <label class="sr-only" for="leadSearch">Search enquiries</label>
-            <input class="input grow" id="leadSearch" type="search" placeholder="Search name, company, email, port or message" aria-keyshortcuts="/">
-            <label class="sr-only" for="leadStage">Stage</label>
-            <select class="input" id="leadStage">
-              <option value="open">Open (not won, lost or archived)</option>
-              <option value="new">New</option>
-              <option value="read">Accepted</option>
-              <option value="contacted">Contacted</option>
-              <option value="quoted">Quoted</option>
-              <option value="won">Won</option>
-              <option value="lost">Lost</option>
-              <option value="archived">Archived</option>
-              <option value="all">All stages</option>
-            </select>
-            <label class="sr-only" for="leadSort">Sort</label>
-            <select class="input" id="leadSort">
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-              <option value="score">Strongest leads first</option>
-            </select>
-            <label class="a-check"><input type="checkbox" id="leadPeriodOnly"> Only this period</label>
-          </div>
-          <p class="a-note" id="leadsSummary" role="status" aria-live="polite"></p>
-        </div>
-        <div class="t-inbox" id="enInbox">
-          <ul class="t-list" id="leads" aria-label="Enquiries"></ul>
-          <article class="t-detail a-card" id="enDetail" aria-live="off">
-            <div class="a-empty"><strong>Choose an enquiry</strong>Its message, the buyer's details and the reply buttons open here. Arrow keys move through the list.</div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- PRODUCTS -->
-    <section class="a-view" data-view="products" aria-labelledby="h-products" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-products">Agriculture products</h1>
-          <p>The agricultural products in the stack on the agriculture page, in this order. The first product is the card in front.</p>
-        </div>
-        <div class="row" style="--gap:8px">
-          <label class="a-period"><span>Period</span>
-            <select class="input" data-period>
-              <option value="7">Last 7 days</option>
-              <option value="30" selected>Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="365">Last 12 months</option>
-            </select>
-          </label>
-          <button class="btn btn-primary" type="button" id="productNew">Add product</button>
-        </div>
-      </div>
-      <div class="a-products" id="productPanes">
-        <div class="a-card">
-          <h2>Order on the website</h2>
-          <p>Home page links open the first product whose category is Sesame, Pulses, Spices or Coffee, so keep those category names.</p>
-          <ol class="a-plist" id="productList"></ol>
-          <p class="sr-only" id="productLive" role="status" aria-live="polite"></p>
-        </div>
-        <div class="a-card a-editor" id="productEditor">
-          <div class="a-empty a-editor-empty" id="productEmpty">
-            <strong>Choose a product</strong>
-            Its details and photo open here to edit.
-            <div><button class="btn btn-secondary" type="button" data-add="product">Add product</button></div>
-          </div>
-          <form class="a-form" id="productForm" novalidate hidden aria-labelledby="editorTitle">
-            <button class="md-back" type="button" data-back="product">Products</button>
-            <div class="a-editor-head">
-              <h2 id="editorTitle">Add product</h2>
-            </div>
-            <input type="hidden" name="id">
-            <div class="a-field">
-              <label for="pName">Name</label>
-              <input class="input" id="pName" name="name" required maxlength="200" aria-describedby="pNameErr">
-              <p class="err" id="pNameErr" hidden></p>
-            </div>
-            <div class="a-two">
-              <div class="a-field">
-                <label for="pCategory">Category</label>
-                <input class="input" id="pCategory" name="category" maxlength="50" list="categoryList">
-                <datalist id="categoryList"><option value="Sesame"></option><option value="Pulses"></option><option value="Spices"></option><option value="Coffee"></option><option value="Specialty"></option></datalist>
-              </div>
-              <div class="a-field">
-                <label for="pPurity">Purity</label>
-                <input class="input" id="pPurity" name="purity" maxlength="50" placeholder="99.95%">
-              </div>
-            </div>
-            <div class="a-field">
-              <label for="pMoq">Minimum order</label>
-              <input class="input" id="pMoq" name="moq" maxlength="50" placeholder="10 MT">
-            </div>
-            <div class="a-field">
-              <label for="pDesc">Description</label>
-              <textarea class="input" id="pDesc" name="description" required maxlength="2000" aria-describedby="pDescErr"></textarea>
-              <p class="err" id="pDescErr" hidden></p>
-            </div>
-            <div class="a-field">
-              <label for="pSpecs">Key points</label>
-              <textarea class="input" id="pSpecs" name="specs" aria-describedby="pSpecsHint" style="min-height:96px"></textarea>
-              <p class="hint" id="pSpecsHint">One per line, up to 20. Shown as a list in the product details.</p>
-            </div>
-            <div class="a-field">
-              <span class="a-label" id="pImageLabel">Photo</span>
-              <div class="a-image-row">
-                <figure class="a-preview" id="pPreview" aria-hidden="true">
-                  <img alt="" hidden>
-                  <span class="ph">No photo</span>
-                  <figcaption><em style="font-style:normal" data-preview-name>Product name</em><span data-preview-cat>Category</span></figcaption>
-                </figure>
-                <div>
-                  <label class="a-drop" id="pDrop">
-                    <input type="file" id="pImage" accept="image/jpeg,image/png,image/webp" aria-labelledby="pImageLabel" aria-describedby="pImageHint">
-                    <strong>Upload a photo</strong>
-                    <span id="pImageHint">JPG, PNG or WebP up to 10 MB. Saved at 1200 px. The card shows the centre in portrait.</span>
-                  </label>
-                  <button class="btn btn-ghost btn-sm" type="button" id="pImageClear" hidden>Remove photo</button>
-                  <input type="hidden" name="image">
-                </div>
-              </div>
-            </div>
-            <div class="a-danger-zone" id="productDangerZone" hidden>
-              <button class="btn btn-danger-quiet btn-sm" type="button" id="productDelete">Delete product</button>
-            </div>
-            <div class="a-actions a-savebar">
-              <span class="a-dirty a-grow">Unsaved changes</span>
-              <button class="btn btn-ghost" type="button" id="productCancel">Cancel</button>
-              <button class="btn btn-primary" type="submit" id="productSave">Save product</button>
-            </div>
-          </form>
-        </div>
-      </div>
-      <div class="a-card">
-        <div class="a-card-head"><div><h2>Performance</h2><p>Details opened on the agriculture page, enquiries that named the product, and how complete each product's content is. Sorted by interest.</p></div></div>
-        <div id="prPerformance"></div>
-      </div>
-    </section>
-
-    <!-- PACKAGING PRODUCTS -->
-    <section class="a-view" data-view="packaging" aria-labelledby="h-packaging" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-packaging">Packaging products</h1>
-          <p>The catalogue on the packaging page, in this order, grouped by family. Every product can be added to a visitor's packing list and sent for one quote, at the sizes and minimum orders set here (the packaging team can also set minimums in their workspace). With a photo and its print corners, a product can also be designed in the mockup studio and in the packaging team's workspace.</p>
-        </div>
-        <button class="btn btn-primary" type="button" id="packNew">Add packaging product</button>
-      </div>
-      <div class="a-products" id="packPanes">
-        <div class="a-card">
-          <h2>Order on the website</h2>
-          <p>The first product with a photo is the bag the mockup studio opens with.</p>
-          <ol class="a-plist" id="packList"></ol>
-          <p class="sr-only" id="packLive" role="status" aria-live="polite"></p>
-        </div>
-        <div class="a-card a-editor a-pack-editor" id="packEditor">
-          <div class="a-empty a-editor-empty" id="packEmpty">
-            <strong>Choose a product</strong>
-            Its sizes, minimum order, photo and print corners open here to edit.
-            <div><button class="btn btn-secondary" type="button" data-add="pack">Add packaging product</button></div>
-          </div>
-          <form class="a-form" id="packForm" novalidate hidden aria-labelledby="packTitle">
-            <button class="md-back" type="button" data-back="pack">Packaging products</button>
-            <div class="a-editor-head">
-              <h2 id="packTitle">Add packaging product</h2>
-            </div>
-            <p class="sr-only" id="packStatus" role="status" aria-live="polite"></p>
-            <div class="a-field">
-              <label for="pkName">Name</label>
-              <input class="input" id="pkName" name="name" required maxlength="120" placeholder="Twisted handle bags" aria-describedby="pkNameErr">
-              <p class="err" id="pkNameErr" hidden></p>
-            </div>
-            <div class="a-two">
-              <div class="a-field">
-                <label for="pkFamily">Group</label>
-                <select class="input" id="pkFamily" name="family">
-                  <option value="bags">Paper bags</option>
-                  <option value="food">Bakery and food boxes</option>
-                  <option value="medical">Medical packets</option>
-                  <option value="foil">Aluminium foil bags</option>
-                </select>
-              </div>
-              <div class="a-field">
-                <label for="pkHandle">Short code</label>
-                <input class="input" id="pkHandle" name="handle" maxlength="30" placeholder="twisted" aria-describedby="pkHandleHint">
-                <p class="hint" id="pkHandleHint">Optional. Links like /packaging/?handle=twisted open this product in the studio, or show it in the catalogue while it has no photo.</p>
-              </div>
-            </div>
-            <div class="a-two">
-              <div class="a-field">
-                <label for="pkMin">Minimum order</label>
-                <input class="input" id="pkMin" name="minOrder" inputmode="numeric" maxlength="12" placeholder="For example 5,000" aria-describedby="pkMinHint pkMinErr">
-                <p class="hint" id="pkMinHint">Units. Visitors cannot send a packing list below it. Leave blank to confirm it with each quote.</p>
-                <p class="err" id="pkMinErr" hidden></p>
-              </div>
-              <div class="a-field">
-                <label for="pkColours">Print colours</label>
-                <select class="input" id="pkColours" name="printColours" aria-describedby="pkColoursHint">
-                  <option value="">Standard, up to 4</option>
-                  <option value="0">Plain only, no print</option>
-                  <option value="1">Up to 1</option><option value="2">Up to 2</option><option value="3">Up to 3</option>
-                  <option value="4">Up to 4</option><option value="5">Up to 5</option><option value="6">Up to 6</option>
-                </select>
-                <p class="hint" id="pkColoursHint">Flexographic print colours visitors can choose for this product.</p>
-              </div>
-            </div>
-            <fieldset class="a-field a-sizes">
-              <legend class="a-label">Sizes</legend>
-              <p class="hint" id="pkSizesHint">In centimetres, width x depth (gusset) x height. A size's own minimum replaces the product minimum. Leave the measurements blank if you do not want them shown.</p>
-              <div class="a-size-head" aria-hidden="true"><span>Name</span><span>W</span><span>D</span><span>H</span><span>Minimum</span><span></span></div>
-              <ol class="a-size-list" id="pkSizes"></ol>
-              <button class="btn btn-secondary btn-sm" type="button" id="pkAddSize">Add a size</button>
-            </fieldset>
-            <div class="a-field">
-              <label for="pkDesc">Description</label>
-              <textarea class="input" id="pkDesc" name="description" required maxlength="1000" aria-describedby="pkDescErr"></textarea>
-              <p class="err" id="pkDescErr" hidden></p>
-            </div>
-            <div class="a-field">
-              <label for="pkSpecs">Key points</label>
-              <textarea class="input" id="pkSpecs" name="specs" aria-describedby="pkSpecsHint" style="min-height:96px"></textarea>
-              <p class="hint" id="pkSpecsHint">One per line, up to 12. For example sizes, paper and print colours.</p>
-            </div>
-
-            <div class="a-field">
-              <span class="a-label" id="pkPhotoLabel">Product image</span>
-              <div class="a-photo-pair">
-                <div class="a-photo-slot">
-                  <label class="a-drop" id="packDrop-light">
-                    <input type="file" id="packFile-light" accept="image/jpeg,image/png,image/webp" aria-labelledby="pkPhotoLabel" aria-describedby="pkPhotoHint">
-                    <img id="packImg-light" alt="" hidden>
-                    <strong>Upload the image</strong>
-                    <span id="pkPhotoHint">Best: the product on a transparent background, a PNG or WebP exported from a mockup. It stands on the website like the other products and works in dark mode as it is. A photo on plain white also works: straight on, at the product's height, in soft even light. Up to 15 MB.</span>
-                  </label>
-                  <button class="btn btn-ghost btn-sm" type="button" id="packClearPhoto" hidden>Remove photo</button>
-                </div>
-                <div class="a-photo-slot" id="packDarkWrap" hidden>
-                  <label class="a-drop a-drop-dark" id="packDrop-dark">
-                    <input type="file" id="packFile-dark" accept="image/jpeg,image/png,image/webp" aria-describedby="pkDarkHint">
-                    <img id="packImg-dark" alt="" hidden>
-                    <strong>Dark mode photo (optional)</strong>
-                    <span id="pkDarkHint">The same shot on a black background, cropped the same way. Without it the white photo is used in dark mode too.</span>
-                  </label>
-                  <button class="btn btn-ghost btn-sm" type="button" id="packClearDark" hidden>Remove dark photo</button>
-                </div>
-              </div>
-              <p class="a-warn" id="packWarn" role="alert" hidden></p>
-            </div>
-
-            <div class="a-studio-setup" id="packStudio" hidden>
-              <div class="a-field">
-                <span class="a-label" id="pkCornersLabel">Print corners</span>
-                <p class="hint" id="pkCornersHint">Drag the four dots onto the corners of the front panel: 1 top left, 2 top right, 3 bottom right, 4 bottom left. Or select a dot and use the arrow keys, holding Shift to move further.</p>
-                <div class="a-corner-stage" id="packStage" role="group" aria-labelledby="pkCornersLabel" aria-describedby="pkCornersHint">
-                  <img id="packStageImg" alt="">
-                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon id="packPoly" points=""/></svg>
-                  <button type="button" class="a-corner" data-corner="0">1</button>
-                  <button type="button" class="a-corner" data-corner="1">2</button>
-                  <button type="button" class="a-corner" data-corner="2">3</button>
-                  <button type="button" class="a-corner" data-corner="3">4</button>
-                </div>
-                <button class="btn btn-ghost btn-sm" type="button" id="packResetCorners" style="justify-self:start">Reset the corners</button>
-              </div>
-              <div class="a-field">
-                <span class="a-label">Preview</span>
-                <div class="a-two">
-                  <div class="a-field"><label for="packSample">Sample text</label><input class="input" id="packSample" maxlength="18" value="YOUR BRAND"></div>
-                  <div class="a-field"><label for="packInk">Ink</label>
-                    <select class="input" id="packInk"><option value="teal">Teal</option><option value="black">Black</option><option value="leaf">Leaf green</option><option value="red">Red</option><option value="white">White</option></select>
-                  </div>
-                </div>
-                <div class="a-seg" role="radiogroup" aria-label="Preview theme">
-                  <label><input type="radio" name="packPreviewTheme" value="light" checked><span>Light mode</span></label>
-                  <label><input type="radio" name="packPreviewTheme" value="dark"><span>Dark mode</span></label>
-                </div>
-                <div class="a-preview-stage"><canvas id="packPreview" width="1200" height="1680" role="img" aria-label="Preview of the product with a sample design"></canvas></div>
-                <p class="err" id="packPreviewMsg" role="alert" hidden></p>
-              </div>
-              <div class="a-field">
-                <label for="packSafe">Space above the design</label>
-                <input class="range" id="packSafe" type="range" min="0" max="40" value="10" aria-valuetext="10 percent" aria-describedby="packSafeHint">
-                <p class="hint" id="packSafeHint">Moves the design down when the top of the panel has a fold or handles.</p>
-              </div>
-            </div>
-
-            <fieldset class="a-field a-fieldset">
-              <legend class="a-label">Where it shows</legend>
-              <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="site" checked> Packaging page and mockup studio</label>
-              <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="team" checked> Packaging team workspace</label>
-            </fieldset>
-            <div class="a-danger-zone" id="packDangerZone" hidden>
-              <button class="btn btn-danger-quiet btn-sm" type="button" id="packDelete">Delete product</button>
-            </div>
-            <div class="a-actions a-savebar">
-              <span class="a-dirty a-grow">Unsaved changes</span>
-              <button class="btn btn-ghost" type="button" id="packCancel">Cancel</button>
-              <button class="btn btn-primary" type="submit" id="packSave">Save product</button>
-            </div>
-          </form>
+          <div class="a-card-head"><div><h2>Accounts</h2><p>Who works the website.</p></div></div>
+          <dl class="a-facts" id="ovAccounts"></dl>
         </div>
       </div>
     </section>
@@ -597,7 +129,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
             <div class="a-field">
               <label for="cPhones">Phone numbers</label>
               <textarea class="input" id="cPhones" name="phones" aria-describedby="cPhonesHint" style="min-height:96px"></textarea>
-              <p class="hint" id="cPhonesHint">One per line. The first is the main sales number, also used for WhatsApp unless a WhatsApp link is set in Contact and social links. The second is shown as the office line.</p>
+              <p class="hint" id="cPhonesHint">One per line. The first is the main sales number, also used for WhatsApp unless the marketing teams set a WhatsApp link in their Contact links. The second is shown as the office line.</p>
             </div>
             <div class="a-field">
               <label for="cEmails">Email addresses</label>
@@ -686,58 +218,33 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
       </div>
     </section>
 
-    <!-- SOCIAL -->
-    <section class="a-view" data-view="social" aria-labelledby="h-social" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-social">Contact and social links</h1>
-          <p>Paste the full address of each profile. They appear in the floating contact button on every page and in the footer; blank ones are hidden. Both marketing teams can change these in their workspaces too.</p>
-        </div>
-      </div>
-      <form class="a-form a-settings" id="socialForm" novalidate>
-        <div class="a-card a-group">
-          {SOCIAL_PLATFORMS.map((p) => (
-            <div class="a-field">
-              <label for={`s-${p.key}`}>{p.label}</label>
-              <input class="input" id={`s-${p.key}`} name={p.key} type="url" placeholder={p.placeholder} aria-describedby={p.hint ? `s-${p.key}-hint` : undefined}>
-              {p.hint && <p class="hint" id={`s-${p.key}-hint`}>{p.hint}</p>}
-            </div>
-          ))}
-        </div>
-        <p class="err" id="socialErr" role="alert" hidden></p>
-        <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save social links</button></div>
-      </form>
-    </section>
-
     <!-- TEAM -->
     <section class="a-view" data-view="team" aria-labelledby="h-team" hidden>
       <div class="a-head">
         <div>
-          <h1 id="h-team">Team accounts</h1>
-          <p>People who answer enquiries in the two sales workspaces. Each person signs in with their own email and password and sees only their team's enquiries. Buyers' replies go to that person's email.</p>
-        </div>
-        <div class="row" style="--gap:8px">
-          <a class="btn btn-secondary" href="/team/agriculture/" target="_blank" rel="noopener">Agriculture workspace</a>
-          <a class="btn btn-secondary" href="/team/packaging/" target="_blank" rel="noopener">Packaging workspace</a>
+          <h1 id="h-team">Staff accounts</h1>
+          <p>Everyone who works the website signs in at /team/ with their own email and password. Marketing team members answer their line's enquiries and keep its catalogue, contact links and partner logos up to date. Managers see every enquiry in both lines, hand them to team members, and follow the numbers. Buyers' replies go to the person who wrote.</p>
         </div>
       </div>
       <div class="a-two" style="align-items:start">
         <div class="a-card">
-          <h2>Team members</h2>
+          <h2>People</h2>
           <p id="teamSummary"></p>
           <ul class="a-rows a-team-rows" id="teamList"></ul>
         </div>
         <div class="a-card">
-          <h2 id="teamTitle">Add a team member</h2>
+          <h2 id="teamTitle">Add a person</h2>
           <form class="a-form" id="teamForm" novalidate style="margin-top:18px">
             <div class="a-field"><label for="tmName">Name</label><input class="input" id="tmName" name="name" maxlength="80" required autocomplete="off"></div>
             <div class="a-field"><label for="tmEmail">Work email</label><input class="input" id="tmEmail" name="email" type="email" maxlength="200" required autocomplete="off" aria-describedby="tmEmailHint"><p class="hint" id="tmEmailHint">They sign in with it, and buyers' replies go to it.</p></div>
-            <fieldset class="a-field a-fieldset">
-              <legend class="a-label">Team</legend>
+            <fieldset class="a-field a-fieldset" aria-describedby="tmRoleHint">
+              <legend class="a-label">Role</legend>
               <div class="a-seg">
-                <label><input type="radio" name="role" value="agri" required><span>Agriculture</span></label>
-                <label><input type="radio" name="role" value="pack"><span>Packaging</span></label>
+                <label><input type="radio" name="role" value="agri" required><span>Agriculture team</span></label>
+                <label><input type="radio" name="role" value="pack"><span>Packaging team</span></label>
+                <label><input type="radio" name="role" value="manager"><span>Manager</span></label>
               </div>
+              <p class="hint" id="tmRoleHint">A manager sees every enquiry in both lines and the traffic numbers. The administrator's own tasks stay here.</p>
             </fieldset>
             <div class="a-field">
               <label for="tmPass">Password</label>
@@ -750,7 +257,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
             </div>
             <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="active" checked> Account switched on</label>
             <div class="a-actions">
-              <button class="btn btn-primary btn-lg" type="submit" id="teamSave">Add team member</button>
+              <button class="btn btn-primary btn-lg" type="submit" id="teamSave">Add person</button>
               <button class="btn btn-ghost btn-lg" type="button" id="teamCancel" hidden>Cancel</button>
             </div>
           </form>
@@ -763,7 +270,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
       <div class="a-head">
         <div>
           <h1 id="h-email">Email delivery</h1>
-          <p>The mail account that sends enquiry notifications to your team and a confirmation to the visitor.</p>
+          <p>The mail account that sends enquiry notifications to the teams and managers, a confirmation to the visitor, and the replies written in the workspaces.</p>
         </div>
         <span class="a-status" id="emailState">Checking</span>
       </div>

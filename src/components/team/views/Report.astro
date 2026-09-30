@@ -1,0 +1,52 @@
+---
+// Manager: the enquiries report. Filled in by scripts/team/manager/report.js.
+---
+<!-- REPORT: the pipeline for the period, by business line -->
+<section class="a-view" data-view="report" aria-labelledby="h-report" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-report">Report</h1>
+      <p>Enquiries for the period: how many, how fast the team answered, how good they were and where they came from.</p>
+    </div>
+    <div class="a-head-tools">
+      <div class="a-seg" role="radiogroup" aria-label="Business line">
+        <label><input type="radio" name="reportLine" value="all" checked><span>Both lines</span></label>
+        <label><input type="radio" name="reportLine" value="agri"><span>Agriculture</span></label>
+        <label><input type="radio" name="reportLine" value="pack"><span>Packaging</span></label>
+      </div>
+      <label class="a-period"><span>Period</span>
+        <select class="input" data-period>
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="365">Last 12 months</option>
+        </select>
+      </label>
+    </div>
+  </div>
+  <div class="a-kpis a-kpis-5" id="enKpis" aria-label="Enquiry numbers"></div>
+  <div class="a-grid12">
+    <div class="a-card span-8">
+      <div class="a-card-head"><div><h2>Enquiries over time</h2><p>By business line. With both lines shown, packaging is hatched.</p></div></div>
+      <div id="enVolume"></div>
+    </div>
+    <div class="a-card span-4">
+      <div class="a-card-head"><div><h2>Pipeline</h2><p>Where this period's enquiries are now.</p></div></div>
+      <div id="enPipeline"></div>
+    </div>
+  </div>
+  <div class="a-grid12">
+    <div class="a-card span-4">
+      <div class="a-card-head"><div><h2>Response speed</h2><p>Time from arrival to the first move out of New.</p></div></div>
+      <div id="enSpeed"></div>
+    </div>
+    <div class="a-card span-4">
+      <div class="a-card-head"><div><h2>Lead quality</h2><p>Scored on the details a buyer gave. Open an enquiry to see why.</p></div></div>
+      <div id="enQuality"></div>
+    </div>
+    <div class="a-card span-4">
+      <div class="a-card-head"><div><h2>Markets and products</h2><p>From phone codes and email domains, and what was asked for.</p></div></div>
+      <div id="enMarkets"></div>
+    </div>
+  </div>
+</section>

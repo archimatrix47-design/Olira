@@ -1,17 +1,24 @@
-// Who is signed in to the workspace, and the enquiries loaded for this team.
+// Who is signed in to the workspace, and the enquiries loaded for them: a
+// team member's line, or both lines for a manager.
 import { api } from '../admin/api.js';
 import { STAGES } from '../admin/leads.js';
 
-export const session = { user: null, members: [], line: 'agri', isAdmin: false };
+// line: 'agri' | 'pack' | 'manager'. oversees: a manager, who works both lines.
+export const session = { user: null, members: [], line: 'agri', oversees: false };
 export const OPEN = ['new', 'read', 'contacted', 'quoted'];
 export const CLOSED = ['won', 'lost', 'archived'];
 export const LINE_NAME = { agri: 'agriculture', pack: 'packaging' };
+export const LINE_LABEL = { agri: 'Agriculture', pack: 'Packaging' };
+/** The business line of an enquiry. The server sends it with every enquiry. */
+export const lineOf = (l) => (l?.line === 'pack' || l?.line === 'agri' ? l.line : session.line === 'pack' ? 'pack' : 'agri');
 
 let cache = null, loading = null;
 export async function leads(force = false) {
   if (cache && !force) return cache;
   if (!loading || force) {
-    loading = api(`/api/team/inquiries?line=${session.line}`).then((r) => { cache = Array.isArray(r.inquiries) ? r.inquiries : []; loading = null; return cache; })
+    // a manager gets both lines; the server ignores the line for anyone else
+    const url = session.oversees ? '/api/team/inquiries' : `/api/team/inquiries?line=${session.line}`;
+    loading = api(url).then((r) => { cache = Array.isArray(r.inquiries) ? r.inquiries : []; loading = null; return cache; })
       .catch((e) => { loading = null; throw e; });
   }
   return loading;
@@ -22,10 +29,16 @@ export function putLead(rec) {
   const i = cache.findIndex((x) => x.id === rec.id);
   if (i >= 0) cache[i] = rec; else cache.unshift(rec);
 }
+/** Take one enquiry out of the cache after a manager deleted it. */
+export function dropLead(id) {
+  if (cache) cache = cache.filter((x) => x.id !== id);
+}
 export const isMine = (l) => !!session.user && l.assignee?.id === session.user.id;
 /** Open and nobody has accepted it: the one definition behind every "To accept" count. */
 export const toAccept = (l) => OPEN.includes(l.status) && !l.assignee;
 export const stageName = (id) => STAGES.find((s) => s.id === id)?.label || id;
+/** Active people who can hold an enquiry of this line. */
+export const teamOf = (line) => session.members.filter((m) => m.role === line);
 
 const CONTACT_TYPES = new Set(['reply', 'call', 'whatsapp', 'email', 'meeting', 'quote']);
 /** When the enquiry was last actually worked on: a reply, call, quote or stage change. */
@@ -43,7 +56,7 @@ export function followupsOf(list, now = Date.now()) {
   const out = [];
   for (const l of list) {
     if (!OPEN.includes(l.status)) continue;
-    if (!session.isAdmin && l.assignee && !isMine(l)) continue;
+    if (!session.oversees && l.assignee && !isMine(l)) continue;
     const age = now - Date.parse(l.createdAt), quiet = now - lastTouch(l);
     if (l.status === 'new' && age > 4 * H) out.push({ lead: l, kind: 'accept', label: 'Waiting to be accepted', due: Date.parse(l.createdAt) + 4 * H });
     else if (l.status === 'read' && !hasContact(l) && quiet > 24 * H) out.push({ lead: l, kind: 'contact', label: 'Accepted, buyer not contacted yet', due: lastTouch(l) + 24 * H });
