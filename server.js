@@ -201,9 +201,23 @@ app.use('/api/inquiry', rateLimit);
 // limited read made the dashboard report working email as "not set up".
 app.use('/api/email-config', (req, res, next) => (req.method === 'GET' ? next() : rateLimit(req, res, next)));
 
-// Email config file path
-// Overridable so the test suite never writes the real config next to server.js.
-const emailConfigPath = process.env.EMAIL_CONFIG_PATH || path.join(__dirname, 'email-config.json');
+// Settings saved from the admin panel (email delivery, marketing tags) live with
+// the rest of the live data in DATA_DIR. On cPanel a deploy mirrors the repo into
+// the app folder and deletes what the repo does not have, so a settings file
+// beside server.js was lost (or reset to the repo's copy) on every deploy. A file
+// left there by an older version is copied across once. Overridable so the test
+// suite never writes the real config.
+function settingsPath(envName, file) {
+  if (process.env[envName]) return process.env[envName];
+  const beside = path.join(__dirname, file);
+  if (dataDir === REPO_DATA_DIR) return beside;
+  const kept = path.join(dataDir, file);
+  if (!fs.existsSync(kept) && fs.existsSync(beside)) {
+    try { fs.copyFileSync(beside, kept); } catch (e) { console.error(`Could not move ${file} into DATA_DIR:`, e.message); }
+  }
+  return kept;
+}
+const emailConfigPath = settingsPath('EMAIL_CONFIG_PATH', 'email-config.json');
 
 // Initialize email config if it doesn't exist
 function initializeEmailConfig() {
@@ -965,7 +979,7 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
 // ============================================
 
 // Path to integrations config file
-const integrationsConfigPath = process.env.INTEGRATIONS_CONFIG_PATH || path.join(__dirname, 'integrations-config.json');
+const integrationsConfigPath = settingsPath('INTEGRATIONS_CONFIG_PATH', 'integrations-config.json');
 
 // Initialize integrations config if it doesn't exist
 function initializeIntegrationsConfig() {

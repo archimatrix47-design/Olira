@@ -36,13 +36,19 @@ test('REGRESSION: the server listens when the host loads it through a wrapper', 
   const port = await freePort();
   // the host's environment: production, and none of the test runner's markers
   const env = { ...process.env, NODE_ENV: 'production', PORT: String(port), DATA_DIR: tmp, UPLOADS_DIR: path.join(tmp, 'uploads'),
-    EMAIL_CONFIG_PATH: path.join(tmp, 'email-config.json'), INTEGRATIONS_CONFIG_PATH: path.join(tmp, 'integrations-config.json'),
+    EMAIL_CONFIG_PATH: path.join(tmp, 'email-config.json'),
     JWT_SECRET: 'hosting_test_secret_that_is_at_least_32_chars', ADMIN_PASSWORD: '', SMTP_HOST: '', SMTP_USER: '', SMTP_PASSWORD: '' };
   delete env.NODE_TEST_CONTEXT;
+  // no override: where the marketing tags are kept follows DATA_DIR, as on the host
+  delete env.INTEGRATIONS_CONFIG_PATH;
+  const repoCopy = fs.readFileSync(path.join(root, 'integrations-config.json'), 'utf8');
   const child = spawn(process.execPath, [wrapper], { cwd: root, env, stdio: 'ignore' });
   try {
     const status = await answers(`http://127.0.0.1:${port}/api/health`, 15000);
     assert.ok(status === 200 || status === 503, `the wrapped server answered (got ${status})`);
+    // settings saved from the admin panel live in DATA_DIR, where a deploy cannot delete them
+    assert.ok(fs.existsSync(path.join(tmp, 'integrations-config.json')), 'the marketing tags file is kept in DATA_DIR');
+    assert.equal(fs.readFileSync(path.join(root, 'integrations-config.json'), 'utf8'), repoCopy, 'the repo copy is left alone');
   } finally {
     child.kill();
     fs.rmSync(tmp, { recursive: true, force: true });
