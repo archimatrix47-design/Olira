@@ -377,6 +377,11 @@ main:has(> .choose) + .sheet-foot { margin-top: 12px; }
    nearest first: email, WhatsApp, Telegram, then the social pages. Each shows
    its name beside it on hover or keyboard focus. */
 .fab { position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); z-index: 150; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+/* closed, the column of channels still takes up room above the circle: let clicks
+   through it to the page (the footer's Admin link sat underneath), so only the
+   circle, the open channels and the number card take clicks */
+.fab, .fab-list { pointer-events: none; }
+.fab-main, .fab .fab-pop { pointer-events: auto; }
 .fab-main { position: relative; width: 58px; height: 58px; border: 0; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; cursor: pointer; box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--shadow) 45%, transparent), 0 0 0 1px color-mix(in srgb, var(--white) 12%, transparent) inset; transition: transform var(--dur-ui) var(--settle), background-color var(--dur-micro) var(--ease); }
 .fab-main:hover { background: var(--accent-hover); transform: scale(1.04); }
 .fab-main:active { transform: scale(.96); }
