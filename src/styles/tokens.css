@@ -360,8 +360,8 @@
   --leaf-ink: #48721B;        /* the logo's leaf, as text on light: 4.9:1 on the kraft stage */
   --grad: linear-gradient(100deg, #186078 5%, #2F7A5A 50%, #5E8A1E 95%);   /* the logo's leaf, teal into green */
   --agri-band: #0C1810;       /* deep leaf: the agriculture band */
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Hanken Grotesk", system-ui, "Segoe UI", sans-serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hanken Grotesk", system-ui, "Segoe UI", sans-serif;
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --r-tile: 22px;
   --r-card: 18px;
   --r-pill: 980px;
@@ -437,8 +437,8 @@
   --canvas: var(--site-stage);
   --surface: #FFFFFF;
   --surface-2: #EFEAE1;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Hanken Grotesk", system-ui, "Segoe UI", sans-serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hanken Grotesk", system-ui, "Segoe UI", sans-serif;
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 :root[data-theme="dark"] .admin-body {
   --canvas: #000000;
