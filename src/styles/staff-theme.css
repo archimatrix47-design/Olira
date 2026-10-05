@@ -32,6 +32,7 @@
   --viz-context: #C7C7CC;
   --ramp-1: #EDEDF0; --ramp-2: #D2D2D7; --ramp-3: #A1A1A6; --ramp-4: #636366; --ramp-5: #1D1D1F;
   --good: #1E7A34;             /* status only: 5.4:1 on white */
+  --good-text: #176329;        /* green words on a green tint: 6:1 even on a selected row */
   --warn: #8A5300;             /* status only: 5.9:1 on white */
   --glass-bar: var(--brand);
 }
@@ -59,6 +60,7 @@
   --viz-context: #48484A;
   --ramp-1: #1C1C1E; --ramp-2: #2C2C2E; --ramp-3: #48484A; --ramp-4: #8E8E93; --ramp-5: #F5F5F7;
   --good: #63D17C;
+  --good-text: #63D17C;
   --warn: #F2B35B;
 }
 @media (prefers-color-scheme: dark) {
@@ -86,6 +88,7 @@
     --viz-context: #48484A;
     --ramp-1: #1C1C1E; --ramp-2: #2C2C2E; --ramp-3: #48484A; --ramp-4: #8E8E93; --ramp-5: #F5F5F7;
     --good: #63D17C;
+    --good-text: #63D17C;
     --warn: #F2B35B;
   }
 }
@@ -106,7 +109,7 @@
 .admin-body :is(.a-tag.agri, .a-tag.pack, .a-avatar.agri, .a-avatar.pack) { background: var(--fill-1); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .admin-body :is(.t-line-agri, .t-line-pack) { color: var(--ink); }
 /* a won enquiry is good news: the one green tag */
-.admin-body .a-tag.stage-won { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); box-shadow: none; }
+.admin-body .a-tag.stage-won { background: color-mix(in srgb, var(--good) 12%, transparent); color: var(--good-text); box-shadow: none; }
 .admin-body .a-status.on::before { background: var(--good); }
 /* links read as links without colour */
 .admin-body main a:not(.btn):not(.a-nav-link):not(.t-card):not(.t-stat-link):not([class*="a-prow"]) { text-decoration-thickness: 1px; text-underline-offset: 3px; }
