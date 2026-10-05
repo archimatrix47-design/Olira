@@ -20,10 +20,11 @@ const icon: Record<string, string> = {
   marketing: '<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',
   security: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 118 0v3"/>',
   team: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0111 0"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15.5 14.4A4.5 4.5 0 0121 18.8"/>',
+  activity: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
 };
 const nav = [
   { label: 'Website', items: [['overview', 'Overview'], ['company', 'Company details'], ['certifications', 'Certifications'], ['logo', 'Logo']] },
-  { label: 'Settings', items: [['team', 'Staff accounts'], ['email', 'Email delivery'], ['marketing', 'Marketing tags'], ['security', 'Password']] },
+  { label: 'Settings', items: [['team', 'Staff accounts'], ['email', 'Email delivery'], ['marketing', 'Marketing tags'], ['security', 'Password'], ['activity', 'Activity']] },
 ];
 const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon[name]}</svg>`;
 ---
@@ -112,6 +113,10 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
         <div class="a-card span-4">
           <div class="a-card-head"><div><h2>Accounts</h2><p>Who works the website.</p></div></div>
           <dl class="a-facts" id="ovAccounts"></dl>
+        </div>
+        <div class="a-card span-12" aria-labelledby="h-site">
+          <div class="a-card-head"><div><h2 id="h-site">Site health</h2><p>What the server reports right now. Checked each time this page opens.</p></div><span class="a-status" id="ovSiteState">Checking</span></div>
+          <dl class="a-facts a-facts-row" id="ovSite"></dl>
         </div>
       </div>
     </section>
@@ -312,6 +317,32 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
         </div>
         <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save email settings</button></div>
       </form>
+      <div class="a-card a-group a-settings" aria-labelledby="h-email-test">
+        <div class="a-group-head"><h2 id="h-email-test">Test the settings</h2></div>
+        <p class="hint">Sends a short email to the enquiry address with the saved settings, and shows what the mail server answered. Save any changes first.</p>
+        <div class="a-actions"><button class="btn btn-secondary" type="button" id="emailTest">Send a test email</button></div>
+        <p class="a-test-result" id="emailTestResult" role="status" aria-live="polite" hidden></p>
+      </div>
+    </section>
+
+    <!-- ACTIVITY -->
+    <section class="a-view" data-view="activity" aria-labelledby="h-activity" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-activity">Activity</h1>
+          <p>Who signed in, failed sign-ins and lockouts, and every change to the website's settings and catalogues, newest first. Enquiry work stays in the workspaces.</p>
+        </div>
+      </div>
+      <div class="a-card t-toolbar">
+        <div class="a-seg" role="radiogroup" aria-label="Show">
+          <label><input type="radio" name="activityKind" value="" checked><span>Everything</span></label>
+          <label><input type="radio" name="activityKind" value="problem"><span>Problems</span></label>
+          <label><input type="radio" name="activityKind" value="signin"><span>Sign-ins</span></label>
+          <label><input type="radio" name="activityKind" value="change"><span>Changes</span></label>
+        </div>
+        <p class="sr-only" id="activitySummary" role="status" aria-live="polite"></p>
+      </div>
+      <div class="a-card"><ol class="a-activity" id="activityList"><li class="v-skeleton"></li></ol></div>
     </section>
 
     <!-- MARKETING -->

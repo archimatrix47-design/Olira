@@ -1,7 +1,7 @@
 // Overview for the administrator: what the website needs to run well, and the
 // accounts that work it. Enquiries, traffic and the catalogues belong to the
 // manager and the marketing teams, so this page only points at them.
-import { $, h, toast, timeAgo } from './api.js';
+import { $, h, api, toast, timeAgo, formatDate } from './api.js';
 import * as store from './store.js';
 import { statusIcon } from './widgets.js';
 import { int } from './format.js';
@@ -12,8 +12,9 @@ const view = () => $('[data-view="overview"]');
 export async function show() {
   view().setAttribute('aria-busy', 'true');
   try {
-    const [setup, prods, bags] = await Promise.all([store.setup(), store.products().catch(() => null), store.packaging().catch(() => null)]);
-    renderAttention(setup);
+    const [setup, prods, bags, site] = await Promise.all([store.setup(), store.products().catch(() => null), store.packaging().catch(() => null), api('/api/admin/health').catch(() => null)]);
+    renderAttention(setup, site);
+    renderSite(site);
     renderHealth(setup, prods, bags);
     renderAccounts(setup.team);
   } catch (e) {
@@ -25,13 +26,15 @@ export async function show() {
 
 const members = (team) => (team?.members || []).filter((m) => m.active !== false);
 
-function renderAttention(setup) {
+function renderAttention(setup, site) {
   const items = [];
   const add = (level, title, text, href, action) => items.push({ level, title, text, href, action });
   const st = setup.status;
   // null means the settings could not be read, which is not the same as "not set up"
   if (setup.email && !setup.email.smtpHost) add('high', 'Email delivery is not set up', 'Enquiries are saved, but no one is notified, buyers get no confirmation and the teams cannot send replies from their workspaces.', '#email', 'Set up');
   if (st?.undelivered30) add('high', `${st.undelivered30} ${st.undelivered30 === 1 ? 'enquiry notification' : 'enquiry notifications'} did not go out in 30 days`, 'The enquiries are safe in the workspaces. Check the mail account so the next ones arrive.', '#email', 'Check email');
+  if (site?.checks?.failing?.length) add('high', 'The server reports a problem', `${site.checks.failing.map((k) => CHECK_NAME[k] || k).join(', ')}. See Site health below, and ask the hosting company if it stays.`, null, null);
+  if (site?.email && site.email.ok === false) add('high', 'The last test email failed', `The mail server answered: ${site.email.error}`, '#email', 'Check email');
   if (st?.formFails30) add('high', `Visitors saw a sending error ${st.formFails30} ${st.formFails30 === 1 ? 'time' : 'times'} in 30 days`, 'The form offered them WhatsApp, email or a call instead. Check the email settings.', '#email', 'Check email');
   const people = members(setup.team);
   if (setup.team && !people.some((m) => m.role === 'manager')) add('medium', 'No manager account', 'Nobody oversees the enquiries of both lines or hands them out. Add a person with the Manager role.', '#team', 'Add a manager');
@@ -72,6 +75,33 @@ function renderHealth(setup, prods, bags) {
   ];
   $('#ovHealth').replaceChildren(...rows.filter(Boolean).map(([kind, title, text, href]) => h('li', {}, statusIcon(kind),
     h('div', {}, h('strong', {}, title, h('span', { class: 'sr-only' }, kind === 'ok' ? ', done' : kind === 'todo' ? ', needs doing' : ', optional')), h('span', {}, text, href && kind !== 'ok' ? ' ' : null, href && kind !== 'ok' ? h('a', { href }, kind === 'todo' ? 'Fix' : 'Set up') : null)))));
+}
+
+// the server's health checks, in words
+const CHECK_NAME = {
+  dataDirWritable: 'the data folder cannot be written to',
+  uploadsDirWritable: 'the uploads folder cannot be written to',
+  distPresent: 'the website build is missing',
+  analyticsParseable: 'the visitor statistics file is damaged',
+};
+const bytes = (n) => (n == null ? 'Unknown' : n >= 1073741824 ? `${(n / 1073741824).toFixed(1)} GB` : n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+function renderSite(site) {
+  const box = $('#ovSite'), state = $('#ovSiteState');
+  if (!site) { state.className = 'a-status'; state.textContent = 'Could not check'; box.replaceChildren(h('div', {}, h('dt', {}, 'Server'), h('dd', {}, 'Could not reach the health check just now'))); return; }
+  const bad = site.checks?.failing || [];
+  state.className = `a-status ${bad.length ? 'off' : 'on'}`;
+  state.textContent = bad.length ? 'Needs attention' : 'Working';
+  const lowDisk = site.disk && site.disk.free < 1073741824;
+  const fact = (dt, dd, small) => h('div', {}, h('dt', {}, dt), h('dd', {}, dd, small ? h('small', {}, small) : null));
+  box.replaceChildren(
+    fact('Checks', bad.length ? `${bad.length} failing` : 'All passing', bad.length ? bad.map((k) => CHECK_NAME[k] || k).join(', ') : 'Data and uploads can be saved, the build is in place'),
+    fact('Website built', site.built ? timeAgo(site.built) : 'Unknown', site.built ? formatDate(site.built) : 'The last deploy builds it'),
+    fact('Running since', timeAgo(site.startedAt), `Node.js ${site.node}`),
+    fact('Data and uploads', `${bytes(site.dataBytes)} and ${bytes(site.uploadsBytes)}`, 'Enquiries, settings, files and photos'),
+    fact('Free disk space', site.disk ? bytes(site.disk.free) : 'Unknown', lowDisk ? 'Low: ask the hosting company for more, or remove old files' : site.disk ? `of ${bytes(site.disk.total)}` : 'Not reported on this server'),
+    fact('Last test email', site.email ? (site.email.ok ? 'Delivered to the mail server' : 'Failed') : 'Not sent yet', site.email ? `${timeAgo(site.email.at)}, to ${site.email.to}` : h('a', { href: '#email' }, 'Send one from Email delivery')),
+  );
 }
 
 function renderAccounts(team) {

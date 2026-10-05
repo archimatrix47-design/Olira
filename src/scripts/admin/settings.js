@@ -74,7 +74,25 @@ export async function showEmail() {
       loadEmail();
     }, 'Email settings saved.');
   }));
+  bindOnce('emailTest', () => $('#emailTest').addEventListener('click', testEmail));
   loadEmail();
+}
+
+/* the saved settings, tried for real: the mail server's answer is shown as it is */
+async function testEmail() {
+  const btn = $('#emailTest'), out = $('#emailTestResult');
+  btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Sending';
+  out.hidden = false; out.className = 'a-test-result'; out.textContent = 'Sending a test email with the saved settings.';
+  try {
+    const r = await api('/api/admin/email-test', { method: 'POST', body: {} });
+    out.className = 'a-test-result is-ok';
+    out.textContent = `Sent to ${r.to}. Check that inbox: if it arrived, enquiries will too. If it is not there in a few minutes, look in spam.`;
+  } catch (e) {
+    out.className = 'a-test-result is-error';
+    out.textContent = e.status === 400 ? e.message : `It did not send. The mail server answered: ${e.message}`;
+  } finally {
+    btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Send a test email';
+  }
 }
 async function loadEmail() {
   const form = $('#emailForm'), state = $('#emailState');
