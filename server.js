@@ -17,6 +17,7 @@ import { registerCertificates, certificateAttachment } from './lib/certificates.
 import { registerSearchVerification } from './lib/search-verification.js';
 import { registerThumbs } from './lib/thumbs.js';
 import { registerAdminTools } from './lib/admin-tools.js';
+import { registerTargets } from './lib/targets.js';
 import { cleanAgriTerms, GENERIC_PRODUCT } from './lib/enquiry.js';
 
 // Load environment variables from .env file (if it exists)
@@ -2059,6 +2060,9 @@ app.post('/api/team/social-links', marketingTeam, (req, res) => {
   audit('social_links_saved', req, { by: req.teamUser.id, role: req.teamUser.role });
   res.json({ success: true, data });
 });
+
+// monthly targets per line, set by the manager (lib/targets.js)
+registerTargets(app, { dataDir, readJsonFile, writeJsonFile, audit, roleAuth: workspace.roleAuth });
 
 // partner logos on the home page, looked after by both marketing teams
 registerPartners(app, { dataDir, uploadsDir, readJsonFile, writeJsonFile, audit, logError, roleAuth: workspace.roleAuth });

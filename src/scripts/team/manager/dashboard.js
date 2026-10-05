@@ -11,6 +11,8 @@ import { inPeriod, lineOfLead, firstResponseHours, median, ageHours, scoreOf } f
 import { session, followupsOf, OPEN, LINE_LABEL } from '../session.js';
 import { certAlerts } from '../../admin/cert-alerts.js';
 import { getJSON } from '../../common.js';
+import { api } from '../../admin/api.js';
+import { renderTargets, targetsForm } from '../targets.js';
 
 const view = () => $('[data-view="dashboard"]');
 
@@ -24,10 +26,11 @@ async function load() {
   const days = store.getDays();
   view().setAttribute('aria-busy', 'true');
   try {
-    const [a, inbox, prods, bags, certs] = await Promise.all([store.analytics(days), store.inquiries(), store.products().catch(() => []), store.packaging().catch(() => null), getJSON('/api/certifications').catch(() => null)]);
+    const [a, inbox, prods, bags, certs, tg] = await Promise.all([store.analytics(days), store.inquiries(), store.products().catch(() => []), store.packaging().catch(() => null), getJSON('/api/certifications').catch(() => null), api('/api/team/targets').catch(() => null)]);
     const leads = Array.isArray(inbox?.inquiries) ? inbox.inquiries : [];
     freshness(view(), a, days);
     renderKpis(a, leads, days);
+    showTargets(tg?.targets || {}, leads);
     renderTeam(leads);
     renderTrend(a, leads);
     renderFacts(a, leads, days);
@@ -38,6 +41,13 @@ async function load() {
   } finally {
     view().removeAttribute('aria-busy');
   }
+}
+
+// this month against the targets the manager sets (targets.js)
+function showTargets(targets, leads) {
+  const box = $('#ovTargets');
+  const cards = (t) => renderTargets(box, { targets: t, leads, lines: ['agri', 'pack'], onEdit: () => targetsForm(box, { targets: t, onSaved: (saved) => cards(saved), onCancel: () => cards(t) }) });
+  cards(targets);
 }
 
 function dailyCounts(series, leads) {

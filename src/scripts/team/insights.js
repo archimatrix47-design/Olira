@@ -9,6 +9,7 @@ import { trendChart, tableFor, sparkline, barList, deltaChip, empty } from '../a
 import { int, decimal, delta, hours, duration, pct, shortDate, countryName, CHANNEL_NAMES, NO_DATA } from '../admin/format.js';
 import { inPeriod, firstResponseHours, median } from '../admin/leads.js';
 import { leads, session } from './session.js';
+import { renderTargets } from './targets.js';
 
 const view = () => $('[data-view="insights"]');
 let leadsCache = []; // this account's enquiries, for the won counts
@@ -24,10 +25,11 @@ async function load() {
   const days = store.getDays();
   view().setAttribute('aria-busy', 'true');
   try {
-    const [a, all] = await Promise.all([api(`/api/team/insights?days=${days}`), leads()]);
+    const [a, all, tg] = await Promise.all([api(`/api/team/insights?days=${days}`), leads(), api('/api/team/targets').catch(() => null)]);
     leadsCache = all;
     const cur = inPeriod(all, days), prev = inPeriod(all, days, days);
     renderKpis(a, cur, prev);
+    renderTargets($('#insTargets'), { targets: tg?.targets || {}, leads: all, lines: [a.line] });
     renderTrend(a);
     renderMine(all, days);
     renderProducts(a);

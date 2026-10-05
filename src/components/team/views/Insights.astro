@@ -22,6 +22,11 @@ const { lineName } = Astro.props;
 
   <div class="a-kpis a-kpis-5" id="insKpis" aria-label="Key numbers"></div>
 
+  <div class="a-card" aria-labelledby="h-ins-targets">
+    <div class="a-card-head"><div><h2 id="h-ins-targets">This month against target</h2><p>The manager sets the month's targets. On pace means as far along as the days already gone.</p></div></div>
+    <div id="insTargets"></div>
+  </div>
+
   <div class="a-grid12">
     <div class="a-card span-8">
       <div class="a-card-head"><div><h2>Views of your pages</h2><p>Each day, against the same number of days before.</p></div></div>
