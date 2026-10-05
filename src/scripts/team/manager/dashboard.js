@@ -9,6 +9,8 @@ import { kpiCard, freshness } from '../../admin/widgets.js';
 import { int, pct, decimal, duration, hours, delta, NO_DATA, shortDate, WEEKDAYS, hourLabel, CHANNEL_NAMES, languageName, pageName } from '../../admin/format.js';
 import { inPeriod, lineOfLead, firstResponseHours, median, ageHours, scoreOf } from '../../admin/leads.js';
 import { session, followupsOf, OPEN, LINE_LABEL } from '../session.js';
+import { certAlerts } from '../../admin/cert-alerts.js';
+import { getJSON } from '../../common.js';
 
 const view = () => $('[data-view="dashboard"]');
 
@@ -22,7 +24,7 @@ async function load() {
   const days = store.getDays();
   view().setAttribute('aria-busy', 'true');
   try {
-    const [a, inbox, prods, bags] = await Promise.all([store.analytics(days), store.inquiries(), store.products().catch(() => []), store.packaging().catch(() => null)]);
+    const [a, inbox, prods, bags, certs] = await Promise.all([store.analytics(days), store.inquiries(), store.products().catch(() => []), store.packaging().catch(() => null), getJSON('/api/certifications').catch(() => null)]);
     const leads = Array.isArray(inbox?.inquiries) ? inbox.inquiries : [];
     freshness(view(), a, days);
     renderKpis(a, leads, days);
@@ -30,7 +32,7 @@ async function load() {
     renderTrend(a, leads);
     renderFacts(a, leads, days);
     renderFunnels(a);
-    renderAttention(a, leads, prods, days, bags);
+    renderAttention(a, leads, prods, days, bags, certs);
   } catch (e) {
     if (e.status !== 401) toast(e.message, 'error');
   } finally {
@@ -151,7 +153,7 @@ function renderFunnels(a) {
 
 const onSite = (bags) => (bags || []).filter((p) => p.site !== false);
 
-function renderAttention(a, leads, prods, days, bags) {
+function renderAttention(a, leads, prods, days, bags, certs) {
   const items = [];
   const add = (level, title, text, href, action) => items.push({ level, title, text, href, action });
   const loose = leads.filter((l) => !l.assignee && OPEN.includes(l.status) && ageHours(l) > 4).sort((x, y) => Date.parse(x.createdAt) - Date.parse(y.createdAt));
@@ -179,6 +181,8 @@ function renderAttention(a, leads, prods, days, bags) {
       `${noPackPhoto.map((p) => p.name).join(', ')}. ${noPackPhoto.length === 1 ? 'It shows' : 'They show'} as a text tile in the catalogue. The packaging team adds photos in its workspace.`,
       '#products', 'See products');
   }
+  // certificates are the proof importers check: the manager hears about gaps first
+  for (const c of certAlerts(certs, { forManager: true })) add(c.level, c.title, c.text, null, null);
   const stopped = a.events?.bundle_below_min || 0;
   if (stopped >= 3) add('medium', `A minimum order stopped visitors ${int(stopped)} times`, 'They tried to send a packing list below the minimum order for a product. Agree with the packaging team whether the minimums still suit the business.', '#products', 'See products');
   const warned = a.events?.studio_logo_warn || 0, fixed = a.events?.studio_logo_fix || 0;

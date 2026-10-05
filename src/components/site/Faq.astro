@@ -1,0 +1,22 @@
+---
+// Questions buyers ask, answered on the page. The same questions and answers go
+// into the page's FAQPage data (src/lib/seo.ts), which search engines and AI
+// assistants read; they must match what is shown here, word for word.
+interface Props { items: { q: string; a: string }[]; id?: string; title?: string }
+const { items, id = 'faqTitle', title = 'Questions buyers ask' } = Astro.props;
+---
+{items.length > 0 && (
+  <section class="sheet-sec faq-sec" aria-labelledby={id}>
+    <div class="container faq">
+      <h2 id={id}>{title}</h2>
+      <div class="faq-list">
+        {items.map(({ q, a }) => (
+          <details class="faq-item">
+            <summary>{q}</summary>
+            <p>{a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+)}

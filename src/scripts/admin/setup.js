@@ -5,6 +5,7 @@ import { $, h, toast, timeAgo } from './api.js';
 import * as store from './store.js';
 import { statusIcon } from './widgets.js';
 import { int } from './format.js';
+import { certAlerts, certHealth } from './cert-alerts.js';
 
 const view = () => $('[data-view="overview"]');
 
@@ -38,6 +39,7 @@ function renderAttention(setup) {
     if (setup.team && !people.some((m) => m.role === role)) add('medium', `No one on the ${name} team`, `${name[0].toUpperCase()}${name.slice(1)} enquiries wait for a manager to answer them, and the ${name} catalogue has no one to keep it up to date.`, '#team', 'Add someone');
   }
   if (!setup.contacts?.phones?.length) add('medium', 'No phone number saved', 'The call and WhatsApp buttons on the website need at least one.', '#company', 'Add a number');
+  for (const c of certAlerts(setup.certs)) add(c.level, c.title, c.text, '#certifications', c.level === 'high' ? 'Renew' : 'Upload');
   if (!items.length) add('ok', 'Nothing needs attention', 'Email delivery works and every role has someone on it.', null, null);
   $('#ovAttention').replaceChildren(...items.map((i) => h('li', { class: `is-${i.level}` },
     h('div', {}, h('strong', {}, i.title), h('span', {}, i.text)),
@@ -59,7 +61,7 @@ function renderHealth(setup, prods, bags) {
       ? ['optional', 'Email delivery', 'Could not check just now. Open Email delivery to see the settings', '#email']
       : [setup.email.smtpHost ? 'ok' : 'todo', 'Email delivery', setup.email.smtpHost ? `Enquiries go to ${setup.email.recipientEmail}, with copies to the teams` : 'Not set up, so nobody is notified', '#email'],
     [setup.contacts?.phones?.length ? 'ok' : 'todo', 'Phone numbers', setup.contacts?.phones?.length ? `${setup.contacts.phones.length} phone ${setup.contacts.phones.length === 1 ? 'number' : 'numbers'} for the call and WhatsApp buttons` : 'No phone number saved', '#company'],
-    [setup.certs?.length ? 'ok' : 'todo', 'Certifications', setup.certs?.length ? `${setup.certs.length} listed on the agriculture page` : 'None listed', '#certifications'],
+    [...certHealth(setup.certs), '#certifications'],
     [setup.branding?.logo ? 'ok' : 'optional', 'Logo', setup.branding?.logo ? 'Your uploaded logo is in use' : 'The original logo is in use. Upload a sharper one any time', '#logo'],
     [setup.integrations?.analytics?.measurementId ? 'ok' : 'optional', 'Google Analytics', setup.integrations?.analytics?.measurementId ? 'Connected' : 'Optional. The manager\'s built-in traffic numbers work without it', '#marketing'],
     [list.length && withPhoto === list.length ? 'ok' : 'todo', 'Agriculture product photos', `${withPhoto} of ${list.length} products have a photo. ${team('agriculture')}`, null],

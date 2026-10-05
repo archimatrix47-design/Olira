@@ -5,7 +5,8 @@
 import SiteLayout from '../layouts/SiteLayout.astro';
 import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
-import { contact, SITE, packagingProducts, partners } from '../lib/site-data';
+import { contact, SITE, packagingProducts, partners, socialLinks } from '../lib/site-data';
+import { graph, organizationGraph, ORG_ID, SITE_ID } from '../lib/seo';
 import { cutoutOf, standHTML } from '../scripts/catalogue-panel.js';
 
 // A product that still carries its standard photo, as a cut-out at a relative height.
@@ -36,23 +37,11 @@ const PRODUCE = [
 // the packaging door's lineup, tallest to smallest, heights true to each other
 const lineup = pick([['pk_twisted', 100], ['pk_foil', 86], ['pk_pouch', 74], ['pk_burger', 50]], 100, 4);
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'Olira Agro Industry',
-  url: `${SITE}/`,
-  logo: `${SITE}/logo.png`,
-  foundingDate: '2008',
-  email: contact.email,
-  // no telephone: the numbers are kept out of the page source (see ReachIcons.astro)
-  address: { '@type': 'PostalAddress', streetAddress: 'Soreti Building, 2nd Floor, Room 214, Lemi Kura Subcity, Woreda 08', postOfficeBoxNumber: '46325', addressLocality: 'Addis Ababa', addressCountry: 'ET' },
-  location: { '@type': 'Place', name: 'Olira processing facility', address: { '@type': 'PostalAddress', addressLocality: 'Burayu', addressRegion: 'Oromia', addressCountry: 'ET' }, geo: { '@type': 'GeoCoordinates', latitude: contact.factory.lat, longitude: contact.factory.lng } },
-  contactPoint: { '@type': 'ContactPoint', contactType: 'sales', email: contact.email },
-  makesOffer: [
-    { '@type': 'Offer', url: `${SITE}/agriculture/`, itemOffered: { '@type': 'Product', name: 'Agricultural exports', description: 'Humera sesame, pulses, spices and coffee from Ethiopia.' } },
-    { '@type': 'Offer', url: `${SITE}/packaging/`, itemOffered: { '@type': 'Product', name: 'Printed packaging', description: 'Paper bags, bakery and food boxes, medical packets and aluminium foil bags, custom printed with your logo.' } },
-  ],
-};
+// who we are, as search engines and AI assistants read it (src/lib/seo.ts)
+const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
+  '@type': 'WebPage', '@id': `${SITE}/#webpage`, url: `${SITE}/`, name: 'Olira Agro Industry, agricultural exports and printed packaging',
+  isPartOf: { '@id': SITE_ID }, about: { '@id': ORG_ID }, inLanguage: 'en',
+});
 ---
 <SiteLayout
   title="Olira Agro Industry, agricultural exports and printed packaging"

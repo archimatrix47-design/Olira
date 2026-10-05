@@ -13,6 +13,7 @@ import { registerWorkspace, lineOfProduct } from './lib/workspace.js';
 import { SOCIAL_KEYS, sanitizeSocialUrl } from './lib/social.js';
 import { registerPartners } from './lib/partners.js';
 import { registerPackaging, checkBundle, mergeSeedCatalogue } from './lib/packaging.js';
+import { registerCertificates } from './lib/certificates.js';
 
 // Load environment variables from .env file (if it exists)
 dotenv.config();
@@ -38,6 +39,22 @@ const PORT = Number.isInteger(portFlag) && portFlag > 0 ? portFlag : (process.en
 // authoritative. Configure TRUST_PROXY to the hop count for your deployment
 // (default 1 = a single proxy directly in front of Node).
 app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
+
+// One address for the whole site: https://oliraagroindustry.com. "www." and plain
+// http answer with a permanent redirect, so search engines index one copy and a
+// visitor's enquiry is never sent unencrypted. Only in production, only for page
+// reads, and only when the proxy says the request arrived over http (with no
+// such header nothing is redirected, so this can never loop).
+const CANONICAL_HOST = (process.env.CANONICAL_HOST || 'oliraagroindustry.com').toLowerCase();
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== 'production' || (req.method !== 'GET' && req.method !== 'HEAD')) return next();
+  const host = String(req.headers.host || '').toLowerCase().replace(/:\d+$/, '');
+  const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
+  const wrongHost = host === `www.${CANONICAL_HOST}`;
+  const insecure = proto === 'http' && (host === CANONICAL_HOST || wrongHost);
+  if (wrongHost || insecure) return res.redirect(301, `https://${CANONICAL_HOST}${req.originalUrl}`);
+  next();
+});
 
 // ------------------------------------------------------------------
 // Persistent storage locations (cPanel / container friendly).
@@ -1107,7 +1124,6 @@ app.post('/api/integrations/ads', rateLimit, adminAuth, (req, res) => {
 // dataDir + these dirs are declared/created near the top (persistent-storage
 // block) so they respect DATA_DIR / UPLOADS_DIR overrides.
 const productsPath = path.join(dataDir, 'products.json');
-const certsPath = path.join(dataDir, 'certifications.json');
 const contactsPath = path.join(dataDir, 'contact-details.json');
 const brandingPath = path.join(dataDir, 'branding.json');
 const socialPath = path.join(dataDir, 'social-links.json');
@@ -1330,57 +1346,8 @@ app.delete('/api/products/:id', staffOnly(['agri'], AGRI_ONLY), (req, res) => {
 });
 
 // ----- CERTIFICATIONS -----
-
-app.get('/api/certifications', (req, res) => {
-  res.json(readJsonFile(certsPath, []));
-});
-
-app.post('/api/certifications', adminAuth, (req, res) => {
-  const { certifications, certification } = req.body;
-
-  if (Array.isArray(certifications)) {
-    if (!writeJsonFile(certsPath, certifications)) {
-      return res.status(500).json({ error: 'Failed to save certifications' });
-    }
-    return res.json({ success: true, count: certifications.length });
-  }
-
-  if (certification && typeof certification === 'object') {
-    if (!certification.name || !certification.description) {
-      return res.status(400).json({ error: 'Name and description required' });
-    }
-    const list = readJsonFile(certsPath, []);
-    const id = certification.id || makeSlug(certification.name);
-    const idx = list.findIndex(c => c.id === id);
-    const normalized = {
-      id,
-      name: String(certification.name).slice(0, 200),
-      description: String(certification.description).slice(0, 500),
-      image: certification.image || null
-    };
-    if (idx >= 0) list[idx] = normalized;
-    else list.push(normalized);
-
-    if (!writeJsonFile(certsPath, list)) {
-      return res.status(500).json({ error: 'Failed to save certification' });
-    }
-    return res.json({ success: true, certification: normalized });
-  }
-
-  res.status(400).json({ error: 'Body must contain either { certifications: [...] } or { certification: {...} }' });
-});
-
-app.delete('/api/certifications/:id', adminAuth, (req, res) => {
-  const list = readJsonFile(certsPath, []);
-  const next = list.filter(c => c.id !== req.params.id);
-  if (next.length === list.length) {
-    return res.status(404).json({ error: 'Certification not found' });
-  }
-  if (!writeJsonFile(certsPath, next)) {
-    return res.status(500).json({ error: 'Failed to delete' });
-  }
-  res.json({ success: true });
-});
+// With proof: the certificate file, issuer, number and validity (lib/certificates.js).
+registerCertificates(app, { dataDir, uploadsDir, readJsonFile, writeJsonFile, audit, logError, adminAuth });
 
 // ----- CONTACT DETAILS -----
 

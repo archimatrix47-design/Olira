@@ -45,8 +45,9 @@ npm-debug.log*
 tmp/
 temp/
 
-# Claude Code working files
+# Claude Code working files (the repo is public: the backlog names the business's gaps)
 CLAUDE.md
+BACKLOG.md
 .claude/
 
 # Runtime analytics data (regenerated constantly; not source)

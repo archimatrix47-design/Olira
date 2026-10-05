@@ -1,0 +1,130 @@
+---
+// One product, on its own page: what it is, the facts a buyer checks, the proof
+// (for agriculture, the certificates), and one way to ask for a quote. Each
+// product has its own address, so search engines and AI assistants can find and
+// cite it, and a buyer can share it. Built from the same data as the catalogue.
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import SiteHeader from './SiteHeader.astro';
+import SiteFooter from './SiteFooter.astro';
+import CertList from './CertList.astro';
+import { standHTML } from '../../scripts/catalogue-panel.js';
+
+export interface Fact { label: string; value: string; note?: string }
+export interface Related { name: string; href: string; image?: string | null; sub?: string; cutout?: boolean }
+interface Props {
+  line: 'agri' | 'pack';
+  name: string;
+  category: string;
+  description: string;
+  title: string;
+  metaDescription: string;
+  image?: string | null;
+  cutout?: any;                 // packaging: the transparent cut-out with its print area
+  facts: Fact[];
+  points?: string[];
+  related: Related[];
+  quoteHref: string;
+  studioHref?: string | null;
+  jsonLd: object;
+}
+const p = Astro.props;
+const agri = p.line === 'agri';
+const lineName = agri ? 'Agriculture' : 'Packaging';
+const linePath = agri ? '/agriculture/' : '/packaging/';
+const lineTitle = agri ? 'Olira Agro' : 'Olira Packaging';
+const nav = agri
+  ? [[{ href: '/agriculture/', label: 'Agriculture' }, { href: '/agriculture/#range', label: 'Range' }, { href: '/packaging/', label: 'Packaging' }, { href: p.quoteHref, label: 'Contact' }]]
+  : [[{ href: '/packaging/', label: 'Packaging' }, { href: '/packaging/#studio', label: 'Mockup studio' }, { href: '/agriculture/', label: 'Agriculture' }, { href: p.quoteHref, label: 'Contact' }]];
+---
+<SiteLayout title={p.title} description={p.metaDescription} ogImage={agri ? '/og-agriculture.jpg' : '/og-packaging.jpg'} ogImageAlt={p.name} ogType="product" jsonLd={p.jsonLd} bodyClass="pd-page">
+  <SiteHeader groups={nav} current={linePath} />
+
+  <main id="main">
+    <nav class="wrap crumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/">Home</a></li>
+        <li><a href={linePath}>{lineName}</a></li>
+        <li aria-current="page">{p.name}</li>
+      </ol>
+    </nav>
+
+    <section class="wrap pd" aria-labelledby="pdTitle">
+      <div class:list={['pd-media', { 'is-cutout': !!p.cutout, 'is-empty': !p.image }]}>
+        {p.cutout
+          ? <Fragment set:html={standHTML(p.cutout, p.name, { eager: true })} />
+          : p.image
+            ? <img src={p.image} alt={p.name} width="960" height="1200" fetchpriority="high" decoding="async" />
+            : <span class="pd-tile" aria-hidden="true">{p.name}</span>}
+      </div>
+      <div class="pd-copy">
+        <span class="label">{p.category}</span>
+        <h1 class="pd-title" id="pdTitle">{p.name}</h1>
+        {p.description && <p class="sub">{p.description}</p>}
+        <dl class="spec-list pd-facts">
+          {p.facts.slice(0, 3).map((f) => <Fragment><dt>{f.label}</dt><dd>{f.value}</dd></Fragment>)}
+        </dl>
+        <div class="acts">
+          <a class="act fill" href={p.quoteHref}>Request a quote</a>
+          {p.studioHref && <a class="act" href={p.studioHref}>Design it in the studio</a>}
+          <a class="act" href={agri ? '/agriculture/#range' : '/packaging/#catalogue'}>All products</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="band on-stage" aria-labelledby="pdSpec">
+      <div class="wrap">
+        <article class="specsheet">
+          <header class="specsheet-head">
+            <h2 id="pdSpec">Specification</h2>
+            <span>{lineTitle}, {p.name}</span>
+          </header>
+          <dl class="specsheet-rows">
+            {p.facts.map((f) => (
+              <div class="spec-row"><dt>{f.label}</dt><dd class="v">{f.value}</dd><dd class="d">{f.note || ''}</dd></div>
+            ))}
+          </dl>
+          {p.points?.length ? (
+            <div class="certs pd-points">
+              <h3>Key points</h3>
+              <ul>{p.points.map((s) => <li><b>{s}</b><span></span></li>)}</ul>
+            </div>
+          ) : null}
+          {agri && <CertList id="pdCerts" askHref={p.quoteHref} />}
+        </article>
+      </div>
+    </section>
+
+    {p.related.length > 0 && (
+      <section class="sheet-sec pd-related" aria-labelledby="pdMore">
+        <div class="container">
+          <h2 id="pdMore" class="pd-more-title">{agri ? 'More from the range' : 'More packaging'}</h2>
+          <ul class="pd-cards">
+            {p.related.map((r) => (
+              <li>
+                <a class="pd-card" href={r.href}>
+                  <span class:list={['pd-card-img', { 'is-cutout': r.cutout, 'is-empty': !r.image }]}>
+                    {r.image ? <img src={r.image} alt="" width="320" height="400" loading="lazy" decoding="async" /> : <span>{r.name}</span>}
+                  </span>
+                  <span class="pd-card-name">{r.name}</span>
+                  {r.sub && <span class="pd-card-sub">{r.sub}</span>}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )}
+
+    <section class="switch-band" aria-label={agri ? 'Olira Packaging' : 'Olira Agro'}>
+      <div class="wrap">
+        <p>{agri ? 'Looking for printed bags, boxes or foil bags instead? Olira Packaging is our separate product line.' : 'Buying sesame, pulses, spices or coffee? Olira Agro is our separate agricultural export line.'}</p>
+        <div class="acts"><a class="act" href={agri ? '/packaging/' : '/agriculture/'}>{agri ? 'Go to packaging' : 'Go to agriculture'}</a></div>
+      </div>
+    </section>
+  </main>
+
+  <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." />
+
+  <!-- certs.js refreshes the certificates; live-print.js prints the visitor's brand on a packaging cut-out. Each does nothing where its elements are absent. -->
+  <script>import '../../scripts/common.js'; import '../../scripts/certs.js'; import '../../scripts/live-print.js'; import '../../scripts/motion.js';</script>
+</SiteLayout>

@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
+import http from 'node:http';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -49,6 +50,22 @@ test('REGRESSION: the server listens when the host loads it through a wrapper', 
     // settings saved from the admin panel live in DATA_DIR, where a deploy cannot delete them
     assert.ok(fs.existsSync(path.join(tmp, 'integrations-config.json')), 'the marketing tags file is kept in DATA_DIR');
     assert.equal(fs.readFileSync(path.join(root, 'integrations-config.json'), 'utf8'), repoCopy, 'the repo copy is left alone');
+    // one address: www and plain http redirect permanently to https://oliraagroindustry.com
+    // http.request, not fetch: fetch drops a Host header it is given
+    const at = (headers) => new Promise((resolve, reject) => {
+      const r = http.request({ host: '127.0.0.1', port, path: '/packaging/?bag=pk_twisted', headers }, (res) => { res.resume(); resolve({ status: res.statusCode, headers: { get: (k) => res.headers[k.toLowerCase()] } }); });
+      r.on('error', reject); r.end();
+    });
+    const www = await at({ Host: 'www.oliraagroindustry.com' });
+    assert.equal(www.status, 301);
+    assert.equal(www.headers.get('location'), 'https://oliraagroindustry.com/packaging/?bag=pk_twisted');
+    const plain = await at({ Host: 'oliraagroindustry.com', 'X-Forwarded-Proto': 'http' });
+    assert.equal(plain.status, 301);
+    assert.equal(plain.headers.get('location'), 'https://oliraagroindustry.com/packaging/?bag=pk_twisted');
+    const secure = await at({ Host: 'oliraagroindustry.com', 'X-Forwarded-Proto': 'https' });
+    assert.notEqual(secure.status, 301, 'the canonical address is served, never redirected (no loop)');
+    const unknown = await at({ Host: 'oliraagroindustry.com' });
+    assert.notEqual(unknown.status, 301, 'without the proxy header nothing is redirected');
   } finally {
     child.kill();
     fs.rmSync(tmp, { recursive: true, force: true });

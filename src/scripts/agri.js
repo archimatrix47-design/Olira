@@ -6,6 +6,7 @@ import { mountFlow } from './flow.js';
 
 const toItem = (p) => ({ ...p, sub: p.category, cat: p.category });
 let RAW = JSON.parse($('#productsData').textContent || '[]');
+const PAGES = JSON.parse($('#productPages')?.textContent || '{}'); // products added after the build have no page yet
 
 const flow = mountFlow($('.flow-wrap[data-flow="agri"]'), {
   products: RAW.map(toItem),
@@ -14,6 +15,8 @@ const flow = mountFlow($('.flow-wrap[data-flow="agri"]'), {
     for (const [k, v] of [['Purity', p.purity], ['Min. order', p.moq]]) if (v) dl.append(h('dt', {}, k), h('dd', {}, v));
     dl.hidden = !dl.children.length;
     $('#detSpecs').replaceChildren(...(p.specs || []).map((s) => h('li', {}, s)));
+    const page = $('#detPage');
+    if (page) { page.hidden = !PAGES[p.id]; if (PAGES[p.id]) page.href = PAGES[p.id]; }
   },
   onOpen: (p) => track({ event: 'product', product: p.name }),
 });
@@ -25,6 +28,16 @@ getJSON('/api/products').then((live) => {
   flow.set(live.map(toItem));
 });
 
+// a product page's "Request a quote" lands here with ?ask=<product id>
+{
+  const ask = new URLSearchParams(location.search).get('ask');
+  const p = ask && RAW.find((x) => x.id === ask);
+  if (p) {
+    const form = $('#inquiry'); if (form) form.dataset.product = p.name;
+    prefill(`Interested in ${p.name}. Volume and shipment window: `);
+  }
+}
+
 $('#detAsk').addEventListener('click', () => {
   const p = flow.current();
   flow.close();
@@ -32,12 +45,3 @@ $('#detAsk').addEventListener('click', () => {
   prefill(`Interested in ${p.name}. Volume and shipment window: `);
 });
 
-// certifications are admin-managed too
-const certList = $('#certList');
-if (certList) {
-  getJSON('/api/certifications').then((list) => {
-    if (!Array.isArray(list)) return;
-    certList.replaceChildren(...list.map((c) => { const li = h('li'); li.append(h('b', {}, c.name), c.description || ''); return li; }));
-    $('#certs').hidden = list.length === 0;
-  });
-}

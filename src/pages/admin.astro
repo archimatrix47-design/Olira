@@ -160,29 +160,55 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
       </form>
     </section>
 
-    <!-- CERTIFICATIONS -->
+    <!-- CERTIFICATIONS: each with the certificate itself, so buyers can check it -->
     <section class="a-view" data-view="certifications" aria-labelledby="h-certs" hidden>
       <div class="a-head">
         <div>
           <h1 id="h-certs">Certifications</h1>
-          <p>Listed under the key facts on the agriculture page.</p>
+          <p>Shown on the agriculture page and the product pages with the certificate itself, so buyers can open and check it. Without its document a certification shows as "copy on request"; once its "valid until" date passes it comes off the website.</p>
         </div>
+        <button class="btn btn-primary" type="button" id="certNew">Add certification</button>
       </div>
-      <div class="a-two" style="align-items:start">
+      <p class="a-note" id="certSummary" role="status" aria-live="polite"></p>
+      <div class="a-two a-certs" style="align-items:start">
         <div class="a-card">
-          <h2>Current certifications</h2>
-          <ul class="a-rows" id="certList"></ul>
+          <h2>Certifications</h2>
+          <ul class="a-rows a-team-rows" id="certList"></ul>
         </div>
         <div class="a-card">
-          <h2>Add a certification</h2>
-          <form class="a-form" id="certForm" novalidate>
-            <div class="a-field"><label for="certName">Name</label><input class="input" id="certName" name="name" required maxlength="200" placeholder="ISO 22000:2018"></div>
-            <div class="a-field"><label for="certDesc">Description</label><input class="input" id="certDesc" name="description" required maxlength="500" placeholder="Food Safety Management System"></div>
-            <div class="a-field">
-              <label for="certImage">Badge image (optional)</label>
-              <input class="input" id="certImage" type="file" accept="image/jpeg,image/png,image/webp" style="padding-top:9px">
+          <h2 id="certTitle">Add a certification</h2>
+          <form class="a-form" id="certForm" novalidate style="margin-top:18px">
+            <input type="hidden" name="id">
+            <input type="hidden" name="file">
+            <div class="a-field"><label for="certName">Name</label><input class="input" id="certName" name="name" required maxlength="120" placeholder="ISO 22000:2018"></div>
+            <div class="a-field"><label for="certDesc">What it covers</label><input class="input" id="certDesc" name="description" maxlength="300" placeholder="Food safety management system"></div>
+            <div class="a-two">
+              <div class="a-field"><label for="certIssuer">Issued by</label><input class="input" id="certIssuer" name="issuer" maxlength="120" placeholder="The certification body"></div>
+              <div class="a-field"><label for="certNumber">Certificate number</label><input class="input" id="certNumber" name="number" maxlength="80"></div>
             </div>
-            <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Add certification</button></div>
+            <div class="a-two">
+              <div class="a-field"><label for="certFrom">Valid from</label><input class="input" id="certFrom" name="validFrom" type="date"></div>
+              <div class="a-field"><label for="certUntil">Valid until</label><input class="input" id="certUntil" name="validUntil" type="date" aria-describedby="certUntilHint"><p class="hint" id="certUntilHint">The manager and you are warned 60 days before; on the day it passes the certification comes off the website.</p></div>
+            </div>
+            <div class="a-field"><label for="certScope">Scope (optional)</label><textarea class="input" id="certScope" name="scope" maxlength="300" style="min-height:72px" placeholder="For example: cleaning, sorting and packing of sesame and pulses, Burayu facility"></textarea></div>
+            <div class="a-field"><label for="certVerify">Register link (optional)</label><input class="input" id="certVerify" name="verifyUrl" type="url" maxlength="300" placeholder="https://" aria-describedby="certVerifyHint"><p class="hint" id="certVerifyHint">The issuer's public page where anyone can check this certificate, if it has one. Shown as "Check with the issuer".</p></div>
+            <div class="a-field">
+              <span class="a-label" id="certFileLabel">The certificate</span>
+              <label class="a-drop" id="certDrop">
+                <input type="file" id="certFile" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp" aria-labelledby="certFileLabel certDropTitle" aria-describedby="certFileHint">
+                <strong id="certDropTitle">Upload the certificate</strong>
+                <span id="certFileHint">A PDF, or a scan as JPG, PNG or WebP, up to 10 MB. Buyers can open it from the website.</span>
+              </label>
+              <p class="a-note" id="certFileNow" hidden></p>
+            </div>
+            <div class="a-danger-zone" id="certDangerZone" hidden>
+              <button class="btn btn-danger-quiet btn-sm" type="button" id="certDelete">Delete certification</button>
+            </div>
+            <div class="a-actions a-savebar">
+              <span class="a-dirty a-grow">Unsaved changes</span>
+              <button class="btn btn-ghost" type="button" id="certCancel" hidden>Cancel</button>
+              <button class="btn btn-primary" type="submit" id="certSave">Add certification</button>
+            </div>
           </form>
         </div>
       </div>

@@ -29,7 +29,12 @@ export interface Product {
   id: string; name: string; category?: string; description?: string;
   purity?: string; moq?: string; specs?: string[]; image?: string | null;
 }
-export interface Certification { id: string; name: string; description?: string; image?: string | null }
+export interface Certification {
+  id: string; name: string; description?: string; image?: string | null;
+  // the proof (lib/certificates.js): the certificate file and what is printed on it
+  issuer?: string; number?: string; scope?: string; validFrom?: string | null; validUntil?: string | null;
+  verifyUrl?: string | null; file?: string | null; fileType?: 'pdf' | 'image' | null;
+}
 interface Place { label?: string; name?: string; city?: string; lat?: number; lng?: number }
 export interface Contacts {
   phones: string[]; emails: string[];
@@ -96,7 +101,9 @@ export const contact = {
   factory: {
     lat: rawContacts.factory?.lat ?? 9.0366,
     lng: rawContacts.factory?.lng ?? 38.6364,
+    city: rawContacts.factory?.city || '15 km west of Addis Ababa',
   },
+  office: rawContacts.office?.lat != null && rawContacts.office?.lng != null ? { lat: rawContacts.office.lat, lng: rawContacts.office.lng } : null,
 };
 
 // The social pages that are set, in the platform order of lib/social.js. WhatsApp

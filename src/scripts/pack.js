@@ -37,6 +37,11 @@ pickFromUrl();
     document.dispatchEvent(new CustomEvent('catalogue:show', { detail: { id: product.id } }));
   }
 }
+// a product page's "Request a quote" lands here with ?ask=<product id>: the request names it
+{
+  const asked = products.find((p) => p.id === params.get('ask'));
+  if (asked) prefill(`Interested in ${asked.name}. Size and quantity: `);
+}
 const tpl = () => templates.find((t) => t.id === state.template) || templates[0];
 
 /* ---------------- drawing ---------------- */

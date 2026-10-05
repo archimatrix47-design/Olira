@@ -1,0 +1,56 @@
+---
+// An agricultural product on its own page (/agriculture/<product>/).
+import ProductPage from '../../components/site/ProductPage.astro';
+import { products, SITE } from '../../lib/site-data';
+import { agriSlug, agriUrl, graph, organizationGraph, breadcrumbs, ORG_ID, AGRO_ID, abs } from '../../lib/seo';
+
+export function getStaticPaths() {
+  return products.map((p) => ({ params: { slug: agriSlug(p) }, props: { id: p.id } }));
+}
+const p = products.find((x) => x.id === Astro.props.id)!;
+const url = agriUrl(p);
+
+const facts = [
+  { label: 'Category', value: p.category || 'Agricultural product' },
+  ...(p.purity ? [{ label: 'Purity', value: p.purity }] : []),
+  ...(p.moq ? [{ label: 'Minimum order', value: p.moq, note: 'Per order. Tell us your volume and we confirm availability.' }] : []),
+  { label: 'Origin', value: 'Ethiopia' },
+  { label: 'Processing', value: 'Burayu', note: 'Cleaned, sorted and tested at our facility, 15 km west of Addis Ababa' },
+];
+const related = products.filter((x) => x.id !== p.id).sort((a, b) => Number(b.category === p.category) - Number(a.category === p.category)).slice(0, 4)
+  .map((x) => ({ name: x.name, href: agriUrl(x), image: x.image, sub: x.category }));
+
+const product = {
+  '@type': 'Product',
+  '@id': `${abs(url)}#product`,
+  name: p.name,
+  description: p.description,
+  url: abs(url),
+  sku: p.id,
+  category: p.category,
+  ...(p.image ? { image: abs(p.image) } : {}),
+  brand: { '@id': AGRO_ID },
+  manufacturer: { '@id': ORG_ID },
+  countryOfOrigin: { '@type': 'Country', name: 'Ethiopia' },
+  additionalProperty: [
+    ...(p.purity ? [{ '@type': 'PropertyValue', name: 'Purity', value: p.purity }] : []),
+    ...(p.moq ? [{ '@type': 'PropertyValue', name: 'Minimum order quantity', value: p.moq }] : []),
+    ...(p.specs || []).map((s) => ({ '@type': 'PropertyValue', name: 'Key point', value: s })),
+  ],
+};
+const jsonLd = graph(organizationGraph(), product, breadcrumbs([['Home', '/'], ['Agriculture', '/agriculture/'], [p.name, url]]));
+---
+<ProductPage
+  line="agri"
+  name={p.name}
+  category={p.category || 'Agriculture'}
+  description={p.description || ''}
+  title={`${p.name}, ${p.category ? `${p.category} from Ethiopia` : 'Ethiopian export'} | Olira Agro`}
+  metaDescription={`${p.name} from Ethiopia${p.purity ? `, ${p.purity} purity` : ''}${p.moq ? `, minimum order ${p.moq}` : ''}. ${p.description || ''}`.slice(0, 300)}
+  image={p.image}
+  facts={facts}
+  points={p.specs}
+  related={related}
+  quoteHref={`/agriculture/?ask=${encodeURIComponent(p.id)}#contact`}
+  jsonLd={jsonLd}
+/>
