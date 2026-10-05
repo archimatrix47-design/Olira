@@ -4,6 +4,8 @@ import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 import ContactLines from '../components/site/ContactLines.astro';
 import InquiryForm from '../components/site/InquiryForm.astro';
+import QuoteBar from '../components/site/QuoteBar.astro';
+import { thumbUrl, thumbSet } from '../../lib/thumb-url.js';
 import { contact, SITE, packagingProducts, FAMILIES, FLEXO_MAX_COLOURS } from '../lib/site-data';
 import { sizesOf } from '../scripts/mockup/engine.js';
 import { inStudio, flowItem } from '../scripts/catalogue-panel.js';
@@ -140,7 +142,7 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
                   <label class="bagopt">
                     <input type="radio" name="template" value={p.id} data-handle={p.handle} checked={p.id === firstBag?.id}>
                     <span class="bagopt-card">
-                      <img class="bagopt-photo" src={p.image} alt="" width="56" height="56" loading="lazy" decoding="async">
+                      <img class="bagopt-photo" src={thumbUrl(p.image, 120)} srcset={thumbSet(p.image, 56)} alt="" width="56" height="56" loading="lazy" decoding="async">
                       <span class="bagopt-text">
                         <span class="bagopt-name">{p.name}</span>
                         {p.description && <span class="bagopt-desc">{p.description}</span>}
@@ -338,11 +340,13 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
     </div>
     <div class="pl-foot" id="plFoot" hidden>
       <div class="pl-total"><span>In this list</span><b id="plTotal">0 products</b></div>
+      <div class="pl-total pl-estimate" id="plEstimate" hidden><span>Estimate</span><b id="plEstimateSum"></b><small id="plEstimateNote">Prices are confirmed in your quote.</small></div>
       <button class="tab-btn" type="button" id="plSend">Request a quote for this list</button>
     </div>
     <p class="sr-only" id="plStatus" role="status" aria-live="polite"></p>
   </dialog>
 
+  <QuoteBar href="#quote" after=".title-block" until="#quote" />
   <SiteFooter note="Olira Packaging, a product line of Olira Agro Industry, Addis Ababa." />
 
   <script>import '../scripts/motion.js'; import '../scripts/catalogue.js'; import '../scripts/packing-list.js'; import '../scripts/pack.js'; import '../scripts/stations.js'; import '../scripts/live-print.js';</script>

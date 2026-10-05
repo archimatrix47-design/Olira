@@ -15,6 +15,7 @@ import { registerPartners } from './lib/partners.js';
 import { registerPackaging, checkBundle, mergeSeedCatalogue } from './lib/packaging.js';
 import { registerCertificates } from './lib/certificates.js';
 import { registerSearchVerification } from './lib/search-verification.js';
+import { registerThumbs } from './lib/thumbs.js';
 import { cleanAgriTerms, GENERIC_PRODUCT } from './lib/enquiry.js';
 
 // Load environment variables from .env file (if it exists)
@@ -2022,6 +2023,9 @@ const packaging = registerPackaging(app, {
   dataDir, uploadsDir, publicDirs: [path.join(__dirname, 'dist'), path.join(__dirname, 'public')],
   readJsonFile, writeJsonFile, audit, logError, roleAuth: workspace.roleAuth,
 });
+
+// small copies of catalogue photos (lib/thumbs.js)
+registerThumbs(app, { dataDir, uploadsDir, publicDirs: [path.join(__dirname, 'dist'), path.join(__dirname, 'public')], logError });
 
 // Health check
 // F5: a health check that actually checks health. Verifies the things that have

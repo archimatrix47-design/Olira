@@ -1,10 +1,13 @@
 // Manager's pipeline: every open enquiry as a card in its stage, with the value
 // of the quotes in each stage, and what was won or lost in the last 30 days.
-// A card opens the enquiry in Enquiries, where it is worked.
-import { $, $$, h, toast, formatDate, timeAgo } from '../../admin/api.js';
-import { scoreOf, BAND_LABEL } from '../../admin/leads.js';
+// A card opens the enquiry in Enquiries, where it is worked; its stage can also
+// be changed on the card, with the same confirm step as the enquiry screen. The
+// board scrolls sideways on narrow screens, with a fade on the side that has more.
+import { $, $$, h, api, toast, formatDate, timeAgo } from '../../admin/api.js';
+import { scoreOf, BAND_LABEL, STAGES, stageLabel } from '../../admin/leads.js';
 import { int } from '../../admin/format.js';
-import { leads, followupsOf, lineOf, LINE_LABEL, teamOf } from '../session.js';
+import { confirmSelect } from '../../admin/stage-control.js';
+import { leads, putLead, followupsOf, lineOf, LINE_LABEL, teamOf } from '../session.js';
 
 const COLUMNS = [
   { id: 'new', label: 'New', note: 'Arrived, nobody on it yet' },
@@ -26,6 +29,9 @@ export async function show({ params } = {}) {
     $('#pipeOwner').addEventListener('change', () => { render(); writeUrl(); });
     const group = (line) => { const p = teamOf(line); return p.length ? h('optgroup', { label: LINE_LABEL[line] }, p.map((m) => h('option', { value: m.id }, m.name))) : null; };
     $('#pipeOwner').replaceChildren(h('option', { value: '' }, 'Anyone'), h('option', { value: 'none' }, 'Nobody yet'), ...[group('agri'), group('pack')].filter(Boolean));
+    const board = $('#pipeBoard');
+    board.addEventListener('scroll', edges, { passive: true });
+    new ResizeObserver(edges).observe(board);
   }
   const ln = params?.get('line'), owner = params?.get('owner');
   $(`input[name="pipeLine"][value="${ln === 'agri' || ln === 'pack' ? ln : 'all'}"]`).checked = true;
@@ -90,6 +96,36 @@ function render() {
         : h('p', { class: 't-col-empty' }, 'None'),
       more > 0 ? h('a', { class: 'btn btn-ghost btn-sm', href: `#inbox?filter=${c.closed ? 'closed' : 'open'}${ln !== 'all' ? `&line=${ln}` : ''}` }, `${more} more in Enquiries`) : null);
   }));
+  edges();
+}
+
+/** Mark the sides of the board that have more columns beyond them (a fade in team.css). */
+function edges() {
+  const b = $('#pipeBoard');
+  if (!b) return;
+  const max = b.scrollWidth - b.clientWidth;
+  b.toggleAttribute('data-more-left', b.scrollLeft > 4);
+  b.toggleAttribute('data-more-right', max - b.scrollLeft > 4);
+}
+
+/** Change a card's stage; the server writes it into the enquiry's history. */
+async function move(l, status) {
+  try {
+    const r = await api(`/api/team/inquiries/${encodeURIComponent(l.id)}`, { method: 'POST', body: { status } });
+    putLead(r.inquiry);
+    const i = all.findIndex((x) => x.id === l.id);
+    if (i >= 0) all[i] = r.inquiry;
+    render();
+    const msg = `${l.name || 'The enquiry'} moved to ${stageLabel(status)}.`;
+    toast(msg); // the toast stack is a live region: screen readers hear it once
+    // keep the keyboard where the card went (closed stages may hide it from the board)
+    const card = $(`#pipeBoard [data-lead="${CSS.escape(l.id)}"] .t-card`);
+    const target = card || $(`#pipe-${status}`);
+    if (target) { if (!card) target.tabIndex = -1; target.focus(); }
+  } catch (e) {
+    toast(e.message, 'error');
+    render();
+  }
 }
 
 function card(l, late) {
@@ -98,13 +134,15 @@ function card(l, late) {
   const spoken = [who, l.company, LINE_LABEL[lineOf(l)], l.assignee ? `held by ${l.assignee.name}` : 'not handed out',
     l.quote ? `quoted ${l.quote.currency} ${Number(l.quote.total).toLocaleString('en-US')}` : null, late ? 'follow-up overdue' : null,
     `arrived ${timeAgo(l.createdAt)}`].filter(Boolean).join(', ');
-  return h('li', {}, h('a', { class: `t-card${late ? ' is-late' : ''}`, href: `#inbox?lead=${encodeURIComponent(l.id)}`, 'aria-label': spoken },
+  const stage = confirmSelect({ options: STAGES.map((s) => [s.id, s.label]), value: l.status, label: `Stage for ${who}`, onConfirm: (v) => move(l, v) });
+  return h('li', { class: 't-card-wrap', 'data-lead': l.id }, h('a', { class: `t-card${late ? ' is-late' : ''}`, href: `#inbox?lead=${encodeURIComponent(l.id)}`, 'aria-label': spoken },
     h('span', { class: 't-card-top' }, h('strong', {}, who), h('time', { datetime: l.createdAt, title: formatDate(l.createdAt) }, age(l))),
     l.company ? h('span', { class: 't-card-co' }, l.company) : null,
     h('span', { class: 't-card-meta' },
       h('span', { class: `a-tag ${lineOf(l)}` }, LINE_LABEL[lineOf(l)]),
       h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, String(sc.score)),
       l.quote ? h('span', { class: 't-card-money' }, `${l.quote.currency} ${Math.round(l.quote.total).toLocaleString('en-US')}`) : null),
-    h('span', { class: 't-card-owner' }, l.assignee ? l.assignee.name : 'Not handed out', late ? h('em', {}, 'Overdue') : null)));
+    h('span', { class: 't-card-owner' }, l.assignee ? l.assignee.name : 'Not handed out', late ? h('em', {}, 'Overdue') : null)),
+  h('div', { class: 't-card-stage' }, stage.select, stage.button));
 }
 

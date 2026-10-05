@@ -6,6 +6,8 @@ import * as store from '../../admin/store.js';
 import { sparkline, deltaChip, empty } from '../../admin/charts.js';
 import { int, decimal, delta, NO_DATA } from '../../admin/format.js';
 import { inPeriod } from '../../admin/leads.js';
+import { agriCompleteness, packCompleteness } from '../../admin/completeness.js';
+import { priceFrom, etb } from '../../catalogue-panel.js';
 
 const view = () => $('[data-view="products"]');
 
@@ -26,18 +28,8 @@ async function load() {
   finally { view().removeAttribute('aria-busy'); }
 }
 
-// Content completeness, out of 100: what a buyer needs to judge the product.
-function contentScore(p) {
-  const checks = [
-    [30, !!p.image, 'photo'],
-    [20, String(p.description || '').length >= 120, 'a fuller description (120 characters or more)'],
-    [10, !!p.purity, 'purity'],
-    [10, !!p.moq, 'minimum order'],
-    [20, (p.specs || []).length >= 3, 'at least 3 key points'],
-    [10, /^(sesame|pulses|spices|coffee|specialty)$/i.test(p.category || ''), 'a standard category'],
-  ];
-  return { score: checks.reduce((n, [pts, ok]) => n + (ok ? pts : 0), 0), missing: checks.filter(([, ok]) => !ok).map(([, , label]) => label) };
-}
+// Content completeness, out of 100: the same checklist the teams see on their lists.
+const contentScore = agriCompleteness;
 const meter = (score, missing) => {
   const bar = h('i'); const fill = h('b'); fill.style.width = `${score}%`; bar.append(fill);
   return h('span', { class: 'v-meter', title: missing.length ? `Add ${missing.join(', ')}` : 'Complete' }, bar, `${score}`,
@@ -92,16 +84,25 @@ function renderPack(bags, leads) {
   const yes = (ok) => (ok ? 'Yes' : h('span', { class: 'flag' }, 'Missing'));
   const table = h('table', { class: 'a-table a-perf' },
     h('caption', { class: 'sr-only' }, 'Packaging product demand and readiness'),
-    h('thead', {}, h('tr', {}, ['Product', 'In packing lists', 'Units asked for', 'Studio designs', 'Photo', 'In the studio', 'Minimum order'].map((t, i) => h('th', { scope: 'col', class: i && i < 4 ? 'num' : '' }, t)))),
-    h('tbody', {}, rows.map(({ p, asked: n, qty: q, designed: d }) => h('tr', {},
-      h('th', { scope: 'row' }, p.name),
-      h('td', { class: 'num' }, int(n)),
-      h('td', { class: 'num' }, int(q)),
-      h('td', { class: 'num' }, int(d)),
-      h('td', {}, yes(!!p.image)),
-      h('td', {}, inStudio(p) ? 'Yes' : h('span', { class: 'flag info' }, p.image ? 'Needs print corners' : 'Needs a photo')),
-      h('td', {}, p.minOrder ? `${int(p.minOrder)} units` : (p.sizes || []).some((z) => z.minOrder) ? 'Per size' : h('span', { class: 'a-note' }, 'Agreed per quote'))))));
+    h('thead', {}, h('tr', {}, ['Product', 'In packing lists', 'Units asked for', 'Studio designs', 'Photo', 'In the studio', 'Minimum order', 'Price per 1,000', 'Ready in', 'Content'].map((t, i) => h('th', { scope: 'col', class: i && i < 4 ? 'num' : '' }, t)))),
+    h('tbody', {}, rows.map(({ p, asked: n, qty: q, designed: d }) => {
+      const c = packCompleteness(p), from = priceFrom(p);
+      return h('tr', {},
+        h('th', { scope: 'row' }, p.name),
+        h('td', { class: 'num' }, int(n)),
+        h('td', { class: 'num' }, int(q)),
+        h('td', { class: 'num' }, int(d)),
+        h('td', {}, yes(!!p.image)),
+        h('td', {}, inStudio(p) ? 'Yes' : h('span', { class: 'flag info' }, p.image ? 'Needs print corners' : 'Needs a photo')),
+        h('td', {}, p.minOrder ? `${int(p.minOrder)} units` : (p.sizes || []).some((z) => z.minOrder) ? 'Per size' : h('span', { class: 'a-note' }, 'Agreed per quote')),
+        h('td', {}, from ? `${from.varies || from.partial ? 'From ' : ''}${etb(from.price)}` : h('span', { class: 'flag' }, 'No price')),
+        h('td', {}, p.leadTimeDays ? `${p.leadTimeDays} working days` : h('span', { class: 'a-note' }, 'Per quote')),
+        h('td', {}, meter(c.score, c.missing)));
+    })));
   const gaps = rows.filter((r) => !r.p.image).map((r) => r.p.name);
+  const unpriced = rows.filter((r) => !priceFrom(r.p)).map((r) => r.p.name);
+  const list = (names) => `${names.slice(0, 4).join(', ')}${names.length > 4 ? ` and ${names.length - 4} more` : ''}`;
+  const asks = [gaps.length ? `photos of ${list(gaps)}` : null, unpriced.length ? `prices for ${list(unpriced)}` : null].filter(Boolean);
   box.replaceChildren(h('div', { class: 'a-scroll' }, table),
-    h('p', { class: 'v-note' }, gaps.length ? `To ask the packaging team for: photos of ${gaps.slice(0, 4).join(', ')}${gaps.length > 4 ? ` and ${gaps.length - 4} more` : ''}.` : 'Every packaging product on the website has a photo.'));
+    h('p', { class: 'v-note' }, asks.length ? `To ask the packaging team for: ${asks.join('; ')}.` : 'Every packaging product on the website has a photo and a price.'));
 }

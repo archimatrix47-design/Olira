@@ -3,7 +3,8 @@
 // the mono voice, the theme switch, and the live packing list. The packaging page
 // passes its own button (it opens the drawer in place); every other page gets a
 // link that opens the list on the packaging page, with the count read from this
-// browser.
+// browser. On a phone the links fold into a Menu button (the script below); with
+// no JavaScript they stay a row that scrolls sideways.
 import ThemeButton from './ThemeButton.astro';
 interface Link { href: string; label: string }
 interface Props { groups: Link[][]; current?: string }
@@ -13,7 +14,7 @@ const own = Astro.slots.has('default');
 <header class="sheet-head">
   <div class="container sheet-head-grid">
     <a class="brand" href="/"><img src="/logo.png" alt="Olira Agro Industry, home" width="80" height="38" data-brand-logo></a>
-    <div class="head-nav">
+    <div class="head-nav" id="headNav">
       {groups.map((g, i) => (
         <nav class="head-links" aria-label={i === 0 ? 'Primary' : 'On this page'}>
           {g.map((l) => <a href={l.href} aria-current={current && l.href === current ? 'page' : undefined}>{l.label}</a>)}
@@ -25,9 +26,34 @@ const own = Astro.slots.has('default');
       {own ? <slot /> : (
         <a class="tab-btn" href="/packaging/?list=open#catalogue-title" data-pl-link><span class="tab-word">Packing list</span> <span class="count" data-zero>0</span></a>
       )}
+      <button class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="headNav" aria-label="Menu" data-menu-btn hidden>
+        <svg class="menu-open-ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="menu-close-ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
   </div>
 </header>
+<script is:inline>
+  // the phone menu: a disclosure button over the header's links
+  (function () {
+    var head = document.querySelector('.sheet-head'), btn = head && head.querySelector('[data-menu-btn]'), nav = document.getElementById('headNav');
+    if (!btn || !nav) return;
+    head.classList.add('has-menu'); btn.hidden = false;
+    var phone = matchMedia('(max-width: 760px)');
+    var isOpen = function () { return head.classList.contains('menu-open'); };
+    function set(open, focus) {
+      head.classList.toggle('menu-open', open);
+      btn.setAttribute('aria-expanded', String(open));
+      if (open && focus) { var a = nav.querySelector('a'); if (a) a.focus(); }
+    }
+    btn.addEventListener('click', function (e) { set(!isOpen(), e.detail === 0); });
+    nav.addEventListener('click', function (e) { if (e.target.closest('a')) set(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isOpen()) { set(false); btn.focus(); } });
+    document.addEventListener('click', function (e) { if (isOpen() && !head.contains(e.target)) set(false); });
+    head.addEventListener('focusout', function (e) { if (isOpen() && e.relatedTarget && !head.contains(e.relatedTarget)) set(false); });
+    phone.addEventListener('change', function () { if (!phone.matches) set(false); });
+  })();
+</script>
 {!own && (
   <script is:inline>
     (function () {

@@ -48,10 +48,11 @@ export const products = read<Product[]>('products.json', []);
 // normalise() is the server's own: older records read as bags with the three studio sizes.
 import { normalise, FAMILIES } from '../../lib/packaging.js';
 export { FAMILIES };
-export interface PackagingSize { id: string; label: string; w: number | null; d: number | null; h: number | null; minOrder: number | null }
+export interface PackagingSize { id: string; label: string; w: number | null; d: number | null; h: number | null; minOrder: number | null; pricePer1000?: number | null }
 export interface PackagingProduct {
   id: string; name: string; handle?: string; family?: string; description?: string; moq?: string; specs?: string[];
   sizes?: PackagingSize[]; minOrder?: number | null; printColours?: number | null;
+  pricePer1000?: number | null; leadTimeDays?: number | null; // ETB per 1,000 units; working days
   image?: string | null; imageDark?: string | null; width?: number | null; height?: number | null;
   quad?: number[][] | null; safeTop?: number; site?: boolean; team?: boolean;
 }
@@ -61,9 +62,10 @@ export const FLEXO_MAX_COLOURS = 4;
 export const packagingProducts = read<PackagingProduct[]>('packaging-products.json', [])
   .filter((p) => p && p.id && p.site !== false && p.name)
   .map((raw) => normalise(raw) as PackagingProduct)
-  .map(({ id, name, handle, family, description, moq, specs, sizes, minOrder, printColours, image, imageDark, width, height, quad, safeTop }) => ({
+  .map(({ id, name, handle, family, description, moq, specs, sizes, minOrder, printColours, pricePer1000, leadTimeDays, image, imageDark, width, height, quad, safeTop }) => ({
     id, name, handle: handle || '', family: family || 'bags', description: description || '', moq: moq || '', specs: specs || [],
     sizes: sizes || [], minOrder: minOrder ?? null, printColours: printColours ?? null,
+    pricePer1000: pricePer1000 ?? null, leadTimeDays: leadTimeDays ?? null,
     image: image || null, imageDark: image ? imageDark || null : null, width, height,
     quad: image && Array.isArray(quad) && quad.length === 4 ? quad : null, safeTop: safeTop ?? 0.1,
   }));

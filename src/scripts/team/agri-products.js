@@ -5,6 +5,8 @@
 import { $, h, api, toast, confirmDialog, busy, uploadImage } from '../admin/api.js';
 import { scrollBehavior } from '../admin/motion.js';
 import { watch, clean, touch, mayLeave } from '../admin/tools.js';
+import { agriCompleteness, completeLine } from '../admin/completeness.js';
+import { thumbUrl } from '../../../lib/thumb-url.js';
 
 let items = [];
 let editingId = null;
@@ -31,6 +33,8 @@ const iconBtn = (label, path, onclick, disabled) => h('button', { class: 'btn bt
 
 function renderList(focusId, focusWhich) {
   const list = $('#productList');
+  const done = $('#productComplete');
+  done.hidden = !items.length; done.textContent = completeLine(items, agriCompleteness);
   if (!items.length) {
     list.replaceChildren(h('li', { class: 'a-empty' }, h('strong', {}, 'No products yet'), 'Add the first product with Add product.'));
     return;
@@ -38,10 +42,11 @@ function renderList(focusId, focusWhich) {
   list.replaceChildren(...items.map((p, i) => h('li', { class: `a-prow${p.id === editingId ? ' is-editing' : ''}`, 'data-id': p.id },
     h('button', { class: 'a-prow-open', type: 'button', 'aria-label': `Edit ${p.name}`, 'aria-current': p.id === editingId ? 'true' : null, onclick: () => edit(p) },
       h('span', { class: 'pos', 'aria-hidden': 'true' }, String(i + 1)),
-      p.image ? h('img', { src: p.image, alt: '', width: '52', height: '52', loading: 'lazy' }) : h('span', { class: 'ph' }, 'No photo'),
+      p.image ? h('img', { src: thumbUrl(p.image, 120), alt: '', width: '52', height: '52', loading: 'lazy' }) : h('span', { class: 'ph' }, 'No photo'),
       h('span', { class: 'a-prow-text' },
         h('h3', {}, p.name),
-        h('p', {}, [p.category, p.purity && `Purity ${p.purity}`, p.moq && `Min. ${p.moq}`].filter(Boolean).join(', ')))),
+        h('p', {}, [p.category, p.purity && `Purity ${p.purity}`, p.moq && `Min. ${p.moq}`].filter(Boolean).join(', ')),
+        (() => { const c = agriCompleteness(p); return h('p', { class: `a-missing${c.complete ? ' is-done' : ''}` }, c.complete ? 'Complete' : `Missing: ${c.missing.join(', ')}`); })())),
     h('div', { class: 'a-prow-actions' },
       iconBtn(`Move ${p.name} up`, 'M12 19V5M6 11l6-6 6 6', () => move(i, -1), i === 0),
       iconBtn(`Move ${p.name} down`, 'M12 5v14M6 13l6 6 6-6', () => move(i, 1), i === items.length - 1)))));

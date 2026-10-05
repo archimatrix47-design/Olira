@@ -48,6 +48,10 @@
 .a-alerts strong { font-weight: 600; display: block; }
 .a-alerts span { font-size: .875rem; color: var(--ink-2); }
 .a-alerts .btn { white-space: nowrap; }
+/* "Show all": a plain row under the five most urgent */
+.a-alerts li.a-attn-more { display: flex; justify-content: flex-start; padding: 0; background: none; }
+.a-alerts li.a-attn-more::before { content: none; }
+.a-alerts li[hidden] { display: none; }
 @media (max-width: 620px) {
   .a-alerts li { grid-template-columns: 10px minmax(0, 1fr); }
   .a-alerts li .btn { grid-column: 2; justify-self: start; }

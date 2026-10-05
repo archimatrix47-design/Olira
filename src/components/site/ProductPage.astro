@@ -7,9 +7,11 @@ import SiteLayout from '../../layouts/SiteLayout.astro';
 import SiteHeader from './SiteHeader.astro';
 import SiteFooter from './SiteFooter.astro';
 import CertList from './CertList.astro';
+import QuoteBar from './QuoteBar.astro';
+import { thumbUrl } from '../../../lib/thumb-url.js';
 import { standHTML } from '../../scripts/catalogue-panel.js';
 
-export interface Fact { label: string; value: string; note?: string }
+export interface Fact { label: string; value: string; note?: string; key?: string } // key: refreshed from the live catalogue (pd-live.js)
 export interface Related { name: string; href: string; image?: string | null; sub?: string; cutout?: boolean }
 interface Props {
   line: 'agri' | 'pack';
@@ -26,6 +28,8 @@ interface Props {
   quoteHref: string;
   studioHref?: string | null;
   jsonLd: object;
+  productId?: string;           // packaging: the catalogue id, for the live facts
+  flexoMax?: number;
 }
 const p = Astro.props;
 const agri = p.line === 'agri';
@@ -48,7 +52,7 @@ const nav = agri
       </ol>
     </nav>
 
-    <section class="wrap pd" aria-labelledby="pdTitle">
+    <section class="wrap pd" aria-labelledby="pdTitle" data-live-product={!agri && p.productId ? p.productId : null} data-flexo-max={p.flexoMax ?? null}>
       <div class:list={['pd-media', { 'is-cutout': !!p.cutout, 'is-empty': !p.image }]}>
         {p.cutout
           ? <Fragment set:html={standHTML(p.cutout, p.name, { eager: true })} />
@@ -61,7 +65,7 @@ const nav = agri
         <h1 class="pd-title" id="pdTitle">{p.name}</h1>
         {p.description && <p class="sub">{p.description}</p>}
         <dl class="spec-list pd-facts">
-          {p.facts.slice(0, 3).map((f) => <Fragment><dt>{f.label}</dt><dd>{f.value}</dd></Fragment>)}
+          {p.facts.slice(0, 3).map((f) => <Fragment><dt>{f.label}</dt><dd data-fact={f.key || null}>{f.value}</dd></Fragment>)}
         </dl>
         <div class="acts">
           <a class="act fill" href={p.quoteHref}>Request a quote</a>
@@ -80,7 +84,7 @@ const nav = agri
           </header>
           <dl class="specsheet-rows">
             {p.facts.map((f) => (
-              <div class="spec-row"><dt>{f.label}</dt><dd class="v">{f.value}</dd><dd class="d">{f.note || ''}</dd></div>
+              <div class="spec-row"><dt>{f.label}</dt><dd class="v" data-fact={f.key || null}>{f.value}</dd><dd class="d">{f.note || ''}</dd></div>
             ))}
           </dl>
           {p.points?.length ? (
@@ -103,7 +107,7 @@ const nav = agri
               <li>
                 <a class="pd-card" href={r.href}>
                   <span class:list={['pd-card-img', { 'is-cutout': r.cutout, 'is-empty': !r.image }]}>
-                    {r.image ? <img src={r.image} alt="" width="320" height="400" loading="lazy" decoding="async" /> : <span>{r.name}</span>}
+                    {r.image ? <img src={thumbUrl(r.image, 480)} alt="" width="320" height="400" loading="lazy" decoding="async" /> : <span>{r.name}</span>}
                   </span>
                   <span class="pd-card-name">{r.name}</span>
                   {r.sub && <span class="pd-card-sub">{r.sub}</span>}
@@ -123,8 +127,9 @@ const nav = agri
     </section>
   </main>
 
+  <QuoteBar href={p.quoteHref} after=".pd .acts" />
   <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." />
 
-  <!-- certs.js refreshes the certificates; live-print.js prints the visitor's brand on a packaging cut-out. Each does nothing where its elements are absent. -->
-  <script>import '../../scripts/common.js'; import '../../scripts/certs.js'; import '../../scripts/live-print.js'; import '../../scripts/motion.js';</script>
+  <!-- certs.js refreshes the certificates; pd-live.js the packaging prices, minimums and lead time; live-print.js prints the visitor's brand on a packaging cut-out. Each does nothing where its elements are absent. -->
+  <script>import '../../scripts/common.js'; import '../../scripts/certs.js'; import '../../scripts/live-print.js'; import '../../scripts/pd-live.js'; import '../../scripts/motion.js';</script>
 </SiteLayout>

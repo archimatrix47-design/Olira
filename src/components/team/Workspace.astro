@@ -52,7 +52,7 @@ const nav: { label: string, items: string[][] }[] = manager ? [
   { label: 'You', items: [['account', 'My account']] },
 ] : [
   { label: 'Sales', items: [['inbox', 'Inbox'], ['followups', 'Follow-ups'], ['quotes', 'Quotes'], ...(pack ? [['mockups', 'Mockups']] : [])] },
-  { label: 'Website', items: [['products', pack ? 'Packaging products' : 'Agriculture products'], ...(pack ? [['minimums', 'Minimum orders']] : []), ['social', 'Contact links'], ['partners', 'Partner logos']] },
+  { label: 'Website', items: [['products', pack ? 'Packaging products' : 'Agriculture products'], ...(pack ? [['minimums', 'Prices and minimums']] : []), ['social', 'Contact links'], ['partners', 'Partner logos']] },
   { label: 'You', items: [['account', 'My account']] },
 ];
 const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon[name]}</svg>`;
@@ -385,14 +385,14 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
       <section class="a-view" data-view="minimums" aria-labelledby="h-minimums" hidden>
         <div class="a-head">
           <div>
-            <h1 id="h-minimums">Minimum orders</h1>
-            <p>The smallest quantity a visitor can request, per product and, where it differs, per size. The packaging page and its packing list use these straight away, and a request below them is not accepted. Leave a size blank to use the product minimum; leave both blank to agree it in the quote.</p>
+            <h1 id="h-minimums">Prices and minimums</h1>
+            <p>The smallest quantity a visitor can request, the price per 1,000 units and how many working days an order takes, per product and, where they differ, per size. The packaging page, its product pages and the packing list use them straight away; a request below the minimum is not accepted, and prices are shown as an estimate that the quote confirms. Leave a size blank to use the product's value; leave both blank to agree it in the quote.</p>
           </div>
         </div>
         <p class="sr-only" id="tMinLive" role="status" aria-live="polite"></p>
         <form class="t-min" id="tMinForm" novalidate>
           <div class="t-min-list" id="tMinList"><p class="note">Loading the products.</p></div>
-          <div class="a-actions a-savebar"><span class="a-dirty a-grow" id="tMinDirty">Unsaved changes</span><button class="btn btn-primary" type="submit" id="tMinSave">Save minimums</button></div>
+          <div class="a-actions a-savebar"><span class="a-dirty a-grow" id="tMinDirty">Unsaved changes</span><button class="btn btn-primary" type="submit" id="tMinSave">Save prices and minimums</button></div>
         </form>
       </section>
       </Fragment>

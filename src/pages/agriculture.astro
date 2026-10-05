@@ -8,6 +8,7 @@ import ProductFlow from '../components/site/ProductFlow.astro';
 import CertList from '../components/site/CertList.astro';
 import Faq from '../components/site/Faq.astro';
 import ProductIndex from '../components/site/ProductIndex.astro';
+import QuoteBar from '../components/site/QuoteBar.astro';
 import { graph, organizationGraph, breadcrumbs, faqPage, agriUrl, agriFaq, ORG_ID, AGRO_ID } from '../lib/seo';
 import { products, certifications, contact, SITE } from '../lib/site-data';
 
@@ -144,6 +145,7 @@ const jsonLd = graph(
     </section>
   </main>
 
+  <QuoteBar href="#contact" after=".ag-hero .acts" until="#contact" />
   <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." />
 
   <script>import '../scripts/agri.js'; import '../scripts/certs.js'; import '../scripts/motion.js';</script>

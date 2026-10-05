@@ -39,16 +39,34 @@ export function standHTML(c, name, { eager = false, ink = 'teal', brand = '' } =
 }
 
 
-/** The facts a buyer checks, as [label, value] rows: sizes, minimum order, print. */
+/** An amount in Ethiopian birr, as the catalogue writes it: "ETB 1,250.50". */
+export const etb = (n) => `ETB ${Number(n).toLocaleString('en-US', { minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2, maximumFractionDigits: 2 })}`;
+/** The price per 1,000 for a product in a size (the size's own price wins), or null. */
+export function priceFor(p, sizeId) {
+  const s = sizeId && Array.isArray(p?.sizes) ? p.sizes.find((x) => x.id === sizeId) : null;
+  return (s && s.pricePer1000) || p?.pricePer1000 || null;
+}
+/** The lowest price per 1,000 the packaging team has set, and whether others are higher. */
+export function priceFrom(p) {
+  const sizes = Array.isArray(p?.sizes) ? p.sizes : [];
+  const prices = (sizes.length ? sizes.map((s) => priceFor(p, s.id)) : [p?.pricePer1000]).filter((n) => Number(n) > 0);
+  if (!prices.length) return null;
+  return { price: Math.min(...prices), varies: new Set(prices).size > 1, partial: sizes.length > 0 && prices.length < sizes.length };
+}
+
+/** The facts a buyer checks, as [label, value] rows: sizes, minimum order, print, price, lead time. */
 export function specRows(p, flexoMax = 4) {
   const sizes = Array.isArray(p.sizes) ? p.sizes : [];
   const minimums = [p.minOrder, ...sizes.map((s) => s.minOrder)].filter((n) => Number.isInteger(n) && n > 0);
   const lowest = minimums.length ? Math.min(...minimums) : null;
   const colours = Number.isInteger(p.printColours) ? p.printColours : flexoMax;
+  const from = priceFrom(p);
   return [
     ['Sizes', sizes.length ? sizes.map((s) => s.label).join(', ') : 'Made to your size'],
     ['Minimum order', lowest ? `${minimums.length > 1 && new Set(minimums).size > 1 ? 'From ' : ''}${fmt(lowest)}` : 'Confirmed with your quote'],
     ['Print', colours === 0 ? 'Plain, unprinted' : `Flexographic, up to ${colours} colour${colours === 1 ? '' : 's'}`],
+    ['Price', from ? `${from.varies || from.partial ? 'From ' : ''}${etb(from.price)} per 1,000` : 'Price in your quote'],
+    ['Ready in', Number.isInteger(p.leadTimeDays) && p.leadTimeDays > 0 ? `${p.leadTimeDays} working day${p.leadTimeDays === 1 ? '' : 's'}` : 'Confirmed with your quote'],
   ];
 }
 
