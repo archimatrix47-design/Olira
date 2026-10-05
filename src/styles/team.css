@@ -297,3 +297,21 @@ html[data-input="keyboard"] .t-card:active { transform: none; }
 #buyerDetail .a-table :is(th, td) { text-align: left; vertical-align: top; }
 #buyerDetail .a-table :is(th, td):last-child { text-align: right; }
 #buyerDetail .a-table td:first-child { white-space: nowrap; }
+
+/* this month against target: one column per line, a meter per target */
+.t-targets { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px 32px; }
+.t-targets-line { display: grid; gap: 14px; align-content: start; }
+.t-targets-line h3 { font-size: .9375rem !important; font-weight: 600 !important; letter-spacing: 0 !important; }
+.t-target { display: grid; gap: 6px; }
+.t-target-head { display: flex; justify-content: space-between; gap: 12px; font-size: .875rem; }
+.t-target-head span { color: var(--ink-2); }
+.t-target-head strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.t-target > i { display: block; height: 8px; border-radius: 999px; background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+.t-target > i b { display: block; height: 100%; border-radius: inherit; background: var(--ink); }
+.t-target small { font-size: .8125rem; color: var(--ink-2); }
+.t-target.is-behind small { color: var(--warn); font-weight: 600; }
+.t-target.is-done small { color: var(--good); font-weight: 600; }
+.t-target.is-unset strong { color: var(--ink-2); font-weight: 500; }
+.t-targets-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 24px; }
+.t-targets-form .a-actions, .t-targets-form .err { grid-column: 1 / -1; }
+.t-targets-form fieldset { display: grid; gap: 10px; margin: 0; }
