@@ -134,9 +134,26 @@ function checkFiles(input) {
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE = /^\+?[\d\s()-]{7,20}$/;
 
+/** Volume in metric tons as the buyer typed it ("1,200", "2.5", "500 MT"): a plain
+    number string, '' when empty, or null when it is not a usable number. */
+export function readVolume(v) {
+  const s = String(v || '').replace(/\s+/g, '').replace(/mt$/i, '');
+  if (!s) return '';
+  const t = /^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+  return /^\d+(\.\d+)?$/.test(t) && Number(t) > 0 && Number(t) <= 100000 ? t : null;
+}
+
 function checkField(el) {
   const v = el.value.trim();
   if (el.name === 'website') return '';
+  // agriculture: a chosen product says what the buyer wants, so the message is optional
+  if (el.dataset.optionalWith) {
+    const other = el.form?.elements[el.dataset.optionalWith]?.value || '';
+    if (!v && !other) return el.dataset.msgRequired || 'This field is required.';
+    if (!v && other === 'Other') return 'Tell us which product you need.';
+    if (!v) return '';
+  }
+  if (el.name === 'volumeMt' && v && readVolume(v) === null) return 'Enter the volume as a number of metric tons, for example 500.';
   if (el.required && !v) return el.dataset.msgRequired || 'This field is required.';
   if (el.type === 'email' && v && !EMAIL.test(v)) return 'Enter an email address like name@company.com.';
   if (el.type === 'tel' && v && !PHONE.test(v)) return 'Enter a phone number with country code, for example +971 50 123 4567.';
@@ -169,6 +186,9 @@ for (const form of $$('form[data-endpoint]')) {
     el.addEventListener('blur', () => { if (el.value.trim()) showError(el, checkField(el)); });
     el.addEventListener('input', () => { if (el.getAttribute('aria-invalid')) showError(el, checkField(el)); });
   });
+  // choosing a product can settle the message's error, and "Something else" asks for one
+  const productSelect = $('[data-product-select]', form), messageBox = form.elements.message;
+  productSelect?.addEventListener('change', () => { if (messageBox?.getAttribute('aria-invalid')) showError(messageBox, checkField(messageBox)); });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -191,15 +211,22 @@ for (const form of $$('form[data-endpoint]')) {
 
     const data = Object.fromEntries(new FormData(form));
     if (data.website) { status.textContent = 'Thank you. Your request has been sent.'; form.reset(); return; }
-    const extra = [data.port && `Destination port: ${data.port.trim()}`, data.qty && `Quantity: ${data.qty.trim()}`].filter(Boolean).join('\n');
+    const extra = [data.qty && `Quantity: ${data.qty.trim()}`].filter(Boolean).join('\n');
     const payload = {
       name: data.name.trim(), email: data.email.trim(), company: (data.company || '').trim(), phone: (data.phone || '').trim(),
       // a product picked on the page is recorded, so the admin dashboard can attribute the lead
-      product: form.dataset.product || form.dataset.line,
+      product: (data.product || '').trim() || form.dataset.product || form.dataset.line,
       message: `${extra ? extra + '\n\n' : ''}${data.message.trim()}`, website: '',
       // which team: the page's own line, so products without "bag" in the name still reach packaging
       line: /packag/i.test(form.dataset.line || '') ? 'pack' : 'agri',
     };
+    // agriculture: the buyer's terms as fields (lib/enquiry.js)
+    if ('volumeMt' in data) {
+      const vol = readVolume(data.volumeMt);
+      if (vol) payload.volumeMt = vol;
+      for (const k of ['port', 'incoterm', 'window']) if (String(data[k] || '').trim()) payload[k] = String(data[k]).trim();
+    }
+    const termsText = [payload.volumeMt && `Volume: ${payload.volumeMt} MT`, payload.port && `Destination port: ${payload.port}`, payload.incoterm && `Incoterm: ${payload.incoterm}`, payload.window && `Shipment window: ${payload.window}`].filter(Boolean).join('\n');
     if (bundle?.items?.length) payload.bundle = bundle.items;
 
     btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Sending';
@@ -236,6 +263,8 @@ for (const form of $$('form[data-endpoint]')) {
       // minimum, a product no longer offered): say what, keep everything as it is
       if (res.status === 400 && reply.error && reply.code) {
         status.textContent = reply.error;
+        const bad = reply.field && form.elements[reply.field];
+        if (bad && bad.id) { showError(bad, reply.error); bad.focus(); }
         formHooks.rejected?.(reply);
         return;
       }
@@ -246,7 +275,7 @@ for (const form of $$('form[data-endpoint]')) {
       if (payload.bundle) formHooks.sent?.();
       try { window.gtag('event', 'form_submission', { form_name: 'inquiry', product: payload.product }); window.trackConversion({ product: payload.product }); } catch (err) {}
     } catch (err) {
-      const body = `${payload.product} enquiry from ${payload.name}${payload.company ? ', ' + payload.company : ''}\n\n${payload.message}`;
+      const body = `${payload.product} enquiry from ${payload.name}${payload.company ? ', ' + payload.company : ''}\n\n${[termsText, payload.message].filter(Boolean).join('\n\n')}`;
       track({ event: 'form_fail' });
       $('[data-fail="mail"]', fail).href = `mailto:${salesEmail()}?subject=${encodeURIComponent(payload.product + ' enquiry')}&body=${encodeURIComponent(body)}`;
       // the numbers are fetched only now, after a failed send (see reach.js)

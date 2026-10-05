@@ -28,20 +28,29 @@ getJSON('/api/products').then((live) => {
   flow.set(live.map(toItem));
 });
 
+// The enquiry form's product field: a product added since the build is added to
+// it, so the buyer can still pick it.
+function chooseProduct(name) {
+  const form = $('#inquiry');
+  if (!form) return;
+  form.dataset.product = name;
+  const sel = form.querySelector('[data-product-select]');
+  if (!sel) { prefill(`Interested in ${name}. Volume and shipment window: `); return; }
+  if (![...sel.options].some((o) => o.value === name)) sel.insertBefore(h('option', { value: name }, name), sel.querySelector('option[value="Several products"]'));
+  sel.value = name;
+  sel.dispatchEvent(new Event('change'));
+}
+
 // a product page's "Request a quote" lands here with ?ask=<product id>
 {
   const ask = new URLSearchParams(location.search).get('ask');
   const p = ask && RAW.find((x) => x.id === ask);
-  if (p) {
-    const form = $('#inquiry'); if (form) form.dataset.product = p.name;
-    prefill(`Interested in ${p.name}. Volume and shipment window: `);
-  }
+  if (p) chooseProduct(p.name);
 }
 
 $('#detAsk').addEventListener('click', () => {
   const p = flow.current();
   flow.close();
-  const form = $('#inquiry'); if (form) form.dataset.product = p.name;
-  prefill(`Interested in ${p.name}. Volume and shipment window: `);
+  chooseProduct(p.name);
 });
 

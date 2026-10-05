@@ -24,14 +24,16 @@ function defaults(l) {
   const pack = lineOf(l) === 'pack';
   const prev = l.quote;
   if (prev) return JSON.parse(JSON.stringify(prev));
-  const port = (String(l.message || '').match(/Destination port:\s*(.+)/i) || [])[1]?.trim() || '';
-  const qty = (String(l.message || '').match(/Quantity:\s*([\d.,]+)/i) || [])[1]?.replace(/,/g, '') || '';
+  // the enquiry's own fields first (agriculture form); older enquiries wrote them into the message
+  const port = l.port || (String(l.message || '').match(/Destination port:\s*(.+)/i) || [])[1]?.trim() || '';
+  const qty = l.volumeMt ? String(l.volumeMt) : (String(l.message || '').match(/Quantity:\s*([\d.,]+)/i) || [])[1]?.replace(/,/g, '') || '';
+  const incoterm = ['FOB Djibouti', 'CFR', 'CIF'].includes(l.incoterm) ? l.incoterm : 'FOB Djibouti';
   return {
     currency: pack ? 'ETB' : 'USD',
     items: [{ item: l.product && !/^(Agricultural products|Packaging)$/i.test(l.product) ? l.product : '', detail: '', qty, unit: pack ? 'bags' : 'MT', price: '' }],
     extra: '', extraLabel: pack ? 'Printing plates' : '',
     validUntil: inDays(pack ? 14 : 7),
-    terms: pack ? { port, leadTime: '', payment: '' } : { incoterm: 'FOB Djibouti', port, payment: '', shipment: '', packing: '' },
+    terms: pack ? { port, leadTime: '', payment: '' } : { incoterm, port, payment: '', shipment: l.window || '', packing: '' },
     notes: '',
   };
 }

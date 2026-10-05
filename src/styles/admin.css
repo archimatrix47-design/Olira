@@ -242,6 +242,12 @@ html[data-input="keyboard"] :is(.t-row, .a-prow-open, .a-row-link):active { tran
 .t-row-sub { font-size: .8125rem; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .t-row-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 3px; }
 .t-owner, .t-files { font-size: .75rem; color: var(--ink-2); font-weight: 600; }
+/* what the buyer asked for (volume, terms, window), as quiet chips */
+.t-chip { display: inline-flex; align-items: center; height: 20px; padding-inline: 7px; border-radius: 6px; background: var(--surface-2, rgba(0,0,0,.05)); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-2); font-size: .6875rem; font-weight: 600; white-space: nowrap; }
+.t-detail-head .t-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.t-detail-head .t-chip { height: 24px; font-size: .75rem; color: var(--ink); }
+.t-filter { display: contents; }
+.t-filter[hidden] { display: none; }
 .t-row .a-tag, .t-row .a-score { height: 20px; padding-inline: 7px; font-size: .6875rem; }
 .t-row-sub b { font-weight: 600; }
 .t-line-agri { color: var(--accent-hover); }
