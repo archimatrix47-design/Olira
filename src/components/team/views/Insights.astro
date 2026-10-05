@@ -1,0 +1,47 @@
+---
+// A marketing team's insights: its pages and products on the website, and its own
+// sales numbers. scripts/team/insights.js; data from /api/team/insights.
+interface Props { lineName: string }
+const { lineName } = Astro.props;
+---
+<section class="a-view" data-view="insights" aria-labelledby="h-insights" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-insights">Insights</h1>
+      <p>How visitors use the {lineName} pages and products, compared with the period before, and how quickly enquiries are answered and won. No cookies are used and no IP addresses are stored.</p>
+    </div>
+    <label class="a-period"><span>Period</span>
+      <select class="input" data-period>
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="365">Last 12 months</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="a-kpis a-kpis-5" id="insKpis" aria-label="Key numbers"></div>
+
+  <div class="a-grid12">
+    <div class="a-card span-8">
+      <div class="a-card-head"><div><h2>Views of your pages</h2><p>Each day, against the same number of days before.</p></div></div>
+      <div id="insTrend" class="v-block"></div>
+    </div>
+    <div class="a-card span-4">
+      <div class="a-card-head"><div><h2>Your numbers</h2><p>From your enquiries in this period.</p></div></div>
+      <dl class="a-facts" id="insMine"></dl>
+    </div>
+    <div class="a-card span-12">
+      <div class="a-card-head"><div><h2>Your products</h2><p>How often visitors opened each product and asked about it. A product opened often and rarely asked about needs a look: its photo, description, minimum or price.</p></div></div>
+      <div class="a-scroll" id="insProducts"></div>
+    </div>
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Your pages</h2><p>Most viewed, with the time visitors spent.</p></div></div>
+      <div id="insPages"></div>
+    </div>
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Where visitors come from</h2><p>The whole website, both lines.</p></div></div>
+      <div id="insSources"></div>
+    </div>
+  </div>
+</section>

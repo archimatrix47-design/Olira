@@ -18,6 +18,7 @@ import Traffic from './views/Traffic.astro';
 import Report from './views/Report.astro';
 import AgriProducts from './views/AgriProducts.astro';
 import PackProducts from './views/PackProducts.astro';
+import Insights from './views/Insights.astro';
 
 interface Props { line: 'agri' | 'pack' | 'manager' }
 const { line } = Astro.props;
@@ -42,6 +43,7 @@ const icon: Record<string, string> = {
   people: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0111 0"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15.5 14.4A4.5 4.5 0 0121 18.8"/>',
   report: '<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',
   traffic: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  insights: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
   social: '<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>',
   partners: '<rect x="3" y="7" width="7" height="10" rx="1.5"/><rect x="14" y="7" width="7" height="10" rx="1.5"/><path d="M10 12h4"/>',
   account: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>',
@@ -54,7 +56,7 @@ const nav: { label: string, items: string[][] }[] = manager ? [
   { label: 'You', items: [['account', 'My account']] },
 ] : [
   { label: 'Sales', items: [['inbox', 'Inbox'], ['followups', 'Follow-ups'], ['quotes', 'Quotes'], ['buyers', 'Buyers'], ...(pack ? [['mockups', 'Mockups']] : [])] },
-  { label: 'Website', items: [['products', pack ? 'Packaging products' : 'Agriculture products'], ...(pack ? [['minimums', 'Prices and minimums']] : []), ['social', 'Contact links'], ['partners', 'Partner logos']] },
+  { label: 'Website', items: [['insights', 'Insights'], ['products', pack ? 'Packaging products' : 'Agriculture products'], ...(pack ? [['minimums', 'Prices and minimums']] : []), ['social', 'Contact links'], ['partners', 'Partner logos']] },
   { label: 'You', items: [['account', 'My account']] },
 ];
 const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon[name]}</svg>`;
@@ -412,6 +414,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
       </section>
     )}
 
+    {team && <Insights lineName={pack ? 'packaging' : 'agriculture'} />}
     {line === 'agri' && <AgriProducts />}
     {pack && <PackProducts />}
 

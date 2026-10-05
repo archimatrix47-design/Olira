@@ -222,3 +222,6 @@
 .a-activity-item strong { display: block; font-weight: 500; }
 .a-activity-item span { font-size: .8125rem; color: var(--ink-2); }
 .a-activity-item.is-problem strong { color: var(--danger); font-weight: 600; }
+/* a small heading inside a card, between two lists */
+.v-sub { font-size: .8125rem !important; font-weight: 600 !important; letter-spacing: 0 !important; color: var(--ink-2) !important; margin: 0 0 8px; }
+* + .v-sub { margin-top: 18px; }
