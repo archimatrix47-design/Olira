@@ -16,6 +16,7 @@ import { registerPackaging, checkBundle, mergeSeedCatalogue } from './lib/packag
 import { registerCertificates } from './lib/certificates.js';
 import { registerSearchVerification } from './lib/search-verification.js';
 import { registerThumbs } from './lib/thumbs.js';
+import { registerAdminTools } from './lib/admin-tools.js';
 import { cleanAgriTerms, GENERIC_PRODUCT } from './lib/enquiry.js';
 
 // Load environment variables from .env file (if it exists)
@@ -773,6 +774,7 @@ app.post('/api/email-config', adminAuth, (req, res) => {
   };
 
   if (saveEmailConfig(config)) {
+    audit('email_config_saved', req);
     res.json({ success: true, message: 'Email configuration updated successfully' });
   } else {
     res.status(500).json({ error: 'Failed to save email configuration' });
@@ -1105,6 +1107,7 @@ app.post('/api/integrations/analytics', rateLimit, adminAuth, (req, res) => {
     };
 
     if (saveIntegrationsConfig(config)) {
+      audit('integrations_saved', req, { what: 'Google Analytics' });
       res.json({ success: true, message: 'Analytics configuration saved', config: config.analytics });
     } else {
       res.status(500).json({ error: 'Failed to save configuration' });
@@ -1133,6 +1136,7 @@ app.post('/api/integrations/ads', rateLimit, adminAuth, (req, res) => {
     };
 
     if (saveIntegrationsConfig(config)) {
+      audit('integrations_saved', req, { what: 'Google Ads' });
       res.json({ success: true, message: 'Ads configuration saved', config: config.ads });
     } else {
       res.status(500).json({ error: 'Failed to save configuration' });
@@ -1453,6 +1457,7 @@ app.post('/api/contact-details', adminAuth, (req, res) => {
   if (!writeJsonFile(contactsPath, data)) {
     return res.status(500).json({ error: 'Failed to save contact details' });
   }
+  audit('contact_details_saved', req);
   res.json({ success: true, data });
 });
 
@@ -1472,6 +1477,7 @@ app.post('/api/branding', adminAuth, (req, res) => {
   if (!writeJsonFile(brandingPath, next)) {
     return res.status(500).json({ error: 'Failed to save branding' });
   }
+  audit('branding_saved', req, { logo: !!next.logo });
   res.json({ success: true, data: next });
 });
 
@@ -1983,6 +1989,7 @@ app.post('/api/upload/logo', adminAuth, (req, res) => {
       const branding = readJsonFile(brandingPath, { logo: null, tagline: '' });
       branding.logo = publicPath;
       writeJsonFile(brandingPath, branding);
+      audit('branding_saved', req, { logo: true });
       res.json({ success: true, path: publicPath, originalSize: req.file.size });
     } catch (error) {
       console.error('Logo processing error:', error);
@@ -2032,7 +2039,7 @@ registerThumbs(app, { dataDir, uploadsDir, publicDirs: [path.join(__dirname, 'di
 // silently broken in production — data/uploads writable, analytics parseable,
 // build present, admin login state. Returns 503 (with reasons) when degraded so
 // an uptime monitor has something real to watch.
-app.get('/api/health', (req, res) => {
+function runHealthChecks() {
   const checks = {};
   const canWrite = (dir) => {
     try {
@@ -2055,7 +2062,10 @@ app.get('/api/health', (req, res) => {
   const failing = Object.entries(checks)
     .filter(([k, v]) => v === false && k !== 'adminLoginEnabled')
     .map(([k]) => k);
-
+  return { checks, failing };
+}
+app.get('/api/health', (req, res) => {
+  const { checks, failing } = runHealthChecks();
   const healthy = failing.length === 0;
   res.status(healthy ? 200 : 503).json({
     status: healthy ? 'ok' : 'degraded',
@@ -2068,6 +2078,9 @@ app.get('/api/health', (req, res) => {
 // Serve static files from dist directory (Astro build output)
 // Must come after all API routes to not interfere with them
 const distPath = path.join(__dirname, 'dist');
+
+// the admin's activity log, test email and site health (lib/admin-tools.js)
+registerAdminTools(app, { adminAuth, rateLimit, auditLogPath, dataDir, uploadsDir, distPath, readJsonFile, writeJsonFile, sendEmail, loadEmailConfig, audit, logError, healthChecks: runHealthChecks });
 
 // Cache control middleware for static assets
 app.use((req, res, next) => {

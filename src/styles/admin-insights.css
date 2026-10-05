@@ -11,6 +11,7 @@
 .a-grid12 > .span-4 { grid-column: span 4; }
 .a-grid12 > .span-6 { grid-column: span 6; }
 .a-grid12 > .span-8 { grid-column: span 8; }
+.a-grid12 > .span-12 { grid-column: 1 / -1; }
 @media (max-width: 1100px) { .a-grid12 > .span-4, .a-grid12 > .span-8 { grid-column: span 12; } }
 @media (max-width: 900px) { .a-grid12 > .span-6 { grid-column: span 12; } }
 .a-card-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
@@ -201,3 +202,23 @@
 .v-meter i b { display: block; height: 100%; background: var(--viz-a); }
 .a-scroll { overflow-x: auto; }
 @media (prefers-reduced-motion: reduce) { .v-skeleton { animation: none; } }
+
+/* site health on the overview: the facts in a row */
+.a-facts.a-facts-row { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px 24px; }
+.a-facts.a-facts-row > div { border-bottom: 0; padding-bottom: 0; }
+.a-facts dd small { display: block; margin-top: 2px; font-size: .8125rem; font-weight: 400; color: var(--ink-2); }
+
+/* the test email's answer */
+.a-test-result { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--fill-1); font-size: .875rem; color: var(--ink); }
+.a-test-result.is-ok { background: color-mix(in srgb, var(--good) 12%, transparent); }
+.a-test-result.is-error { background: var(--danger-subtle); color: var(--danger); }
+
+/* the activity log: a day heading, then time and what happened */
+.a-activity { list-style: none; margin: 0; padding: 0; display: grid; }
+.a-activity-day h2 { font-size: .8125rem !important; font-weight: 600 !important; color: var(--ink-2) !important; padding: 18px 0 6px; letter-spacing: 0 !important; }
+.a-activity-day:first-child h2 { padding-top: 0; }
+.a-activity-item { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.a-activity-item time { font-size: .8125rem; color: var(--ink-2); font-variant-numeric: tabular-nums; padding-top: 1px; }
+.a-activity-item strong { display: block; font-weight: 500; }
+.a-activity-item span { font-size: .8125rem; color: var(--ink-2); }
+.a-activity-item.is-problem strong { color: var(--danger); font-weight: 600; }
