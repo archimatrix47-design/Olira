@@ -32,6 +32,7 @@ if (LINE === 'manager') {
   });
 } else {
   VIEWS.social = () => import('./social.js').then((m) => m.show());
+  VIEWS.insights = () => import('./insights.js').then((m) => m.show());
   VIEWS.partners = () => import('./partners.js').then((m) => m.show());
 }
 if (LINE === 'agri') VIEWS.products = (opts) => import('./agri-products.js').then((m) => m.show(opts));

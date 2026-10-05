@@ -904,7 +904,7 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
       audit('inquiry_files_rejected', req, { count: r.rejected.length, full: !!r.full });
       if (!r.saved.length) {
         // tell the visitor, but the enquiry itself is in
-        recordInquiry(product, req);
+        recordInquiry(product, req, line);
         return res.status(400).json({ error: r.full ? 'Your request is in, but the files could not be stored. Send them by email when we reply.' : 'Your request is in, but the files were not a type we accept (PDF, AI, EPS, SVG, PNG, JPG or WebP). Send them by email when we reply.', saved: true });
       }
     }
@@ -914,7 +914,7 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
   if (!config || !config.recipientEmail) {
     // Still capture the lead so a mail-config gap never loses a customer; the
     // admin can see it (flagged un-emailed) in the Inquiries inbox.
-    recordInquiry(product, req);
+    recordInquiry(product, req, line);
     // saved: the visitor's request is in, so they are not told to send it again
     if (rec) return res.json({ success: true, saved: true, emailed: false, message: 'Inquiry received' });
     return res.status(500).json({ error: 'Email not configured' });
@@ -1005,13 +1005,13 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
     await sendEmail(sanitizedEmail, 'Thank You - Olira Agro Industry Inquiry', confirmationHtml);
 
     if (rec) updateInquiryRecord(rec.id, { emailed: true });
-    recordInquiry(product, req); // count as a conversion, attributed to the product
+    recordInquiry(product, req, line); // count as a conversion, attributed to the product
     res.json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
     console.error('Email send error:', error);
     // Email delivery failed, but the lead is already saved (emailed: false) and
     // can be actioned from the team workspace and the manager's.
-    recordInquiry(product, req);
+    recordInquiry(product, req, line);
     // A request that is saved has arrived, whatever the mail server did; telling
     // the visitor it failed made them send it again (a duplicate lead).
     if (rec) return res.json({ success: true, saved: true, emailed: false, message: 'Inquiry received' });
@@ -1644,12 +1644,13 @@ process.on('SIGTERM', () => { flushAnalytics(); process.exit(0); });
 // products actually convert — not just which ones get clicked.
 // Every captured lead counts, whether or not the notification email went out
 // (previously only emailed leads were counted, so an SMTP problem hid demand).
-function recordInquiry(product, req) {
+function recordInquiry(product, req, knownLine) {
   const day = getDay(todayKey());
   day.inquiries++;
   const name = typeof product === 'string' && product.trim() ? product.trim().slice(0, 80) : 'Not specified';
   day.inquiryProducts[name] = (day.inquiryProducts[name] || 0) + 1;
-  const line = lineOfProduct(name);
+  // the enquiry's own line when the caller knows it: "Pizza boxes" is packaging though it says no "bag"
+  const line = knownLine === 'pack' || knownLine === 'agri' ? knownLine : lineOfProduct(name);
   bump(day.inquiryLines, line);
   if (req && !BOT_RE.test(String(req.headers['user-agent'] || ''))) markVisitor(day, req, line === 'pack' ? STEP.enquiryPack : STEP.enquiryAgri);
   analyticsDirty = true;
@@ -1823,6 +1824,40 @@ function summaryOf(a) {
 
 // GET /api/analytics?days=30 (manager) — aggregated summary for the period and
 // the one before it. Visitor hashes are counted server-side and never returned.
+// A marketing team's own line (the manager may ask for either): views of its pages
+// day by day, its products' opens and enquiries, its enquiries, and where the
+// website's visitors come from (that part is site-wide and labelled so).
+app.get('/api/team/insights', staffOnly(['agri', 'pack', 'manager'], 'Insights are for the marketing teams and the manager.'), (req, res) => {
+  const role = req.user.role;
+  const line = role === 'manager' ? (req.query.line === 'pack' ? 'pack' : 'agri') : role;
+  const days = Math.min(Math.max(parseInt(req.query.days) || 30, 7), 365);
+  const cur = aggregateAnalytics(days, 0), prev = aggregateAnalytics(days, days);
+  const prefix = line === 'pack' ? '/packaging' : '/agriculture';
+  const mine = (p) => p === prefix || p === `${prefix}/` || p.startsWith(`${prefix}/`);
+  const viewsOf = (pages) => Object.entries(pages || {}).reduce((n, [p, v]) => n + (mine(p) ? Number(v) || 0 : 0), 0);
+  const series = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const key = todayKey(new Date(Date.now() - i * 86400000)), before = todayKey(new Date(Date.now() - (i + days) * 86400000));
+    series.push({ date: key, views: viewsOf(analytics.days[key]?.pages), prevViews: viewsOf(analytics.days[before]?.pages) });
+  }
+  const pages = Object.entries(cur.pages).filter(([p]) => mine(p)).sort((x, y) => y[1] - x[1]).slice(0, 10).map(([path, views]) => {
+    const e = cur.eng[path];
+    return { path, views, prevViews: prev.pages[path] || 0, avgSeconds: e?.n ? Math.round(e.secs / e.n) : null, engagedRate: e?.n ? +((e.engaged / e.n) * 100).toFixed(1) : null };
+  });
+  const names = line === 'pack' ? packaging.catalogue().filter((p) => p.site !== false).map((p) => p.name) : (readJsonFile(productsPath, []) || []).map((p) => p.name);
+  const products = names.map((name) => ({ name, opens: cur.productClicks[name] || 0, prevOpens: prev.productClicks[name] || 0, enquiries: cur.productInquiries[name] || 0, daily: cur.productDaily[name] || new Array(days).fill(0) }))
+    .sort((x, y) => y.opens - x.opens || y.enquiries - x.enquiries || x.name.localeCompare(y.name));
+  const top = (obj, n = 8) => Object.entries(obj).sort((x, y) => y[1] - x[1]).slice(0, n).map(([name, count]) => ({ name, count }));
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    line, days,
+    views: viewsOf(cur.pages), prevViews: viewsOf(prev.pages),
+    enquiries: cur.inquiryLines[line] || 0, prevEnquiries: prev.inquiryLines[line] || 0,
+    series, pages, products,
+    site: { channels: top(cur.channels, 7), countries: top(cur.countries, 8), devices: cur.devices },
+  });
+});
+
 app.get('/api/analytics', staffOnly(['manager'], 'Traffic reports are for managers.'), (req, res) => {
   const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
   const cur = aggregateAnalytics(days, 0);
