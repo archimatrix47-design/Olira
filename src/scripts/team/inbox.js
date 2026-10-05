@@ -6,7 +6,7 @@
 // Enquiry text comes from strangers, so it is only ever written as text.
 import { $, $$, h, api, getToken, toast, confirmDialog, formatDate, timeAgo } from '../admin/api.js';
 import { bundleTable, bundleCount, bundleText } from './bundle-view.js';
-import { STAGES, scoreOf, BAND_LABEL, firstResponseHours, median, ageHours } from '../admin/leads.js';
+import { STAGES, scoreOf, BAND_LABEL, firstResponseHours, median, ageHours, termChips } from '../admin/leads.js';
 import { hours, int } from '../admin/format.js';
 import { session, leads, putLead, dropLead, OPEN, CLOSED, isMine, toAccept as waiting, stageName, followupsOf, lineOf, LINE_LABEL, LINE_NAME, teamOf } from './session.js';
 import { composer } from './compose.js';
@@ -39,6 +39,7 @@ export async function show({ params }) {
     bound = true;
     $$('input[name="inboxFilter"]').forEach((r) => r.addEventListener('change', () => { renderList(); writeUrl(); }));
     $('#inboxSort').addEventListener('change', () => { renderList(); writeUrl(); });
+    $('#inboxProduct').addEventListener('change', () => { renderList(); writeUrl(); });
     let t; $('#inboxSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { renderList(); writeUrl(); }, 200); });
     $('#inboxRefresh').addEventListener('click', () => load(true));
     if (boss()) {
@@ -58,6 +59,7 @@ export async function show({ params }) {
   if (f && $(`input[name="inboxFilter"][value="${CSS.escape(f)}"]`)) $(`input[name="inboxFilter"][value="${CSS.escape(f)}"]`).checked = true;
   if (s && $(`#inboxSort option[value="${CSS.escape(s)}"]`)) $('#inboxSort').value = s;
   if (q != null) $('#inboxSearch').value = q;
+  pendingProduct = params.get('product') || '';
   if (boss()) {
     const ln = params.get('line'), owner = params.get('owner');
     $('#inboxLine').value = ln === 'agri' || ln === 'pack' ? ln : 'all';
@@ -73,6 +75,7 @@ export async function show({ params }) {
       const filter = waiting(l) ? 'unassigned' : OPEN.includes(l.status) ? (isMine(l) ? 'mine' : 'open') : 'closed';
       $(`input[name="inboxFilter"][value="${filter}"]`).checked = true;
       $('#inboxSearch').value = '';
+      $('#inboxProduct').value = '';
       if (boss()) { $('#inboxLine').value = 'all'; $('#inboxOwner').value = ''; }
     }
     renderList();
@@ -94,7 +97,7 @@ async function load(force, { quiet } = {}) {
     all = await leads(force);
     loadedAt = Date.now();
     const focus = captureFocus();
-    setCounts(); renderKpis(); renderList();
+    setCounts(); renderKpis(); fillProducts(); renderList();
     if (selectedId) renderDetail();
     restoreFocus(focus);
     if (force && !quiet) toast('Inbox refreshed.');
@@ -113,6 +116,7 @@ function writeUrl() {
   if (f !== 'unassigned') p.set('filter', f);
   if (s !== 'newest') p.set('sort', s);
   if (q) p.set('q', q);
+  if ($('#inboxProduct').value) p.set('product', $('#inboxProduct').value);
   if (boss() && $('#inboxLine').value !== 'all') p.set('line', $('#inboxLine').value);
   if (boss() && $('#inboxOwner').value) p.set('owner', $('#inboxOwner').value);
   if (selectedId) p.set('lead', selectedId);
@@ -146,6 +150,20 @@ function renderKpis() {
 }
 
 /* ---------- list ---------- */
+// the products buyers named, for the product filter (the line's fallbacks are left out)
+const GENERIC = /^(Agricultural products|Packaging|Not specified|Other|Several products)?$/i;
+let pendingProduct = '';
+function fillProducts() {
+  const sel = $('#inboxProduct');
+  const want = pendingProduct || sel.value;
+  pendingProduct = '';
+  const names = [...new Set(all.map((l) => String(l.product || '').trim()).filter((n) => !GENERIC.test(n)))].sort((a, b) => a.localeCompare(b));
+  if (want && !names.includes(want)) names.unshift(want);
+  sel.replaceChildren(h('option', { value: '' }, 'Every product'), ...names.map((n) => h('option', { value: n }, n)));
+  sel.value = want;
+  sel.closest('label, .t-filter')?.toggleAttribute('hidden', names.length < 2 && !want);
+}
+
 function filtered() {
   const f = $('input[name="inboxFilter"]:checked').value, sort = $('#inboxSort').value;
   const q = $('#inboxSearch').value.trim().toLowerCase();
@@ -158,7 +176,8 @@ function filtered() {
   };
   // the line and owner narrow the list first, so the counts on the filters match what shows
   const ln = boss() ? $('#inboxLine').value : 'all', owner = boss() ? $('#inboxOwner').value : '';
-  const scoped = all.filter((l) => (ln === 'all' || lineOf(l) === ln) && (!owner || (owner === 'none' ? !l.assignee : l.assignee?.id === owner)));
+  const product = $('#inboxProduct').value;
+  const scoped = all.filter((l) => (ln === 'all' || lineOf(l) === ln) && (!owner || (owner === 'none' ? !l.assignee : l.assignee?.id === owner)) && (!product || String(l.product || '').trim() === product));
   for (const [k, fn] of Object.entries(test)) { const b = $(`[data-filter-count="${k}"]`); if (b) b.textContent = String(scoped.filter(fn).length); }
   let list = scoped.filter(test[f] || test.open).filter((l) => !q || [l.name, l.company, l.email, l.phone, l.product, l.message, l.assignee?.name].some((v) => String(v || '').toLowerCase().includes(q)));
   if (sort === 'oldest') list.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
@@ -182,6 +201,7 @@ function renderList() {
       [l.name || 'Unknown', l.company].filter(Boolean).join(', '),
       stageName(l.status),
       `Lead score ${sc.score}, ${BAND_LABEL[sc.band].toLowerCase()}`,
+      termChips(l).join(', ') || null,
       boss() ? LINE_LABEL[lineOf(l)] : null,
       l.assignee ? (isMine(l) ? 'Accepted by you' : `Held by ${l.assignee.name}`) : boss() && OPEN.includes(l.status) ? 'Not handed out' : null,
       l.files?.length ? `${l.files.length} file${l.files.length === 1 ? '' : 's'}` : null,
@@ -198,6 +218,7 @@ function renderList() {
       h('span', { class: 't-row-meta' },
         h('span', { class: `a-tag stage-${l.status}` }, stageName(l.status)),
         h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, String(sc.score), h('span', { class: 'sr-only' }, ` out of 100, ${BAND_LABEL[sc.band]}`)),
+        ...termChips(l).slice(0, 2).map((c) => h('span', { class: 't-chip' }, c)),
         l.assignee ? h('span', { class: 't-owner' }, isMine(l) ? 'You' : l.assignee.name) : null,
         l.files?.length ? h('span', { class: 't-files' }, `${l.files.length} file${l.files.length === 1 ? '' : 's'}`) : null,
         l.design ? h('span', { class: 't-files' }, 'Studio design') : null,
@@ -279,7 +300,9 @@ function renderDetail() {
     fact('Asked about', l.product || 'Not specified'),
     d.market ? fact('Market', `${d.market.name}, from the ${d.market.from}`) : null,
     d.port ? fact(isPack(l) ? 'Delivery' : 'Destination port', d.port) : null,
-    d.volume ? fact('Quantity', d.volume) : null,
+    d.volume ? fact(isPack(l) ? 'Quantity' : 'Volume', d.volume) : null,
+    d.incoterm ? fact('Incoterm', d.incoterm === 'Other' ? 'Another term (see the message)' : d.incoterm) : null,
+    d.window ? fact('Shipment window', d.window) : null,
     fact('Received', `${formatDate(l.createdAt)}, ${timeAgo(l.createdAt)}`));
 
   const parts = [
@@ -287,7 +310,8 @@ function renderDetail() {
     h('header', { class: 't-detail-head', 'data-focus-scope': `head-${l.id}` },
       h('div', {},
         h('h2', {}, l.name || 'Unknown'),
-        h('p', {}, [l.company, l.email].filter(Boolean).join(', '))),
+        h('p', {}, [l.company, l.email].filter(Boolean).join(', ')),
+        termChips(l).length ? h('p', { class: 't-chips', 'aria-label': 'What the buyer asked for' }, ...[l.product && !GENERIC.test(l.product) ? l.product : null, ...termChips(l)].filter(Boolean).map((c) => h('span', { class: 't-chip' }, c))) : null),
       h('div', { class: 'a-lead-meta' },
         boss() ? h('span', { class: `a-tag ${lineOf(l)}` }, LINE_LABEL[lineOf(l)]) : null,
         h('span', { class: `a-tag stage-${l.status}` }, stageName(l.status)),
@@ -395,7 +419,7 @@ async function remove(l) {
 function csv() {
   const rows = filtered();
   if (!rows.length) return toast('There are no enquiries in this view to download.', 'error');
-  const cols = [['createdAt', 'Date'], ['status', 'Stage'], ['line', 'Business line'], ['owner', 'Handled by'], ['product', 'Product'], ['score', 'Lead score'], ['market', 'Market'], ['port', 'Destination port'], ['volume', 'Volume'], ['firstResponse', 'First response (hours)'], ['quote', 'Latest quote'], ['name', 'Name'], ['company', 'Company'], ['email', 'Email'], ['phone', 'Phone'], ['message', 'Message'], ['emailed', 'Notification emailed'], ['bundle', 'Packing list']];
+  const cols = [['createdAt', 'Date'], ['status', 'Stage'], ['line', 'Business line'], ['owner', 'Handled by'], ['product', 'Product'], ['score', 'Lead score'], ['market', 'Market'], ['port', 'Destination port'], ['volume', 'Volume'], ['incoterm', 'Incoterm'], ['window', 'Shipment window'], ['firstResponse', 'First response (hours)'], ['quote', 'Latest quote'], ['name', 'Name'], ['company', 'Company'], ['email', 'Email'], ['phone', 'Phone'], ['message', 'Message'], ['emailed', 'Notification emailed'], ['bundle', 'Packing list']];
   // quote every cell, and neutralise a leading = + - @ so spreadsheets never run it as a formula
   const cell = (v) => { let t = String(v ?? ''); if (/^[=+\-@\t\r]/.test(t)) t = `'${t}`; return `"${t.replace(/"/g, '""')}"`; };
   const value = (r, k) => {
@@ -407,6 +431,8 @@ function csv() {
     if (k === 'market') return sc.details.market?.name || '';
     if (k === 'port') return sc.details.port || '';
     if (k === 'volume') return sc.details.volume || '';
+    if (k === 'incoterm') return sc.details.incoterm || '';
+    if (k === 'window') return sc.details.window || '';
     if (k === 'bundle') return bundleText(r);
     if (k === 'quote') return r.quote ? `${r.quote.number} ${r.quote.currency} ${r.quote.total}` : '';
     if (k === 'firstResponse') { const x = firstResponseHours(r); return x == null ? '' : x.toFixed(1); }

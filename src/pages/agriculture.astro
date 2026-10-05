@@ -131,7 +131,7 @@ const jsonLd = graph(
             <p class="lede" style="margin-top:20px">Tell us the product, volume and destination port. We answer within 24 hours.</p>
             <ContactLines />
           </div>
-          <InquiryForm prefix="a" line="Agricultural products" labelledBy="contactTitle" extra="port" messagePlaceholder="Product, volume and shipment window" messageRequired="Tell us the product and volume you need." submitLabel="Send enquiry" noun="enquiry" team="export team" />
+          <InquiryForm prefix="a" line="Agricultural products" labelledBy="contactTitle" extra="port" products={products.map((p) => p.name)} messagePlaceholder="Grade, packing or documents you need" messageRequired="Choose a product, or tell us what you need." submitLabel="Send enquiry" noun="enquiry" team="export team" />
         </div>
       </div>
     </section>

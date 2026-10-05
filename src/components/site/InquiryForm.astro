@@ -16,8 +16,12 @@ interface Props {
   noun: string;              // "enquiry" or "request"
   team: string;              // "export team" or "packaging team"
   attachments?: boolean;     // packaging: artwork files and the studio design
+  products?: string[];       // agriculture: the range, for the product field
 }
-const { prefix: p, line, labelledBy, extra, messagePlaceholder, messageRequired, submitLabel, noun, team, attachments = false } = Astro.props;
+const { prefix: p, line, labelledBy, extra, messagePlaceholder, messageRequired, submitLabel, noun, team, attachments = false, products = [] } = Astro.props;
+// agriculture: the buyer's terms are fields of their own (lib/enquiry.js keeps the same list)
+const INCOTERMS = ['FOB Djibouti', 'CFR', 'CIF', 'Other'];
+const terms = extra === 'port';
 ---
 <form class="sheet form" id="inquiry" action={`mailto:${contact.email}`} method="post" enctype="text/plain" data-endpoint="/api/inquiry" data-line={line} aria-labelledby={labelledBy}>
   <p class="note" style="margin:0">Fields marked <span class="req" aria-hidden="true">*</span><span class="sr-only">with an asterisk</span> are required.</p>
@@ -44,11 +48,47 @@ const { prefix: p, line, labelledBy, extra, messagePlaceholder, messageRequired,
       <p class="field-error" id={`${p}-phone-error`} hidden></p>
     </div>
   </div>
-  {extra === 'port' ? (
-    <div class="field">
-      <label for={`${p}-port`}>Destination port</label>
-      <input id={`${p}-port`} name="port" maxlength="80" placeholder="For example Rotterdam" autocomplete="off">
-    </div>
+  {terms ? (
+    <Fragment>
+      <div class="two">
+        <div class="field">
+          <label for={`${p}-product`}>Product</label>
+          <select id={`${p}-product`} name="product" data-product-select aria-describedby={`${p}-product-error`}>
+            <option value="">Choose a product</option>
+            {products.map((n) => <option value={n}>{n}</option>)}
+            <option value="Several products">Several products</option>
+            <option value="Other">Something else</option>
+          </select>
+          <p class="field-error" id={`${p}-product-error`} hidden></p>
+        </div>
+        <div class="field">
+          <label for={`${p}-volume`}>Volume</label>
+          <div class="unit-field">
+            <input id={`${p}-volume`} name="volumeMt" maxlength="12" inputmode="decimal" autocomplete="off" placeholder="For example 500" aria-describedby={`${p}-volume-hint ${p}-volume-error`}>
+            <span aria-hidden="true">MT</span>
+          </div>
+          <p class="note" id={`${p}-volume-hint`} style="margin:0;font-weight:400">Metric tons. An estimate is fine.</p>
+          <p class="field-error" id={`${p}-volume-error`} hidden></p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for={`${p}-port`}>Destination port</label>
+          <input id={`${p}-port`} name="port" maxlength="80" placeholder="For example Rotterdam" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for={`${p}-incoterm`}>Incoterm</label>
+          <select id={`${p}-incoterm`} name="incoterm">
+            <option value="">Not sure yet</option>
+            {INCOTERMS.map((t) => <option value={t}>{t === 'Other' ? 'Another term' : t}</option>)}
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for={`${p}-window`}>Shipment window</label>
+        <input id={`${p}-window`} name="window" maxlength="60" placeholder="For example March 2027" autocomplete="off">
+      </div>
+    </Fragment>
   ) : (
     <div class="field">
       <label for={`${p}-qty`}>Quantity</label>
@@ -63,8 +103,11 @@ const { prefix: p, line, labelledBy, extra, messagePlaceholder, messageRequired,
     </div>
   )}
   <div class="field">
-    <label for="message">Message <span class="req" aria-hidden="true">*</span></label>
-    <textarea id="message" name="message" required maxlength="1800" placeholder={messagePlaceholder} aria-describedby="message-error" data-msg-required={messageRequired}></textarea>
+    {terms
+      ? <label for="message">Message</label>
+      : <label for="message">Message <span class="req" aria-hidden="true">*</span></label>}
+    {/* agriculture: a chosen product can stand in for the message (common.js, server.js) */}
+    <textarea id="message" name="message" required={!terms} maxlength="1800" placeholder={messagePlaceholder} aria-describedby="message-error" data-msg-required={messageRequired} data-optional-with={terms ? 'product' : null}></textarea>
     <p class="field-error" id="message-error" hidden></p>
   </div>
   {attachments && (

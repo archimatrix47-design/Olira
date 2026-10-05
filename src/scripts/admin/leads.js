@@ -46,22 +46,33 @@ export function marketOf(i) {
   return null;
 }
 
+const mt = (n) => `${Number(n).toLocaleString('en-US', { maximumFractionDigits: 3 })} MT`;
+
 export function detailsOf(i) {
   const msg = String(i.message || '');
-  const port = (msg.match(/Destination port:\s*(.+)/i) || [])[1]?.trim() || null;
-  let volume = (msg.match(/Quantity:\s*(.+)/i) || [])[1]?.trim() || null;
+  // the agriculture form's own fields first; older enquiries wrote them into the message
+  const port = String(i.port || '').trim() || (msg.match(/Destination port:\s*(.+)/i) || [])[1]?.trim() || null;
+  let volume = Number(i.volumeMt) > 0 ? mt(i.volumeMt) : (msg.match(/Quantity:\s*(.+)/i) || [])[1]?.trim() || null;
+  const incoterm = String(i.incoterm || '').trim() || null, window = String(i.window || '').trim() || null;
   if (!volume) {
     const m = msg.match(/(\d[\d,.]*)\s*(metric\s*tons?|mt\b|tonnes?|tons?\b|kg\b|containers?|fcl\b|bags?\b|pcs\b|pieces\b)/i);
     if (m) volume = `${m[1]} ${m[2].toUpperCase() === 'MT' ? 'MT' : m[2].toLowerCase()}`;
   }
   const domain = String(i.email || '').split('@')[1]?.toLowerCase() || '';
-  return { port, volume, domain, freeMail: FREE_MAIL.has(domain), market: marketOf(i) };
+  return { port, volume, incoterm, window, domain, freeMail: FREE_MAIL.has(domain), market: marketOf(i) };
+}
+/** The buyer's terms as short chips: volume, Incoterm and port, shipment window. */
+export function termChips(i) {
+  const d = detailsOf(i);
+  return [d.volume, d.incoterm && d.incoterm !== 'Other' ? `${d.incoterm}${d.port && !/Djibouti/i.test(d.incoterm) ? ` ${d.port}` : ''}` : d.port, d.window].filter(Boolean);
 }
 
 /** Lead score out of 100 with the reason for every point, so it can be trusted or ignored. */
 export function scoreOf(i) {
   const d = detailsOf(i);
-  const generic = /^(Agricultural products|Packaging|Not specified)?$/i.test(i.product || '');
+  const generic = /^(Agricultural products|Packaging|Not specified|Other|Several products)?$/i.test(i.product || '');
+  const detailed = String(i.message || '').replace(/Destination port:.*|Quantity:.*/gi, '').trim().length >= 80;
+  const terms = !!(d.incoterm && d.window);
   // [points, passed, label shown on the lead, name used when it is missing]
   const checks = [
     [15, !!String(i.company || '').trim(), String(i.company || '').trim() ? 'Company named' : 'No company name', 'company name'],
@@ -70,11 +81,12 @@ export function scoreOf(i) {
     [10, !generic, generic ? 'No specific product' : 'Specific product', 'specific product'],
     [15, !!d.volume, d.volume ? `Volume given (${d.volume})` : 'No volume given', 'volume'],
     [15, !!(d.port || d.market), d.port ? `Destination given (${d.port})` : d.market ? `Market from ${d.market.from} (${d.market.name})` : 'No destination or market', 'destination or market'],
-    [10, String(i.message || '').replace(/Destination port:.*|Quantity:.*/gi, '').trim().length >= 80, 'Detailed message', 'detail in the message'],
+    // an Incoterm and a shipment window say as much about intent as a long message
+    [10, detailed || terms, detailed ? 'Detailed message' : terms ? `Terms given (${d.incoterm}, ${d.window})` : 'Short message', 'detail in the message'],
   ];
   const score = checks.reduce((n, [pts, ok]) => n + (ok ? pts : 0), 0);
   const band = score >= 70 ? 'strong' : score >= 40 ? 'fair' : 'thin';
-  return { score, band, checks: checks.map(([pts, ok, label, gap]) => ({ pts, ok, label: ok || label !== 'Detailed message' ? label : 'Short message', gap })), details: d };
+  return { score, band, checks: checks.map(([pts, ok, label, gap]) => ({ pts, ok, label, gap })), details: d };
 }
 export const BAND_LABEL = { strong: 'Strong lead', fair: 'Fair lead', thin: 'Thin lead' };
 

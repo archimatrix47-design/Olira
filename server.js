@@ -15,6 +15,7 @@ import { registerPartners } from './lib/partners.js';
 import { registerPackaging, checkBundle, mergeSeedCatalogue } from './lib/packaging.js';
 import { registerCertificates } from './lib/certificates.js';
 import { registerSearchVerification } from './lib/search-verification.js';
+import { cleanAgriTerms, GENERIC_PRODUCT } from './lib/enquiry.js';
 
 // Load environment variables from .env file (if it exists)
 dotenv.config();
@@ -809,8 +810,9 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
     return res.json({ success: true, message: 'Inquiry sent successfully' });
   }
 
-  // Validate required fields
-  if (!name || !email || !message) {
+  // Validate required fields (the message is checked once the line is known: an
+  // agriculture enquiry that names its product may leave it empty)
+  if (!name || !email) {
     return res.status(400).json({ error: 'Missing required fields: name, email, message' });
   }
 
@@ -823,7 +825,7 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
     return res.status(400).json({ error: 'Invalid email format' });
   }
 
-  if (typeof message !== 'string' || message.trim().length === 0 || message.length > 2000) {
+  if (message != null && message !== '' && (typeof message !== 'string' || message.length > 2000)) {
     return res.status(400).json({ error: 'Invalid message field' });
   }
 
@@ -861,6 +863,20 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
   const line = req.body.line === 'pack' || bundle || catalogueNames.has(String(product || '').toLowerCase()) ? 'pack'
     : req.body.line === 'agri' ? 'agri' : lineOfProduct(product);
 
+  // The agriculture form's own fields: volume (MT), destination port, Incoterm and
+  // shipment window (lib/enquiry.js). With a named product they can stand in for
+  // the message; without one, the message must say what the buyer wants.
+  let terms = null;
+  if (line === 'agri') {
+    const t = cleanAgriTerms(req.body);
+    if (t.error) return res.status(400).json({ error: t.error, code: 'invalid_field', field: t.field });
+    if (Object.keys(t.terms).length) terms = t.terms;
+  }
+  const named = line === 'agri' && typeof product === 'string' && !GENERIC_PRODUCT.test(product.trim());
+  if (!String(message || '').trim() && !named) {
+    return res.status(400).json({ error: 'Missing required fields: name, email, message' });
+  }
+
   // Files and the studio design are only taken with a packaging request, and
   // only when the visitor ticked the box to send them.
   if (uploads.length && line !== 'pack') {
@@ -875,7 +891,7 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
   }
 
   // The lead is saved before any email is attempted, so a mail problem never loses it.
-  const rec = recordInquiryRecord({ name, email, company, message, product, phone, design, bundle, line }, false);
+  const rec = recordInquiryRecord({ name, email, company, message, product, phone, design, bundle, line, terms }, false);
   let fileNote = '';
   if (rec && uploads.length) {
     const r = workspace.saveIntakeFiles(rec, uploads);
@@ -906,7 +922,11 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
   const sanitizedEmail = sanitizeHtml(email);
   const sanitizedCompany = sanitizeHtml(company);
   const sanitizedProduct = sanitizeHtml(product || 'Not specified');
-  const sanitizedMessage = sanitizeHtml(message).replace(/\n/g, '<br/>');
+  const sanitizedMessage = sanitizeHtml(message || 'No message: the details are above.').replace(/\n/g, '<br/>');
+  const termRows = terms ? [
+    ['Volume', terms.volumeMt != null ? `${terms.volumeMt.toLocaleString('en-US')} MT` : ''],
+    ['Destination port', terms.port], ['Incoterm', terms.incoterm], ['Shipment window', terms.window],
+  ].filter(([, v]) => v) : [];
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -918,6 +938,10 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
           <strong style="color: #39572f;">Product:</strong><br/>
           ${sanitizedProduct}
         </div>
+        ${termRows.map(([k, v]) => `<div style="margin-bottom: 15px;">
+          <strong style="color: #39572f;">${k}:</strong><br/>
+          ${sanitizeHtml(v)}
+        </div>`).join('')}
         <div style="margin-bottom: 15px;">
           <strong style="color: #39572f;">Name:</strong><br/>
           ${sanitizedName}
@@ -1202,6 +1226,7 @@ function recordInquiryRecord(data, emailed) {
     };
     if (data.design) rec.design = data.design;
     if (data.bundle?.length) rec.bundle = data.bundle;
+    if (data.terms) Object.assign(rec, data.terms); // volumeMt, port, incoterm, window (lib/enquiry.js)
     list.unshift(rec);
     if (list.length > MAX_INQUIRIES) {
       for (const old of list.slice(MAX_INQUIRIES)) if (old.files?.length) workspace.removeLeadFiles(old.id);
