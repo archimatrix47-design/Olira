@@ -328,7 +328,7 @@ html[data-input="keyboard"] :is(.t-row, .a-prow-open, .a-row-link):active { tran
 .a-prow h3 { font-family: var(--font-sans) !important; font-size: .9375rem !important; font-weight: 600 !important; line-height: 1.3; letter-spacing: 0 !important; }
 .a-prow p { font-size: .8125rem; color: var(--ink-2); line-height: 1.4; }
 /* what a product still needs on the website (completeness.js) */
-.a-prow p.a-missing { color: var(--warn); font-weight: 600; }
+.a-prow p.a-missing { color: var(--ink); font-weight: 600; } /* the warning colour is on the dot: as text it fell under 4.5:1 on the row being edited */
 .a-prow p.a-missing::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--warn); vertical-align: 1px; }
 .a-prow p.a-missing.is-done { color: var(--ink-2); font-weight: 400; }
 .a-prow p.a-missing.is-done::before { background: var(--success); }
