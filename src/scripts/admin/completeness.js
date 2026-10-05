@@ -2,15 +2,17 @@
 // of 100, with what is missing in words. The marketing teams see it on their
 // product lists; the manager sees the same on Products, to know what to ask for.
 
-/** An agricultural product: photo, a fuller description, purity, minimum, key points, category. */
+/** An agricultural product: photo, a fuller description, purity, minimum, key points, category, specification. */
 export function agriCompleteness(p) {
+  const specs = Object.values(p.spec || {}).filter((v) => String(v || '').trim()).length;
   return score([
-    [30, !!p.image, 'photo'],
-    [20, String(p.description || '').length >= 120, 'a fuller description (120 characters or more)'],
+    [25, !!p.image, 'photo'],
+    [15, String(p.description || '').length >= 120, 'a fuller description (120 characters or more)'],
     [10, !!p.purity, 'purity'],
     [10, !!p.moq, 'minimum order'],
-    [20, (p.specs || []).length >= 3, 'at least 3 key points'],
-    [10, /^(sesame|pulses|spices|coffee|specialty)$/i.test(p.category || ''), 'a standard category'],
+    [15, (p.specs || []).length >= 3, 'at least 3 key points'],
+    [5, /^(sesame|pulses|spices|coffee|specialty)$/i.test(p.category || ''), 'a standard category'],
+    [20, specs >= 4, 'a specification (at least 4 values, such as moisture and packing)'],
   ]);
 }
 

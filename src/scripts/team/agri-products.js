@@ -6,6 +6,7 @@ import { $, h, api, toast, confirmDialog, busy, uploadImage } from '../admin/api
 import { scrollBehavior } from '../admin/motion.js';
 import { watch, clean, touch, mayLeave } from '../admin/tools.js';
 import { agriCompleteness, completeLine } from '../admin/completeness.js';
+import { SPEC_FIELDS } from '../../../lib/agri-spec.js';
 import { thumbUrl } from '../../../lib/thumb-url.js';
 
 let items = [];
@@ -117,6 +118,7 @@ function bind() {
       category: field('category').value.trim() || 'General',
       purity: field('purity').value.trim(), moq: field('moq').value.trim(),
       specs, image: field('image').value || null,
+      spec: Object.fromEntries(SPEC_FIELDS.map((f) => [f.key, field(`spec.${f.key}`).value.trim()])),
     };
     const done = busy($('#productSave'));
     try {
@@ -175,6 +177,7 @@ function fill(p) {
   field('moq').value = p.moq || '';
   field('description').value = p.description || '';
   field('specs').value = (p.specs || []).join('\n');
+  for (const f of SPEC_FIELDS) field(`spec.${f.key}`).value = p.spec?.[f.key] || '';
   field('image').value = p.image || '';
   $('#editorTitle').textContent = p.name;
   $('#productSave').textContent = 'Save changes';
