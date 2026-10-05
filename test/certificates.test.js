@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { certStatus, cleanCertification, sniffCertificate, EXPIRY_WARNING_DAYS } from '../lib/certificates.js';
+import { certStatus, cleanCertification, sniffCertificate, EXPIRY_WARNING_DAYS, reminderStage, dueReminders, createReminderCheck } from '../lib/certificates.js';
 
 for (const key of ['NODE_ENV', 'PORT', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_NAME', 'RECIPIENT_EMAIL', 'CORS_ORIGINS', 'SITE_URL']) process.env[key] = '';
 process.env.NODE_ENV = 'test';
@@ -99,4 +99,67 @@ test('the admin uploads a certificate and its details; the public list says what
   const gmp = list.find((c) => c.name === 'Test GMP');
   assert.equal((await req('DELETE', `/api/certifications/${gmp.id}`, { token: admin })).status, 200);
   assert.equal((await fetch(base + up.path)).status, 404, 'no longer used: the file is gone');
+});
+
+/* ---------------- reminders by email (fixed clock) ---------------- */
+const at = (d) => Date.parse(`${d}T09:00:00Z`);
+
+test('reminder stages: 60, 30 and 7 days before, then the day it expires (self-check)', () => {
+  const c = { id: 'x', name: 'X', validUntil: '2027-03-31' };
+  assert.equal(reminderStage(c, at('2027-01-01')), null, '89 days left: nothing yet');
+  assert.equal(reminderStage(c, at('2027-01-31')), 'd60');
+  assert.equal(reminderStage(c, at('2027-03-01')), 'd60', '31 days left');
+  assert.equal(reminderStage(c, at('2027-03-02')), 'd30');
+  assert.equal(reminderStage(c, at('2027-03-24')), 'd30', '8 days left');
+  assert.equal(reminderStage(c, at('2027-03-25')), 'd7');
+  assert.equal(reminderStage(c, at('2027-03-31')), 'd7', 'still valid on its last day');
+  assert.equal(reminderStage(c, at('2027-04-01')), 'expired');
+  assert.equal(reminderStage({ id: 'y', name: 'Y' }, at('2027-04-01')), null, 'no expiry date: no reminders');
+  // added late: only the most urgent stage, not every one it passed
+  assert.deepEqual(dueReminders([c], {}, at('2027-03-28')).map((r) => r.stage), ['d7']);
+  // a renewal (new expiry date) starts again
+  assert.deepEqual(dueReminders([{ ...c, validUntil: '2028-03-31' }], { x: { validUntil: '2027-03-31', stage: 'expired' } }, at('2028-02-01')).map((r) => r.stage), ['d60']);
+});
+
+test('each reminder is emailed once to the inbox and the managers; a failed send is tried again', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'olira-remind-'));
+  const rj = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return d; } };
+  const wj = (f, v) => { fs.writeFileSync(f, JSON.stringify(v)); return true; };
+  wj(path.join(dir, 'certifications.json'), [
+    { id: 'iso', name: 'ISO 22000', issuer: 'Bureau <Example>', number: 'FS 1', validUntil: '2027-03-31', file: '/uploads/certificates/iso-1.pdf' },
+    { id: 'org', name: 'Organic', validUntil: null },
+  ]);
+  const mails = [];
+  let fail = false;
+  const send = async (to, subject, html, extra) => { if (fail) throw new Error('smtp down'); mails.push({ to, subject, html, text: extra.text }); };
+  const check = createReminderCheck({ dataDir: dir, readJsonFile: rj, writeJsonFile: wj, send, recipients: () => ['info@olira.example', 'Boss@Olira.example', 'boss@olira.example', '', null], siteUrl: () => 'https://olira.example' });
+
+  assert.deepEqual((await check(at('2027-01-01'))).sent, [], 'nothing due yet');
+  assert.deepEqual((await check(at('2027-01-31'))).sent, [{ id: 'iso', stage: 'd60' }]);
+  assert.equal(mails.length, 1);
+  assert.equal(mails[0].to, 'info@olira.example, boss@olira.example', 'the inbox and each manager, once each');
+  assert.equal(mails[0].subject, 'ISO 22000 expires in 60 days');
+  assert.match(mails[0].html, /Bureau &lt;Example&gt;/, 'saved text is escaped in the email');
+  assert.match(mails[0].html, /https:\/\/olira\.example\/admin\/#certifications/);
+  assert.deepEqual((await check(at('2027-02-01'))).sent, [], 'not sent twice');
+  assert.deepEqual((await check(at('2027-02-15'))).sent, [], 'still not twice');
+
+  fail = true;
+  const before = mails.length;
+  assert.deepEqual((await check(at('2027-03-02'))).sent, [], 'the 30-day send failed');
+  assert.equal(mails.length, before);
+  fail = false;
+  assert.deepEqual((await check(at('2027-03-03'))).sent, [{ id: 'iso', stage: 'd30' }], 'and is tried again');
+  assert.deepEqual((await check(at('2027-03-25'))).sent, [{ id: 'iso', stage: 'd7' }]);
+  assert.deepEqual((await check(at('2027-04-01'))).sent, [{ id: 'iso', stage: 'expired' }], 'the last notice, on the day it comes off');
+  assert.equal(mails.at(-1).subject, 'ISO 22000 has expired and is off the website');
+  assert.deepEqual((await check(at('2027-05-01'))).sent, [], 'and nothing after');
+  assert.equal(mails.length, 4);
+
+  // no one to tell: nothing is recorded, so it goes when there is
+  wj(path.join(dir, 'certifications.json'), [{ id: 'gmp', name: 'GMP', validUntil: '2027-06-10' }]);
+  const silent = createReminderCheck({ dataDir: dir, readJsonFile: rj, writeJsonFile: wj, send, recipients: () => [], siteUrl: () => 'https://olira.example' });
+  assert.equal((await silent(at('2027-06-05'))).skipped, 'no recipients');
+  assert.deepEqual((await check(at('2027-06-05'))).sent, [{ id: 'gmp', stage: 'd7' }]);
+  assert.equal(rj(path.join(dir, 'certificate-reminders.json'), {}).iso, undefined, 'a removed certificate is forgotten');
 });

@@ -14,6 +14,7 @@ import { SOCIAL_KEYS, sanitizeSocialUrl } from './lib/social.js';
 import { registerPartners } from './lib/partners.js';
 import { registerPackaging, checkBundle, mergeSeedCatalogue } from './lib/packaging.js';
 import { registerCertificates } from './lib/certificates.js';
+import { registerSearchVerification } from './lib/search-verification.js';
 
 // Load environment variables from .env file (if it exists)
 dotenv.config();
@@ -1117,6 +1118,8 @@ app.post('/api/integrations/ads', rateLimit, adminAuth, (req, res) => {
   }
 });
 
+registerSearchVerification(app, { rateLimit, adminAuth, loadIntegrationsConfig, saveIntegrationsConfig, audit });
+
 // ============================================
 // CONTENT MANAGEMENT API (products, certs, contacts, branding)
 // ============================================
@@ -1347,7 +1350,12 @@ app.delete('/api/products/:id', staffOnly(['agri'], AGRI_ONLY), (req, res) => {
 
 // ----- CERTIFICATIONS -----
 // With proof: the certificate file, issuer, number and validity (lib/certificates.js).
-registerCertificates(app, { dataDir, uploadsDir, readJsonFile, writeJsonFile, audit, logError, adminAuth });
+// reminders go to the site's inbox and every manager (siteUrl and workspace are set further down)
+const certificates = registerCertificates(app, {
+  dataDir, uploadsDir, readJsonFile, writeJsonFile, audit, logError, adminAuth, sendEmail,
+  reminderRecipients: () => [loadEmailConfig()?.recipientEmail, ...workspace.managerEmails()],
+  siteUrl: () => siteUrl(),
+});
 
 // ----- CONTACT DETAILS -----
 
@@ -2183,6 +2191,7 @@ function startServer() {
   logConfigSummary();
   validateStartup();
   initializeEmailConfig();
+  certificates.startReminders();
 
   // F1 backstops. These catch errors that escape the request lifecycle (stray
   // async rejections, etc.). We log but do NOT exit: a single stray error should
