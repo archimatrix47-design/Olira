@@ -163,3 +163,35 @@ test('each reminder is emailed once to the inbox and the managers; a failed send
   assert.deepEqual((await check(at('2027-06-05'))).sent, [{ id: 'gmp', stage: 'd7' }]);
   assert.equal(rj(path.join(dir, 'certificate-reminders.json'), {}).iso, undefined, 'a removed certificate is forgotten');
 });
+
+/* ---------------- certificates attached to a team's reply ---------------- */
+test('a team can attach only certificates with a file that have not expired', async () => {
+  const { certificateAttachment } = await import('../lib/certificates.js');
+  assert.equal(certificateAttachment({ name: 'X' }, process.env.UPLOADS_DIR), null, 'no file: nothing to send');
+  assert.equal(certificateAttachment({ name: 'X', file: '/uploads/certificates/../../team.json' }, process.env.UPLOADS_DIR), null);
+
+  const admin = await adminToken();
+  const pdf = Buffer.from('%PDF-1.4\n% reply test\n1 0 obj << >> endobj\ntrailer << >>\n%%EOF');
+  const fd = new FormData(); fd.append('file', new Blob([pdf], { type: 'application/pdf' }), 'iso.pdf'); fd.append('name', 'Reply ISO');
+  const up = await (await req('POST', '/api/certifications/file', { token: admin, form: fd })).json();
+  const save = async (c) => (await (await req('POST', '/api/certifications', { token: admin, body: { certification: c } })).json()).certification;
+  const good = await save({ name: 'Reply ISO 22000', issuer: 'Bureau Example', validUntil: iso(Date.now() + 300 * day), file: up.path });
+  const old = await save({ name: 'Reply old GMP', validUntil: '2020-01-01', file: up.path });
+  const a = certificateAttachment(good, process.env.UPLOADS_DIR);
+  assert.equal(a.filename, 'Reply ISO 22000 certificate.pdf');
+  assert.equal(a.contentType, 'application/pdf');
+  assert.equal(certificateAttachment(old, process.env.UPLOADS_DIR), null, 'expired: off the website, so not sent either');
+
+  // an enquiry and an agriculture team member to answer it
+  await req('POST', '/api/admin/team', { token: admin, body: { member: { name: 'Agri Reply', email: 'agri.reply@example.com', role: 'agri', password: 'agri-password-12' } } });
+  const team = (await (await req('POST', '/api/team/login', { body: { email: 'agri.reply@example.com', password: 'agri-password-12' } })).json()).token;
+  assert.equal((await req('POST', '/api/inquiry', { body: { name: 'Buyer', email: 'buyer.cert@example.com', product: 'Sesame', line: 'agri', message: 'Please send your ISO certificate.', website: '' } })).status, 200);
+  const lead = (await (await req('GET', '/api/team/inquiries', { token: team })).json()).inquiries.find((l) => l.email === 'buyer.cert@example.com');
+  const reply = (certificates) => req('POST', `/api/team/inquiries/${lead.id}/reply`, { token: team, body: { subject: 'Our certificate', body: 'Please find our certificate attached.', certificates } });
+  assert.equal((await reply(['no-such-certificate'])).status, 400);
+  assert.equal((await reply([old.id])).status, 400, 'an expired certificate is refused at send time');
+  // a valid one passes every check; this test server has no mail account, so it stops there
+  const ok = await reply([good.id]);
+  assert.equal(ok.status, 503);
+  assert.equal((await ok.json()).code, 'no_smtp');
+});

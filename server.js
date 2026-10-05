@@ -13,7 +13,7 @@ import { registerWorkspace, lineOfProduct } from './lib/workspace.js';
 import { SOCIAL_KEYS, sanitizeSocialUrl } from './lib/social.js';
 import { registerPartners } from './lib/partners.js';
 import { registerPackaging, checkBundle, mergeSeedCatalogue } from './lib/packaging.js';
-import { registerCertificates } from './lib/certificates.js';
+import { registerCertificates, certificateAttachment } from './lib/certificates.js';
 import { registerSearchVerification } from './lib/search-verification.js';
 import { registerThumbs } from './lib/thumbs.js';
 import { registerAdminTools } from './lib/admin-tools.js';
@@ -2001,6 +2001,8 @@ app.post('/api/upload/logo', adminAuth, (req, res) => {
 // ----- TEAM WORKSPACES AND PACKAGING PRODUCTS (lib/workspace.js, lib/packaging.js) -----
 const siteUrl = () => String(process.env.SITE_URL || (process.env.CORS_ORIGINS || '').split(',')[0] || 'https://oliraagroindustry.com').trim().replace(/\/+$/, '');
 const workspace = registerWorkspace(app, {
+  // a team attaches a certificate with proof to a reply (lib/certificates.js)
+  certificateFile: (id) => { const c = (readJsonFile(path.join(dataDir, 'certifications.json'), []) || []).find((x) => x.id === id); return c ? certificateAttachment(c, uploadsDir) : null; },
   dataDir, readJsonFile, writeJsonFile, audit, logError, sendEmail, loadEmailConfig,
   verifyTokenDetailed, generateToken, checkOrigin, clientIp, makeRateLimiter,
   inquiriesPath, isLoginDisabled: () => adminLoginDisabled, siteUrl,

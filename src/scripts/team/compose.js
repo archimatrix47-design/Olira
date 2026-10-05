@@ -98,6 +98,11 @@ export function quoteText(q) {
   return [`Quote ${q.number}`, ...lines, `Total: ${money(q.total)}`, '', ...terms, q.notes ? `\n${q.notes}` : ''].join('\n').trim();
 }
 
+// The certificates a team can attach: uploaded and not expired (the server checks
+// again when sending). Loaded once per page.
+let certList = null;
+const sendableCerts = () => (certList ||= api('/api/certifications').then((list) => (Array.isArray(list) ? list : []).filter((c) => c.file && ['valid', 'expiring'].includes(c.status))).catch(() => { certList = null; return []; }));
+
 export function composer(l, { onSent, draft } = {}) {
   const tpls = templatesFor(l);
   const select = h('select', { class: 'input', 'aria-label': 'Start from a template' },
@@ -126,6 +131,17 @@ export function composer(l, { onSent, draft } = {}) {
   const files = (l.files || []);
   const attach = files.length ? h('fieldset', { class: 'a-fieldset t-attach' }, h('legend', { class: 'a-label' }, 'Attach'),
     files.map((f) => h('label', { class: 'a-check' }, h('input', { type: 'checkbox', name: 'attach', value: f.id, checked: f.kind === 'mockup' && f.source === 'team' && (Date.now() - Date.parse(f.at)) < 86400000 ? true : null }), `${f.name}`))) : null;
+  // importers ask for the certificates in almost every first exchange
+  const certBox = h('fieldset', { class: 'a-fieldset t-attach t-certs', hidden: true }, h('legend', { class: 'a-label' }, 'Certificates'));
+  sendableCerts().then((list) => {
+    if (!list.length) {
+      if (lineOf(l) === 'agri') { certBox.hidden = false; certBox.append(h('p', { class: 'a-note' }, 'No certificate files to send yet. The administrator uploads them in Admin, Certifications.')); }
+      return;
+    }
+    certBox.hidden = false;
+    certBox.append(...list.map((c) => h('label', { class: 'a-check' }, h('input', { type: 'checkbox', name: 'cert', value: c.id }),
+      `${c.name}${c.issuer ? `, ${c.issuer}` : ''}${c.status === 'expiring' && c.daysLeft != null ? ` (expires in ${c.daysLeft} day${c.daysLeft === 1 ? '' : 's'})` : ''}`)));
+  });
   const copyMe = session.user?.email ? h('label', { class: 'a-check' }, h('input', { type: 'checkbox', name: 'copyMe', checked: true }), `Send a copy to ${session.user.email}`) : null;
   const insertQuote = l.quote ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => {
     const text = quoteText(l.quote);
@@ -141,7 +157,7 @@ export function composer(l, { onSent, draft } = {}) {
 
   const form = h('form', { class: 't-compose', 'data-compose': '', novalidate: true },
     h('p', { class: 'a-note' }, `To ${l.email || 'no email address'}. ${session.user?.email ? `Replies from the buyer go to ${session.user.email}.` : 'Replies go to the company inbox.'}`),
-    h('div', { class: 't-compose-row' }, select, insertQuote), subject, body, attach, copyMe,
+    h('div', { class: 't-compose-row' }, select, insertQuote), subject, body, attach, certBox, copyMe,
     h('div', { class: 'a-actions' }, send, mailApp, logSent), status);
 
   const refreshMailto = () => { mailApp.href = `mailto:${encodeURIComponent(l.email || '')}?subject=${encodeURIComponent(subject.value)}&body=${encodeURIComponent(body.value)}`; };
@@ -166,9 +182,10 @@ export function composer(l, { onSent, draft } = {}) {
     status.textContent = 'Sending the email.';
     try {
       const attachments = [...form.querySelectorAll('input[name=attach]:checked')].map((i) => i.value);
-      const r = await api(`/api/team/inquiries/${encodeURIComponent(l.id)}/reply`, { method: 'POST', body: { subject: subject.value, body: body.value, attachments, copyMe: form.querySelector('input[name=copyMe]')?.checked ?? false } });
+      const certificates = [...form.querySelectorAll('input[name=cert]:checked')].map((i) => i.value);
+      const r = await api(`/api/team/inquiries/${encodeURIComponent(l.id)}/reply`, { method: 'POST', body: { subject: subject.value, body: body.value, attachments, certificates, copyMe: form.querySelector('input[name=copyMe]')?.checked ?? false } });
       status.textContent = '';
-      toast(`Email sent to ${l.email}.`);
+      toast(`Email sent to ${l.email}${certificates.length ? `, with ${certificates.length} certificate${certificates.length === 1 ? '' : 's'}` : ''}.`);
       subject.value = ''; body.value = '';
       onSent?.(r.inquiry);
     } catch (x) {
