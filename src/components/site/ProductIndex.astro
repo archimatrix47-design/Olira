@@ -1,0 +1,22 @@
+---
+// Every product as a plain link to its own page, under the carousel: quick to
+// scan for a buyer who knows what they want, and followable by search engines
+// (the carousel's cards are buttons that open a panel, not links).
+interface Group { label: string; items: { name: string; href: string }[] }
+interface Props { groups: Group[]; id: string; title?: string }
+const { groups, id, title = 'Every product' } = Astro.props;
+const all = groups.filter((g) => g.items.length);
+---
+{all.length > 0 && (
+  <nav class="prod-index" aria-labelledby={id}>
+    <h3 id={id}>{title}</h3>
+    <div class="pi-groups">
+      {all.map((g) => (
+        <div class="pi-group">
+          {all.length > 1 && <p class="pi-label">{g.label}</p>}
+          <ul>{g.items.map((i) => <li><a href={i.href}>{i.name}</a></li>)}</ul>
+        </div>
+      ))}
+    </div>
+  </nav>
+)}

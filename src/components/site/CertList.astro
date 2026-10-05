@@ -1,0 +1,34 @@
+---
+// Certifications as buyers check them: what it is, who issued it, its number and
+// validity, and the certificate itself to open. An expired one is not shown; one
+// without its document offers a copy on request (it fills in the enquiry form).
+// src/scripts/certs.js renders the same markup from the live API after load.
+import { withStatus } from '../../../lib/certificates.js';
+import { certifications } from '../../lib/site-data';
+
+interface Props { id?: string; heading?: string; askHref?: string }
+const { id = 'certList', heading = 'Certifications', askHref = '#contact' } = Astro.props;
+const fmt = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const shown = certifications.map((c) => withStatus(c)).filter((c) => c.status !== 'expired');
+const meta = (c: any) => [c.issuer ? `Issued by ${c.issuer}` : '', c.number ? `certificate no. ${c.number}` : '', c.validUntil ? `valid until ${fmt(c.validUntil)}` : ''].filter(Boolean).join(', ');
+---
+<div class="certs" data-certs={id} hidden={shown.length === 0}>
+  <h3>{heading}</h3>
+  <ul id={id} data-ask-href={askHref}>
+    {shown.map((c) => (
+      <li class="cert">
+        <b>{c.name}</b>
+        <span class="cert-body">
+          {c.description && <span>{c.description}</span>}
+          {meta(c) && <span class="cert-meta">{meta(c).replace(/^./, (x) => x.toUpperCase())}.</span>}
+          <span class="cert-acts">
+            {c.file
+              ? <a href={c.file} target="_blank" rel="noopener" aria-label={`View the ${c.name} certificate (${c.fileType === 'pdf' ? 'PDF' : 'image'}, opens in a new tab)`}>View certificate</a>
+              : <a href={askHref} data-ask-cert={c.name} aria-label={`Ask for a copy of the ${c.name} certificate`}>Copy on request</a>}
+            {c.verifyUrl && <a href={c.verifyUrl} target="_blank" rel="noopener" aria-label={`Check ${c.name} with ${c.issuer || 'the issuer'} (opens in a new tab)`}>Check with the issuer</a>}
+          </span>
+        </span>
+      </li>
+    ))}
+  </ul>
+</div>

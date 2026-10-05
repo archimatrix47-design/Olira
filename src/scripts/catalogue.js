@@ -15,6 +15,7 @@ let FAMILIES = {};
 try { FAMILIES = JSON.parse(root?.dataset.families || '{}'); } catch (e) { FAMILIES = {}; }
 const FLEXO_MAX = Number(root?.dataset.flexoMax) || 4;
 let ALL = JSON.parse($('#packagingData')?.textContent || '[]');
+const PAGES = JSON.parse($('#productPages')?.textContent || '{}'); // products added after the build have no page yet
 let current = 'all';
 const byId = (id) => ALL.find((p) => p.id === id);
 
@@ -28,6 +29,7 @@ const flow = mountFlow($('.flow-wrap[data-flow="pack"]', root), {
     $('.detail-specs', panel).replaceChildren(...(p.specs || []).map((s) => h('li', {}, s)));
     $('.pp-add', panel).dataset.id = p.id;
     const studio = $('#pkStudio'); studio.hidden = !inStudio(p); studio.dataset.id = p.id;
+    const page = $('#pkPage'); if (page) { page.hidden = !PAGES[p.id]; if (PAGES[p.id]) page.href = PAGES[p.id]; }
     $('.detail-media', panel).classList.toggle('is-cutout', !!item.cutout);
     // a fresh canvas each time, so the live print paints this product, not the last one
     const old = $('.detail-media .flow-print', panel);

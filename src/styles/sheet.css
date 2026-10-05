@@ -434,3 +434,23 @@ main:has(> .choose) + .sheet-foot { margin-top: 12px; }
   .sheet-head .icon-btn { width: 44px; height: 44px; }
   .pp-add { min-height: 44px; }
 }
+
+/* ---------- geometry: Bauhaus boxes, Apple controls ----------
+   Three shapes, each with one job. Large boxes (the two business panels, the
+   product window, the specification, the studio stage) are plain rectangles.
+   Smaller products (tiles, cards, options, thumbnails) and fields get a small
+   fillet. What you press (buttons, chips, round icon buttons) stays a pill or
+   a circle. Colour is flat: one solid colour per accent word, no gradients. */
+.sheet-site { --r-box: 0; --r-product: 6px; --r-tile: 0; --r-card: var(--r-product); }
+.sheet-site :is(.door, .sheet, .specsheet, .detail-box, .stage-frame, .press, .proof, .pd-media, .pl-summary, .attach, .drop, .logo-advice, .form-fail) { border-radius: var(--r-box); }
+.sheet-site :is(.produce-tile, .flow-card, .pd-card, .pd-card-img, .bagopt-card, .bagopt-photo, .sizeopt-card, .station, .marquee-set a) { border-radius: var(--r-product); }
+.sheet-site :is(.input, .text-field, .brand-field input, .pl-field select, .pl-field input, .form input:not([type=checkbox]):not([type=radio]), .form select, .form textarea) { border-radius: var(--r-product); }
+/* accent words: one flat brand colour each (teal for packaging, leaf for agriculture) */
+.sheet-site .grad { background: none; color: var(--link); -webkit-background-clip: border-box; background-clip: border-box; padding-bottom: 0; }
+.sheet-site .grad-leaf { background: none; color: #A7C95B; -webkit-background-clip: border-box; background-clip: border-box; padding-bottom: 0; }
+/* the two business panels: full bleed, edge to edge, meeting with no gap (and no gap above the footer) */
+.choose { padding: 0; }
+.choose .choose-grid { gap: 0; max-width: none; padding-inline: 0; }
+.choose .door { min-height: calc(100svh - var(--bar-h)); }
+@media (max-width: 860px) { .choose .door { min-height: 0; } } /* stacked: each panel as tall as its content */
+main:has(> .choose) + .sheet-foot { margin-top: 0; }

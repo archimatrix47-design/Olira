@@ -5,23 +5,37 @@ import SiteFooter from '../components/site/SiteFooter.astro';
 import ContactLines from '../components/site/ContactLines.astro';
 import InquiryForm from '../components/site/InquiryForm.astro';
 import ProductFlow from '../components/site/ProductFlow.astro';
+import CertList from '../components/site/CertList.astro';
+import Faq from '../components/site/Faq.astro';
+import ProductIndex from '../components/site/ProductIndex.astro';
+import { graph, organizationGraph, breadcrumbs, faqPage, agriUrl, agriFaq, ORG_ID, AGRO_ID } from '../lib/seo';
 import { products, certifications, contact, SITE } from '../lib/site-data';
 
 // Ring position of each card with the first product in front (see site.css).
 // the carousel's cards: the same shape the packaging catalogue uses
 const items = products.map((p) => ({ id: p.id, name: p.name, sub: p.category, image: p.image, cat: p.category }));
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'OfferCatalog',
-  name: 'Olira Agro agricultural exports',
-  url: `${SITE}/agriculture/`,
-  provider: { '@type': 'Organization', name: 'Olira Agro Industry', url: `${SITE}/`, email: contact.email },
-  itemListElement: products.map((p) => ({
-    '@type': 'Offer',
-    itemOffered: { '@type': 'Product', name: p.name, category: p.category, description: p.description, ...(p.image ? { image: `${SITE}${p.image}` } : {}) },
-  })),
-};
+// each product's own page, for the "Full details" link and the product list
+const pages = Object.fromEntries(products.map((p) => [p.id, agriUrl(p)]));
+const faq = agriFaq();
+const jsonLd = graph(
+  organizationGraph(),
+  {
+    '@type': 'OfferCatalog',
+    '@id': `${SITE}/agriculture/#catalog`,
+    name: 'Olira Agro agricultural exports',
+    url: `${SITE}/agriculture/`,
+    provider: { '@id': ORG_ID },
+    brand: { '@id': AGRO_ID },
+    itemListElement: products.map((p) => ({
+      '@type': 'Offer',
+      url: `${SITE}${pages[p.id]}`,
+      itemOffered: { '@type': 'Product', '@id': `${SITE}${pages[p.id]}#product`, name: p.name, category: p.category, description: p.description, url: `${SITE}${pages[p.id]}`, ...(p.image ? { image: `${SITE}${p.image}` } : {}) },
+    })),
+  },
+  breadcrumbs([['Home', '/'], ['Agriculture', '/agriculture/']]),
+  faqPage('/agriculture/', faq),
+);
 ---
 <SiteLayout
   title="Agricultural exports, Olira Agro Industry"
@@ -57,7 +71,10 @@ const jsonLd = {
     <section class="container" id="range" style="padding-block: clamp(56px,7vw,96px)" aria-labelledby="rangeTitle">
       <h2 class="sr-only" id="rangeTitle">Product range</h2>
       <ProductFlow items={items} label="Agricultural products" kind="agri">
-        <a class="btn btn-lg btn-primary" id="detAsk" href="#contact">Ask about this product</a>
+        <div class="det-acts">
+          <a class="btn btn-lg btn-primary" id="detAsk" href="#contact">Ask about this product</a>
+          <a class="act" id="detPage" href="#range">Full details</a>
+        </div>
       </ProductFlow>
         <script is:inline>
           // Links from the home page land on a product line (?p=sesame|pulses|spices|coffee,
@@ -79,6 +96,8 @@ const jsonLd = {
           })();
         </script>
       <script type="application/json" id="productsData" set:html={JSON.stringify(products).replace(/</g, '\\u003c')}></script>
+      <script type="application/json" id="productPages" set:html={JSON.stringify(pages)}></script>
+      <ProductIndex id="agriIndex" groups={[...new Set(products.map((p) => p.category || 'Other'))].map((cat) => ({ label: cat, items: products.filter((p) => (p.category || 'Other') === cat).map((p) => ({ name: p.name, href: pages[p.id] })) }))} />
 
     </section>
 
@@ -97,15 +116,12 @@ const jsonLd = {
           <div class="spec-row"><dt>Purity</dt><dd class="v">99.95%</dd><dd class="d">Purity every sesame lot must reach</dd></div>
           <div class="spec-row"><dt>Food safety</dt><dd class="v">ISO 22000</dd><dd class="d">Food safety certified, with GMP and organic options</dd></div>
         </dl>
-        <div class="certs" id="certs" hidden={certifications.length === 0}>
-          <h3>Certifications</h3>
-          <ul id="certList">
-            {certifications.map((c) => <li><b>{c.name}</b>{c.description}</li>)}
-          </ul>
-        </div>
+        <CertList />
       </article>
       </div>
     </section>
+
+    <Faq items={faq} id="agriFaq" />
 
     <section class="sheet-sec" id="contact" aria-labelledby="contactTitle">
       <div class="container">
@@ -130,5 +146,5 @@ const jsonLd = {
 
   <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." />
 
-  <script>import '../scripts/agri.js'; import '../scripts/motion.js';</script>
+  <script>import '../scripts/agri.js'; import '../scripts/certs.js'; import '../scripts/motion.js';</script>
 </SiteLayout>

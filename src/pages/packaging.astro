@@ -8,6 +8,9 @@ import { contact, SITE, packagingProducts, FAMILIES, FLEXO_MAX_COLOURS } from '.
 import { sizesOf } from '../scripts/mockup/engine.js';
 import { inStudio, flowItem } from '../scripts/catalogue-panel.js';
 import ProductFlow from '../components/site/ProductFlow.astro';
+import Faq from '../components/site/Faq.astro';
+import ProductIndex from '../components/site/ProductIndex.astro';
+import { graph, organizationGraph, breadcrumbs, faqPage, packUrl, packFaq, ORG_ID, PACK_ID } from '../lib/seo';
 
 // The catalogue is every packaging product the admin shows on the site, grouped
 // by family. Products with a photo and print corners can also be designed in the
@@ -21,17 +24,27 @@ const firstSize = firstSizes.find((s) => s.id === 'medium') || firstSizes[0];
 const cm = (s: { w?: number | null; h?: number | null }) => ({ w: s.w || 0, h: s.h || 0 });
 const INK_STATIONS = [['Teal', '#186078'], ['Black', '#1B1A17'], ['Leaf green', '#5E7E19'], ['Red', '#A3301E']].slice(0, FLEXO_MAX_COLOURS);
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'OfferCatalog',
-  name: 'Olira Packaging',
-  url: `${SITE}/packaging/`,
-  provider: { '@type': 'Organization', name: 'Olira Agro Industry', url: `${SITE}/`, email: contact.email },
-  itemListElement: packagingProducts.map((p) => ({
-    '@type': 'Offer',
-    itemOffered: { '@type': 'Product', name: p.name, category: families[p.family || 'bags'], description: p.description, brand: { '@type': 'Brand', name: 'Olira Packaging' }, ...(p.image ? { image: `${SITE}${p.image}` } : {}) },
-  })),
-};
+// each product's own page, for the "Full details" link and the product list
+const pages = Object.fromEntries(packagingProducts.map((p) => [p.id, packUrl(p)]));
+const faq = packFaq();
+const jsonLd = graph(
+  organizationGraph(),
+  {
+    '@type': 'OfferCatalog',
+    '@id': `${SITE}/packaging/#catalog`,
+    name: 'Olira Packaging',
+    url: `${SITE}/packaging/`,
+    provider: { '@id': ORG_ID },
+    brand: { '@id': PACK_ID },
+    itemListElement: packagingProducts.map((p) => ({
+      '@type': 'Offer',
+      url: `${SITE}${pages[p.id]}`,
+      itemOffered: { '@type': 'Product', '@id': `${SITE}${pages[p.id]}#product`, name: p.name, category: families[p.family || 'bags'], description: p.description, url: `${SITE}${pages[p.id]}`, brand: { '@id': PACK_ID }, ...(p.image ? { image: `${SITE}${p.image}` } : {}) },
+    })),
+  },
+  breadcrumbs([['Home', '/'], ['Packaging', '/packaging/']]),
+  faqPage('/packaging/', faq),
+);
 // the catalogue opens on the first product with a photo, not on a placeholder
 const catalogueItems = packagingProducts.map((p) => flowItem(p, families));
 const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
@@ -84,10 +97,13 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
             <div class="pk-actions">
               <button class="pp-add" type="button" data-id="" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add to packing list</span></button>
               <a class="pp-studio" href="#studio" id="pkStudio">Design it in the studio</a>
+              <a class="pp-studio" href="#catalogue" id="pkPage">Full details</a>
             </div>
           </ProductFlow>
         </div>
         <script type="application/json" id="packagingData" set:html={JSON.stringify(packagingProducts).replace(/</g, '\\u003c')}></script>
+        <script type="application/json" id="productPages" set:html={JSON.stringify(pages)}></script>
+        <ProductIndex id="packIndex" groups={famsInUse.map((f) => ({ label: f.label, items: packagingProducts.filter((p) => p.family === f.id).map((p) => ({ name: p.name, href: pages[p.id] })) }))} />
       </div>
     </section>
 
@@ -281,6 +297,8 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
         </div>
       </div>
     </section>
+
+    <Faq items={faq} id="packFaq" />
 
     <section class="sheet-sec on-stage" id="quote" aria-labelledby="quoteTitle">
       <div class="container">

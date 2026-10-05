@@ -18,8 +18,10 @@ interface Props {
   /** One or more schema.org objects. */
   jsonLd?: object | object[];
   noindex?: boolean;
+  /** og:type: "website" for the line pages, "product" for a product page. */
+  ogType?: string;
 }
-const { title, description, ogImage = '/og-home.jpg', ogImageAlt = 'Olira Agro Industry', bodyClass, jsonLd, noindex = false } = Astro.props;
+const { title, description, ogImage = '/og-home.jpg', ogImageAlt = 'Olira Agro Industry', bodyClass, jsonLd, noindex = false, ogType = 'website' } = Astro.props;
 const url = `${SITE}${Astro.url.pathname}`;
 const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 ---
@@ -31,10 +33,15 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 <script is:inline>(function(){try{var s=localStorage.getItem('olira-theme');if(s==='dark'||s==='light')document.documentElement.setAttribute('data-theme',s);}catch(e){}})();</script>
 <title>{title}</title>
 <meta name="description" content={description}>
-{noindex ? <meta name="robots" content="noindex"> : <link rel="canonical" href={url}>}
+{noindex ? <meta name="robots" content="noindex"> : <Fragment>
+  <link rel="canonical" href={url}>
+  <!-- search engines may show large image previews and full snippets -->
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+</Fragment>}
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<meta property="og:type" content="website">
+<meta property="og:type" content={ogType}>
+<meta property="og:locale" content="en_GB">
 <meta property="og:site_name" content="Olira Agro Industry">
 <meta property="og:title" content={title}>
 <meta property="og:description" content={description}>
@@ -49,6 +56,8 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 <meta name="twitter:image" content={`${SITE}${ogImage}`}>
 {ld.map((obj) => <script type="application/ld+json" set:html={JSON.stringify(obj).replace(/</g, '\\u003c')} />)}
 <link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<!-- a plain-text guide to the site for AI assistants (llmstxt.org) -->
+<link rel="alternate" type="text/markdown" title="Olira Agro Industry for AI assistants" href="/llms.txt">
 <link rel="icon" type="image/png" href="/logo.png">
 <slot name="head" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -62,7 +71,7 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   fetch('/api/integrations').then(function (r) { return r.ok ? r.json() : null; }).then(function (c) {
     if (!c) return;
     var ga = c.analytics && c.analytics.measurementId;
-    var aw = c.ads && /^d{10}$/.test(c.ads.conversionId || '') ? 'AW-' + c.ads.conversionId : '';
+    var aw = c.ads && /^[0-9]{10}$/.test(c.ads.conversionId || '') ? 'AW-' + c.ads.conversionId : '';
     if (!/^G-[A-Z0-9]{10}$/.test(ga || '')) ga = '';
     if (!ga && !aw) return;
     var s = document.createElement('script'); s.async = true;

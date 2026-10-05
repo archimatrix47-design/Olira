@@ -34,3 +34,6 @@ deployment:
     # this host (a worker once ran 20+ days ignoring every restart). The script
     # kills the LiteSpeed lsnode worker so a fresh one spawns with the new code.
     - /bin/sh $APP/scripts/restart-app.sh $APP
+
+    # Tell Bing and the other IndexNow engines the pages changed (never fails the deploy).
+    - source $ACTIVATE && cd $APP && node scripts/indexnow.mjs || true

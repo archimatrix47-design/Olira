@@ -1,0 +1,65 @@
+---
+// A packaging product on its own page (/packaging/<product>/).
+import ProductPage from '../../components/site/ProductPage.astro';
+import { packagingProducts, FLEXO_MAX_COLOURS } from '../../lib/site-data';
+import { packSlug, packUrl, graph, organizationGraph, breadcrumbs, ORG_ID, PACK_ID, abs, familyLabel } from '../../lib/seo';
+import { cutoutOf, inStudio, specRows } from '../../scripts/catalogue-panel.js';
+
+export function getStaticPaths() {
+  return packagingProducts.map((p) => ({ params: { slug: packSlug(p) }, props: { id: p.id } }));
+}
+const p = packagingProducts.find((x) => x.id === Astro.props.id)!;
+const url = packUrl(p);
+const fam = familyLabel[p.family || 'bags'] || 'Packaging';
+const cm = (s: any) => (s.w && s.h ? `${[s.w, s.d, s.h].filter(Boolean).join(' x ')} cm` : '');
+
+// the same facts the catalogue shows, with each size spelled out when its measurements are known
+const [sizes, minimum, print] = specRows(p, FLEXO_MAX_COLOURS);
+const facts = [
+  { label: 'Group', value: fam },
+  { label: sizes[0], value: sizes[1], note: (p.sizes || []).filter((s: any) => cm(s)).map((s: any) => `${s.label} ${cm(s)}`).join(', ') || 'Made to the size you need' },
+  { label: minimum[0], value: minimum[1] },
+  { label: print[0], value: print[1], note: 'One ink station per colour, printed in register' },
+];
+// the same group first, and those with a picture before those without
+const score = (x: any) => (x.family === p.family ? 2 : 0) + (x.image ? 1 : 0);
+const related = packagingProducts.filter((x) => x.id !== p.id).sort((a, b) => score(b) - score(a)).slice(0, 4)
+  .map((x) => ({ name: x.name, href: packUrl(x), image: cutoutOf(x)?.cutout || x.image, cutout: !!cutoutOf(x), sub: familyLabel[x.family || 'bags'] }));
+const c = cutoutOf(p);
+
+const product = {
+  '@type': 'Product',
+  '@id': `${abs(url)}#product`,
+  name: p.name,
+  description: p.description,
+  url: abs(url),
+  sku: p.id,
+  category: fam,
+  ...(p.image ? { image: abs(p.image) } : {}),
+  brand: { '@id': PACK_ID },
+  manufacturer: { '@id': ORG_ID },
+  additionalProperty: [
+    ...(p.sizes || []).map((s: any) => ({ '@type': 'PropertyValue', name: `Size ${s.label}`, value: cm(s) || s.label })),
+    { '@type': 'PropertyValue', name: 'Print', value: print[1] },
+    { '@type': 'PropertyValue', name: 'Minimum order', value: minimum[1] },
+    ...(p.specs || []).map((s: string) => ({ '@type': 'PropertyValue', name: 'Key point', value: s })),
+  ],
+};
+const jsonLd = graph(organizationGraph(), product, breadcrumbs([['Home', '/'], ['Packaging', '/packaging/'], [p.name, url]]));
+---
+<ProductPage
+  line="pack"
+  name={p.name}
+  category={fam}
+  description={p.description || ''}
+  title={`${p.name}, printed with your logo | Olira Packaging`}
+  metaDescription={`${p.name} made in Addis Ababa and printed with your logo, ${print[1].toLowerCase()}. ${p.description || ''}`.slice(0, 300)}
+  image={c?.cutout || p.image}
+  cutout={c}
+  facts={facts}
+  points={p.specs}
+  related={related}
+  quoteHref={`/packaging/?ask=${encodeURIComponent(p.id)}#quote`}
+  studioHref={inStudio(p) ? `/packaging/?bag=${encodeURIComponent(p.id)}#studio` : null}
+  jsonLd={jsonLd}
+/>
