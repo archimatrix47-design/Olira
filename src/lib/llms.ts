@@ -6,6 +6,7 @@ import { SITE, contact, products, packagingProducts, certifications, FLEXO_MAX_C
 import { agriUrl, packUrl, familyLabel, agriFaq, packFaq } from './seo';
 import { withStatus } from '../../lib/certificates.js';
 import { specRows, priceFrom, etb } from '../scripts/catalogue-panel.js';
+import { cleanSpec, specRowsOf } from '../../lib/agri-spec.js';
 
 const certLines = () => certifications.map((c) => withStatus(c)).filter((c) => c.status !== 'expired').map((c) =>
   `- ${c.name}${c.description ? `: ${c.description}` : ''}${c.issuer ? `. Issued by ${c.issuer}` : ''}${c.number ? `, no. ${c.number}` : ''}${c.validUntil ? `, valid until ${c.validUntil}` : ''}${c.file ? `. Certificate: ${SITE}${c.file}` : '. Copy on request'}${c.verifyUrl ? `. Check with the issuer: ${c.verifyUrl}` : ''}`);
@@ -49,7 +50,7 @@ export function llmsFull() {
 
 - Page: ${SITE}${agriUrl(p)}
 - Category: ${p.category || 'Agriculture'}
-- Origin: Ethiopia${p.purity ? `\n- Purity: ${p.purity}` : ''}${p.moq ? `\n- Minimum order: ${p.moq}` : ''}
+- Origin: Ethiopia${p.purity ? `\n- Purity: ${p.purity}` : ''}${p.moq ? `\n- Minimum order: ${p.moq}` : ''}${specRowsOf(cleanSpec(p.spec)).map(([k, v]) => `\n- ${k}: ${v}`).join('')}
 
 ${p.description || ''}
 ${(p.specs || []).map((s) => `- ${s}`).join('\n')}`).join('\n\n');

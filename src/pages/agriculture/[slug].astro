@@ -3,6 +3,7 @@
 import ProductPage from '../../components/site/ProductPage.astro';
 import { products, SITE } from '../../lib/site-data';
 import { agriSlug, agriUrl, graph, organizationGraph, breadcrumbs, ORG_ID, AGRO_ID, abs } from '../../lib/seo';
+import { SPEC_FIELDS, cleanSpec } from '../../../lib/agri-spec.js';
 
 export function getStaticPaths() {
   return products.map((p) => ({ params: { slug: agriSlug(p) }, props: { id: p.id } }));
@@ -10,10 +11,14 @@ export function getStaticPaths() {
 const p = products.find((x) => x.id === Astro.props.id)!;
 const url = agriUrl(p);
 
+// the specification the agriculture team keeps (lib/agri-spec.js); pd-live.js refreshes it between deploys
+const spec = cleanSpec(p.spec);
+const specFacts = SPEC_FIELDS.filter((f) => spec[f.key]).map((f) => ({ key: `spec-${f.key}`, label: f.label, value: spec[f.key] }));
 const facts = [
   { label: 'Category', value: p.category || 'Agricultural product' },
-  ...(p.purity ? [{ label: 'Purity', value: p.purity }] : []),
-  ...(p.moq ? [{ label: 'Minimum order', value: p.moq, note: 'Per order. Tell us your volume and we confirm availability.' }] : []),
+  ...(p.purity ? [{ key: 'purity', label: 'Purity', value: p.purity }] : []),
+  ...(p.moq ? [{ key: 'moq', label: 'Minimum order', value: p.moq, note: 'Per order. Tell us your volume and we confirm availability.' }] : []),
+  ...specFacts,
   { label: 'Origin', value: 'Ethiopia' },
   { label: 'Processing', value: 'Burayu', note: 'Cleaned, sorted and tested at our facility, 15 km west of Addis Ababa' },
 ];
@@ -35,6 +40,7 @@ const product = {
   additionalProperty: [
     ...(p.purity ? [{ '@type': 'PropertyValue', name: 'Purity', value: p.purity }] : []),
     ...(p.moq ? [{ '@type': 'PropertyValue', name: 'Minimum order quantity', value: p.moq }] : []),
+    ...specFacts.map((f) => ({ '@type': 'PropertyValue', name: f.label, value: f.value })),
     ...(p.specs || []).map((s) => ({ '@type': 'PropertyValue', name: 'Key point', value: s })),
   ],
 };
@@ -53,4 +59,5 @@ const jsonLd = graph(organizationGraph(), product, breadcrumbs([['Home', '/'], [
   related={related}
   quoteHref={`/agriculture/?ask=${encodeURIComponent(p.id)}#contact`}
   jsonLd={jsonLd}
+  productId={p.id}
 />

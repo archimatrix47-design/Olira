@@ -18,6 +18,7 @@ import { registerSearchVerification } from './lib/search-verification.js';
 import { registerThumbs } from './lib/thumbs.js';
 import { registerAdminTools } from './lib/admin-tools.js';
 import { registerTargets } from './lib/targets.js';
+import { cleanSpec } from './lib/agri-spec.js';
 import { cleanAgriTerms, GENERIC_PRODUCT } from './lib/enquiry.js';
 
 // Load environment variables from .env file (if it exists)
@@ -1327,6 +1328,8 @@ app.post('/api/products', staffOnly(['agri'], AGRI_ONLY), (req, res) => {
       purity: String(product.purity || '').slice(0, 50),
       moq: String(product.moq || '').slice(0, 50),
       specs: Array.isArray(product.specs) ? product.specs.slice(0, 20).map(s => String(s).slice(0, 200)) : [],
+      // the specification sheet (lib/agri-spec.js); kept as it was when the form does not send it
+      spec: product.spec === undefined ? (idx >= 0 ? cleanSpec(list[idx].spec) : {}) : cleanSpec(product.spec),
       image: product.image || null
     };
     audit('product_saved', req, { id, by: req.teamUser.id });

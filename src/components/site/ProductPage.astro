@@ -52,7 +52,7 @@ const nav = agri
       </ol>
     </nav>
 
-    <section class="wrap pd" aria-labelledby="pdTitle" data-live-product={!agri && p.productId ? p.productId : null} data-flexo-max={p.flexoMax ?? null}>
+    <section class="wrap pd" aria-labelledby="pdTitle" data-live-product={p.productId || null} data-line={p.line} data-flexo-max={p.flexoMax ?? null}>
       <div class:list={['pd-media', { 'is-cutout': !!p.cutout, 'is-empty': !p.image }]}>
         {p.cutout
           ? <Fragment set:html={standHTML(p.cutout, p.name, { eager: true })} />

@@ -28,6 +28,7 @@ function read<T>(file: string, fallback: T): T {
 export interface Product {
   id: string; name: string; category?: string; description?: string;
   purity?: string; moq?: string; specs?: string[]; image?: string | null;
+  spec?: Record<string, string>;   // the specification sheet (lib/agri-spec.js)
 }
 export interface Certification {
   id: string; name: string; description?: string; image?: string | null;

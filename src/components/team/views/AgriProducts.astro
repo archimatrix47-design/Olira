@@ -1,5 +1,6 @@
 ---
 // Agriculture team: the products on the agriculture page. scripts/team/agri-products.js.
+import { SPEC_FIELDS } from '../../../../lib/agri-spec.js';
 ---
 <!-- PRODUCTS: the agriculture page's stack, looked after by the agriculture team -->
 <section class="a-view" data-view="products" aria-labelledby="h-products" hidden>
@@ -60,6 +61,18 @@
           <textarea class="input" id="pSpecs" name="specs" aria-describedby="pSpecsHint" style="min-height:96px"></textarea>
           <p class="hint" id="pSpecsHint">One per line, up to 20. Shown as a list in the product details.</p>
         </div>
+        <fieldset class="a-fieldset a-spec" aria-describedby="pSpecHint">
+          <legend class="a-label">Specification</legend>
+          <p class="hint" id="pSpecHint">What an importer's quality team checks. Fill in what you can state for every shipment and leave the rest blank. Shown as the specification sheet on the product's page.</p>
+          <div class="a-two">
+            {SPEC_FIELDS.map((f) => (
+              <div class="a-field">
+                <label for={`pSpec-${f.key}`}>{f.label}</label>
+                <input class="input" id={`pSpec-${f.key}`} name={`spec.${f.key}`} maxlength="120" placeholder={f.hint} autocomplete="off">
+              </div>
+            ))}
+          </div>
+        </fieldset>
         <div class="a-field">
           <span class="a-label" id="pImageLabel">Photo</span>
           <div class="a-image-row">

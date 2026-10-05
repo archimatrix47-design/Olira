@@ -62,7 +62,7 @@ function renderAgri(a, items) {
   box.replaceChildren(h('div', { class: 'a-scroll' }, table),
     h('p', { class: 'v-note' }, incomplete.length
       ? `To ask the agriculture team for: ${incomplete.slice(0, 3).map((r) => `${r.p.name} needs ${r.c.missing.join(', ')}`).join('. ')}.`
-      : 'Every product has a photo, a full description, purity, minimum order and key points.'));
+      : 'Every product has a photo, a full description, purity, minimum order, key points and a specification.'));
 }
 
 // A packaging product is designable in the studio once it has a photo and its print corners.
