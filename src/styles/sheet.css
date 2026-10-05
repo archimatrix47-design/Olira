@@ -1,8 +1,8 @@
 /* The public site, product-first (2026-09-28).
    Built on Apple's product-page discipline: one message per section, the product
    as the picture, a white page and a light grey stage, near-black ink, the logo's
-   teal as the one accent, pills for actions and a chevron for links. Type is the
-   system face on Apple devices and Hanken Grotesk elsewhere, tracked tighter as
+   teal as the one accent, pills for actions and a chevron for links. Type is
+   Inter on every device (the closest open match to Apple's face), tracked tighter as
    it grows. The one signature is the visitor's brand printed live on the
    products (live-print.js). The palette lives in tokens.css.
    Breakpoints: 520px, 760px, 960px. */

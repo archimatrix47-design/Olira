@@ -401,7 +401,7 @@ document.addEventListener('studio:pick', (e) => {
 buildSizes();
 syncRadios();
 draw().catch(() => { $('#stageInfo').textContent = 'The bag image could not load. Refresh the page to try again.'; });
-document.fonts?.load('700 60px "Hanken Grotesk"').then(() => draw()).catch(() => {});
+document.fonts?.load('700 60px "Inter"').then(() => draw()).catch(() => {});
 // a bag with a dark theme photo switches with the page
 onThemeChange(() => draw());
 // warm the other bags so switching is instant

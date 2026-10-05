@@ -1,0 +1,114 @@
+/* The staff tools' look (2026-10-05): Apple's monochrome.
+   White, Apple's light grey (#F5F5F7) and near-black (#1D1D1F); the brand teal is on
+   the header and nowhere else. Colour that carries meaning stays: red for an error
+   or a destructive action, small green and amber marks for a status.
+   Loaded last on the admin and the team pages (after admin.css, admin-insights.css
+   and team.css), so these tokens and the few rules below win. Contrast: ink-2 is
+   #636366 (not Apple's #6E6E73) so secondary text stays above 4.5:1 on a selected row. */
+
+.admin-body {
+  --brand: #186078;            /* the header, and only the header: white on it is 7.4:1 */
+  --brand-ink: #FFFFFF;
+  --canvas: #F5F5F7;
+  --surface: #FFFFFF;
+  --surface-2: #F5F5F7;
+  --side-bg: #FFFFFF;
+  --ink: #1D1D1F;
+  --ink-2: #636366;            /* 6.0:1 on white, 5.5:1 on #F5F5F7, 4.9:1 on a selected row */
+  --ink-3: #6E6E73;            /* hints and placeholders: 5.1:1 on white */
+  --line: rgba(0, 0, 0, .08);
+  --line-strong: rgba(0, 0, 0, .16);
+  --fill-1: rgba(0, 0, 0, .04);
+  --accent: #1D1D1F;           /* actions and the chosen item: black, as on apple.com */
+  --accent-hover: #000000;
+  --accent-subtle: #F0F0F2;
+  --on-accent: #FFFFFF;
+  --link: #1D1D1F;
+  --row-sel: #E8E8ED;
+  --leaf: #8E8E93;
+  --leaf-text: #1D1D1F;
+  --viz-a: #1D1D1F;            /* this period */
+  --viz-b: #8E8E93;            /* the other line, or the period before */
+  --viz-context: #C7C7CC;
+  --ramp-1: #EDEDF0; --ramp-2: #D2D2D7; --ramp-3: #A1A1A6; --ramp-4: #636366; --ramp-5: #1D1D1F;
+  --good: #1E7A34;             /* status only: 5.4:1 on white */
+  --warn: #8A5300;             /* status only: 5.9:1 on white */
+  --glass-bar: var(--brand);
+}
+:root[data-theme="dark"] .admin-body {
+  --canvas: #000000;
+  --surface: #1C1C1E;
+  --surface-2: #2C2C2E;
+  --side-bg: #0E0E10;
+  --ink: #F5F5F7;
+  --ink-2: #A1A1A6;            /* 6.6:1 on #1C1C1E */
+  --ink-3: #98989D;
+  --line: rgba(255, 255, 255, .1);
+  --line-strong: rgba(255, 255, 255, .2);
+  --fill-1: rgba(255, 255, 255, .06);
+  --accent: #F5F5F7;           /* actions turn white on black */
+  --accent-hover: #FFFFFF;
+  --accent-subtle: #2C2C2E;
+  --on-accent: #000000;
+  --link: #F5F5F7;
+  --row-sel: #2C2C2E;
+  --leaf: #8E8E93;
+  --leaf-text: #F5F5F7;
+  --viz-a: #F5F5F7;
+  --viz-b: #8E8E93;
+  --viz-context: #48484A;
+  --ramp-1: #1C1C1E; --ramp-2: #2C2C2E; --ramp-3: #48484A; --ramp-4: #8E8E93; --ramp-5: #F5F5F7;
+  --good: #63D17C;
+  --warn: #F2B35B;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .admin-body {
+    --canvas: #000000;
+    --surface: #1C1C1E;
+    --surface-2: #2C2C2E;
+    --side-bg: #0E0E10;
+    --ink: #F5F5F7;
+    --ink-2: #A1A1A6;
+    --ink-3: #98989D;
+    --line: rgba(255, 255, 255, .1);
+    --line-strong: rgba(255, 255, 255, .2);
+    --fill-1: rgba(255, 255, 255, .06);
+    --accent: #F5F5F7;
+    --accent-hover: #FFFFFF;
+    --accent-subtle: #2C2C2E;
+    --on-accent: #000000;
+    --link: #F5F5F7;
+    --row-sel: #2C2C2E;
+    --leaf: #8E8E93;
+    --leaf-text: #F5F5F7;
+    --viz-a: #F5F5F7;
+    --viz-b: #8E8E93;
+    --viz-context: #48484A;
+    --ramp-1: #1C1C1E; --ramp-2: #2C2C2E; --ramp-3: #48484A; --ramp-4: #8E8E93; --ramp-5: #F5F5F7;
+    --good: #63D17C;
+    --warn: #F2B35B;
+  }
+}
+
+/* ---------- the header: the one place for the brand colour ---------- */
+.admin-body .a-top { background: var(--brand); color: var(--brand-ink); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.admin-body .a-top .a-brand { color: var(--brand-ink); }
+.admin-body .a-top .a-brand img { filter: brightness(0) invert(1); } /* the logo in white */
+.admin-body .a-top .a-brand span { color: rgba(255, 255, 255, .9); border-left-color: rgba(255, 255, 255, .35); }
+.admin-body .a-top .t-user { color: rgba(255, 255, 255, .9); }
+.admin-body .a-top :is(.btn, .icon-btn) { background: transparent; color: var(--brand-ink); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5); border-color: transparent; }
+.admin-body .a-top .btn-ghost { box-shadow: none; }
+.admin-body .a-top :is(.btn, .icon-btn):hover { background: rgba(255, 255, 255, .14); color: var(--brand-ink); }
+.admin-body .a-top :focus-visible { outline: 2px solid var(--brand-ink); outline-offset: 2px; }
+
+/* ---------- monochrome details ---------- */
+/* both business lines are named in words, not told apart by colour */
+.admin-body :is(.a-tag.agri, .a-tag.pack, .a-avatar.agri, .a-avatar.pack) { background: var(--fill-1); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.admin-body :is(.t-line-agri, .t-line-pack) { color: var(--ink); }
+/* a won enquiry is good news: the one green tag */
+.admin-body .a-tag.stage-won { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); box-shadow: none; }
+.admin-body .a-status.on::before { background: var(--good); }
+/* links read as links without colour */
+.admin-body main a:not(.btn):not(.a-nav-link):not(.t-card):not(.t-stat-link):not([class*="a-prow"]) { text-decoration-thickness: 1px; text-underline-offset: 3px; }
+/* the focus ring: ink, never the brand colour */
+.admin-body :focus-visible { outline-color: var(--ink); }

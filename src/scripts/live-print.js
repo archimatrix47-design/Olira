@@ -116,8 +116,8 @@ for (const i of inputs) {
   i.addEventListener('input', () => setBrand(i.value, i));
 }
 echo();
-// the engine sets type in Hanken Grotesk: wait for it, or the first print uses a fallback face
-(document.fonts?.load('700 40px "Hanken Grotesk"') || Promise.resolve()).catch(() => {}).then(() => { watch(); toStudio(); });
+// the engine sets type in Inter: wait for it, or the first print uses a fallback face
+(document.fonts?.load('700 40px "Inter"') || Promise.resolve()).catch(() => {}).then(() => { watch(); toStudio(); });
 document.addEventListener('catalogue:rendered', watch);
 
 export const liveBrand = { get: text, set: setBrand };

@@ -141,10 +141,10 @@ export function drawArt(B, d) {
     if (logoH > AH * 0.32 * s) { logoH = AH * 0.32 * s; logoW = logoH * ratio; }
   } else { logoW = AW * 0.44 * s; logoH = AW * 0.26 * s; }
   let size1 = AW * 0.135 * s;
-  a.font = `700 ${size1}px "Hanken Grotesk", sans-serif`;
+  a.font = `700 ${size1}px "Inter", sans-serif`;
   const w1 = a.measureText(d.text1).width; if (w1 > maxW) size1 *= maxW / w1;
   let size2 = Math.min(AW * 0.062 * s, size1 * 0.62);
-  a.font = `500 ${size2}px "Hanken Grotesk", sans-serif`;
+  a.font = `500 ${size2}px "Inter", sans-serif`;
   const w2 = a.measureText(d.text2).width; if (w2 > maxW) size2 *= maxW / w2;
   let gap = AW * 0.06 * s;
   let total = logoH + (d.text1 ? gap + size1 : 0) + (d.text2 ? gap * 0.55 + size2 : 0);
@@ -171,13 +171,13 @@ export function drawArt(B, d) {
   } else if (d.placeholder !== false) {
     a.save(); a.strokeStyle = ink; a.globalAlpha = 0.65; a.lineWidth = 5; a.setLineDash([16, 12]);
     a.beginPath(); a.roundRect(cx - logoW / 2, y, logoW, logoH, 18); a.stroke();
-    a.setLineDash([]); a.globalAlpha = 0.85; a.fillStyle = ink; a.font = `600 ${Math.round(Math.min(AW * 0.052 * s, logoH * 0.3))}px "Hanken Grotesk", sans-serif`;
+    a.setLineDash([]); a.globalAlpha = 0.85; a.fillStyle = ink; a.font = `600 ${Math.round(Math.min(AW * 0.052 * s, logoH * 0.3))}px "Inter", sans-serif`;
     a.textAlign = 'center'; a.textBaseline = 'middle'; a.fillText('YOUR LOGO', cx, y + logoH / 2); a.restore();
   }
   y += logoH;
   a.fillStyle = ink; a.textAlign = 'center'; a.textBaseline = 'top';
-  if (d.text1) { y += gap; a.font = `700 ${size1}px "Hanken Grotesk", sans-serif`; a.fillText(d.text1, cx, y); y += size1; }
-  if (d.text2) { y += gap * 0.55; a.font = `500 ${size2}px "Hanken Grotesk", sans-serif`; a.fillText(d.text2, cx, y); }
+  if (d.text1) { y += gap; a.font = `700 ${size1}px "Inter", sans-serif`; a.fillText(d.text1, cx, y); y += size1; }
+  if (d.text2) { y += gap * 0.55; a.font = `500 ${size2}px "Inter", sans-serif`; a.fillText(d.text2, cx, y); }
 }
 
 /** Where the artwork sits on the artboard: filling it (cover) or all of it inside (contain), then scaled and moved. */
@@ -198,9 +198,9 @@ function drawArtwork(B, d) {
     a.save(); a.strokeStyle = ink; a.globalAlpha = 0.6; a.lineWidth = 6; a.setLineDash([18, 12]);
     a.strokeRect(10, 10, AW - 20, AH - 20);
     a.setLineDash([]); a.globalAlpha = 0.85; a.fillStyle = ink; a.textAlign = 'center'; a.textBaseline = 'middle';
-    a.font = `700 ${Math.round(Math.min(AW * 0.075, AH * 0.08))}px "Hanken Grotesk", sans-serif`;
+    a.font = `700 ${Math.round(Math.min(AW * 0.075, AH * 0.08))}px "Inter", sans-serif`;
     a.fillText('YOUR ARTWORK', AW / 2, AH / 2 - AW * 0.035);
-    a.font = `500 ${Math.round(Math.min(AW * 0.038, AH * 0.04))}px "Hanken Grotesk", sans-serif`;
+    a.font = `500 ${Math.round(Math.min(AW * 0.038, AH * 0.04))}px "Inter", sans-serif`;
     a.fillText('fills this print area', AW / 2, AH / 2 + AW * 0.045);
     a.restore();
     return;
