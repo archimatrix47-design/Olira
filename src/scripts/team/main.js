@@ -19,6 +19,7 @@ const VIEWS = {
   followups: lists.showFollowups,
   quotes: lists.showQuotes,
   account: account.show,
+  buyers: (opts) => import('./buyers.js').then((m) => m.show(opts)),
 };
 if (LINE === 'manager') {
   Object.assign(VIEWS, {

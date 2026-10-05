@@ -45,14 +45,15 @@ const icon: Record<string, string> = {
   social: '<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>',
   partners: '<rect x="3" y="7" width="7" height="10" rx="1.5"/><rect x="14" y="7" width="7" height="10" rx="1.5"/><path d="M10 12h4"/>',
   account: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>',
+  buyers: '<path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-5h6v5M9 11h.01M15 11h.01"/>',
 };
 const nav: { label: string, items: string[][] }[] = manager ? [
   { label: 'Daily', items: [['dashboard', 'Dashboard'], ['inbox', 'Enquiries'], ['pipeline', 'Pipeline'], ['followups', 'Follow-ups']] },
-  { label: 'Sales', items: [['quotes', 'Quotes'], ['people', 'Team performance'], ['report', 'Report']] },
+  { label: 'Sales', items: [['buyers', 'Buyers'], ['quotes', 'Quotes'], ['people', 'Team performance'], ['report', 'Report']] },
   { label: 'Website', items: [['traffic', 'Traffic'], ['products', 'Products']] },
   { label: 'You', items: [['account', 'My account']] },
 ] : [
-  { label: 'Sales', items: [['inbox', 'Inbox'], ['followups', 'Follow-ups'], ['quotes', 'Quotes'], ...(pack ? [['mockups', 'Mockups']] : [])] },
+  { label: 'Sales', items: [['inbox', 'Inbox'], ['followups', 'Follow-ups'], ['quotes', 'Quotes'], ['buyers', 'Buyers'], ...(pack ? [['mockups', 'Mockups']] : [])] },
   { label: 'Website', items: [['products', pack ? 'Packaging products' : 'Agriculture products'], ...(pack ? [['minimums', 'Prices and minimums']] : []), ['social', 'Contact links'], ['partners', 'Partner logos']] },
   { label: 'You', items: [['account', 'My account']] },
 ];
@@ -199,6 +200,40 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
     </section>
 
     <!-- QUOTES -->
+    <!-- BUYERS: every company that has enquired, with its whole history (scripts/team/buyers.js) -->
+    <section class="a-view" data-view="buyers" aria-labelledby="h-buyers" hidden>
+      <div class="a-head">
+        <div>
+          <h1 id="h-buyers">Buyers <span class="a-h1-count" id="buyerCount"></span></h1>
+          <p>{manager ? 'Everyone who has enquired, in both lines, grouped by company: their people, every enquiry and quote, and where each stands.' : 'Everyone who has enquired, grouped by company: their people, every enquiry and quote, and where each stands. A returning buyer is recognised here.'}</p>
+        </div>
+      </div>
+      <div class="a-card t-toolbar">
+        <div class="t-toolbar-row">
+          <label class="sr-only" for="buyerSearch">Search buyers</label>
+          <input class="input grow" id="buyerSearch" type="search" placeholder="Search company, person, email or product">
+          {manager && (
+            <Fragment>
+              <label class="sr-only" for="buyerLine">Business line</label>
+              <select class="input" id="buyerLine"><option value="all">Both lines</option><option value="agri">Agriculture</option><option value="pack">Packaging</option></select>
+            </Fragment>
+          )}
+          <label class="sr-only" for="buyerSort">Sort</label>
+          <select class="input" id="buyerSort">
+            <option value="recent">Latest contact first</option>
+            <option value="enquiries">Most enquiries</option>
+            <option value="value">Highest quoted value</option>
+            <option value="name">By name</option>
+          </select>
+        </div>
+        <p class="sr-only" id="buyerSummary" role="status" aria-live="polite"></p>
+      </div>
+      <div class="t-inbox">
+        <ul class="t-list" id="buyerList" aria-label="Buyers"></ul>
+        <article class="t-detail a-card" id="buyerDetail" aria-live="off"></article>
+      </div>
+    </section>
+
     <section class="a-view" data-view="quotes" aria-labelledby="h-quotes" hidden>
       <div class="a-head">
         <div>

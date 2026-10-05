@@ -287,3 +287,13 @@ html[data-input="keyboard"] .t-card:active { transform: none; }
 /* team performance: the quote value sits under the count */
 .t-people td small { display: block; font-size: .75rem; color: var(--ink-2); white-space: nowrap; }
 .t-person { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+/* buyers: the count beside the title, and the people at a company */
+.a-h1-count { font-size: .55em; font-weight: 500; color: var(--ink-2); vertical-align: middle; font-variant-numeric: tabular-nums; }
+.t-people-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.t-people-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.t-people-list strong { flex-basis: 100%; font-weight: 600; }
+/* a buyer's enquiries: text columns read from the left; dates do not wrap */
+#buyerDetail .a-table :is(th, td) { text-align: left; vertical-align: top; }
+#buyerDetail .a-table :is(th, td):last-child { text-align: right; }
+#buyerDetail .a-table td:first-child { white-space: nowrap; }
