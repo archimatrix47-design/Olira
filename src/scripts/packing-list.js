@@ -4,9 +4,12 @@
 // Kept in this browser only (localStorage), so it survives a reload or a visit
 // to the studio. The minimum order for each line comes from the packaging team
 // (packaging-data.js keeps it current); a line under its minimum is marked here,
-// and the server refuses it too, so the check cannot be skipped.
+// and the server refuses it too, so the check cannot be skipped. Where the team
+// has set a price per 1,000, each line and the list show a running estimate,
+// marked as an estimate: the quote confirms the price.
 import { $, $$, h, track, formHooks } from './common.js';
 import { byId, onProducts, minimumFor, units, fmt } from './packaging-data.js';
+import { priceFor, etb } from './catalogue-panel.js';
 import { flyTo, bump } from './motion.js';
 
 const KEY = 'olira-packing-list';
@@ -39,6 +42,22 @@ function problem(l) {
   if (min && q < min) return `Minimum order ${fmt(min)}. Raise the quantity to at least ${fmt(min)}.`;
   return '';
 }
+/** The line's estimate at the team's price per 1,000, or null when there is no price or quantity. */
+const lineEstimate = (l) => { const p = byId(l.productId), price = p && priceFor(p, l.sizeId), q = units(l.qty); return price && q ? Math.round((q / 1000) * price * 100) / 100 : null; };
+const lineCost = (l) => {
+  const p = byId(l.productId), price = p && priceFor(p, l.sizeId);
+  if (!price) return 'Price in your quote';
+  const est = lineEstimate(l);
+  return est ? `About ${etb(est)}, at ${etb(price)} per 1,000` : `${etb(price)} per 1,000`;
+};
+/** The list's estimate: the sum of the priced lines, and how many lines it covers. */
+function listEstimate() {
+  const priced = lines.filter((l) => lineEstimate(l) != null);
+  if (!priced.length) return null;
+  return { sum: priced.reduce((n, l) => n + lineEstimate(l), 0), covers: priced.length, of: lines.length };
+}
+const estimateNote = (e) => (e.covers === e.of ? 'An estimate. Prices are confirmed in your quote.' : `An estimate for ${e.covers} of ${e.of} products. The others are priced in your quote.`);
+
 const maxColours = (p) => (Number.isInteger(p?.printColours) ? p.printColours : FLEXO_MAX);
 const colourLabel = (c) => (c === '' || c == null ? 'Print to discuss' : Number(c) === 0 ? 'Plain, no print' : `${c} colour${Number(c) === 1 ? '' : 's'}`);
 
@@ -66,12 +85,12 @@ function renderDialog() {
         const dims = s.w && s.h ? ` (${[s.w, s.d, s.h].filter(Boolean).join(' x ')} cm)` : '';
         const o = h('option', { value: s.id }, `${s.label}${dims}`); o.selected = s.id === l.sizeId; sel.append(o);
       }
-      sel.addEventListener('change', () => { l.sizeId = sel.value; save(); refreshLine(li, l); renderSummary(); });
+      sel.addEventListener('change', () => { l.sizeId = sel.value; save(); refreshLine(li, l); renderSummary(); renderEstimate(); });
       fields.append(field('Size', sel));
     }
     const min = minimumFor(p, l.sizeId);
     const qty = h('input', { name: `qty-${i}`, inputmode: 'numeric', autocomplete: 'off', value: l.qty === '' ? '' : String(l.qty), placeholder: min ? fmt(min) : 'For example 5,000', 'aria-describedby': `plMin-${i}` });
-    qty.addEventListener('input', () => { l.qty = qty.value.trim(); save(); refreshLine(li, l, false); renderSummary(); });
+    qty.addEventListener('input', () => { l.qty = qty.value.trim(); save(); refreshLine(li, l, false); renderSummary(); renderEstimate(); });
     qty.addEventListener('blur', () => { const n = units(qty.value); if (n) { qty.value = fmt(n); l.qty = n; save(); } refreshLine(li, l, true); });
     fields.append(field('Quantity', qty));
     const col = h('select', { name: `colours-${i}` });
@@ -81,12 +100,22 @@ function renderDialog() {
     col.addEventListener('change', () => { l.colours = col.value; save(); renderSummary(); });
     fields.append(field('Print', col));
 
-    li.append(name, rm, fields, h('p', { class: 'pl-min', id: `plMin-${i}` }));
+    li.append(name, rm, fields, h('p', { class: 'pl-min', id: `plMin-${i}` }), h('p', { class: 'pl-cost', 'data-cost': '' }));
     refreshLine(li, l, false);
     return li;
   }));
   const n = lines.length;
   $('#plTotal').textContent = `${n} product${n === 1 ? '' : 's'}`;
+  renderEstimate();
+}
+function renderEstimate() {
+  const box = $('#plEstimate');
+  if (!box) return;
+  const e = listEstimate();
+  box.hidden = !e;
+  if (!e) return;
+  $('#plEstimateSum').textContent = etb(e.sum);
+  $('#plEstimateNote').textContent = estimateNote(e);
 }
 function refreshLine(li, l, showError = true) {
   const p = byId(l.productId), msgEl = $('.pl-min', li), qty = $('input', li);
@@ -97,6 +126,8 @@ function refreshLine(li, l, showError = true) {
   msgEl.textContent = hard ? err : min ? `Minimum order ${fmt(min)}` : 'Minimum order confirmed with your quote';
   if (hard && /quantity|Minimum/i.test(err)) qty.setAttribute('aria-invalid', 'true'); else qty.removeAttribute('aria-invalid');
   qty.placeholder = min ? fmt(min) : 'For example 5,000';
+  const cost = $('[data-cost]', li);
+  if (cost) cost.textContent = lineCost(l);
 }
 let FAMILY_NAMES = {};
 try { FAMILY_NAMES = JSON.parse(dialog?.dataset.families || '{}'); } catch (e) { FAMILY_NAMES = {}; }
@@ -121,6 +152,14 @@ function renderSummary() {
     if (err) tr.lastChild.style.color = 'var(--danger)';
     return tr;
   }));
+  const e = listEstimate();
+  if (e) {
+    const td = h('td', {}, 'Estimate');
+    td.append(h('small', {}, estimateNote(e)));
+    const tr = h('tr', { class: 'pl-summary-est' });
+    tr.append(td, h('td', {}, etb(e.sum)));
+    $('#plSummaryBody').append(tr);
+  }
 }
 
 /* ---------- counts and the Add buttons ---------- */

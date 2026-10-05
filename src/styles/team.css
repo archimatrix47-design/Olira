@@ -183,7 +183,15 @@
 .t-min-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .t-min-group { padding-block: 8px 4px; }
 .t-min-group > h2 { font-size: 1.0625rem; padding: 6px 0 8px; }
-.t-min-row { position: relative; display: grid; grid-template-columns: minmax(170px, 1.1fr) minmax(130px, .7fr) minmax(0, 2.4fr); gap: 8px 18px; align-items: start; padding-block: 12px; }
+.t-min-row { position: relative; display: grid; grid-template-columns: minmax(150px, .9fr) minmax(170px, .8fr) minmax(0, 2.4fr); gap: 8px 18px; align-items: start; padding-block: 12px; }
+.t-min-product { display: grid; gap: 8px; }
+/* a size: its name, then its minimum and its price side by side */
+.t-min-size { margin: 0; padding: 8px 10px 10px; border: 1px solid var(--line); border-radius: 6px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 8px; min-width: 0; }
+.t-min-size legend { padding: 0 4px; font-size: .75rem; font-weight: 600; color: var(--ink); }
+/* a number with its unit after it */
+.t-unit { position: relative; display: grid; }
+.t-unit .input { padding-right: calc(var(--unit, 3) * .5em + 22px); }
+.t-unit span { position: absolute; right: 10px; top: 50%; translate: 0 -50%; font-size: .75rem; color: var(--ink-2); pointer-events: none; }
 .t-min-row + .t-min-row { box-shadow: 0 -1px 0 var(--line); }
 /* a changed product is marked in the margin, so nothing on the row moves */
 .t-min-row.is-changed::before { content: ""; position: absolute; left: -12px; top: 12px; bottom: 12px; width: 3px; border-radius: 2px; background: var(--warn); }
@@ -192,7 +200,7 @@
 .t-min-name span { font-size: .8125rem; color: var(--ink-2); }
 .t-min-row .a-field > label { font-size: .75rem; font-weight: 600; color: var(--ink-2); }
 .t-min-row .input { font-variant-numeric: tabular-nums; }
-.t-min-sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 10px; }
+.t-min-sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 10px; }
 @media (max-width: 900px) {
   .t-min-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .t-min-name { grid-column: 1 / -1; padding-top: 0; }
@@ -261,6 +269,19 @@ html[data-input="keyboard"] .t-card:active { transform: none; }
 .t-card-owner { display: flex; justify-content: space-between; gap: 8px; font-size: .8125rem; color: var(--ink-2); }
 .t-card-owner em { font-style: normal; font-weight: 600; color: var(--danger); }
 .t-col > .btn { justify-self: start; }
+/* the card and its stage control read as one card: the link on top, the control under it */
+.t-card-wrap { border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(0,0,0,.04); }
+.t-card-wrap .t-card { background: transparent; box-shadow: none; border-radius: 12px 12px 0 0; padding-bottom: 8px; }
+.t-card-wrap:has(.t-card:hover) { box-shadow: 0 0 0 1px var(--line-strong), 0 6px 16px -8px rgba(0,0,0,.18); }
+.t-card-wrap:has(.t-card.is-late) { box-shadow: inset 3px 0 0 var(--danger), 0 0 0 1px var(--line); }
+.t-card-stage { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 12px; }
+.t-card-stage .input { flex: 1 1 100%; height: 32px; min-height: 0; padding-block: 0; font-size: .8125rem; }
+.t-card-stage .btn { flex: 1 1 100%; }
+@media (pointer: coarse) { .t-card-stage .input { height: 44px; } }
+/* the board scrolls sideways when the columns do not fit: a fade says there is more */
+.t-board[data-more-right] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent); }
+.t-board[data-more-left] { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 56px), transparent); }
+.t-board[data-more-left][data-more-right] { -webkit-mask-image: linear-gradient(to right, transparent, #000 56px, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(to right, transparent, #000 56px, #000 calc(100% - 56px), transparent); }
 @media (prefers-reduced-motion: reduce) { .t-card, .t-team-chip, .t-team-link { transition: none; } .t-card:active { transform: none; } }
 
 /* team performance: the quote value sits under the count */

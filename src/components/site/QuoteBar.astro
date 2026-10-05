@@ -1,0 +1,12 @@
+---
+// A slim "Request a quote" bar at the bottom of the screen on phones, so the way
+// to ask is never far on a long page. It appears once the page's own first
+// "Request a quote" (after) has scrolled away, and hides again while the form or
+// the footer (until) is on screen (src/scripts/quote-bar.js). Never on wider screens.
+interface Props { href: string; label?: string; after: string; until?: string }
+const { href, label = 'Request a quote', after, until = '' } = Astro.props;
+---
+<div class="quote-bar" data-quote-bar data-after={after} data-until={until} inert>
+  <a class="act fill" href={href}>{label}</a>
+</div>
+<script>import '../../scripts/quote-bar.js';</script>

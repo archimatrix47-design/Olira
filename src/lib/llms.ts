@@ -5,7 +5,7 @@
 import { SITE, contact, products, packagingProducts, certifications, FLEXO_MAX_COLOURS } from './site-data';
 import { agriUrl, packUrl, familyLabel, agriFaq, packFaq } from './seo';
 import { withStatus } from '../../lib/certificates.js';
-import { specRows } from '../scripts/catalogue-panel.js';
+import { specRows, priceFrom, etb } from '../scripts/catalogue-panel.js';
 
 const certLines = () => certifications.map((c) => withStatus(c)).filter((c) => c.status !== 'expired').map((c) =>
   `- ${c.name}${c.description ? `: ${c.description}` : ''}${c.issuer ? `. Issued by ${c.issuer}` : ''}${c.number ? `, no. ${c.number}` : ''}${c.validUntil ? `, valid until ${c.validUntil}` : ''}${c.file ? `. Certificate: ${SITE}${c.file}` : '. Copy on request'}${c.verifyUrl ? `. Check with the issuer: ${c.verifyUrl}` : ''}`);
@@ -31,7 +31,7 @@ ${products.map((p) => `- [${p.name}](${SITE}${agriUrl(p)}): ${p.category || 'Agr
 ## Printed packaging (Olira Packaging)
 
 - [Packaging overview](${SITE}/packaging/): catalogue, mockup studio, packing list and quote request
-${packagingProducts.map((p) => `- [${p.name}](${SITE}${packUrl(p)}): ${familyLabel[p.family || 'bags'] || 'Packaging'}`).join('\n')}
+${packagingProducts.map((p) => { const f = priceFrom(p); return `- [${p.name}](${SITE}${packUrl(p)}): ${familyLabel[p.family || 'bags'] || 'Packaging'}${f ? `, from ${etb(f.price)} per 1,000` : ''}`; }).join('\n')}
 
 ## Certifications
 

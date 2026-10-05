@@ -8,6 +8,8 @@ import { scrollBehavior } from '../admin/motion.js';
 import * as store from '../admin/store.js';
 import { DEFAULT_QUAD, convex, cornerEditor } from '../admin/corners.js';
 import { watch, clean, touch, mayLeave } from '../admin/tools.js';
+import { packCompleteness, completeLine } from '../admin/completeness.js';
+import { thumbUrl } from '../../../lib/thumb-url.js';
 
 let items = [];
 let bound = false;
@@ -39,6 +41,8 @@ const svgIcon = (d) => {
 };
 function renderList(focusId, which) {
   const list = $('#packList');
+  const done = $('#packComplete');
+  done.hidden = !items.length; done.textContent = completeLine(items, packCompleteness);
   if (!items.length) {
     list.replaceChildren(h('li', { class: 'a-empty' }, h('strong', {}, 'No packaging products yet'), 'Add the first product with the form.'));
     return;
@@ -46,7 +50,7 @@ function renderList(focusId, which) {
   list.replaceChildren(...items.map((p, i) => h('li', { class: `a-prow${draft?.id === p.id ? ' is-editing' : ''}`, 'data-id': p.id },
     h('button', { class: 'a-prow-open', type: 'button', 'aria-label': `Edit ${p.name}`, 'aria-current': draft?.id === p.id ? 'true' : null, onclick: () => edit(p) },
     h('span', { class: 'pos', 'aria-hidden': 'true' }, String(i + 1)),
-    p.image ? h('img', { src: p.image, alt: '', width: '52', height: '52', loading: 'lazy', style: 'object-fit:contain;background:var(--site-stage)' }) : h('span', { class: 'ph' }, 'No photo'),
+    p.image ? h('img', { src: thumbUrl(p.image, 120), alt: '', width: '52', height: '52', loading: 'lazy', style: 'object-fit:contain;background:var(--site-stage)' }) : h('span', { class: 'ph' }, 'No photo'),
     h('span', { class: 'a-prow-text' },
       h('h3', {}, p.name),
       h('p', {}, [
@@ -56,7 +60,8 @@ function renderList(focusId, which) {
         usable(p) ? (p.imageDark ? 'Visitors can design it in the studio, with a dark mode photo' : 'Visitors can design it in the studio')
           : p.image ? 'Quote only on the website: place the print corners to put it in the studio' : 'Quote only on the website: add a photo to put it in the studio',
         p.team === false ? 'not in Mockups' : null,
-      ].filter(Boolean).join(', ')))),
+      ].filter(Boolean).join(', ')),
+      (() => { const c = packCompleteness(p); return h('p', { class: `a-missing${c.complete ? ' is-done' : ''}` }, c.complete ? 'Complete' : `Missing: ${c.missing.join(', ')}`); })())),
     h('div', { class: 'a-prow-actions' },
       h('button', { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': `Move ${p.name} up`, title: 'Move up', disabled: i === 0 || null, onclick: () => move(i, -1) }, svgIcon('M12 19V5M6 11l6-6 6 6')),
       h('button', { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': `Move ${p.name} down`, title: 'Move down', disabled: i === items.length - 1 || null, onclick: () => move(i, 1) }, svgIcon('M12 5v14M6 13l6 6 6-6'))))));

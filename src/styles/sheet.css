@@ -79,6 +79,34 @@
   .head-links a { min-height: 44px; display: inline-flex; align-items: center; }
 }
 @media (max-width: 400px) { .tab-btn .tab-word { display: none; } .tab-btn { padding-inline: 6px; } }
+/* phone quote bar (QuoteBar.astro, quote-bar.js): slides up from the bottom; the
+   contact button rises above it so the two never overlap */
+.quote-bar { display: none; }
+@media (max-width: 760px) {
+  .quote-bar { display: block; position: fixed; inset: auto 0 0 0; z-index: 140; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--glass); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: 1px solid var(--line); transform: translateY(110%); transition: transform var(--dur-ui) var(--settle); }
+  .quote-bar[data-shown] { transform: none; }
+  .quote-bar .act { display: flex; width: 100%; justify-content: center; min-height: 48px; }
+  .fab { transition: bottom var(--dur-ui) var(--settle); }
+  html[data-quote-bar-shown] .fab { bottom: calc(68px + 14px + env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) { .quote-bar, .fab { transition: none; } }
+@media (prefers-reduced-transparency: reduce) { .quote-bar { background: var(--page); backdrop-filter: none; -webkit-backdrop-filter: none; } }
+@media print { .quote-bar { display: none !important; } }
+/* phone menu: one row (logo, theme, packing list, Menu); the links open as a full list.
+   Without the script (.has-menu) the scrolling row above stays. */
+.menu-btn { display: none; }
+.menu-btn .menu-close-ico, .menu-open .menu-btn .menu-open-ico { display: none; }
+.menu-open .menu-btn .menu-close-ico { display: block; }
+@media (max-width: 760px) {
+  html:has(.sheet-head.has-menu) { scroll-padding-top: 72px; }
+  .sheet-head.has-menu .menu-btn { display: inline-grid; place-items: center; width: 44px; height: 44px; color: var(--ink); }
+  .sheet-head.has-menu .head-nav { display: none; }
+  .sheet-head.has-menu.menu-open .head-nav { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 14px; flex: 1 0 100%; order: 3; margin: 0; padding: 4px 0 18px; overflow-y: auto; max-height: calc(100svh - var(--bar-h) - 8px); overscroll-behavior: contain; }
+  .sheet-head.has-menu.menu-open .head-links { display: grid; gap: 0; }
+  .sheet-head.has-menu.menu-open .head-links a { min-height: 48px; font-size: 1.0625rem; color: var(--ink); border-bottom: 1px solid var(--line); }
+  .sheet-head.has-menu.menu-open .head-links a[aria-current="page"] { font-weight: 600; }
+  .sheet-head.has-menu.menu-open .head-links + .head-links a { font-size: .9375rem; color: var(--ink-2); }
+}
 
 /* ---------- the brand field (packaging page): one large rounded field ---------- */
 .brand-field { position: relative; width: min(100%, 420px); margin: 30px auto 0; }
@@ -208,6 +236,10 @@
 .pl-field input[aria-invalid="true"] { border-color: var(--danger); box-shadow: 0 0 0 4px var(--danger-subtle); }
 .pl-min { grid-column: 1 / -1; font-size: .8125rem; color: var(--ink-2); margin: -2px 0 0; }
 .pl-min.is-error { color: var(--danger); font-weight: 600; }
+.pl-cost { grid-column: 1 / -1; font-size: .8125rem; color: var(--ink); margin: -6px 0 0; font-variant-numeric: tabular-nums; }
+.pl-estimate { flex-wrap: wrap; row-gap: 2px; }
+.pl-estimate small { flex-basis: 100%; font-size: .75rem; color: var(--ink-2); }
+.pl-summary .pl-summary-est td { font-weight: 600; }
 @media (max-width: 520px) { .pl-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .pl-fields .pl-field:first-child { grid-column: 1 / -1; } }
 .pl-foot { padding: 16px 24px 24px; border-top: 1px solid var(--line); display: grid; gap: 12px; }
 .pl-total { display: flex; justify-content: space-between; font-size: .9375rem; color: var(--ink-2); }
@@ -324,6 +356,8 @@ main:has(> .choose) + .sheet-foot { margin-top: 12px; }
 .foot-cols h2.foot-pack { color: var(--accent); }
 .foot-menu { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .foot-menu a, .foot-social a, .foot-staff a, .foot-mail { color: var(--ink-2); text-decoration: none; transition: color var(--dur-micro) var(--ease); }
+/* every footer link is at least 24px tall (WCAG 2.5.8 target size) */
+.foot-menu a, .foot-social a, .foot-staff a, .foot-mail { display: inline-flex; align-items: center; min-height: 24px; }
 .foot-menu a:hover, .foot-social a:hover, .foot-staff a:hover, .foot-mail:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .foot-col address, .foot-line { font-style: normal; line-height: 1.55; color: var(--ink-2); }
 .foot-line { margin-top: 12px; }

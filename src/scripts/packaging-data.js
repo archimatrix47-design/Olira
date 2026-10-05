@@ -11,7 +11,7 @@ export const byId = (id) => products.find((p) => p.id === id);
 /** Call fn(products) whenever the live list differs from what the page was built with. */
 export function onProducts(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 
-const key = (arr) => JSON.stringify(arr.map((p) => [p.id, p.name, p.family, p.description, p.handle, p.image, p.imageDark, p.quad, p.safeTop, p.sizes, p.minOrder, p.printColours]));
+const key = (arr) => JSON.stringify(arr.map((p) => [p.id, p.name, p.family, p.description, p.handle, p.image, p.imageDark, p.quad, p.safeTop, p.sizes, p.minOrder, p.printColours, p.pricePer1000, p.leadTimeDays]));
 fetch('/api/packaging-products').then((r) => (r.ok ? r.json() : null)).then((list) => {
   if (!Array.isArray(list) || key(list) === key(products)) return;
   products = list;

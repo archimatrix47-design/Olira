@@ -192,7 +192,26 @@ function renderAttention(a, leads, prods, days, bags, certs) {
   if (cold.length) add('medium', `${cold[0].name} gets attention but no enquiries`, `Opened ${cold[0].clicks} times this period. Its description, minimum order and photo are worth a look with the ${packNames.has(cold[0].name) ? 'packaging' : 'agriculture'} team.`, `#products?days=${days}`, 'Review');
   if (a.previous.uniques >= 20 && a.totals.uniques < a.previous.uniques * 0.7) add('medium', `Visitors fell ${Math.round((1 - a.totals.uniques / a.previous.uniques) * 100)}% on the previous period`, 'See which source dropped on the Traffic page.', `#traffic?days=${days}`, 'See traffic');
   if (!items.length) add('ok', 'Nothing needs attention', 'Every enquiry has someone on it, nothing is overdue and the catalogues are complete.', null, null);
-  $('#ovAttention').replaceChildren(...items.map((i) => h('li', { class: `is-${i.level}` },
+  // the most urgent first; five show, so the numbers stay on the first screen
+  items.sort((x, y) => LEVEL_RANK[x.level] - LEVEL_RANK[y.level]);
+  const row = (i) => h('li', { class: `is-${i.level}` },
     h('div', {}, h('strong', {}, i.title), h('span', {}, i.text)),
-    i.href ? h('a', { class: `btn btn-sm ${i.level === 'high' ? 'btn-primary' : 'btn-secondary'}`, href: i.href }, i.action) : null)));
+    i.href ? h('a', { class: `btn btn-sm ${i.level === 'high' ? 'btn-primary' : 'btn-secondary'}`, href: i.href }, i.action) : null);
+  const rows = items.map(row);
+  if (items.length > ATTENTION_SHOWN) {
+    const rest = rows.slice(ATTENTION_SHOWN);
+    const btn = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', 'aria-controls': 'ovAttention' });
+    const sync = () => {
+      rest.forEach((r) => { r.hidden = !attentionOpen; });
+      btn.setAttribute('aria-expanded', String(attentionOpen));
+      btn.textContent = attentionOpen ? 'Show the five most urgent' : `Show all ${items.length}`;
+    };
+    btn.addEventListener('click', () => { attentionOpen = !attentionOpen; sync(); });
+    sync();
+    rows.push(h('li', { class: 'a-attn-more' }, btn));
+  }
+  $('#ovAttention').replaceChildren(...rows);
 }
+const LEVEL_RANK = { high: 0, medium: 1, ok: 2 };
+const ATTENTION_SHOWN = 5;
+let attentionOpen = false; // kept while the dashboard re-renders

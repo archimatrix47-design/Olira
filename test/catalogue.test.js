@@ -124,6 +124,49 @@ test('the packaging team sets minimums; the agriculture team cannot', async () =
   await req('POST', url, { token: pack, body: { minOrder: 2000 } });
 });
 
+test('prices and lead time: set by the packaging team, public, and kept when the product form saves', async () => {
+  const { priceFor, pricePer1000, leadDays } = await import('../lib/packaging.js');
+  // self-check of the readers
+  assert.equal(pricePer1000('1,250.555'), 1250.56);
+  assert.equal(pricePer1000(''), null);
+  for (const bad of ['0', '-3', 'cheap', 20_000_000]) assert.ok(Number.isNaN(pricePer1000(bad)), `price ${bad}`);
+  assert.equal(leadDays('15'), 15);
+  for (const bad of ['0', '1.5', '400', 'soon']) assert.ok(Number.isNaN(leadDays(bad)), `days ${bad}`);
+  const p0 = normalise({ id: 'p', name: 'P', family: 'food', pricePer1000: 900, sizes: [{ id: 's', label: 'Small', pricePer1000: 700 }, { id: 'l', label: 'Large' }] });
+  assert.equal(priceFor(p0, 's'), 700, 'a size price wins');
+  assert.equal(priceFor(p0, 'l'), 900, 'the product price covers sizes without one');
+
+  const admin = await adminToken();
+  const pack = await member(admin, { name: 'Dawit', email: 'dawit.price@example.com', role: 'pack' });
+  const agri = await member(admin, { name: 'Hana', email: 'hana.price@example.com', role: 'agri' });
+  const url = '/api/team/packaging-products/pk_pizza/minimums';
+  assert.equal((await req('POST', url, { token: agri, body: { leadTimeDays: 10 } })).status, 403, 'only the packaging team');
+  assert.equal((await req('POST', url, { token: pack, body: { prices: { small: '-5' } } })).status, 400);
+  assert.equal((await req('POST', url, { token: pack, body: { pricePer1000: 'cheap' } })).status, 400);
+  assert.equal((await req('POST', url, { token: pack, body: { leadTimeDays: '0' } })).status, 400);
+  const r = await json(await req('POST', url, { token: pack, body: { prices: { small: '1,250.50', large: 2000 }, leadTimeDays: 15 } }));
+  assert.equal(r.product.sizes.find((s) => s.id === 'small').pricePer1000, 1250.5);
+  assert.equal(r.product.sizes.find((s) => s.id === 'medium').pricePer1000, null);
+  assert.equal(r.product.leadTimeDays, 15);
+  assert.equal(r.product.minOrder, 2000, 'a field not sent keeps its value');
+  // public
+  const pub = (await json(await req('GET', '/api/packaging-products'))).find((p) => p.id === 'pk_pizza');
+  assert.equal(pub.leadTimeDays, 15);
+  assert.equal(pub.sizes.find((s) => s.id === 'large').pricePer1000, 2000);
+  // the product form sends sizes without prices: the prices stay
+  const full = (await json(await req('GET', '/api/packaging-products?scope=all', { token: pack }))).find((p) => p.id === 'pk_pizza');
+  const sizes = full.sizes.map(({ pricePer1000: _, ...s }) => s);
+  const saved = await req('POST', '/api/team/packaging-products', { token: pack, body: { product: { ...full, sizes, description: `${full.description}` } } });
+  assert.equal(saved.status, 200, JSON.stringify(await json(saved.clone())));
+  const after = JSON.parse(fs.readFileSync(path.join(tmp, 'packaging-products.json'), 'utf8')).find((p) => p.id === 'pk_pizza');
+  assert.equal(after.sizes.find((s) => s.id === 'small').pricePer1000, 1250.5, 'kept through a product save');
+  assert.equal(after.leadTimeDays, 15);
+  // cleared again
+  const c = await json(await req('POST', url, { token: pack, body: { prices: { small: '', large: '' }, leadTimeDays: '' } }));
+  assert.equal(c.product.sizes.find((s) => s.id === 'small').pricePer1000, null);
+  assert.equal(c.product.leadTimeDays, null);
+});
+
 test('a bundle under the minimum is refused by the server, and nothing is saved', async () => {
   const before = fs.existsSync(path.join(tmp, 'inquiries.json')) ? inquiries().length : 0;
   const r = await send({ product: 'Packaging', line: 'pack', bundle: [{ productId: 'pk_pizza', sizeId: 'small', qty: 500 }] });

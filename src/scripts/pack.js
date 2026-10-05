@@ -7,6 +7,7 @@ import { $, $$, h, prefill, track, formHooks } from './common.js';
 import { INKS, defaultDesign, prepare, render, toArtboard, clampDesign, snapDesign, drawGuides, exportImage, specLine, saveBlob, usableInStudio, onThemeChange, sizesOf, sizeOf, singular, artworkAdvice } from './mockup/engine.js';
 import { getProducts, onProducts } from './packaging-data.js';
 import { checkLogo, removeBox } from './mockup/logo-check.js';
+import { thumbUrl, thumbSet } from '../../lib/thumb-url.js';
 
 // designer use, for the admin insights: counted once per page view except downloads and quotes
 let changedOnce = false;
@@ -97,7 +98,8 @@ function buildChips() {
     if (t.description) text.append(h('span', { class: 'bagopt-desc' }, t.description));
     if (t.minOrder) text.append(h('span', { class: 'bagopt-desc' }, `Minimum order ${Number(t.minOrder).toLocaleString('en-US')}`));
     const card = h('span', { class: 'bagopt-card' });
-    card.append(h('img', { class: 'bagopt-photo', src: t.image, alt: '', width: '56', height: '56', loading: 'lazy', decoding: 'async' }), text);
+    const set = thumbSet(t.image, 56);
+    card.append(h('img', { class: 'bagopt-photo', src: thumbUrl(t.image, 120), ...(set ? { srcset: set } : {}), alt: '', width: '56', height: '56', loading: 'lazy', decoding: 'async' }), text);
     const label = h('label', { class: 'bagopt' });
     label.append(input, card);
     return label;
