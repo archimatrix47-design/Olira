@@ -48,3 +48,20 @@ test('deploy.sh sends each branch to its own app', { skip: !SH && 'no sh here' }
     assert.match(elsewhere.stderr, /not the Olira checkout/);
   } finally { fs.rmSync(home, { recursive: true, force: true }); }
 });
+
+test("CloudLinux's activate script, which reads unset variables, does not stop the deploy", { skip: !SH && 'no sh here' }, () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'olira-deploy-'));
+  try {
+    const repo = checkout(home, 'Olira', 'main');
+    const bin = path.join(home, 'nodevenv', 'olira', '22', 'bin');
+    fs.mkdirSync(bin, { recursive: true });
+    // the real one (line 78) reads CL_VIRTUAL_ENV before it is set
+    fs.writeFileSync(path.join(bin, 'activate'), 'if [ -n "$CL_VIRTUAL_ENV" ]; then :; fi\nOLIRA_ACTIVATED=yes\n');
+    const r = run(repo, home, { CL_VIRTUAL_ENV: '' });
+    const env = { ...process.env }; delete env.CL_VIRTUAL_ENV;
+    const clean = spawnSync(SH, [SCRIPT, repo], { encoding: 'utf8', env: { ...env, DEPLOY_HOME: home, DEPLOY_DRY: '1', NODEVER: '22' } });
+    assert.equal(clean.status, 0, clean.stderr);
+    assert.match(clean.stdout, /node -v\s+v\d+/, 'the dry run loads Node the way the deploy does');
+    assert.equal(r.status, 0, r.stderr);
+  } finally { fs.rmSync(home, { recursive: true, force: true }); }
+});

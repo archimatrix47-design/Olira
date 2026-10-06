@@ -36,16 +36,24 @@ echo "deploy:   app      $APP"
 echo "deploy:   data     $DATA"
 echo "deploy:   node     $ACTIVATE"
 echo "deploy:   mode     $SITE_ENV$([ "$SITE_ENV" = production ] && echo ', then IndexNow' || true)"
-[ -n "${DEPLOY_DRY:-}" ] && { echo "deploy: dry run, nothing changed."; exit 0; }
+
+# CloudLinux's activate script reads variables that are not set, so it is
+# sourced with -u off (the first live deploy stopped here: CL_VIRTUAL_ENV).
+use_node() { set +u; . "$ACTIVATE"; set -u; }
+
+if [ -n "${DEPLOY_DRY:-}" ]; then
+  if [ -f "$ACTIVATE" ]; then use_node; echo "deploy:   node -v  $(node -v)"; else echo "deploy:   (no Node app there yet)"; fi
+  echo "deploy: dry run, nothing changed."
+  exit 0
+fi
 
 [ -f "$ACTIVATE" ] || { echo "deploy: no Node $NODEVER app at $APP. Create it in Setup Node.js App first." >&2; exit 1; }
+use_node
 
 # Copy the code in. Kept: .git (none here), node_modules (a link into nodevenv),
 # tmp (the restart trigger), dist (rebuilt below), and .env if one exists.
 /usr/bin/rsync -a --delete --exclude='.git' --exclude='node_modules' --exclude='tmp' --exclude='dist' --exclude='.env' "$REPO/" "$APP/"
 
-# shellcheck disable=SC1090
-. "$ACTIVATE"
 cd "$APP"
 npm install
 # the pages are built from this app's own data (src/lib/site-data.ts)
