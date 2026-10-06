@@ -206,6 +206,10 @@
 /* site health on the overview: the facts in a row */
 .a-facts.a-facts-row { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px 24px; }
 .a-facts.a-facts-row > div { border-bottom: 0; padding-bottom: 0; }
+/* where the enquiries are kept: room for the check button and its result */
+.a-facts.a-facts-row > .a-fact-wide { grid-column: 1 / -1; }
+.a-fact-wide dd { display: grid; gap: 8px; justify-items: start; }
+.a-fact-wide .a-test-result ul { margin: 6px 0 0; padding-left: 18px; }
 .a-facts dd small { display: block; margin-top: 2px; font-size: .8125rem; font-weight: 400; color: var(--ink-2); }
 
 /* the test email's answer */

@@ -199,6 +199,42 @@ https://staging.oliraagroindustry.com, then merge to `main` and deploy live.
 
 ---
 
+## The enquiry database (MariaDB)
+
+Without database settings the website keeps enquiries in `~/olira-data/inquiries.json`
+(the newest 1,000). With them it keeps every enquiry in MariaDB, in the table
+`olira_enquiries` (`lib/lead-store.js`): one row each, the whole record as JSON in
+`doc`, and name, email, company, product, line, stage and owner as columns to sort
+and filter in phpMyAdmin. cPanel's database backups include it.
+
+One-time setup (the database `oliraagr_site` already exists):
+
+1. **MySQL Databases → Add New User:** a user (for example `oliraagr_site`) with a
+   strong password you keep. Then **Add User To Database**: that user,
+   `oliraagr_site`, **ALL PRIVILEGES**.
+2. **Setup Node.js App → the olira app → Environment variables:** add
+   `DB_NAME` = `oliraagr_site`, `DB_USER` = the user from step 1 (with its
+   `oliraagr_` prefix), `DB_PASSWORD` = its password. `DB_HOST` defaults to
+   `localhost`. Save.
+3. Restart the app so it reads them (a deploy restarts it reliably; see
+   "Reliably restarting the app").
+4. **Admin → Overview → Site health:** "Enquiries kept in" shows MariaDB with the
+   count, and **Check the database** runs the website's own steps in a scratch
+   table and removes it.
+
+On its first start with the database the app makes the table and copies
+`inquiries.json` in once, then renames the file `inquiries.imported-<date>.json`.
+
+If the database stops answering, a new enquiry from the website is kept in
+`~/olira-data/inquiries-pending.json` and moves in as soon as the database answers
+again; the staff screens say the list cannot be reached; `/api/health` reports
+`enquiryStore`, so the uptime check mails info@.
+
+To go back to the file: remove `DB_NAME` and `DB_USER` and restart. The file then
+starts empty; export the table from phpMyAdmin first if you need the enquiries.
+
+---
+
 ## Cron jobs (cPanel → Cron Jobs)
 
 Set **Cron Email** to the address that should hear about problems. Cron mails

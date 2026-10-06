@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import { registerStaging, isStaging, stagingMail } from './lib/staging.js';
+import { createLeadStore, dbConfigFrom, checkMaria } from './lib/lead-store.js';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import sharp from 'sharp';
@@ -740,8 +741,9 @@ app.post('/api/admin/change-password', adminAuth, (req, res) => {
 // Enquiries are worked in the team workspaces and the manager's CRM
 // (lib/workspace.js); the administrator runs the site and does not see them.
 // The admin's overview gets counts only, to know that email delivery works.
-app.get('/api/admin/site-status', adminAuth, (req, res) => {
-  const list = readJsonFile(inquiriesPath, []);
+app.get('/api/admin/site-status', adminAuth, async (req, res) => {
+  let list = [];
+  try { list = await leads.all(); } catch (e) { /* counts show as none; the health card says why */ }
   const since = Date.now() - 30 * 86400000;
   const recent = (Array.isArray(list) ? list : []).filter((i) => Date.parse(i.createdAt) >= since);
   let formFails = 0;
@@ -905,11 +907,11 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
   }
 
   // The lead is saved before any email is attempted, so a mail problem never loses it.
-  const rec = recordInquiryRecord({ name, email, company, message, product, phone, design, bundle, line, terms }, false);
+  const rec = await recordInquiryRecord({ name, email, company, message, product, phone, design, bundle, line, terms }, false);
   let fileNote = '';
   if (rec && uploads.length) {
-    const r = workspace.saveIntakeFiles(rec, uploads);
-    updateInquiryRecord(rec.id, { files: rec.files || [], ...(r.rejected.length ? { filesRejected: r.rejected.slice(0, 5) } : {}) });
+    const r = await workspace.saveIntakeFiles(rec, uploads);
+    await updateInquiryRecord(rec, { files: rec.files || [], ...(r.rejected.length ? { filesRejected: r.rejected.slice(0, 5) } : {}) });
     fileNote = r.saved.length ? `${r.saved.length} file${r.saved.length === 1 ? '' : 's'} attached` : '';
     if (r.rejected.length) {
       audit('inquiry_files_rejected', req, { count: r.rejected.length, full: !!r.full });
@@ -1015,7 +1017,7 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
 
     await sendEmail(sanitizedEmail, 'Thank You - Olira Agro Industry Inquiry', confirmationHtml);
 
-    if (rec) updateInquiryRecord(rec.id, { emailed: true });
+    if (rec) await updateInquiryRecord(rec, { emailed: true });
     recordInquiry(product, req, line); // count as a conversion, attributed to the product
     res.json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
@@ -1171,8 +1173,14 @@ const productsPath = path.join(dataDir, 'products.json');
 const contactsPath = path.join(dataDir, 'contact-details.json');
 const brandingPath = path.join(dataDir, 'branding.json');
 const socialPath = path.join(dataDir, 'social-links.json');
-const inquiriesPath = path.join(dataDir, 'inquiries.json');
 const MAX_INQUIRIES = 1000;
+// Enquiries: MariaDB when DB_NAME and DB_USER are set, inquiries.json otherwise
+// (lib/lead-store.js). The file store keeps the newest MAX_INQUIRIES; the
+// database keeps them all.
+const leads = createLeadStore({
+  dataDir, readJsonFile, writeJsonFile, logError, max: MAX_INQUIRIES,
+  onDrop: (old) => { if (old.files?.length) workspace.removeLeadFiles(old.id); },
+});
 
 // Generic JSON file helpers
 function readJsonFile(filePath, defaultValue) {
@@ -1219,15 +1227,13 @@ function writeJsonFile(filePath, data) {
   }
 }
 
-// Persist a submitted inquiry so it's reviewable in the admin "Inquiries" tab.
-// The lead is captured here regardless of whether the notification email is
-// delivered, so an SMTP outage never silently loses a customer. Newest first,
-// capped at MAX_INQUIRIES so the file can't grow unbounded. Values are stored
-// raw (not HTML) — the admin UI renders them as text content, never as markup.
-function recordInquiryRecord(data, emailed) {
+// Persist a submitted inquiry so the teams can work it. The lead is captured
+// here regardless of whether the notification email is delivered, so an SMTP
+// outage never silently loses a customer (and with the database down it waits
+// in a file: lib/lead-store.js). Values are stored raw (not HTML): the staff
+// screens render them as text content, never as markup.
+async function recordInquiryRecord(data, emailed) {
   try {
-    const list = readJsonFile(inquiriesPath, []);
-    if (!Array.isArray(list)) return null;
     const rec = {
       id: `inq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       createdAt: new Date().toISOString(),
@@ -1244,26 +1250,19 @@ function recordInquiryRecord(data, emailed) {
     if (data.design) rec.design = data.design;
     if (data.bundle?.length) rec.bundle = data.bundle;
     if (data.terms) Object.assign(rec, data.terms); // volumeMt, port, incoterm, window (lib/enquiry.js)
-    list.unshift(rec);
-    if (list.length > MAX_INQUIRIES) {
-      for (const old of list.slice(MAX_INQUIRIES)) if (old.files?.length) workspace.removeLeadFiles(old.id);
-      list.length = MAX_INQUIRIES;
-    }
-    writeJsonFile(inquiriesPath, list);
-    return rec;
+    return await leads.add(rec);
   } catch (err) {
     logError('inquiry_record_failed', err);
     return null;
   }
 }
 
-function updateInquiryRecord(id, patchFields) {
+// rec: the enquiry as saved (the form's follow-up changes it before anyone else
+// has seen it, so there is nothing newer to lose)
+async function updateInquiryRecord(rec, patchFields) {
   try {
-    const list = readJsonFile(inquiriesPath, []);
-    const rec = Array.isArray(list) && list.find((i) => i.id === id);
-    if (!rec) return false;
     Object.assign(rec, patchFields);
-    return writeJsonFile(inquiriesPath, list);
+    return await leads.put(rec);
   } catch (err) {
     logError('inquiry_update_failed', err);
     return false;
@@ -2054,7 +2053,7 @@ const workspace = registerWorkspace(app, {
   certificateFile: (id) => { const c = (readJsonFile(path.join(dataDir, 'certifications.json'), []) || []).find((x) => x.id === id); return c ? certificateAttachment(c, uploadsDir) : null; },
   dataDir, readJsonFile, writeJsonFile, audit, logError, sendEmail, loadEmailConfig,
   verifyTokenDetailed, generateToken, checkOrigin, clientIp, makeRateLimiter,
-  inquiriesPath, isLoginDisabled: () => adminLoginDisabled, siteUrl,
+  leads, isLoginDisabled: () => adminLoginDisabled, siteUrl,
 });
 // catalogue products added to the repo after this data folder was first seeded
 const seededPackaging = mergeSeedCatalogue(dataDir, REPO_DATA_DIR, { readJsonFile, writeJsonFile, logError });
@@ -2110,6 +2109,7 @@ function runHealthChecks() {
   try { JSON.parse(fs.readFileSync(analyticsPath, 'utf8')); checks.analyticsParseable = true; }
   catch (e) { checks.analyticsParseable = !fs.existsSync(analyticsPath); } // absent is fine (fresh)
   checks.adminLoginEnabled = !adminLoginDisabled;
+  checks.enquiryStore = leads.health(); // the database (or inquiries.json) answered its last call
 
   // adminLoginEnabled is informational, not a failure condition (the public site
   // is healthy even when admin login is intentionally disabled).
@@ -2134,7 +2134,8 @@ app.get('/api/health', (req, res) => {
 const distPath = path.join(__dirname, 'dist');
 
 // the admin's activity log, test email and site health (lib/admin-tools.js)
-registerAdminTools(app, { adminAuth, rateLimit, auditLogPath, dataDir, uploadsDir, distPath, readJsonFile, writeJsonFile, sendEmail, loadEmailConfig, audit, logError, healthChecks: runHealthChecks });
+registerAdminTools(app, { adminAuth, rateLimit, auditLogPath, dataDir, uploadsDir, distPath, readJsonFile, writeJsonFile, sendEmail, loadEmailConfig, audit, logError, healthChecks: runHealthChecks, enquiryStore: () => leads.status(),
+  databaseCheck: () => { const config = dbConfigFrom(); return config ? checkMaria({ config, readJsonFile, writeJsonFile }) : null; } });
 
 // Cache control middleware for static assets
 app.use((req, res, next) => {
