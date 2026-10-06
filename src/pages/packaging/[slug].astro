@@ -1,5 +1,6 @@
 ---
 // A packaging product on its own page (/packaging/<product>/).
+import { clipDescription, fitTitle } from '../../lib/meta-text.js';
 import ProductPage from '../../components/site/ProductPage.astro';
 import { packagingProducts, FLEXO_MAX_COLOURS } from '../../lib/site-data';
 import { packSlug, packUrl, graph, organizationGraph, breadcrumbs, ORG_ID, PACK_ID, abs, familyLabel } from '../../lib/seo';
@@ -68,8 +69,8 @@ const jsonLd = graph(organizationGraph(), product, breadcrumbs([['Home', '/'], [
   name={p.name}
   category={fam}
   description={p.description || ''}
-  title={`${p.name}, printed with your logo | Olira Packaging`}
-  metaDescription={`${p.name} made in Addis Ababa and printed with your logo, ${print[1].toLowerCase()}. ${p.description || ''}`.slice(0, 300)}
+  title={fitTitle([`${p.name}, printed with your logo | Olira Packaging`, `${p.name} with your logo | Olira Packaging`, `${p.name} | Olira Packaging`])}
+  metaDescription={clipDescription(`${p.name} made in Addis Ababa and printed with your logo, ${print[1].toLowerCase()}. ${p.description || ''}`)}
   image={c?.cutout || p.image}
   cutout={c}
   facts={facts}

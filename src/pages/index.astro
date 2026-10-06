@@ -8,6 +8,7 @@ import SiteFooter from '../components/site/SiteFooter.astro';
 import { contact, SITE, packagingProducts, partners, socialLinks } from '../lib/site-data';
 import { graph, organizationGraph, ORG_ID, SITE_ID } from '../lib/seo';
 import { cutoutOf, standHTML } from '../scripts/catalogue-panel.js';
+import { thumbSrcset } from '../../lib/thumb-url.js';
 
 // A product that still carries its standard photo, as a cut-out at a relative height.
 const stood = (id: string, h: number) => {
@@ -33,6 +34,8 @@ const PRODUCE = [
   { p: 'spices', name: 'Spices', img: '/products/photos/spices.webp' },
   { p: 'coffee', name: 'Coffee', img: '/products/photos/coffee.webp' },
 ];
+// two tiles a row inside each half: about 45% of a phone, a quarter of a wide screen
+const TILE_SIZES = '(max-width: 860px) 45vw, 24vw';
 
 // the packaging door's lineup, tallest to smallest, heights true to each other
 const lineup = pick([['pk_twisted', 100], ['pk_foil', 86], ['pk_pouch', 74], ['pk_burger', 50]], 100, 4);
@@ -45,12 +48,12 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
 ---
 <SiteLayout
   title="Olira Agro Industry, agricultural exports and printed packaging"
-  description="Olira Agro Industry exports Humera sesame, pulses, spices and coffee from Ethiopia, and makes paper bags, food boxes, medical packets and foil bags printed with your logo. Addis Ababa, since 2008."
+  description="Humera sesame, pulses, spices and coffee from Ethiopia, and paper bags, food boxes, medical packets and foil bags printed with your logo. Since 2008."
   ogImage="/og-home.jpg"
   ogImageAlt="Olira Agro Industry: agricultural exports and printed packaging"
   jsonLd={jsonLd}
 >
-  <link slot="head" rel="preload" as="image" href="/products/photos/sesame-natural.webp" fetchpriority="high">
+  <link slot="head" rel="preload" as="image" href={PRODUCE[0].img} imagesrcset={thumbSrcset(PRODUCE[0].img) || undefined} imagesizes={thumbSrcset(PRODUCE[0].img) ? TILE_SIZES : undefined} fetchpriority="high">
 
   <SiteHeader groups={[[{ href: '/packaging/', label: 'Packaging' }, { href: '/packaging/#studio', label: 'Mockup studio' }, { href: '/agriculture/', label: 'Agriculture' }, { href: '/packaging/#quote', label: 'Contact' }]]} current="/" />
 
@@ -74,7 +77,7 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
             {PRODUCE.map((x, i) => (
               <li>
                 <a href={`/agriculture/?p=${x.p}#range`} class:list={['produce-tile', { 'is-lead': i === 0 }]}>
-                  <img src={x.img} alt="" width="800" height="600" decoding="async" fetchpriority={i === 0 ? 'high' : undefined} loading={i === 0 ? 'eager' : 'lazy'}>
+                  <img src={x.img} srcset={thumbSrcset(x.img) || undefined} sizes={TILE_SIZES} alt="" width="800" height="600" decoding="async" fetchpriority={i === 0 ? 'high' : undefined} loading={i === 0 ? 'eager' : 'lazy'}>
                   <span>{x.name}</span>
                 </a>
               </li>

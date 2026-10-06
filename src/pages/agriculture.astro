@@ -71,7 +71,7 @@ const jsonLd = graph(
 
     <section class="container" id="range" style="padding-block: clamp(56px,7vw,96px)" aria-labelledby="rangeTitle">
       <h2 class="sr-only" id="rangeTitle">Product range</h2>
-      <ProductFlow items={items} label="Agricultural products" kind="agri">
+      <ProductFlow items={items} label="Agricultural products" kind="agri" lazy>
         <div class="det-acts">
           <a class="btn btn-lg btn-primary" id="detAsk" href="#contact">Ask about this product</a>
           <a class="act" id="detPage" href="#range">Full details</a>

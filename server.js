@@ -2129,10 +2129,10 @@ registerAdminTools(app, { adminAuth, rateLimit, auditLogPath, dataDir, uploadsDi
 // Cache control middleware for static assets
 app.use((req, res, next) => {
   // Set cache headers based on file type
-  if (req.url.match(/\.(js|css|woff|woff2|ttf|otf|eot)$/i)) {
-    // Versioned assets (hashed filenames) can be cached long-term
+  if (req.url.match(/\.(js|css|woff|woff2|ttf|otf|eot)$/i) || req.url.startsWith('/_astro/')) {
+    // Versioned assets (hashed filenames, everything the build puts in /_astro/) can be cached long-term
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-  } else if (req.url.match(/\.(jpg|jpeg|png|gif|svg|webp|ico)$/i)) {
+  } else if (req.url.match(/\.(jpg|jpeg|png|gif|svg|webp|avif|ico)$/i)) {
     // Images can be cached for a month
     res.setHeader('Cache-Control', 'public, max-age=2592000');
   } else if (req.url.match(/\.(html|json)$/i)) {

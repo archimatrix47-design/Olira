@@ -5,6 +5,7 @@
 // src/scripts/certs.js renders the same markup from the live API after load.
 import { withStatus } from '../../../lib/certificates.js';
 import { certifications } from '../../lib/site-data';
+import { askFor } from '../../scripts/cert-ask.js';
 
 interface Props { id?: string; heading?: string; askHref?: string }
 const { id = 'certList', heading = 'Certifications', askHref = '#contact' } = Astro.props;
@@ -24,7 +25,7 @@ const meta = (c: any) => [c.issuer ? `Issued by ${c.issuer}` : '', c.number ? `c
           <span class="cert-acts">
             {c.file
               ? <a href={c.file} target="_blank" rel="noopener" aria-label={`View the ${c.name} certificate (${c.fileType === 'pdf' ? 'PDF' : 'image'}, opens in a new tab)`}>View certificate</a>
-              : <a href={askHref} data-ask-cert={c.name} aria-label={`Ask for a copy of the ${c.name} certificate`}>Copy on request</a>}
+              : <a href={askFor(askHref, c.name)} data-ask-cert={c.name} aria-label={`Ask for a copy of the ${c.name} certificate`}>Copy on request</a>}
             {c.verifyUrl && <a href={c.verifyUrl} target="_blank" rel="noopener" aria-label={`Check ${c.name} with ${c.issuer || 'the issuer'} (opens in a new tab)`}>Check with the issuer</a>}
           </span>
         </span>

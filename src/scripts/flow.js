@@ -9,6 +9,8 @@
 //   onDetail   (product, panel) => fills the page-specific part of the detail
 //   onOpen     (product) => called when a detail opens (analytics)
 // Returns { set(list, keepId), current(), open(), close() }.
+import { thumbSrcset } from '../../lib/thumb-url.js';
+
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const OPEN_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
 
@@ -23,10 +25,22 @@ export function ringOffset(i, active, n) {
  * One card. p: { id, name, sub, image, cat?, print? } where print is
  * { cutout, quad, safeTop } when the brand is printed on it live.
  */
-export function cardHTML(p, i, active, n, { eager = false } = {}) {
+/** Dots a phone fits in one row at 44 px each (358 px of a 390 px screen). */
+export const MANY_DOTS = 8;
+
+// Card photos come in three widths (thumb-url.js). The front card is drawn --cw
+// wide (tokens.css: 68vw on phones, up to 430px); the cards beside it stand
+// further back, about two thirds of that, so they take a smaller copy until they
+// come to the front (layout() swaps `sizes`).
+export const FRONT_SIZES = '(max-width: 760px) 68vw, 430px';
+export const SIDE_SIZES = '(max-width: 760px) 46vw, 300px';
+
+/** One card. `lazy`: every photo waits for the browser (the range sits below the agriculture hero). */
+export function cardHTML(p, i, active, n, { eager = false, lazy = false } = {}) {
   const o = ringOffset(i, active, n), a = Math.abs(o);
+  const set = p.image && thumbSrcset(p.image);
   const media = p.image
-    ? `<img src="${esc(p.image)}" alt="" width="800" height="1000" draggable="false" decoding="async" loading="${a <= 1 || eager ? 'eager' : 'lazy'}">`
+    ? `<img src="${esc(p.image)}"${set ? ` srcset="${esc(set)}" sizes="${a === 0 ? FRONT_SIZES : SIDE_SIZES}"` : ''} alt="" width="800" height="1000" draggable="false" decoding="async" loading="${!lazy && (a <= 1 || eager) ? 'eager' : 'lazy'}">`
       + (p.print ? `<canvas class="flow-print" data-print data-cutout="${esc(p.print.cutout)}" data-quad="${esc(JSON.stringify(p.print.quad))}" data-safe-top="${Number(p.print.safeTop ?? 0.04)}" data-ink="teal" width="960" height="1200" aria-hidden="true"></canvas>` : '')
     : `<span class="flow-ph">${esc(p.sub || p.name)}</span>`;
   return `<li><button type="button" class="flow-card${o === 0 ? ' is-front' : ''}${a >= 3 ? ' is-far' : ''}${p.cutout ? ' is-cutout' : ''}" style="--a:${a};--s:${Math.sign(o)};z-index:${20 - a}" aria-label="${esc(p.name)}" tabindex="${o === 0 ? 0 : -1}"${a >= 3 ? ' aria-hidden="true"' : ''} data-id="${esc(p.id)}" data-cat="${esc((p.cat || '').toLowerCase())}">${media}<span class="flow-tag">${esc(p.name)}<span>${esc(p.sub || '')}</span></span><span class="flow-open" aria-hidden="true">${OPEN_ICON}View details</span></button></li>`;
@@ -56,6 +70,8 @@ export function mountFlow(root, { products = [], onDetail, onOpen } = {}) {
       c.style.zIndex = String(20 - a);
       c.tabIndex = o === 0 ? 0 : -1;
       c.classList.toggle('is-front', o === 0);
+      const img = c.querySelector('img[srcset]');
+      if (img) img.sizes = o === 0 ? FRONT_SIZES : SIDE_SIZES;
       c.classList.toggle('is-far', a >= 3);
       if (a >= 3) c.setAttribute('aria-hidden', 'true'); else c.removeAttribute('aria-hidden');
       if (jumped) { void c.offsetWidth; c.classList.remove('no-anim'); }
@@ -65,6 +81,10 @@ export function mountFlow(root, { products = [], onDetail, onOpen } = {}) {
     q('.flow-cap h3').textContent = p.name;
     q('.flow-cap p').textContent = p.sub || '';
     qa('button', dots).forEach((d, i) => d.setAttribute('aria-current', String(i === active)));
+    // more dots than fit a phone's width at 44 px each: phones show "3 of 18" instead
+    dots.toggleAttribute('data-many', N > MANY_DOTS);
+    const count = q('.flow-count');
+    if (count) count.textContent = N ? `${active + 1} of ${N}` : '';
   }
   const go = (i) => { if (!N) return; active = ((i % N) + N) % N; layout(); };
   const bind = () => {
@@ -79,7 +99,7 @@ export function mountFlow(root, { products = [], onDetail, onOpen } = {}) {
     // otherwise the first product with a photo comes to the front, not a placeholder
     active = k >= 0 ? k : Math.max(0, next.findIndex((p) => p.image));
     prevOffset = new Array(N).fill(null);
-    track.innerHTML = next.map((p, i) => cardHTML(p, i, active, N)).join('');
+    track.innerHTML = next.map((p, i) => cardHTML(p, i, active, N, { lazy: root.hasAttribute('data-lazy') })).join('');
     dots.replaceChildren(...next.map((p) => { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', p.name); return b; }));
     cards = qa('.flow-card', track);
     cards.forEach((c) => c.classList.add('no-anim'));

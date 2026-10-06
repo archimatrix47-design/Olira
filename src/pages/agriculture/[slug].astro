@@ -1,5 +1,6 @@
 ---
 // An agricultural product on its own page (/agriculture/<product>/).
+import { clipDescription, fitTitle } from '../../lib/meta-text.js';
 import ProductPage from '../../components/site/ProductPage.astro';
 import { products, SITE } from '../../lib/site-data';
 import { agriSlug, agriUrl, graph, organizationGraph, breadcrumbs, ORG_ID, AGRO_ID, abs } from '../../lib/seo';
@@ -51,8 +52,8 @@ const jsonLd = graph(organizationGraph(), product, breadcrumbs([['Home', '/'], [
   name={p.name}
   category={p.category || 'Agriculture'}
   description={p.description || ''}
-  title={`${p.name}, ${p.category ? `${p.category} from Ethiopia` : 'Ethiopian export'} | Olira Agro`}
-  metaDescription={`${p.name} from Ethiopia${p.purity ? `, ${p.purity} purity` : ''}${p.moq ? `, minimum order ${p.moq}` : ''}. ${p.description || ''}`.slice(0, 300)}
+  title={fitTitle([`${p.name}, ${p.category ? `${p.category} from Ethiopia` : 'Ethiopian export'} | Olira Agro`, `${p.name} from Ethiopia | Olira Agro`, `${p.name} | Olira Agro`])}
+  metaDescription={clipDescription(`${p.name} from Ethiopia${p.purity ? `, ${p.purity} purity` : ''}${p.moq ? `, minimum order ${p.moq}` : ''}. ${p.description || ''}`)}
   image={p.image}
   facts={facts}
   points={p.specs}
