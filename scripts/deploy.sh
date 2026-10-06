@@ -46,6 +46,7 @@ use_node() { set +u; . "$ACTIVATE"; set -u; }
 # "Cannot allocate Wasm memory" (the second live deploy stopped here). This
 # Node option, made for capped processes, checks bounds in code instead.
 wasm_fit() {
+  ulimit -v "$(ulimit -H -v)" 2>/dev/null || true # up to the hard limit, where the host allows it
   if node --disable-wasm-trap-handler -e 0 2>/dev/null; then
     NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--disable-wasm-trap-handler"; export NODE_OPTIONS
     echo "deploy:   wasm     --disable-wasm-trap-handler (address space: $(ulimit -v))"
