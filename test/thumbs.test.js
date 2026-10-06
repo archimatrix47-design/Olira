@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { thumbUrl, thumbSet } from '../lib/thumb-url.js';
+import { thumbUrl, thumbSet, thumbSrcset } from '../lib/thumb-url.js';
 
 for (const key of ['NODE_ENV', 'PORT', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_NAME', 'RECIPIENT_EMAIL', 'CORS_ORIGINS', 'SITE_URL']) process.env[key] = '';
 process.env.NODE_ENV = 'test';
@@ -30,6 +30,8 @@ test('thumbnail addresses only for catalogue photos at the set widths (self-chec
   assert.equal(thumbUrl('/products/photos/coffee.webp', 130), '/products/photos/coffee.webp', 'not a set width: unchanged');
   assert.equal(thumbUrl(null, 120), null);
   assert.equal(thumbSet('/products/photos/coffee.webp', 56), '/thumb/120/products/photos/coffee.webp 1x, /thumb/120/products/photos/coffee.webp 2x');
+  assert.equal(thumbSrcset('/products/photos/coffee.webp'), '/thumb/240/products/photos/coffee.webp 240w, /thumb/480/products/photos/coffee.webp 480w, /thumb/640/products/photos/coffee.webp 640w, /products/photos/coffee.webp 800w');
+  assert.equal(thumbSrcset('/logo.png'), null, 'not a catalogue photo: no srcset');
   assert.equal(thumbSet('/logo.png', 56), null);
 });
 

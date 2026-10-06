@@ -3,6 +3,7 @@
 // and a fresh render if the admin has changed the products since the build.
 import { $, h, prefill, getJSON, track } from './common.js';
 import { mountFlow } from './flow.js';
+import { askedCert, certRequest } from './cert-ask.js';
 
 const toItem = (p) => ({ ...p, sub: p.category, cat: p.category });
 let RAW = JSON.parse($('#productsData').textContent || '[]');
@@ -46,6 +47,9 @@ function chooseProduct(name) {
   const ask = new URLSearchParams(location.search).get('ask');
   const p = ask && RAW.find((x) => x.id === ask);
   if (p) chooseProduct(p.name);
+  // and "Copy on request" on a product page adds ?cert=<certificate name>: only a certificate listed here
+  const cert = askedCert(location.search, [...document.querySelectorAll('.certs .cert > b')].map((b) => b.textContent.trim()));
+  if (cert) prefill(certRequest(cert));
 }
 
 $('#detAsk').addEventListener('click', () => {

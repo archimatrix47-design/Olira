@@ -93,6 +93,22 @@ mm.add('(prefers-reduced-motion: no-preference)', () => {
 document.fonts?.ready.then(() => ScrollTrigger.refresh()).catch(() => {});
 addEventListener('load', () => ScrollTrigger.refresh());
 
+// Measuring scrolls the page to the top and back. When the browser's jump to a
+// linked section (/packaging/#studio, a product page's "Request a quote") lands
+// in the middle of that, the page is left at the top. Until the visitor moves
+// the page themselves, put the linked section back in view after each measure.
+let moved = false;
+for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown']) addEventListener(type, () => { moved = true; }, { capture: true, passive: true, once: true });
+const arrived = performance.now();
+ScrollTrigger.addEventListener('refresh', () => {
+  if (moved || location.hash.length < 2 || performance.now() - arrived > 6000) return;
+  let target = null;
+  try { target = document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch (e) { return; }
+  if (!target) return;
+  const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+  if (Math.abs(target.getBoundingClientRect().top - pad) > 4) target.scrollIntoView({ block: 'start', behavior: 'instant' });
+});
+
 /**
  * Filtering: record where the panels are, apply the change, and move them from
  * the old layout to the new one. Panels that appear rise in; leaving ones fade.

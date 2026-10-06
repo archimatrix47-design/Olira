@@ -237,6 +237,7 @@ p { text-wrap: pretty; }
 .flow-dots button { width: 24px; height: 24px; padding: 0; border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; }
 .flow-dots button::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--line-strong); transition: background-color .15s var(--ease), width .3s var(--ease); }
 .flow-dots button[aria-current="true"]::before { width: 22px; background: var(--accent); }
+.flow-count { display: none; margin: 10px 0 0; text-align: center; font-size: .875rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 @media (max-width: 760px) {
   .flow { height: calc(var(--ch) + 40px); }
   .flow-card { top: 20px; }
@@ -513,6 +514,10 @@ a.reach-num:hover { color: var(--accent); text-decoration: underline; }
   .reach-btn { width: 44px; height: 44px; }
   .flow-dots { gap: 0; }
   .flow-dots button { width: 44px; height: 44px; }
+  /* too many to fit at 44 px: the position as text, browse with the arrows or a swipe */
+  .flow-dots[data-many] { display: none; }
+  .form .check input { width: 24px; height: 24px; margin-top: -2px; }
+  .flow-dots[data-many] + .flow-count { display: block; }
 }
 
 /* ---------- product pages (ProductPage.astro) ---------- */

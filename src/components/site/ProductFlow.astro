@@ -7,19 +7,20 @@
 // prefix '' keeps the agriculture page's original ids (flow, flowTrack, capName…);
 // any other prefix namespaces them (pkFlow, pkFlowTrack…). The default slot holds
 // the detail panel's actions.
-import { cardHTML } from '../../scripts/flow.js';
+import { cardHTML, MANY_DOTS } from '../../scripts/flow.js';
 interface Item { id: string; name: string; sub?: string; image?: string | null; cat?: string; print?: { cutout: string; quad: number[][]; safeTop?: number } | null }
-interface Props { items: Item[]; label: string; prefix?: string; kind: string; start?: number }
-const { items, label, prefix = '', kind, start = 0 } = Astro.props;
+// lazy: every card photo waits (the agriculture range is below its hero photo, which must load first)
+interface Props { items: Item[]; label: string; prefix?: string; kind: string; start?: number; lazy?: boolean }
+const { items, label, prefix = '', kind, start = 0, lazy = false } = Astro.props;
 const id = (s: string) => (prefix ? prefix + s[0].toUpperCase() + s.slice(1) : s);
 const N = items.length;
 const first = items[start];
 const openIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
 const arrow = (d: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 ---
-<div class="flow-wrap" data-flow={kind}>
+<div class="flow-wrap" data-flow={kind} data-lazy={lazy ? '' : undefined}>
   <div class="flow" id={id('flow')} tabindex="0" role="region" aria-roledescription="carousel" aria-label={label} aria-describedby={id('flowHelp')}>
-    <ul class="flow-track" id={id('flowTrack')} set:html={items.map((p, i) => cardHTML(p, i, start, N)).join('')}></ul>
+    <ul class="flow-track" id={id('flowTrack')} set:html={items.map((p, i) => cardHTML(p, i, start, N, { lazy })).join('')}></ul>
   </div>
   <slot name="after-track" />
   <p class="sr-only" id={id('flowHelp')}>Use the left and right arrow keys to browse. Press Enter to open the product details.</p>
@@ -34,9 +35,10 @@ const arrow = (d: string) => `<svg width="18" height="18" viewBox="0 0 24 24" fi
   <div class="flow-actions">
     <button class="btn btn-secondary btn-sm flow-open-btn" id={id('flowOpen')} type="button" aria-describedby={id('capName')}><Fragment set:html={openIcon} />View details</button>
   </div>
-  <div class="flow-dots" id={id('flowDots')} role="group" aria-label="Choose a product">
+  <div class="flow-dots" id={id('flowDots')} role="group" aria-label="Choose a product" data-many={N > MANY_DOTS ? '' : undefined}>
     {items.map((p, i) => <button type="button" aria-label={p.name} aria-current={String(i === start)}></button>)}
   </div>
+  <p class="flow-count" aria-hidden="true">{N ? `${start + 1} of ${N}` : ''}</p>
   <p class="flow-hint" aria-hidden="true"><span class="on-touch">Tap the front card for details. Swipe to see more products.</span><span class="on-mouse">Click the front card for details. Use the arrows or drag to see more products.</span></p>
 
   <div class="flow-detail" id={id('flowDetail')} hidden role="dialog" aria-modal="true" aria-labelledby={id('detName')}>
