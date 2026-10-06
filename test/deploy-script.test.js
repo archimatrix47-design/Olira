@@ -62,6 +62,7 @@ test("CloudLinux's activate script, which reads unset variables, does not stop t
     const clean = spawnSync(SH, [SCRIPT, repo], { encoding: 'utf8', env: { ...env, DEPLOY_HOME: home, DEPLOY_DRY: '1', NODEVER: '22' } });
     assert.equal(clean.status, 0, clean.stderr);
     assert.match(clean.stdout, /node -v\s+v\d+/, 'the dry run loads Node the way the deploy does');
+    assert.match(clean.stdout, /wasm\s+--disable-wasm-trap-handler \(address space: \S+\)/, "WebAssembly set to fit the deploy task's memory cap");
     assert.equal(r.status, 0, r.stderr);
   } finally { fs.rmSync(home, { recursive: true, force: true }); }
 });
