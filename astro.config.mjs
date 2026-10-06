@@ -13,12 +13,12 @@ export default defineConfig({
   // Vite config for minimal bundle and API proxy
   vite: {
     build: {
-      minify: 'terser',
-      // Vite starts one terser worker per CPU core (less one). On the server
-      // that many threads each reserve address space and the cPanel deploy
-      // task (capped at 4 GB) ran out: "Failed to reserve virtual memory for
-      // CodeRange". Two are plenty for this site's few chunks.
-      terserOptions: { maxWorkers: 2 },
+      // esbuild, not terser: terser runs in Node worker threads, and on the
+      // server even two of them could not reserve their memory inside the cPanel
+      // deploy task's 4 GB address-space cap ("Failed to reserve virtual memory
+      // for CodeRange"). esbuild minifies in its own process. Cost: 3 KB of
+      // compressed script across the whole site (157 KB to 160 KB).
+      minify: 'esbuild',
       rollupOptions: {
         output: {
           manualChunks: undefined
