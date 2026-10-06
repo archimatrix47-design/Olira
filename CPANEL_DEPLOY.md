@@ -215,7 +215,7 @@ One-time setup (the database `oliraagr_site` already exists):
 2. **Setup Node.js App → the olira app → Environment variables:** add
    `DB_NAME` = `oliraagr_site`, `DB_USER` = the user from step 1 (with its
    `oliraagr_` prefix), `DB_PASSWORD` = its password. `DB_HOST` defaults to
-   `localhost`. Save.
+   `localhost`. Save. (Until all three are set the site stays on the file.)
 3. Restart the app so it reads them (a deploy restarts it reliably; see
    "Reliably restarting the app").
 4. **Admin → Overview → Site health:** "Enquiries kept in" shows MariaDB with the
