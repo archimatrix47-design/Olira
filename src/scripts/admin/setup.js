@@ -83,6 +83,7 @@ const CHECK_NAME = {
   uploadsDirWritable: 'the uploads folder cannot be written to',
   distPresent: 'the website build is missing',
   analyticsParseable: 'the visitor statistics file is damaged',
+  enquiryStore: 'the enquiry database is not answering (new website enquiries wait on the server and move in when it is back)',
 };
 const bytes = (n) => (n == null ? 'Unknown' : n >= 1073741824 ? `${(n / 1073741824).toFixed(1)} GB` : n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
@@ -101,7 +102,39 @@ function renderSite(site) {
     fact('Data and uploads', `${bytes(site.dataBytes)} and ${bytes(site.uploadsBytes)}`, 'Enquiries, settings, files and photos'),
     fact('Free disk space', site.disk ? bytes(site.disk.free) : 'Unknown', lowDisk ? 'Low: ask the hosting company for more, or remove old files' : site.disk ? `of ${bytes(site.disk.total)}` : 'Not reported on this server'),
     fact('Last test email', site.email ? (site.email.ok ? 'Delivered to the mail server' : 'Failed') : 'Not sent yet', site.email ? `${timeAgo(site.email.at)}, to ${site.email.to}` : h('a', { href: '#email' }, 'Send one from Email delivery')),
+    enquiriesFact(site.enquiries, fact),
   );
+}
+
+// where the enquiries are kept (lib/lead-store.js); counts only, the content is the teams'
+function enquiriesFact(e, fact) {
+  if (!e) return fact('Enquiries kept in', 'Unknown', 'Not reported');
+  if (e.store !== 'mariadb') return fact('Enquiries kept in', 'A file on the server', `${int(e.count || 0)} enquiries; the newest ${int(e.cap || 1000)} are kept`);
+  const out = h('p', { class: 'a-test-result', role: 'status', hidden: true });
+  const btn = h('button', { class: 'btn btn-secondary btn-sm', type: 'button' }, 'Check the database');
+  btn.addEventListener('click', () => checkDatabase(btn, out));
+  const note = e.ok
+    ? `${int(e.count)} enquiries${e.pending ? `, ${int(e.pending)} waiting to move in` : ''}. All are kept.`
+    : `Not answering${e.error ? ` (${e.error})` : ''}${e.pending ? `. ${int(e.pending)} new enquiries are waiting on the server` : ''}.`;
+  return h('div', { class: 'a-fact-wide' }, h('dt', {}, 'Enquiries kept in'), h('dd', {}, `MariaDB, ${e.database}`, h('small', {}, note), btn, out));
+}
+
+async function checkDatabase(btn, out) {
+  btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Checking';
+  out.hidden = false; out.className = 'a-test-result'; out.textContent = 'Running the website’s own steps in a scratch table. The enquiries are not touched.';
+  try {
+    const r = await api('/api/admin/database-check', { method: 'POST', body: {} });
+    out.className = `a-test-result ${r.ok ? 'is-ok' : 'is-error'}`;
+    out.replaceChildren(
+      h('strong', {}, r.ok ? 'The database works.' : 'The database check failed.'),
+      h('ul', {}, ...r.steps.map((s) => h('li', {}, `${s.ok ? 'Passed' : 'Failed'}: ${s.step}${s.detail ? ` (${s.detail})` : ''}`))),
+    );
+  } catch (e) {
+    out.className = 'a-test-result is-error';
+    out.textContent = e.message;
+  } finally {
+    btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Check the database';
+  }
 }
 
 function renderAccounts(team) {
