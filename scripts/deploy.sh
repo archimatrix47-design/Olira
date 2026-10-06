@@ -41,14 +41,28 @@ echo "deploy:   mode     $SITE_ENV$([ "$SITE_ENV" = production ] && echo ', then
 # sourced with -u off (the first live deploy stopped here: CL_VIRTUAL_ENV).
 use_node() { set +u; . "$ACTIVATE"; set -u; }
 
+# cPanel runs deploy tasks with a cap on address space. WebAssembly (Astro's
+# compiler) normally reserves a 10 GB block up front and then fails with
+# "Cannot allocate Wasm memory" (the second live deploy stopped here). This
+# Node option, made for capped processes, checks bounds in code instead.
+wasm_fit() {
+  if node --disable-wasm-trap-handler -e 0 2>/dev/null; then
+    NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--disable-wasm-trap-handler"; export NODE_OPTIONS
+    echo "deploy:   wasm     --disable-wasm-trap-handler (address space: $(ulimit -v))"
+  else
+    echo "deploy:   wasm     default (address space: $(ulimit -v))"
+  fi
+}
+
 if [ -n "${DEPLOY_DRY:-}" ]; then
-  if [ -f "$ACTIVATE" ]; then use_node; echo "deploy:   node -v  $(node -v)"; else echo "deploy:   (no Node app there yet)"; fi
+  if [ -f "$ACTIVATE" ]; then use_node; echo "deploy:   node -v  $(node -v)"; wasm_fit; else echo "deploy:   (no Node app there yet)"; fi
   echo "deploy: dry run, nothing changed."
   exit 0
 fi
 
 [ -f "$ACTIVATE" ] || { echo "deploy: no Node $NODEVER app at $APP. Create it in Setup Node.js App first." >&2; exit 1; }
 use_node
+wasm_fit
 
 # Copy the code in. Kept: .git (none here), node_modules (a link into nodevenv),
 # tmp (the restart trigger), dist (rebuilt below), and .env if one exists.
