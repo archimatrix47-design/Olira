@@ -177,13 +177,16 @@ test('mariadb: a request that cannot be stored anywhere is reported, not dropped
   try { await assert.rejects(store.add(lead('inq_x', '2026-10-02T00:00:00Z')), StoreUnavailable); } finally { await store.close(); fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('the database is used only when DB_NAME and DB_USER are set', async () => {
+test('the database is used only when DB_NAME, DB_USER and DB_PASSWORD are all set', async () => {
   const dir = tmp();
   const a = createLeadStore({ env: {}, dataDir: dir, readJsonFile, writeJsonFile });
   const b = createLeadStore({ env: { DB_NAME: 'oliraagr_site' }, dataDir: dir, readJsonFile, writeJsonFile });
+  const c = createLeadStore({ env: { DB_NAME: 'oliraagr_site', DB_USER: 'oliraagr_site' }, dataDir: dir, readJsonFile, writeJsonFile });
   assert.equal(a.kind, 'file');
   assert.equal(b.kind, 'file', 'a name without a user is not enough');
-  await a.close(); await b.close();
+  assert.equal(c.kind, 'file', 'without the password (saved half-way in cPanel) the site stays on the file');
+  await a.close(); await b.close(); await c.close();
+  assert.equal(dbConfigFrom({ DB_NAME: 'n', DB_USER: 'u' }), null);
   assert.throws(() => mariaLeadStore({ config: {}, dataDir: dir, readJsonFile, writeJsonFile, table: 'x; DROP TABLE y', createPool: () => fakeMaria().pool }), /bad table name/);
   fs.rmSync(dir, { recursive: true, force: true });
 });
@@ -210,6 +213,6 @@ test('the database check says which step failed, and still tries to clean up', a
   assert.equal(r.steps[0].ok, false);
   assert.match(r.steps[0].detail, /ECONNREFUSED/);
   assert.equal(r.steps.at(-1).step, 'Removes the scratch table');
-  assert.equal(dbConfigFrom({ DB_NAME: 'oliraagr_site', DB_USER: 'oliraagr_site' }).host, 'localhost');
+  assert.equal(dbConfigFrom({ DB_NAME: 'oliraagr_site', DB_USER: 'oliraagr_site', DB_PASSWORD: 'x' }).host, 'localhost');
   assert.equal(dbConfigFrom({}), null);
 });
