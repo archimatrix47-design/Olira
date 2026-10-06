@@ -210,6 +210,13 @@
 .a-facts.a-facts-row > .a-fact-wide { grid-column: 1 / -1; }
 .a-fact-wide dd { display: grid; gap: 8px; justify-items: start; }
 .a-fact-wide .a-test-result ul { margin: 6px 0 0; padding-left: 18px; }
+.a-db { width: 100%; max-width: 560px; }
+.a-db > summary { cursor: pointer; font-size: .875rem; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.a-db-form { display: grid; gap: 12px; padding-top: 6px; }
+.a-db-form .a-field { display: grid; gap: 6px; }
+.a-db-form .hint, .a-db-form label { font-size: .8125rem; font-weight: 500; line-height: 1.45; }
+.a-db-form .hint { font-weight: 400; color: var(--ink-2); }
+.a-db-form .input { font-size: .9375rem; }
 .a-facts dd small { display: block; margin-top: 2px; font-size: .8125rem; font-weight: 400; color: var(--ink-2); }
 
 /* the test email's answer */

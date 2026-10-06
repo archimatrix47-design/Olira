@@ -211,16 +211,21 @@ One-time setup (the database `oliraagr_site` already exists):
 
 1. **MySQL Databases → Add New User:** a user (for example `oliraagr_site`) with a
    strong password you keep. Then **Add User To Database**: that user,
-   `oliraagr_site`, **ALL PRIVILEGES**.
-2. **Setup Node.js App → the olira app → Environment variables:** add
-   `DB_NAME` = `oliraagr_site`, `DB_USER` = the user from step 1 (with its
-   `oliraagr_` prefix), `DB_PASSWORD` = its password. `DB_HOST` defaults to
-   `localhost`. Save. (Until all three are set the site stays on the file.)
-3. Restart the app so it reads them (a deploy restarts it reliably; see
-   "Reliably restarting the app").
-4. **Admin → Overview → Site health:** "Enquiries kept in" shows MariaDB with the
-   count, and **Check the database** runs the website's own steps in a scratch
-   table and removes it.
+   `oliraagr_site`, **ALL PRIVILEGES**. (A PostgreSQL user does not work: it is
+   a different database server.)
+2. **Admin → Overview → Site health → "Keep every enquiry in the MariaDB
+   database":** the database, the user and its password, then **Save and
+   check**. The website signs in and tries every step in a scratch table first;
+   the settings are saved (in `~/olira-data/database.json`, readable by this
+   account only) only when every step passes, and the site switches at once, no
+   restart. "Enquiries kept in" then shows MariaDB with the count, and **Check
+   the database** runs the same steps again any time.
+
+Why the admin panel and not environment variables: on this host a changed
+variable in Setup Node.js App can stay invisible to the running app until the
+hosting company restarts the web server (the same reason the admin password is
+read from a file). `DB_NAME`, `DB_USER` and `DB_PASSWORD` still work when the
+app does see them; the settings saved in the admin win.
 
 On its first start with the database the app makes the table and copies
 `inquiries.json` in once, then renames the file `inquiries.imported-<date>.json`.
@@ -230,8 +235,9 @@ If the database stops answering, a new enquiry from the website is kept in
 again; the staff screens say the list cannot be reached; `/api/health` reports
 `enquiryStore`, so the uptime check mails info@.
 
-To go back to the file: remove `DB_NAME` and `DB_USER` and restart. The file then
-starts empty; export the table from phpMyAdmin first if you need the enquiries.
+To go back to the file: delete `~/olira-data/database.json` (and any `DB_*`
+variables). The file then starts empty; export the table from phpMyAdmin first if
+you need the enquiries.
 
 ---
 

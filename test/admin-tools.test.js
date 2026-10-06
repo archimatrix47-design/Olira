@@ -90,3 +90,26 @@ test('a test email: refused until set up, then the mail server\'s answer is kept
   assert.ok(log.includes('Email delivery settings saved'));
   assert.ok(log.some((t) => t.startsWith('Test email failed')));
 });
+
+test('the enquiry database: settings are saved only when the check passes, and the password never comes back', async () => {
+  const token = await login();
+  assert.equal((await req('POST', '/api/admin/database', { body: { database: 'd', user: 'u', password: 'p' } })).status, 401, 'admin only');
+  assert.equal((await req('GET', '/api/admin/database')).status, 401);
+  const bad = await req('POST', '/api/admin/database', { token, body: { database: 'bad name', user: 'u', password: 'p' } });
+  assert.equal(bad.status, 400);
+  // a database that does not answer: checked, failed, not saved, the site stays on the file
+  const r = await req('POST', '/api/admin/database', { token, body: { database: 'oliraagr_site', user: 'oliraagr_site', password: 'secret-never-echoed', host: '127.0.0.1', port: 1 } });
+  const text = await r.text();
+  assert.equal(r.status, 200);
+  const j = JSON.parse(text);
+  assert.equal(j.ok, false);
+  assert.equal(j.saved, false);
+  assert.equal(j.steps[0].ok, false);
+  assert.ok(!text.includes('secret-never-echoed'), 'the password is never sent back');
+  assert.ok(!fs.existsSync(path.join(tmp, 'database.json')), 'nothing saved');
+  const got = await (await req('GET', '/api/admin/database', { token })).json();
+  assert.equal(got.settings, null);
+  assert.equal(got.status.store, 'file');
+  await settle();
+  assert.ok(fs.readFileSync(path.join(tmp, 'admin-audit.log'), 'utf8').includes('database_rejected'));
+});
