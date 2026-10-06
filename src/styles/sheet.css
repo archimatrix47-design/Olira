@@ -158,9 +158,9 @@
 .door-agri .act.fill:hover { background: var(--white); }
 /* packaging: the products on the kraft stage, printed with the visitor's brand */
 .door-pack { background: var(--stage); }
-.door-pack .lineup { flex: 1; align-items: flex-end; gap: 4%; padding: 0 clamp(20px, 3vw, 36px); }
+.door-pack .lineup { flex: 1; align-items: flex-end; gap: 4%; padding: 0 clamp(20px, 3vw, 36px) clamp(20px, 3vw, 36px); } /* stands on the same line as the produce tiles beside it, with room for its shadow */
 /* the row always fits, on a phone too: no sideways swipe */
-@media (max-width: 760px) { .door-pack .lineup { padding: 16px 20px 0; } }
+@media (max-width: 760px) { .door-pack .lineup { padding: 16px 20px 20px; } }
 @media (max-width: 860px) {
   .choose-grid { grid-template-columns: minmax(0, 1fr); }
   .door { min-height: 0; }
