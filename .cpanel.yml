@@ -1,39 +1,20 @@
----
 # cPanel Git Version Control - deployment tasks
 #
 # Runs on the server when you click "Deploy HEAD Commit" in
-# cPanel > Git Version Control > Manage.
+# cPanel > Git Version Control > Manage, from the checkout being deployed.
 #
-# cPanel clones the repo into ~/repositories/Olira, but the Node.js app runs
-# from ~/olira. So these tasks SYNC the checkout into the app root, then
-# install, build, and restart. (An earlier version assumed the repo was cloned
-# directly into the app root - it isn't, which is why deploys did nothing.)
+# scripts/deploy.sh does the work: it copies the checkout into its Node app,
+# installs, builds from that app's data folder, restarts the app and (for the
+# live site only) pings IndexNow. The checkout's branch decides where it goes:
+#   main    (~/repositories/Olira)          -> ~/olira          the live site
+#   staging (~/repositories/Olira-staging)  -> ~/olira-staging  the staging copy
+# so deploying the staging checkout can never overwrite the live site.
+#
+# Check a checkout without changing anything, in Terminal:
+#   cd ~/repositories/Olira && DEPLOY_DRY=1 sh scripts/deploy.sh
 deployment:
   tasks:
-    - export CPUSER=oliraagr
-    # Must match the Node version selected in cPanel > Setup Node.js App.
+    - export DEPLOY_HOME=/home/oliraagr
+    # Must match the Node version selected in cPanel > Setup Node.js App (both apps).
     - export NODEVER=20
-    - export REPO=/home/$CPUSER/repositories/Olira
-    - export APP=/home/$CPUSER/olira
-    - export ACTIVATE=/home/$CPUSER/nodevenv/olira/$NODEVER/bin/activate
-
-    # Copy the checked-out code into the app root. Exclusions matter:
-    #   .git         - the app root is not a git repo, keep it that way
-    #   node_modules - it's a symlink into the nodevenv; deleting it breaks npm
-    #   tmp          - holds the Passenger restart trigger, must persist
-    #   dist         - rebuilt below; no need to ship or delete it here
-    - /usr/bin/rsync -a --delete --exclude='.git' --exclude='node_modules' --exclude='tmp' --exclude='dist' $REPO/ $APP/
-
-    # Install exact deps. Not --omit=dev: the build needs tailwind/postcss/terser.
-    - source $ACTIVATE && cd $APP && npm install
-
-    # Astro writes the static site to dist/, which server.js serves.
-    - source $ACTIVATE && cd $APP && npm run build
-
-    # Reliable restart. touch tmp/restart.txt alone does NOT cycle the process on
-    # this host (a worker once ran 20+ days ignoring every restart). The script
-    # kills the LiteSpeed lsnode worker so a fresh one spawns with the new code.
-    - /bin/sh $APP/scripts/restart-app.sh $APP
-
-    # Tell Bing and the other IndexNow engines the pages changed (never fails the deploy).
-    - source $ACTIVATE && cd $APP && node scripts/indexnow.mjs || true
+    - /bin/sh scripts/deploy.sh "$PWD"

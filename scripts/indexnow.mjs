@@ -15,6 +15,12 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const HOST = 'oliraagroindustry.com';
 const dry = process.argv.includes('--dry');
 
+// the staging copy is not for search engines (lib/staging.js)
+if (String(process.env.SITE_ENV || '').trim().toLowerCase() === 'staging') {
+  console.log('IndexNow: skipped, this is the staging copy.');
+  process.exit(0);
+}
+
 try {
   const keyFile = fs.readdirSync(path.join(root, 'public')).find((f) => /^[a-f0-9]{32}\.txt$/.test(f));
   if (!keyFile) throw new Error('no IndexNow key file in public/');

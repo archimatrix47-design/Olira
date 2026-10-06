@@ -7,7 +7,8 @@
 # unrecoverable. This tars both into a dated archive and prunes old ones.
 #
 # Install as a daily cron job (cPanel > Cron Jobs), e.g. 03:15 every day:
-#   15 3 * * *  /home/oliraagr/olira/scripts/backup-data.sh >> /home/oliraagr/olira-backups/backup.log 2>&1
+#   15 3 * * *  /bin/sh /home/oliraagr/olira/scripts/backup-data.sh >> /home/oliraagr/olira-backups/backup.log
+# (successes go to the log; errors still reach cron's mail. Create ~/olira-backups once first.)
 #
 # Override the defaults with env vars if your paths differ.
 

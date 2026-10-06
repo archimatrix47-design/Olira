@@ -117,10 +117,17 @@ and only `/admin` is locked, with `ADMIN LOGIN DISABLED` printed in the startup
 log and `adminLoginEnabled: false` in `/api/health`. If sign in is refused after
 a deploy, check those first.
 
-### Step 6 — Fill in `.cpanel.yml` and deploy
+### Step 6 — Check `.cpanel.yml` and deploy
 
-Edit the two `EDIT ME` lines at the top of `.cpanel.yml` with your cPanel
-username and the Node version from step 3, then commit and push.
+`.cpanel.yml` sets `DEPLOY_HOME` (your home folder) and `NODEVER` (the Node
+version from step 3) and runs `scripts/deploy.sh`, which copies the checkout
+into the app, installs, builds from the app's data folder, restarts it and pings
+IndexNow. Check both lines, then commit and push. To see what a deploy would do
+without changing anything, in Terminal:
+
+```bash
+cd ~/repositories/Olira && DEPLOY_DRY=1 NODEVER=20 sh scripts/deploy.sh
+```
 
 Then: **Git Version Control → Manage → Pull or Deploy → Update from Remote →
 Deploy HEAD Commit.**
@@ -143,6 +150,74 @@ does not mean the site is serving.
 Steps 3–4 are manual. cPanel does not deploy automatically when you push to
 GitHub — GitHub has no way to notify it without extra webhook plumbing. If the
 two clicks become tiresome, that can be automated later.
+
+---
+
+## A staging copy: staging.oliraagroindustry.com
+
+A second copy of the site, with its own data, for checking a change before it
+goes live. It asks for a password, tells search engines to stay out, loads no
+Analytics or Ads tag, and never mails buyers or staff (`lib/staging.js`).
+
+`scripts/deploy.sh` decides by branch: the checkout on `main` deploys to
+`~/olira` (live), the checkout on `staging` to `~/olira-staging`. Any other
+branch stops. So deploying the staging checkout cannot touch the live site,
+**provided the `staging` branch is made from a commit that has this
+`scripts/deploy.sh`** (an older `.cpanel.yml` copied to the live folder).
+
+One-time setup, in this order:
+
+1. **Domains → Create a New Domain:** `staging.oliraagroindustry.com`. The
+   wildcard certificate already covers it, so it is on https at once.
+2. **Terminal:** copy the live data so the copy has real products to show:
+   ```bash
+   mkdir -p ~/olira-staging-data ~/olira-staging-uploads
+   cp -a ~/olira-data/. ~/olira-staging-data/ && cp -a ~/olira-uploads/. ~/olira-staging-uploads/
+   ```
+   (Enquiries come along. Delete `~/olira-staging-data/inquiries.json` first if
+   the copy should start without them.)
+3. **Git Version Control → Create:** clone the same GitHub URL into
+   `/home/oliraagr/repositories/Olira-staging`, then **Manage** and set the
+   checked-out branch to `staging` (push a `staging` branch from GitHub first).
+4. **Setup Node.js App → Create Application:** same Node version as live,
+   application root `olira-staging`, application URL
+   `staging.oliraagroindustry.com`, startup file `server.js`. Environment
+   variables: the live list from step 5 with `DATA_DIR` and `UPLOADS_DIR`
+   pointing at the staging folders, `SITE_URL` and `CORS_ORIGINS` set to
+   `https://staging.oliraagroindustry.com`, a **different** `JWT_SECRET`, and:
+
+   | Variable | Value |
+   |---|---|
+   | `SITE_ENV` | `staging` |
+   | `STAGING_PASSWORD` | the password testers type (user name `olira`, or set `STAGING_USER`) |
+   | `STAGING_MAIL_TO` | optional: one address that receives every email the copy sends |
+
+5. **Git Version Control → Manage (Olira-staging) → Deploy HEAD Commit.**
+
+From then on: push to `staging`, deploy the staging checkout, check
+https://staging.oliraagroindustry.com, then merge to `main` and deploy live.
+
+---
+
+## Cron jobs (cPanel → Cron Jobs)
+
+Set **Cron Email** to the address that should hear about problems. Cron mails
+whatever a job prints, so both jobs are set up to print only when there is news.
+Create the backup folder once first (Terminal: `mkdir -p ~/olira-backups`), or
+the first night's job cannot open its log.
+
+| When | Command | What it does |
+|---|---|---|
+| Daily 03:15 | `/bin/sh /home/oliraagr/olira/scripts/backup-data.sh >> /home/oliraagr/olira-backups/backup.log` | Archives `~/olira-data` and `~/olira-uploads` to `~/olira-backups`, keeps 14 days. Successes go to `backup.log`; a failure is mailed |
+| Every 10 minutes | `/bin/sh /home/oliraagr/olira/scripts/uptime-check.sh` | Mails once when `/api/health` stops answering "ok", once when it is back |
+
+The uptime check runs on the same server: it catches the app failing, not the
+whole server going down. A free outside monitor watching
+`https://oliraagroindustry.com/api/health` covers that case.
+
+The backups also sit on the same server. Download one now and then (File
+Manager, `olira-backups`), or keep using cPanel's own backup if the host makes
+one.
 
 ---
 

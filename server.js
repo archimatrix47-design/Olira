@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import { registerStaging, isStaging, stagingMail } from './lib/staging.js';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import sharp from 'sharp';
@@ -45,6 +46,9 @@ const PORT = Number.isInteger(portFlag) && portFlag > 0 ? portFlag : (process.en
 // authoritative. Configure TRUST_PROXY to the hop count for your deployment
 // (default 1 = a single proxy directly in front of Node).
 app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
+
+// The staging copy (SITE_ENV=staging): password, noindex, no mail to real people (lib/staging.js)
+registerStaging(app);
 
 // One address for the whole site: https://oliraagroindustry.com. "www." and plain
 // http answer with a permanent redirect, so search engines index one copy and a
@@ -314,7 +318,7 @@ async function sendEmail(to, subject, htmlContent, extra = {}) {
 
   // extra: text, replyTo, bcc, attachments, and fromName to send as a team member
   const fromName = String(extra.fromName || config.fromName || '').replace(/[\r\n"<>]/g, '').slice(0, 120);
-  const mailOptions = {
+  let mailOptions = {
     from: `"${fromName}" <${config.smtpUser}>`,
     to: to,
     subject: subject,
@@ -324,6 +328,11 @@ async function sendEmail(to, subject, htmlContent, extra = {}) {
   if (extra.replyTo) mailOptions.replyTo = extra.replyTo;
   if (extra.bcc) mailOptions.bcc = extra.bcc;
   if (Array.isArray(extra.attachments) && extra.attachments.length) mailOptions.attachments = extra.attachments;
+  // the staging copy never writes to buyers or staff: only to STAGING_MAIL_TO, or nobody
+  if (isStaging()) {
+    mailOptions = stagingMail(mailOptions);
+    if (!mailOptions) { console.log(`[staging] mail not sent: "${subject}"`); return { messageId: null, staging: true }; }
+  }
 
   return new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (error, info) => {
@@ -1086,6 +1095,7 @@ initializeIntegrationsConfig();
 
 // GET /api/integrations - Get current integration settings
 app.get('/api/integrations', (req, res) => {
+  if (isStaging()) return res.json({}); // no Analytics or Ads tags on the staging copy
   const config = loadIntegrationsConfig();
   res.json(config);
 });
