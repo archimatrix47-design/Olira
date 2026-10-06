@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import { registerStaging, isStaging, stagingMail } from './lib/staging.js';
-import { createLeadStore, dbConfigFrom, checkMaria } from './lib/lead-store.js';
+import { createLeadStore } from './lib/lead-store.js';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import sharp from 'sharp';
@@ -2134,8 +2134,7 @@ app.get('/api/health', (req, res) => {
 const distPath = path.join(__dirname, 'dist');
 
 // the admin's activity log, test email and site health (lib/admin-tools.js)
-registerAdminTools(app, { adminAuth, rateLimit, auditLogPath, dataDir, uploadsDir, distPath, readJsonFile, writeJsonFile, sendEmail, loadEmailConfig, audit, logError, healthChecks: runHealthChecks, enquiryStore: () => leads.status(),
-  databaseCheck: () => { const config = dbConfigFrom(); return config ? checkMaria({ config, readJsonFile, writeJsonFile }) : null; } });
+registerAdminTools(app, { adminAuth, rateLimit, auditLogPath, dataDir, uploadsDir, distPath, readJsonFile, writeJsonFile, sendEmail, loadEmailConfig, audit, logError, healthChecks: runHealthChecks, leads });
 
 // Cache control middleware for static assets
 app.use((req, res, next) => {

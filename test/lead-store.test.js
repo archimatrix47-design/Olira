@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileLeadStore, mariaLeadStore, createLeadStore, checkMaria, dbConfigFrom, StoreUnavailable } from '../lib/lead-store.js';
+import { fileLeadStore, mariaLeadStore, createLeadStore, checkMaria, dbConfigFrom, cleanDbSettings, saveDbFile, readDbFile, StoreUnavailable } from '../lib/lead-store.js';
 
 const readJsonFile = (f, d) => { try { return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : d; } catch { return d; } };
 const writeJsonFile = (f, v) => { try { fs.writeFileSync(f, JSON.stringify(v)); return true; } catch { return false; } };
@@ -215,4 +215,68 @@ test('the database check says which step failed, and still tries to clean up', a
   assert.equal(r.steps.at(-1).step, 'Removes the scratch table');
   assert.equal(dbConfigFrom({ DB_NAME: 'oliraagr_site', DB_USER: 'oliraagr_site', DB_PASSWORD: 'x' }).host, 'localhost');
   assert.equal(dbConfigFrom({}), null);
+});
+
+/* ---------- settings saved from the admin, read again without a restart ---------- */
+test('saved settings switch the store on its next call; removing them goes back to the file', async () => {
+  const dir = tmp();
+  const db = fakeMaria();
+  let pools = 0;
+  const store = createLeadStore({ env: {}, dataDir: dir, readJsonFile, writeJsonFile, createPool: () => { pools++; return db.pool; } });
+  try {
+    assert.equal(store.kind, 'file');
+    assert.equal((await store.status()).source, 'none');
+    saveDbFile(store.configFile, { host: 'localhost', port: 3306, database: 'oliraagr_site', user: 'oliraagr_site', password: 'first-pass' });
+    assert.equal(store.kind, 'mariadb', 'no restart needed');
+    await store.add(lead('inq_live', '2026-10-06T10:00:00Z'));
+    assert.ok(db.rows.has('inq_live'));
+    const st = await store.status();
+    assert.deepEqual([st.store, st.source, st.database], ['mariadb', 'admin', 'oliraagr_site']);
+    assert.equal(store.settings().user, 'oliraagr_site');
+    const before = pools;
+    saveDbFile(store.configFile, { host: 'localhost', port: 3306, database: 'oliraagr_site', user: 'oliraagr_site', password: 'second-pass' });
+    await store.all();
+    assert.equal(pools, before + 1, 'a new password makes a new connection');
+    fs.rmSync(store.configFile);
+    assert.equal(store.kind, 'file');
+  } finally { await store.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('the admin\'s saved settings win over environment variables', async () => {
+  const dir = tmp();
+  const db = fakeMaria();
+  const env = { DB_NAME: 'from_env', DB_USER: 'env_user', DB_PASSWORD: 'x' };
+  const store = createLeadStore({ env, dataDir: dir, readJsonFile, writeJsonFile, createPool: () => db.pool });
+  try {
+    assert.equal(store.settings().database, 'from_env');
+    assert.equal((await store.status()).source, 'environment');
+    saveDbFile(store.configFile, { database: 'oliraagr_site', user: 'oliraagr_site', password: 'p' });
+    assert.equal(store.settings().database, 'oliraagr_site');
+    assert.equal((await store.status()).source, 'admin');
+  } finally { await store.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('what the admin types is checked, and a blank password keeps the saved one only for the same user', () => {
+  const saved = { host: 'localhost', port: 3306, database: 'oliraagr_site', user: 'oliraagr_site', password: 'kept' };
+  assert.deepEqual(cleanDbSettings({ database: 'oliraagr_site', user: 'oliraagr_site', password: '' }, saved).config.password, 'kept');
+  assert.match(cleanDbSettings({ database: 'oliraagr_site', user: 'someone_else', password: '' }, saved).error, /password/);
+  assert.match(cleanDbSettings({ database: 'olira site; DROP', user: 'u', password: 'p' }).error, /database name/);
+  assert.match(cleanDbSettings({ database: 'd', user: "u'--", password: 'p' }).error, /database user/);
+  assert.match(cleanDbSettings({ database: 'd', user: 'u', password: 'p', host: 'bad host/' }).error, /host/);
+  assert.match(cleanDbSettings({ database: 'd', user: 'u', password: 'p', port: 70000 }).error, /port/);
+  assert.deepEqual(cleanDbSettings({ database: 'd', user: 'u', password: 'p' }).config, { host: 'localhost', port: 3306, database: 'd', user: 'u', password: 'p' });
+});
+
+test('database.json: written whole, read back, and an incomplete one counts as none', () => {
+  const dir = tmp();
+  const f = path.join(dir, 'database.json');
+  saveDbFile(f, { host: 'localhost', port: 3306, database: 'oliraagr_site', user: 'oliraagr_site', password: 'p' });
+  assert.equal(readDbFile(f).password, 'p');
+  assert.ok(!fs.readdirSync(dir).some((n) => n.endsWith('.tmp')), 'no half-written file left');
+  if (process.platform !== 'win32') assert.equal(fs.statSync(f).mode & 0o777, 0o600, 'readable by this account only');
+  fs.writeFileSync(f, JSON.stringify({ database: 'oliraagr_site', user: 'oliraagr_site' }));
+  assert.equal(readDbFile(f), null);
+  fs.writeFileSync(f, '{not json');
+  assert.equal(readDbFile(f), null);
+  fs.rmSync(dir, { recursive: true, force: true });
 });

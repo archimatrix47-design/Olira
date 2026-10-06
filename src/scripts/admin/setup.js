@@ -109,32 +109,80 @@ function renderSite(site) {
 // where the enquiries are kept (lib/lead-store.js); counts only, the content is the teams'
 function enquiriesFact(e, fact) {
   if (!e) return fact('Enquiries kept in', 'Unknown', 'Not reported');
-  if (e.store !== 'mariadb') return fact('Enquiries kept in', 'A file on the server', `${int(e.count || 0)} enquiries; the newest ${int(e.cap || 1000)} are kept`);
-  const out = h('p', { class: 'a-test-result', role: 'status', hidden: true });
-  const btn = h('button', { class: 'btn btn-secondary btn-sm', type: 'button' }, 'Check the database');
-  btn.addEventListener('click', () => checkDatabase(btn, out));
-  const note = e.ok
-    ? `${int(e.count)} enquiries${e.pending ? `, ${int(e.pending)} waiting to move in` : ''}. All are kept.`
-    : `Not answering${e.error ? ` (${e.error})` : ''}${e.pending ? `. ${int(e.pending)} new enquiries are waiting on the server` : ''}.`;
-  return h('div', { class: 'a-fact-wide' }, h('dt', {}, 'Enquiries kept in'), h('dd', {}, `MariaDB, ${e.database}`, h('small', {}, note), btn, out));
+  const onDb = e.store === 'mariadb';
+  const out = h('div', { class: 'a-test-result', role: 'status', 'aria-live': 'polite', hidden: true });
+  const note = !onDb
+    ? `${int(e.count || 0)} enquiries; the newest ${int(e.cap || 1000)} are kept`
+    : e.ok
+      ? `${int(e.count)} enquiries${e.pending ? `, ${int(e.pending)} waiting to move in` : ''}. All are kept.`
+      : `Not answering${e.error ? ` (${e.error})` : ''}${e.pending ? `. ${int(e.pending)} new enquiries are waiting on the server` : ''}.`;
+  const dd = h('dd', {}, onDb ? `MariaDB, ${e.database}` : 'A file on the server', h('small', {}, note));
+  if (onDb) {
+    const btn = h('button', { class: 'btn btn-secondary btn-sm', type: 'button' }, 'Check the database');
+    btn.addEventListener('click', () => checkDatabase(btn, out));
+    dd.append(btn);
+  }
+  dd.append(h('details', { class: 'a-db', open: !onDb }, h('summary', {}, onDb ? 'Change the database settings' : 'Keep every enquiry in the MariaDB database'), dbForm(out)), out);
+  return h('div', { class: 'a-fact-wide' }, h('dt', {}, 'Enquiries kept in'), dd);
 }
+
+const showSteps = (out, r, title) => {
+  out.className = `a-test-result ${r.ok ? 'is-ok' : 'is-error'}`;
+  out.replaceChildren(
+    h('strong', {}, title),
+    h('ul', {}, ...r.steps.map((s) => h('li', {}, `${s.ok ? 'Passed' : 'Failed'}: ${s.step}${s.detail ? ` (${s.detail})` : ''}`))),
+  );
+};
 
 async function checkDatabase(btn, out) {
   btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Checking';
   out.hidden = false; out.className = 'a-test-result'; out.textContent = 'Running the website’s own steps in a scratch table. The enquiries are not touched.';
   try {
     const r = await api('/api/admin/database-check', { method: 'POST', body: {} });
-    out.className = `a-test-result ${r.ok ? 'is-ok' : 'is-error'}`;
-    out.replaceChildren(
-      h('strong', {}, r.ok ? 'The database works.' : 'The database check failed.'),
-      h('ul', {}, ...r.steps.map((s) => h('li', {}, `${s.ok ? 'Passed' : 'Failed'}: ${s.step}${s.detail ? ` (${s.detail})` : ''}`))),
-    );
+    showSteps(out, r, r.ok ? 'The database works.' : 'The database check failed.');
   } catch (e) {
     out.className = 'a-test-result is-error';
     out.textContent = e.message;
   } finally {
     btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Check the database';
   }
+}
+
+// the database settings: checked against the server before they are saved
+function dbForm(out) {
+  const field = (id, label, input, hint) => h('div', { class: 'a-field' }, h('label', { for: id }, label), input, hint ? h('p', { class: 'hint', id: `${id}Hint` }, hint) : null);
+  const name = h('input', { class: 'input', id: 'dbName', name: 'database', required: true, autocomplete: 'off', spellcheck: 'false', placeholder: 'oliraagr_site' });
+  const user = h('input', { class: 'input', id: 'dbUser', name: 'user', required: true, autocomplete: 'off', spellcheck: 'false', placeholder: 'oliraagr_site' });
+  const pass = h('input', { class: 'input', id: 'dbPass', name: 'password', type: 'password', autocomplete: 'new-password', 'aria-describedby': 'dbPassHint' });
+  const host = h('input', { class: 'input', id: 'dbHost', name: 'host', autocomplete: 'off', spellcheck: 'false', value: 'localhost' });
+  const btn = h('button', { class: 'btn btn-primary btn-sm', type: 'submit' }, 'Save and check');
+  const form = h('form', { class: 'a-db-form', novalidate: true },
+    field('dbName', 'Database', name, null),
+    field('dbUser', 'Database user', user, null),
+    field('dbPass', 'Password', pass, 'The user’s password from cPanel, MySQL Databases. Leave blank to keep the saved one.'),
+    field('dbHost', 'Server', host, null),
+    h('p', { class: 'hint' }, 'Saved only if the website can sign in, make a scratch table, and save, change and delete an enquiry in it. Enquiries already on the server are copied in once.'),
+    h('div', { class: 'a-actions' }, btn));
+  api('/api/admin/database').then((r) => {
+    if (!r?.settings) return;
+    name.value = r.settings.database; user.value = r.settings.user; host.value = r.settings.host;
+  }).catch(() => {});
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Checking';
+    out.hidden = false; out.className = 'a-test-result'; out.textContent = 'Signing in to the database and trying each step in a scratch table.';
+    try {
+      const r = await api('/api/admin/database', { method: 'POST', body: { database: name.value, user: user.value, password: pass.value, host: host.value } });
+      showSteps(out, r, r.saved ? 'Saved. Enquiries are now kept in the database.' : 'Not saved: the check failed. The website keeps using the file.');
+      if (r.saved) { pass.value = ''; toast('The enquiry database is connected'); setTimeout(() => show(), 1500); }
+    } catch (e) {
+      out.className = 'a-test-result is-error';
+      out.textContent = e.message;
+    } finally {
+      btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Save and check';
+    }
+  });
+  return form;
 }
 
 function renderAccounts(team) {
