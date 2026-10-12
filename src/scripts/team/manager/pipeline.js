@@ -4,7 +4,7 @@
 // be changed on the card, with the same confirm step as the enquiry screen. The
 // board scrolls sideways on narrow screens, with a fade on the side that has more.
 import { $, $$, h, api, toast, formatDate, timeAgo } from '../../admin/api.js';
-import { scoreOf, BAND_LABEL, STAGES, stageLabel } from '../../admin/leads.js';
+import { scoreOf, BAND_LABEL, scoreLabel, scoreReasons, STAGES, stageLabel } from '../../admin/leads.js';
 import { int } from '../../admin/format.js';
 import { confirmSelect } from '../../admin/stage-control.js';
 import { leads, putLead, followupsOf, lineOf, LINE_LABEL, teamOf } from '../session.js';
@@ -140,7 +140,7 @@ function card(l, late) {
     l.company ? h('span', { class: 't-card-co' }, l.company) : null,
     h('span', { class: 't-card-meta' },
       h('span', { class: `a-tag ${lineOf(l)}` }, LINE_LABEL[lineOf(l)]),
-      h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, String(sc.score)),
+      h('span', { class: `a-score ${sc.band}`, title: `${BAND_LABEL[sc.band]}. ${scoreReasons(sc).join(', ')}` }, scoreLabel(sc)),
       l.quote ? h('span', { class: 't-card-money' }, `${l.quote.currency} ${Math.round(l.quote.total).toLocaleString('en-US')}`) : null),
     h('span', { class: 't-card-owner' }, l.assignee ? l.assignee.name : 'Not handed out', late ? h('em', {}, 'Overdue') : null)),
   h('div', { class: 't-card-stage' }, stage.select, stage.button));

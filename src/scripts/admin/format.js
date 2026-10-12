@@ -23,20 +23,33 @@ export function hours(h) {
   if (h == null || !Number.isFinite(h)) return NO_DATA;
   if (h < 1) return `${Math.max(1, Math.round(h * 60))} min`;
   if (h < 48) return `${nf1.format(h)} h`;
-  return `${nf1.format(h / 24)} days`;
+  return `${nf0.format(Math.round(h / 24))} days`; // whole days: "80 days", not "79.9 days"
 }
 
 /**
- * Change against the previous period. `higherIsBetter` decides the colour, never
- * the sign. Returns { text, spoken, tone: 'good' | 'bad' | 'flat', dir }.
+ * A rate per 100 (enquiries per 100 visitors, views or opens). Over 100 cannot be
+ * true: the visits were under-counted (tracking blocked, or the counter started
+ * later than the enquiries), so that is said instead of the number.
  */
-export function delta(cur, prev, { higherIsBetter = true, points = false } = {}) {
+export const UNDER_COUNTED = 'under-counted';
+export const per100 = (v, what = 'Visits') => (v == null || !Number.isFinite(v) ? NO_DATA : v > 100 ? `${what} ${UNDER_COUNTED}` : decimal(v));
+export const believable = (v) => v != null && Number.isFinite(v) && v <= 100;
+
+/**
+ * Change against the previous period. `higherIsBetter` decides the colour, never
+ * the sign. When the earlier figure is small (under SMALL_BASE) a percentage says
+ * little (3 to 45 is "+1,400%"), so the change is given as a number ("+42"), in
+ * `unit` (a formatter for its size, e.g. hours) when the figure has one.
+ * Returns { text, spoken, tone: 'good' | 'bad' | 'flat', dir }.
+ */
+export const SMALL_BASE = 20;
+export function delta(cur, prev, { higherIsBetter = true, points = false, unit = (v) => nf1.format(v) } = {}) {
   if (cur == null || prev == null || !Number.isFinite(cur) || !Number.isFinite(prev)) return { text: 'No comparison', spoken: 'no earlier data to compare', tone: 'flat', dir: 0 };
-  let change, text;
-  if (points) { change = cur - prev; text = `${signed(nf1.format(Math.abs(change) < 0.05 ? 0 : change))} pts`; }
-  else if (prev === 0) { if (cur === 0) return { text: 'No change', spoken: 'no change', tone: 'flat', dir: 0 }; return { text: 'New', spoken: 'new this period', tone: higherIsBetter ? 'good' : 'bad', dir: 1 }; }
+  let change, text, small = 0.5;
+  if (points) { change = cur - prev; small = 0.05; text = `${signed(nf1.format(Math.abs(change) < 0.05 ? 0 : change))} pts`; }
+  else if (Math.abs(prev) < SMALL_BASE) { change = cur - prev; small = 0.05; text = `${change > 0 ? '+' : change < 0 ? MINUS : ''}${unit(Math.abs(change))}`; }
   else { change = ((cur - prev) / prev) * 100; text = `${change > 0 ? '+' : ''}${signed(nf0.format(Math.round(change)))}%`; }
-  const dir = Math.abs(change) < (points ? 0.05 : 0.5) ? 0 : Math.sign(change);
+  const dir = Math.abs(change) < small ? 0 : Math.sign(change);
   const tone = dir === 0 ? 'flat' : (dir > 0) === higherIsBetter ? 'good' : 'bad';
   const spoken = dir === 0 ? 'about the same as the previous period' : `${dir > 0 ? 'up' : 'down'} ${text.replace(/^[+−]/, '')} on the previous period`;
   return { text: dir === 0 ? 'No change' : text, spoken, tone, dir };

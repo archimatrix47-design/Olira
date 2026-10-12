@@ -53,7 +53,7 @@ function render() {
   $('#enKpis').replaceChildren(
     kpiCard({ label: 'Enquiries', value: int(cur.length), delta: delta(cur.length, prev.length), context: both ? `Agriculture ${cur.filter((l) => lineOfLead(l) === 'agri').length}, packaging ${cur.filter((l) => lineOfLead(l) === 'pack').length}` : 'Against the period before' }),
     kpiCard({ label: 'Open pipeline', value: int(open), context: `${all.filter((l) => l.status === 'new').length} new, ${all.filter((l) => l.status === 'quoted').length} quoted, across all time` }),
-    kpiCard({ label: 'First response (median)', value: resp == null ? NO_DATA : hours(resp), delta: resp == null || prevResp == null ? null : delta(resp, prevResp, { higherIsBetter: false }), context: 'Arrival to first move out of New' }),
+    kpiCard({ label: 'First response (median)', value: resp == null ? NO_DATA : hours(resp), delta: resp == null || prevResp == null ? null : delta(resp, prevResp, { higherIsBetter: false, unit: hours }), context: 'Arrival to first move out of New' }),
     kpiCard({ label: 'Win rate', value: winRate == null ? NO_DATA : pct(winRate, 0), context: won + lost ? `${won} won, ${lost} lost this period` : 'Mark enquiries Won or Lost to measure it' }),
     kpiCard({ label: 'Average lead score', value: avgScore == null ? NO_DATA : String(Math.round(avgScore)), delta: avgScore == null || prevAvg == null ? null : delta(avgScore, prevAvg), context: 'Out of 100, from the details buyers give' }),
   );

@@ -6,7 +6,7 @@
 // Enquiry text comes from strangers, so it is only ever written as text.
 import { $, $$, h, api, getToken, toast, confirmDialog, formatDate, timeAgo } from '../admin/api.js';
 import { bundleTable, bundleCount, bundleText } from './bundle-view.js';
-import { STAGES, scoreOf, BAND_LABEL, firstResponseHours, median, ageHours, termChips } from '../admin/leads.js';
+import { STAGES, scoreOf, BAND_LABEL, BAND_KEY, scoreLabel, scoreReasons, oldestWaiting, firstResponseHours, median, ageHours, termChips } from '../admin/leads.js';
 import { hours, int } from '../admin/format.js';
 import { session, leads, putLead, dropLead, OPEN, CLOSED, isMine, toAccept as waiting, stageName, followupsOf, lineOf, LINE_LABEL, LINE_NAME, teamOf } from './session.js';
 import { composer } from './compose.js';
@@ -85,6 +85,12 @@ export async function show({ params }) {
     const toAccept = all.filter(waiting).length;
     if (!toAccept && mine) { $('input[name="inboxFilter"][value="mine"]').checked = true; renderList(); }
   }
+  // a wide screen opens the oldest enquiry still waiting for someone, not an empty pane;
+  // not when the link named an enquiry (from a notification email) that is no longer there
+  if (!selectedId && !want && matchMedia('(min-width: 761px)').matches) {
+    const first = oldestWaiting(filtered(), waiting);
+    if (first) select(first, { push: false });
+  }
 }
 
 let loadedAt = 0;
@@ -140,6 +146,12 @@ function renderKpis() {
     const body = [h('strong', {}, value), h('span', {}, label), note ? h('em', {}, overdue ? `Overdue, ${note}` : note) : null];
     return h('li', { class: `t-stat${overdue ? ' is-warn' : ''}` }, href ? h('a', { class: 't-stat-link', href }, ...body) : body);
   };
+  // on a phone the counters fold into this one line, so the enquiries come first
+  const late = oldest != null && oldest > 4;
+  $('#inboxGist').textContent = toAccept.length
+    ? `${int(toAccept.length)} ${boss() ? 'not handed out' : 'to accept'}, oldest ${hours(oldest)}${late ? ' (overdue)' : ''}`
+    : boss() ? 'Every open enquiry has someone on it' : 'Nothing waiting to be accepted';
+  $('#inboxGist').classList.toggle('is-warn', late);
   $('#inboxKpis').replaceChildren(
     stat(int(toAccept.length), boss() ? 'not handed out' : 'to accept', oldest != null ? `oldest ${hours(oldest)}` : null, oldest != null && oldest > 4),
     stat(int(boss() ? all.filter((l) => OPEN.includes(l.status)).length : mineOpen.length), boss() ? 'open' : 'mine, open', null, false),
@@ -217,7 +229,7 @@ function renderList() {
         `${boss() ? ', ' : ''}${[l.company, l.product && !/^(Agricultural products|Packaging)$/i.test(l.product) ? l.product : null].filter(Boolean).join(', ') || l.email || ''}`),
       h('span', { class: 't-row-meta' },
         h('span', { class: `a-tag stage-${l.status}` }, stageName(l.status)),
-        h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, String(sc.score), h('span', { class: 'sr-only' }, ` out of 100, ${BAND_LABEL[sc.band]}`)),
+        h('span', { class: `a-score ${sc.band}`, title: `${BAND_LABEL[sc.band]}. ${scoreReasons(sc).join(', ')}` }, scoreLabel(sc), h('span', { class: 'sr-only' }, ` out of 100, ${BAND_LABEL[sc.band]}`)),
         ...termChips(l).slice(0, 2).map((c) => h('span', { class: 't-chip' }, c)),
         l.assignee ? h('span', { class: 't-owner' }, isMine(l) ? 'You' : l.assignee.name) : null,
         l.files?.length ? h('span', { class: 't-files' }, `${l.files.length} file${l.files.length === 1 ? '' : 's'}`) : null,
@@ -276,6 +288,7 @@ function renderDetail() {
   // keep what someone is typing when the enquiry re-renders after an action
   const keep = captureDrafts(box, l.id);
   const sc = scoreOf(l), d = sc.details;
+  const key = scoreKey(l, sc);
   const who = l.name || 'this buyer';
   const mine = isMine(l);
   const digits = String(l.phone || '').replace(/[^\d+]/g, '');
@@ -315,7 +328,7 @@ function renderDetail() {
       h('div', { class: 'a-lead-meta' },
         boss() ? h('span', { class: `a-tag ${lineOf(l)}` }, LINE_LABEL[lineOf(l)]) : null,
         h('span', { class: `a-tag stage-${l.status}` }, stageName(l.status)),
-        h('span', { class: `a-score ${sc.band}`, title: BAND_LABEL[sc.band] }, `${sc.score}`, h('span', { class: 'sr-only' }, ` out of 100, ${BAND_LABEL[sc.band]}`)),
+        key.button, key.pop,
         l.emailed === false ? h('span', { class: 'a-tag warn', title: 'The notification email failed. The enquiry is safe here.' }, 'Notification not delivered') : null)),
     ownerBar,
     jumpBar(l),
@@ -350,6 +363,24 @@ function captureDrafts(box, id) {
 }
 
 const fact = (k, v) => h('div', {}, h('dt', {}, k), h('dd', {}, v));
+
+// "Score 90" opens its key: what the buyer gave, what is missing, and what the bands mean
+function scoreKey(l, sc) {
+  const id = `scoreWhy-${l.id}`;
+  const button = h('button', { type: 'button', class: `a-score ${sc.band} t-score-btn`, popovertarget: id, 'aria-label': `${scoreLabel(sc)} out of 100, ${BAND_LABEL[sc.band]}. Show why` }, scoreLabel(sc));
+  const pop = h('div', { id, popover: 'auto', class: 't-score-pop', role: 'dialog', 'aria-label': `Why the lead scores ${sc.score}` },
+    h('p', { class: 't-score-pop-head' }, `${scoreLabel(sc)}, ${BAND_LABEL[sc.band].toLowerCase()}`),
+    h('ul', { class: 'a-why' }, sc.checks.map((c) => h('li', { class: c.ok ? '' : 'miss' }, h('span', { class: 'pts' }, c.ok ? `+${c.pts}` : '0'), c.label))),
+    h('p', { class: 't-score-pop-key' }, BAND_KEY));
+  // opens under the button, kept on screen (the popover itself sits in the top layer)
+  pop.addEventListener('toggle', (e) => {
+    if (e.newState !== 'open') return;
+    const r = button.getBoundingClientRect(), w = pop.offsetWidth, hh = pop.offsetHeight;
+    pop.style.left = `${Math.max(8, Math.min(r.right - w, innerWidth - w - 8))}px`;
+    pop.style.top = `${r.bottom + 6 + hh > innerHeight - 8 ? Math.max(8, r.top - hh - 6) : r.bottom + 6}px`;
+  });
+  return { button, pop };
+}
 const secId = (title) => `sec-${title.toLowerCase().replace(/[^a-z]+/g, '-')}`;
 function jumpBar(l) {
   const targets = [

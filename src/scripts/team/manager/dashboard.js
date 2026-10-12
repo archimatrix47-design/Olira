@@ -6,7 +6,7 @@ import { $, h, toast } from '../../admin/api.js';
 import * as store from '../../admin/store.js';
 import { trendChart, funnel, tableFor, empty } from '../../admin/charts.js';
 import { kpiCard, freshness } from '../../admin/widgets.js';
-import { int, pct, decimal, duration, hours, delta, NO_DATA, shortDate, WEEKDAYS, hourLabel, CHANNEL_NAMES, languageName, pageName } from '../../admin/format.js';
+import { int, pct, decimal, duration, hours, delta, per100, believable, NO_DATA, shortDate, WEEKDAYS, hourLabel, CHANNEL_NAMES, languageName, pageName } from '../../admin/format.js';
 import { inPeriod, lineOfLead, firstResponseHours, median, ageHours, scoreOf } from '../../admin/leads.js';
 import { session, followupsOf, OPEN, LINE_LABEL } from '../session.js';
 import { certAlerts } from '../../admin/cert-alerts.js';
@@ -70,9 +70,10 @@ function renderKpis(a, leads, days) {
   $('#ovKpis').replaceChildren(
     kpiCard({ label: 'Visitors', value: int(t.uniques), delta: delta(t.uniques, p.uniques), spark: a.series.map((d) => d.uniques), context: `${int(t.views)} page views, ${t.viewsPerVisitor ?? 0} per visitor` }),
     kpiCard({ label: 'Enquiries', value: int(cur.length), delta: delta(cur.length, prev.length), spark: dailyCounts(a.series, leads), context: `Agriculture ${split.agri}, packaging ${split.pack}` }),
-    kpiCard({ label: 'Enquiries per 100 visitors', value: curRate == null ? NO_DATA : decimal(curRate), delta: curRate == null || prevRate == null ? null : delta(curRate, prevRate, { points: true }), context: 'How well visits turn into enquiries' }),
+    // over 100 means visits went uncounted (tracking blocked, or counted later than the enquiries): said, not shown
+    kpiCard({ label: 'Enquiries per 100 visitors', value: per100(curRate), delta: believable(curRate) && believable(prevRate) ? delta(curRate, prevRate, { points: true }) : null, context: curRate > 100 ? 'More enquiries than counted visitors: some visits were not tracked, so the rate cannot be read' : 'How well visits turn into enquiries' }),
     kpiCard({ label: 'Engaged visits', value: t.engagedRate == null ? NO_DATA : pct(t.engagedRate, 0), delta: t.engagedRate == null || p.engagedRate == null ? null : delta(t.engagedRate, p.engagedRate, { points: true }), spark: a.series.map((d) => (d.leaves ? (d.engaged / d.leaves) * 100 : 0)), sparkLabel: 'Engaged share per day', context: t.avgSeconds == null ? 'Stayed 15 seconds or read half the page' : `Average ${duration(t.avgSeconds)} on a page` }),
-    kpiCard({ label: 'First response (median)', value: resp == null ? NO_DATA : hours(resp), delta: resp == null || prevResp == null ? null : delta(resp, prevResp, { higherIsBetter: false }), context: within24 == null ? `${waiting} not handed out` : `${pct(within24, 0)} answered within a day. ${waiting} not handed out` }),
+    kpiCard({ label: 'First response (median)', value: resp == null ? NO_DATA : hours(resp), delta: resp == null || prevResp == null ? null : delta(resp, prevResp, { higherIsBetter: false, unit: hours }), context: within24 == null ? `${waiting} not handed out` : `${pct(within24, 0)} answered within a day. ${waiting} not handed out` }),
   );
 }
 
