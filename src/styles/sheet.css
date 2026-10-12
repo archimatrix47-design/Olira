@@ -78,23 +78,31 @@
   .head-links { flex: none; gap: 22px; }
   .head-links a { min-height: 44px; display: inline-flex; align-items: center; }
 }
-@media (max-width: 400px) { .tab-btn .tab-word { display: none; } .tab-btn { padding-inline: 6px; } }
-/* phone quote bar (QuoteBar.astro, quote-bar.js): slides up from the bottom; the
-   contact button rises above it so the two never overlap */
+/* the packing list in the header: on phones a bag and the count, no word (its name is its aria-label) */
+.tab-btn .tab-ico { display: none; flex: none; }
+@media (max-width: 760px) { .sheet-head .tab-btn .tab-word { display: none; } .sheet-head .tab-btn .tab-ico { display: block; } .sheet-head .tab-btn { gap: 6px; padding-inline: 11px 6px; } }
+/* phone quote bar (QuoteBar.astro, quote-bar.js): slides up from the bottom; while
+   it shows, the contact button sits inside it beside "Request a quote", and while
+   the form or the footer (each with the same call, WhatsApp and email) is on screen
+   the contact button steps aside, so neither covers what is being read */
 .quote-bar { display: none; }
 @media (max-width: 760px) {
   .quote-bar { display: block; position: fixed; inset: auto 0 0 0; z-index: 140; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--glass); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: 1px solid var(--line); transform: translateY(110%); transition: transform var(--dur-ui) var(--settle); }
   .quote-bar[data-shown] { transform: none; }
   .quote-bar .act { display: flex; width: 100%; justify-content: center; min-height: 48px; }
-  .fab { transition: bottom var(--dur-ui) var(--settle); }
-  html[data-quote-bar-shown] .fab { bottom: calc(68px + 14px + env(safe-area-inset-bottom)); }
+  .fab { transition: bottom var(--dur-ui) var(--settle), opacity var(--dur-micro) var(--ease), visibility 0s linear 0s; }
+  html[data-quote-bar-shown] .quote-bar { padding-right: calc(max(16px, env(safe-area-inset-right)) + 48px + 10px); }
+  html[data-quote-bar-shown] .fab { right: max(16px, env(safe-area-inset-right)); bottom: calc(10px + env(safe-area-inset-bottom)); }
+  html[data-quote-bar-shown] .fab-main { width: 48px; height: 48px; }
+  html[data-contact-shown]:not([data-quote-bar-shown]) .fab:not(.is-open) { opacity: 0; visibility: hidden; transition: opacity var(--dur-micro) var(--ease), visibility 0s linear var(--dur-micro); }
 }
 @media (prefers-reduced-motion: reduce) { .quote-bar, .fab { transition: none; } }
 @media (prefers-reduced-transparency: reduce) { .quote-bar { background: var(--page); backdrop-filter: none; -webkit-backdrop-filter: none; } }
 @media print { .quote-bar { display: none !important; } }
-/* phone menu: one row (logo, theme, packing list, Menu); the links open as a full list.
-   Without the script (.has-menu) the scrolling row above stays. */
-.menu-btn { display: none; }
+/* phone menu: one row (logo, packing list, Menu); the links and the theme switch open
+   as a full list. Without the script (.has-menu) the scrolling row above stays, with
+   the theme switch in the header. */
+.menu-btn, .menu-theme { display: none; }
 .menu-btn .menu-close-ico, .menu-open .menu-btn .menu-open-ico { display: none; }
 .menu-open .menu-btn .menu-close-ico { display: block; }
 @media (max-width: 760px) {
@@ -106,6 +114,9 @@
   .sheet-head.has-menu.menu-open .head-links a { min-height: 48px; font-size: 1.0625rem; color: var(--ink); border-bottom: 1px solid var(--line); }
   .sheet-head.has-menu.menu-open .head-links a[aria-current="page"] { font-weight: 600; }
   .sheet-head.has-menu.menu-open .head-links + .head-links a { font-size: .9375rem; color: var(--ink-2); }
+  .sheet-head.has-menu #themeBtn { display: none; }
+  .sheet-head.has-menu.menu-open .menu-theme { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); font: 500 1.0625rem/1.2 var(--font-sans); text-align: left; cursor: pointer; }
+  .sheet-head.has-menu.menu-open .menu-theme svg { flex: none; color: var(--ink-2); }
 }
 
 /* ---------- the brand field (packaging page): one large rounded field ---------- */
@@ -355,10 +366,10 @@ main:has(> .choose) + .sheet-foot { margin-top: 12px; }
 .foot-cols h2.foot-agri { color: var(--leaf-ink); }
 .foot-cols h2.foot-pack { color: var(--accent); }
 .foot-menu { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.foot-menu a, .foot-social a, .foot-staff a, .foot-mail { color: var(--ink-2); text-decoration: none; transition: color var(--dur-micro) var(--ease); }
+.foot-menu a, .foot-social a, .foot-mail { color: var(--ink-2); text-decoration: none; transition: color var(--dur-micro) var(--ease); }
 /* every footer link is at least 24px tall (WCAG 2.5.8 target size) */
-.foot-menu a, .foot-social a, .foot-staff a, .foot-mail { display: inline-flex; align-items: center; min-height: 24px; }
-.foot-menu a:hover, .foot-social a:hover, .foot-staff a:hover, .foot-mail:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.foot-menu a, .foot-social a, .foot-mail { display: inline-flex; align-items: center; min-height: 24px; }
+.foot-menu a:hover, .foot-social a:hover, .foot-mail:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .foot-col address, .foot-line { font-style: normal; line-height: 1.55; color: var(--ink-2); }
 .foot-line { margin-top: 12px; }
 .foot-social { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; }
@@ -366,14 +377,12 @@ main:has(> .choose) + .sheet-foot { margin-top: 12px; }
 /* the base line */
 /* room below the last line for the floating contact button, so it never covers the staff links */
 .foot-base { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; padding-block: 20px 100px; border-top: 1px solid var(--line); font-size: .8125rem; color: var(--ink-3); }
-.foot-staff { display: flex; gap: 20px; }
-.foot-staff a { color: var(--ink-3); }
 @media (max-width: 960px) { .foot-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .foot-top { flex-direction: column; align-items: flex-start; } }
 /* phones: the two businesses' links side by side, contact below at full width */
 @media (max-width: 520px) { .foot-cols { gap: 32px 20px; } .foot-col:nth-child(n+3) { grid-column: 1 / -1; } }
 @media (max-width: 340px) { .foot-cols { grid-template-columns: minmax(0, 1fr); } }
-@media (pointer: coarse) { .foot-menu { gap: 0; } .foot-menu a, .foot-staff a, .foot-social a { display: inline-flex; align-items: center; min-height: 44px; } }
+@media (pointer: coarse) { .foot-menu { gap: 0; } .foot-menu a, .foot-social a { display: inline-flex; align-items: center; min-height: 44px; } }
 
 /* ---------- partner logos: moving slowly right to left ----------
    Logos in grey until pointed at; the row fades out at both ends. It stops while
@@ -437,6 +446,8 @@ main:has(> .choose) + .sheet-foot { margin-top: 12px; }
 @media (max-width: 520px) { .fab { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); } .fab-main { width: 54px; height: 54px; } .fab .fab-pop { right: 0; bottom: calc(100% + 12px); } }
 @media (prefers-reduced-motion: reduce) { .fab-main, .fab-ico, .fab-list li, .fab-btn, .fab-tip { transition: none !important; } }
 @media print { .fab { display: none; } }
+/* Windows contrast themes: the round buttons keep an outline (their fill is replaced) */
+@media (forced-colors: active) { .fab-main, .fab-btn { border: 1px solid ButtonText; } }
 
 /* ---------- motion ---------- */
 
@@ -498,3 +509,37 @@ main:has(> .choose) + .sheet-foot { margin-top: 0; }
 .choose { position: relative; z-index: 1; box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 14px 28px -12px rgba(0,0,0,.28), 0 4px 10px -4px rgba(0,0,0,.12); }
 :root[data-theme="dark"] .choose { box-shadow: 0 1px 0 rgba(255,255,255,.08), 0 16px 32px -10px rgba(0,0,0,.85); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .choose { box-shadow: 0 1px 0 rgba(255,255,255,.08), 0 16px 32px -10px rgba(0,0,0,.85); } }
+/* ---------- print: a buyer printing a page or saving it as a PDF ----------
+   The scroll reveals (motion.js) leave what is not yet reached at opacity 0 in the
+   element's own style, so everything they hide is shown here, over GSAP (hence
+   !important; keep this list in step with motion.js, test/print.test.js checks).
+   The screen's controls go, photos shrink so the specification starts on the
+   first page, ink is black on white whatever the theme, and the page's address
+   and the date are printed at the end (SiteLayout's .print-url). */
+.print-url { display: none; }
+@media print {
+  @page { margin: 14mm 12mm; }
+  .press, .specsheet, .sheet-site .contact > *, .foot-top, .foot-col,
+  .band .headline, .sec-title h2, [data-rise], .door,
+  :is(.title-block, .ag-hero, .lost) :is(.label, .sub, .acts, .brand-field, h1, h1 *) {
+    opacity: 1 !important; visibility: visible !important; transform: none !important; translate: none !important;
+  }
+  *, *::before, *::after { color: #000 !important; -webkit-text-fill-color: currentColor !important; background: transparent !important; box-shadow: none !important; text-shadow: none !important; filter: none !important; border-color: #bbb !important; transition: none !important; animation: none !important; }
+  .sheet-head { position: static !important; border: 0 !important; }
+  .sheet-head .head-nav, .sheet-head .head-end, #themeBtn, .menu-btn, .tab-btn, .skip, .fab, .quote-bar, .acts, .foot-topo, .reach-inline, .flow-hint, .flow-dots, .flow-bar button { display: none !important; }
+  .pd { grid-template-columns: 6cm minmax(0, 1fr) !important; gap: 8mm !important; align-items: start; padding-block: 4mm !important; }
+  .pd-media { max-height: 7.5cm; aspect-ratio: 4 / 5; }
+  img:not(.pd-media img):not(.foot-logo img):not(.brand img), canvas:not(.pd-media canvas) { max-height: 6cm; width: auto; object-fit: contain; }
+  .pd-cards { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .pd-card-img { max-height: 3.5cm; }
+  .spec-row, .certs li, .pd-card, .foot-col { break-inside: avoid; }
+  .sheet-site .specsheet, .pd-page.pd-page .specsheet { --lab: 30mm; --val: 55mm; margin-top: 4mm; padding: 0; }
+  .spec-row, .certs li { padding-block: 2.5mm; }
+  .sheet-site .spec-row .v, .pd-page.pd-page .specsheet .spec-row .v { font-size: 13pt; }
+  .spec-row .d { font-size: 10pt; }
+  .band, .sheet-sec, .switch-band { padding-block: 4mm !important; }
+  h1, h2, h3 { break-after: avoid; }
+  a { text-decoration: none; }
+  .sheet-foot { margin-top: 6mm; padding-top: 4mm; }
+  .print-url { display: block; margin: 6mm 0 0; font: 400 9pt/1.4 var(--font-sans, sans-serif); }
+}

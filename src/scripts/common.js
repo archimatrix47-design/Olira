@@ -23,16 +23,18 @@ document.addEventListener('click', (e) => {
 });
 
 /* ---------- theme ---------- */
+// two switches, one state: the header's (desktop) and the phone menu's
 const root = document.documentElement;
-const themeBtn = $('#themeBtn');
+const themeBtns = $$('#themeBtn, [data-theme-btn]');
 const isDark = () => root.getAttribute('data-theme') === 'dark' || (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
-themeBtn?.setAttribute('aria-pressed', String(isDark()));
-themeBtn?.addEventListener('click', () => {
+const pressed = () => themeBtns.forEach((b) => b.setAttribute('aria-pressed', String(isDark())));
+pressed();
+themeBtns.forEach((b) => b.addEventListener('click', () => {
   const next = isDark() ? 'light' : 'dark';
   root.setAttribute('data-theme', next);
-  themeBtn.setAttribute('aria-pressed', String(next === 'dark'));
+  pressed();
   try { localStorage.setItem('olira-theme', next); } catch (e) {}
-});
+}));
 
 const nav = $('.nav');
 if (nav) addEventListener('scroll', () => nav.classList.toggle('is-stuck', scrollY > 24), { passive: true });
