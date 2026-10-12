@@ -9,6 +9,7 @@
 // from the catalogue into the studio. A canvas with data-brand="olira" (the home
 // page's products) shows Olira's own logo instead, whatever is typed.
 import { prepare, render, defaultDesign, INKS } from './mockup/engine.js';
+import { printQueue, onScreen } from './print-queue.js';
 
 const KEY = 'olira-brand';
 const MAX = 18;
@@ -75,13 +76,30 @@ async function paint(c) {
   }
 }
 
-// only what is on screen (or about to be) is printed; the rest waits until it scrolls in
-const io = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
-  for (const e of entries) if (e.isIntersecting && drawn.get(e.target) !== wanted(e.target)) paint(e.target);
-}, { rootMargin: '300px 0px' }) : null;
-const watch = () => canvases().forEach((c) => { if (io) io.observe(c); else paint(c); });
+// Only what is on screen is printed: across as well as down (the carousel stands
+// its cards side by side at one height), and not a card the carousel has faded
+// out at the back of the ring or a closed details panel. A little below the
+// screen counts, so a product scrolled to is already printed.
+const DOWN = 120;
+const seen = (c) => !c.closest('.is-far, [hidden]') && onScreen(c.getBoundingClientRect(), innerWidth, innerHeight, 0, DOWN);
+const due = (c) => drawn.get(c) !== wanted(c) && seen(c);
+// the product the visitor is looking at: the open details, else the carousel's front card, else the first on screen
+const front = () => {
+  const list = canvases();
+  return list.find((c) => c.closest('.flow-detail') && seen(c)) || list.find((c) => c.closest('.is-front') && seen(c)) || list.find(seen) || null;
+};
+const queue = printQueue({
+  front, due, paint,
+  all: () => { const f = front(); return f ? [f, ...canvases().filter((c) => c !== f)] : canvases(); },
+});
 
-const near = (c) => { const r = c.getBoundingClientRect(); return r.width > 0 && r.bottom > -300 && r.top < innerHeight + 300; };
+const io = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+  if (entries.some((e) => e.isIntersecting)) queue.shown();
+}, { rootMargin: `${DOWN}px 0px` }) : null;
+const watch = () => { canvases().forEach((c) => io?.observe(c)); queue.shown(); };
+// the carousel turned: its new front card now, the cards beside it once they have moved
+const SLIDE = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 520;
+document.addEventListener('flow:moved', () => queue.shown(SLIDE));
 
 function echo() {
   document.querySelectorAll('[data-brand-echo]').forEach((n) => { n.textContent = text(); });
@@ -98,16 +116,15 @@ function toStudio() {
   studioText.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-let frame = 0;
 function setBrand(value, from) {
   brand = String(value || '').slice(0, MAX);
   try { localStorage.setItem(KEY, brand); } catch (e) { /* private window: this page only */ }
   for (const i of inputs) if (i !== from) i.value = brand;
   echo();
   toStudio();
-  cancelAnimationFrame(frame);
-  // Olira's own prints do not change with what is typed
-  frame = requestAnimationFrame(() => canvases().filter((c) => !own(c)).forEach((c) => { if (near(c)) paint(c); else drawn.delete(c); }));
+  // the product in view on the next frame, the rest once typing pauses (Olira's
+  // own prints do not change with what is typed, so they are never due)
+  queue.typed();
   document.dispatchEvent(new CustomEvent('brand:change', { detail: { brand: text() } }));
 }
 

@@ -128,11 +128,38 @@ export async function prepare(p, { dark = isDarkTheme(), width = CANVAS_W } = {}
 }
 
 /* ---------------- artboard ---------------- */
+// What the design covers on the artboard, as a box { x0, y0, x1, y1 }: the warp
+// skips the rest of the panel, which is empty. NOTHING when nothing is drawn.
+const NOTHING = Object.freeze({ x0: 0, y0: 0, x1: 0, y1: 0 });
+const INK_PAD = 6; // anti-aliasing, and the 2 px the warp reads around each cell
+function coverage() {
+  const b = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+  return {
+    add(l, t, r, btm) { b.x0 = Math.min(b.x0, l); b.y0 = Math.min(b.y0, t); b.x1 = Math.max(b.x1, r); b.y1 = Math.max(b.y1, btm); },
+    box: () => (b.x0 < b.x1 && b.y0 < b.y1 ? { x0: b.x0 - INK_PAD, y0: b.y0 - INK_PAD, x1: b.x1 + INK_PAD, y1: b.y1 + INK_PAD } : NOTHING),
+  };
+}
+/** The mesh cells, [row, col], whose part of the artboard meets the ink box; every cell when ink is null. */
+export function inkCells(ink, AW, AH, cols, rows) {
+  const sx = AW / cols, sy = AH / rows, out = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    if (!ink || (ink.x0 < (c + 1) * sx && ink.x1 > c * sx && ink.y0 < (r + 1) * sy && ink.y1 > r * sy)) out.push([r, c]);
+  }
+  return out;
+}
+
 let tint = null;
 export function drawArt(B, d) {
   if (d.mode === 'artwork') return drawArtwork(B, d);
   const { art, AW, AH } = B, a = art.getContext('2d');
   a.clearRect(0, 0, AW, AH);
+  const covered = coverage();
+  // a line of text covers exactly its glyphs (measured as set: centred, from the top)
+  const coverText = (s, x, y) => {
+    const m = a.measureText(s);
+    if (Number.isFinite(m.actualBoundingBoxRight)) covered.add(x - m.actualBoundingBoxLeft, y - m.actualBoundingBoxAscent, x + m.actualBoundingBoxRight, y + m.actualBoundingBoxDescent);
+    else covered.add(0, y - AH / 4, AW, y + AH / 4); // an older browser: a wide band
+  };
   const s = d.scale, ink = INKS[d.ink]?.[1] || INKS.black[1], maxW = AW * 0.84;
   let logoW, logoH;
   if (d.logo) {
@@ -168,7 +195,9 @@ export function drawArt(B, d) {
       t.globalCompositeOperation = 'source-in'; t.fillStyle = ink; t.fillRect(0, 0, tint.width, tint.height);
       a.drawImage(tint, cx - logoW / 2, y, logoW, logoH);
     } else a.drawImage(d.logo, cx - logoW / 2, y, logoW, logoH);
+    covered.add(cx - logoW / 2, y, cx + logoW / 2, y + logoH);
   } else if (d.placeholder !== false) {
+    covered.add(cx - logoW / 2 - 3, y - 3, cx + logoW / 2 + 3, y + logoH + 3); // the dashed box, 5 px wide, and its words
     a.save(); a.strokeStyle = ink; a.globalAlpha = 0.65; a.lineWidth = 5; a.setLineDash([16, 12]);
     a.beginPath(); a.roundRect(cx - logoW / 2, y, logoW, logoH, 18); a.stroke();
     a.setLineDash([]); a.globalAlpha = 0.85; a.fillStyle = ink; a.font = `600 ${Math.round(Math.min(AW * 0.052 * s, logoH * 0.3))}px "Inter", sans-serif`;
@@ -176,8 +205,9 @@ export function drawArt(B, d) {
   }
   y += logoH;
   a.fillStyle = ink; a.textAlign = 'center'; a.textBaseline = 'top';
-  if (d.text1) { y += gap; a.font = `700 ${size1}px "Inter", sans-serif`; a.fillText(d.text1, cx, y); y += size1; }
-  if (d.text2) { y += gap * 0.55; a.font = `500 ${size2}px "Inter", sans-serif`; a.fillText(d.text2, cx, y); }
+  if (d.text1) { y += gap; a.font = `700 ${size1}px "Inter", sans-serif`; a.fillText(d.text1, cx, y); coverText(d.text1, cx, y); y += size1; }
+  if (d.text2) { y += gap * 0.55; a.font = `500 ${size2}px "Inter", sans-serif`; a.fillText(d.text2, cx, y); coverText(d.text2, cx, y); }
+  B.ink = covered.box();
 }
 
 /** Where the artwork sits on the artboard: filling it (cover) or all of it inside (contain), then scaled and moved. */
@@ -193,6 +223,7 @@ function drawArtwork(B, d) {
   a.clearRect(0, 0, AW, AH);
   if (!d.artwork) {
     // before an upload: the whole print area, outlined, is where the artwork goes
+    B.ink = d.placeholder === false ? NOTHING : null;
     if (d.placeholder === false) return;
     const ink = INKS.teal[1];
     a.save(); a.strokeStyle = ink; a.globalAlpha = 0.6; a.lineWidth = 6; a.setLineDash([18, 12]);
@@ -208,6 +239,7 @@ function drawArtwork(B, d) {
   const r = artworkBox(B, d);
   a.imageSmoothingQuality = 'high';
   a.drawImage(d.artwork, r.x, r.y, r.w, r.h);
+  B.ink = { x0: r.x - INK_PAD, y0: r.y - INK_PAD, x1: r.x + r.w + INK_PAD, y1: r.y + r.h + INK_PAD };
 }
 
 /* ---------------- perspective warp ---------------- */
@@ -244,7 +276,8 @@ function warp(B) {
   const pts = [];
   for (let r = 0; r <= ROWS; r++) { pts[r] = []; for (let c = 0; c <= COLS; c++) pts[r][c] = B.H.fwd(c / COLS, r / ROWS); }
   const sx = B.AW / COLS, sy = B.AH / ROWS;
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  // only the cells the design touches: a brand name covers a few rows of the panel
+  for (const [r, c] of inkCells(B.ink, B.AW, B.AH, COLS, ROWS)) {
     const s00 = [c * sx, r * sy], s10 = [(c + 1) * sx, r * sy], s01 = [c * sx, (r + 1) * sy], s11 = [(c + 1) * sx, (r + 1) * sy];
     triangle(g, B.art, s00, s10, s11, pts[r][c], pts[r][c + 1], pts[r + 1][c + 1]);
     triangle(g, B.art, s00, s11, s01, pts[r][c], pts[r + 1][c + 1], pts[r + 1][c]);

@@ -86,7 +86,8 @@ export function mountFlow(root, { products = [], onDetail, onOpen } = {}) {
     const count = q('.flow-count');
     if (count) count.textContent = N ? `${active + 1} of ${N}` : '';
   }
-  const go = (i) => { if (!N) return; active = ((i % N) + N) % N; layout(); };
+  // flow:moved lets the live print paint the cards that have come into view
+  const go = (i) => { if (!N) return; active = ((i % N) + N) % N; layout(); root.dispatchEvent(new CustomEvent('flow:moved', { bubbles: true })); };
   const bind = () => {
     cards.forEach((c, i) => c.addEventListener('click', () => { if (dragged) return; if (i === active) open(); else go(i); }));
     qa('button', dots).forEach((d, i) => d.addEventListener('click', () => go(i)));
