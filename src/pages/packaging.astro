@@ -5,6 +5,7 @@ import SiteFooter from '../components/site/SiteFooter.astro';
 import ContactLines from '../components/site/ContactLines.astro';
 import InquiryForm from '../components/site/InquiryForm.astro';
 import QuoteBar from '../components/site/QuoteBar.astro';
+import { BAG_ICON } from '../components/site/icons';
 import { thumbUrl, thumbSet } from '../../lib/thumb-url.js';
 import { contact, SITE, packagingProducts, FAMILIES, FLEXO_MAX_COLOURS } from '../lib/site-data';
 import { sizesOf } from '../scripts/mockup/engine.js';
@@ -62,7 +63,7 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
   {firstBag?.image && <link slot="head" rel="preload" as="image" href={firstBag.image}>}
 
   <SiteHeader groups={[[{ href: '/packaging/', label: 'Packaging' }, { href: '#studio', label: 'Mockup studio' }, { href: '#printing', label: 'Printing' }, { href: '/agriculture/', label: 'Agriculture' }, { href: '#quote', label: 'Contact' }]]} current="/packaging/">
-    <button class="tab-btn" id="plOpen" type="button" aria-haspopup="dialog" aria-controls="packingList"><span class="tab-word">Packing list</span> <span class="count" data-zero>0</span></button>
+    <button class="tab-btn" id="plOpen" type="button" aria-haspopup="dialog" aria-controls="packingList" aria-label="Packing list"><Fragment set:html={BAG_ICON} /><span class="tab-word">Packing list</span> <span class="count" data-zero>0</span></button>
   </SiteHeader>
 
   <main id="main">
@@ -216,7 +217,7 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
                 </div>
               </div>
               <div class="row" style="justify-content:space-between;margin-top:10px;--gap:10px;flex-wrap:wrap">
-                <label class="check"><input type="checkbox" id="oneInk"> Print logo in the ink colour</label>
+                <label class="check check-row"><input type="checkbox" id="oneInk"> Print logo in the ink colour</label>
                 <button class="btn btn-ghost btn-sm" type="button" id="removeLogo" hidden>Remove logo</button>
               </div>
             </div>

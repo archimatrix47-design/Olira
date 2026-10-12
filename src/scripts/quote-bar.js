@@ -2,6 +2,9 @@
 // data-after has scrolled up out of view, hidden while any element named in
 // data-until (the form, the footer) is on screen, and never on wider screens.
 // Hidden, it is inert: out of the tab order and the accessibility tree.
+// While it shows, the contact button sits inside it (sheet.css); while the form or
+// the footer is on screen, the contact button steps aside (both list the same call,
+// WhatsApp and email), so neither floats over what is being read.
 const bar = document.querySelector('[data-quote-bar]');
 if (bar) {
   const phone = matchMedia('(max-width: 760px)');
@@ -13,7 +16,8 @@ if (bar) {
     const show = phone.matches && past && !showing.size;
     bar.toggleAttribute('data-shown', show);
     bar.inert = !show;
-    document.documentElement.toggleAttribute('data-quote-bar-shown', show); // the contact button moves up
+    document.documentElement.toggleAttribute('data-quote-bar-shown', show); // the contact button moves into the bar
+    document.documentElement.toggleAttribute('data-contact-shown', phone.matches && showing.size > 0); // the contact button steps aside
   };
   if (after) new IntersectionObserver(([e]) => { past = !e.isIntersecting && e.boundingClientRect.bottom < 0; sync(); }).observe(after);
   const io = new IntersectionObserver((entries) => { for (const e of entries) e.isIntersecting ? showing.add(e.target) : showing.delete(e.target); sync(); });

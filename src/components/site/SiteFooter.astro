@@ -4,7 +4,8 @@
 //   the logo, one line about the company and the two ways to ask
 //   four columns: Olira Agro (in its leaf green), Olira Packaging (in its teal),
 //   Reach us (call and WhatsApp icons, email, social links), Visit (address)
-//   a base line: copyright and the staff sign in links
+//   a base line: copyright (staff sign in at /team/ and /admin/, not listed here:
+//   buyers do not need them, and a public link advertises the sign-in pages)
 // Phone numbers are never in this markup (ReachIcons asks for them on click).
 import { contact, socialLinks } from '../../lib/site-data';
 import ReachIcons from './ReachIcons.astro';
@@ -63,10 +64,6 @@ const year = new Date().getFullYear();
 
     <div class="foot-base">
       <span>© <span data-year>{year}</span> Olira Agro Industry</span>
-      <nav class="foot-staff" aria-label="Staff sign in">
-        <a href="/team/" rel="nofollow">Team sign in</a>
-        <a href="/admin/" rel="nofollow">Admin</a>
-      </nav>
     </div>
   </div>
 </footer>

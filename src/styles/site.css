@@ -238,6 +238,14 @@ p { text-wrap: pretty; }
 .flow-dots button::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--line-strong); transition: background-color .15s var(--ease), width .3s var(--ease); }
 .flow-dots button[aria-current="true"]::before { width: 22px; background: var(--accent); }
 .flow-count { display: none; margin: 10px 0 0; text-align: center; font-size: .875rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+/* Windows contrast themes (forced colours) paint every background in one system
+   colour, so the dots (coloured fills) and the cards (a shadow ring, no border)
+   would vanish: draw them with borders in system colours */
+@media (forced-colors: active) {
+  .flow-dots button::before { forced-color-adjust: none; background: Canvas; border: 1px solid ButtonText; }
+  .flow-dots button[aria-current="true"]::before { background: Highlight; border-color: Highlight; }
+  .flow-card { border: 1px solid ButtonText; }
+}
 @media (max-width: 760px) {
   .flow { height: calc(var(--ch) + 40px); }
   .flow-card { top: 20px; }
@@ -401,6 +409,9 @@ fieldset.choice { border: 0; margin: 0; padding: 0; min-width: 0; }
 .nudge .round-btn { width: 44px; height: 44px; border-radius: 12px; }
 .check { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; font-size: .875rem; color: var(--ink-2); min-height: 32px; }
 .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+/* a studio option: a 24 px box, and the whole row (44 px tall) is the label to tap */
+.check.check-row { flex: 1 1 auto; min-height: 44px; }
+.check.check-row input { flex: none; width: 24px; height: 24px; margin: 0; }
 .status-line { font-size: .875rem; color: var(--ink); min-height: 1.3em; }
 /* minmax(0, 1fr), not 1fr: a bare 1fr cannot shrink below its content, and the
    canvas made the studio 371px wide on a 320px screen */

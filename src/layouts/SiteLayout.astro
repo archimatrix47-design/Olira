@@ -95,6 +95,9 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 <body class:list={['sheet-site', bodyClass]}>
 <a class="skip" href="#main">Skip to content</a>
 <slot />
+<!-- on paper only (sheet.css @media print): where the page came from, and when -->
+<p class="print-url">Printed from {url}<span data-printed></span></p>
+<script is:inline>(function(){var s=document.querySelector('[data-printed]');function d(){try{s.textContent=', '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}catch(e){}}d();addEventListener('beforeprint',d);})();</script>
 <ContactFab />
 <script>import '../scripts/fab.js';</script>
 <script is:inline>
