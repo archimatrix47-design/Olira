@@ -13,14 +13,14 @@ interface Item { id: string; name: string; sub?: string; image?: string | null; 
 interface Props { items: Item[]; label: string; prefix?: string; kind: string; lazy?: boolean }
 const { items, label, prefix = '', kind, lazy = false } = Astro.props;
 const id = (s: string) => (prefix ? prefix + s[0].toUpperCase() + s.slice(1) : s);
-const first = items[0];
 ---
 <div class="pgrid-wrap" data-grid={kind} data-lazy={lazy ? '' : undefined}>
   <ul class="pgrid" id={id('grid')} aria-label={label} set:html={items.map((p, i) => cardHTML(p, { lazy, eager: i < EAGER })).join('')}></ul>
 
   <dialog class="flow-detail" id={id('flowDetail')} aria-labelledby={id('detName')}>
     <div class="detail-box" id={id('detailBox')}>
-      <div class="detail-media"><img id={id('detImg')} src={first?.image || '/logo.png'} alt="" width="800" height="1000" decoding="async"><slot name="media" /></div>
+      <!-- no photo until a card is opened (product-grid.js showPhoto): nothing loads for a closed window -->
+      <div class="detail-media"><img id={id('detImg')} alt="" width="800" height="1000" decoding="async" hidden><slot name="media" /></div>
       <div class="detail-body">
         <button class="round-btn detail-close" id={id('detClose')} type="button" aria-label="Close details">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>

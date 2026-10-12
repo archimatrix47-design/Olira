@@ -4,7 +4,6 @@
 // show (CLAUDE.md: claims must be true).
 export const SINCE = 2008;
 
-export const COMPANY_LINE = `Addis Ababa, Ethiopia. Agricultural exports and printed packaging since ${SINCE}.`;
 
 export interface Fact { label: string; value: string; note: string }
 export const FACILITY_FACTS: Fact[] = [

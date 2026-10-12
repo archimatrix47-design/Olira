@@ -18,6 +18,8 @@ const OPEN_ICON = '<svg class="pg-go" width="16" height="16" viewBox="0 0 24 24"
 export const CARD_SIZES = '(max-width: 699px) 46vw, (max-width: 1023px) 31vw, 280px';
 /** Cards in the first row on a wide screen: their photos load at once, the rest when scrolled to. */
 export const EAGER = 4;
+/** How wide the details window draws its photo: the full width on a phone, its left column elsewhere. */
+export const DETAIL_SIZES = '(max-width: 760px) calc(100vw - 24px), 450px';
 
 /** What a card shows: a change to any of it means the card is rebuilt, otherwise it is kept (and its print). */
 export const itemKey = (p) => JSON.stringify([p.id, p.name, p.sub || '', p.image || '', p.cutout ? 1 : 0, p.print || null, p.note || '']);
@@ -84,19 +86,55 @@ export function mountGrid(root, { products = [], onDetail, onOpen } = {}) {
 
   /* ---------- a card grows into its details window ---------- */
   const rect = (el) => el.getBoundingClientRect();
+
+  /**
+   * The details photo. A browser keeps showing an image's old picture until a new
+   * file has loaded, so changing src on one element showed the last product for a
+   * moment. Each opening gets a fresh element that starts from the card's own photo,
+   * already loaded, and only then asks for a sharper copy for the larger window.
+   */
+  function showPhoto(p, card) {
+    const media = q('.detail-media');
+    const old = media.querySelector('img');
+    const img = old.cloneNode(false);
+    img.removeAttribute('srcset'); img.removeAttribute('sizes');
+    // the card's photo is already loaded and decoded: drawn onto a canvas it shows at
+    // once, under the window's own image, and steps aside when that image has loaded
+    let quick = media.querySelector('canvas.det-quick');
+    if (!quick) { quick = document.createElement('canvas'); quick.className = 'det-quick'; quick.setAttribute('aria-hidden', 'true'); media.prepend(quick); }
+    quick.hidden = true;
+    if (p.image) {
+      const seen = card?.querySelector('.pg-media img');
+      const ready = seen?.complete && seen.naturalWidth > 0;
+      if (ready) {
+        quick.width = seen.naturalWidth; quick.height = seen.naturalHeight;
+        quick.getContext('2d').drawImage(seen, 0, 0);
+        quick.hidden = false;
+      }
+      img.addEventListener('load', () => { quick.hidden = true; }, { once: true });
+      img.src = (ready && seen.currentSrc) || p.image;
+      img.alt = p.name; img.hidden = false;
+      const set = thumbSrcset(p.image);
+      if (set) {
+        const sharpen = () => { img.sizes = DETAIL_SIZES; img.srcset = set; };
+        if (img.complete) sharpen(); else img.addEventListener('load', sharpen, { once: true });
+      }
+      if (img.complete && img.naturalWidth) quick.hidden = true;
+    } else { img.removeAttribute('src'); img.alt = ''; img.hidden = true; }
+    old.replaceWith(img);
+  }
   function open(id, card = cardOf(id)) {
     const p = list.find((x) => x.id === id);
     if (!p) return;
     picked = p; from = card;
-    const img = q('.detail-media img');
-    if (p.image) { img.src = p.image; img.alt = p.name; img.hidden = false; } else { img.removeAttribute('src'); img.alt = ''; img.hidden = true; }
+    showPhoto(p, card);
     q('.detail-media').classList.toggle('no-photo', !p.image);
     q('.det-cat').textContent = p.sub || '';
     q('.det-name').textContent = p.name;
     q('.detail-desc').textContent = p.description || '';
     onDetail?.(p, detail);
     onOpen?.(p);
-    if (typeof detail.showModal === 'function') detail.showModal(); else detail.setAttribute('open', '');
+    if (typeof detail.showModal === 'function') { if (!detail.open) detail.showModal(); } else detail.setAttribute('open', '');
     q('.detail-close').focus({ preventScroll: true });
     if (reduced() || !card) return;
     const a = rect(card), b = rect(box);

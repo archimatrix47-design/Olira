@@ -42,6 +42,9 @@ const grid = mountGrid($('.pgrid-wrap[data-grid="pack"]', root), {
     const c = old.cloneNode(false);
     if (item.print) Object.assign(c.dataset, { print: '', cutout: item.print.cutout, quad: JSON.stringify(item.print.quad), safeTop: String(item.print.safeTop ?? 0.04), ink: 'teal' });
     else delete c.dataset.print;
+    // the card's print, already painted, shows at once; the live print then redraws it here
+    const painted = item.print && $(`#pkGrid .pg-card[data-id="${CSS.escape(item.id)}"] canvas.is-printed`);
+    if (painted?.width) { c.width = painted.width; c.height = painted.height; c.getContext('2d').drawImage(painted, 0, 0); }
     old.replaceWith(c);
     document.dispatchEvent(new CustomEvent('catalogue:rendered')); // marks the Add button, paints the print
   },
