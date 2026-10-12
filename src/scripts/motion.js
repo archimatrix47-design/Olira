@@ -1,152 +1,68 @@
-// Motion for the public pages, on GSAP (the only animation engine here).
+// Motion that answers the visitor, on the packaging page: a small labelled tab
+// travels to the packing list when a product is added, and the counter settles
+// when it lands. Built on the browser's own Web Animations, so no animation
+// library is loaded anywhere on the site.
 //
-// Choreography (ambient-ui transitions §7): one orchestrated moment per page and
-// everything else answers the visitor.
-//  - the moment: on the home page the two doors arrive together, side by side;
-//    elsewhere the title rises line by line out of a mask and the rest of the
-//    hero overlaps in at about two thirds of it
-//  - answers: panels and the footer rise once as they scroll into view, the
-//    catalogue re-forms when a group is chosen, and a small tab travels to the
-//    packing list when a product is added
-// Eases decelerate and settle without overshoot (apple-design: damping 1.0).
-// Everything is set up inside gsap.matchMedia: with reduced motion the page is
-// simply there, finished, and nothing moves.
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Flip } from 'gsap/Flip';
-import { SplitText } from 'gsap/SplitText';
-
-gsap.registerPlugin(ScrollTrigger, Flip, SplitText);
-gsap.defaults({ ease: 'power3.out', duration: 0.6 });
-
-const mm = gsap.matchMedia();
+// Page entrances are CSS (sheet.css, "motion"): they start on load, finish in
+// under a second and never wait for a scroll, so a printout, a screenshot or a
+// search engine always sees the whole page. With reduced motion nothing moves.
 export const motionOK = () => !matchMedia('(prefers-reduced-motion: reduce)').matches;
-const SETTLE = 'power3.out';
 
-/** A panel arriving: it rises a little and fades in. */
-export function trace(panel, delay = 0) {
-  if (!motionOK()) return;
-  return gsap.fromTo(panel, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: SETTLE, delay, clearProps: 'transform,opacity' });
-}
-
-mm.add('(prefers-reduced-motion: no-preference)', () => {
-  const splits = [];
-
-  // ---------- the one moment: the hero ----------
-  // the home page's two doors arrive together, side by side, neither first
-  const doors = gsap.utils.toArray('.door');
-  if (doors.length) gsap.from(doors, { y: 28, opacity: 0, duration: 0.9, stagger: 0.08, ease: SETTLE, clearProps: 'transform,opacity' });
-  const hero = document.querySelector('.title-block, .ag-hero, .lost');
-  if (hero) {
-    const h1 = hero.querySelector('h1');
-    const rest = [...hero.querySelectorAll('.label, .sub, .acts, .brand-field')];
-    const photo = hero.querySelector('.photo img');
-    const tl = gsap.timeline({ defaults: { ease: SETTLE } });
-    if (photo) tl.fromTo(photo, { scale: 1.08 }, { scale: 1, duration: 1.6, ease: 'power2.out', clearProps: 'transform' }, 0);
-    if (h1) {
-      // lines rise out of their own mask; autoSplit re-splits when fonts load or the width changes
-      const split = SplitText.create(h1, {
-        type: 'lines', mask: 'lines', autoSplit: true,
-        onSplit: (self) => gsap.from(self.lines, { yPercent: 105, duration: 0.9, stagger: 0.08, ease: SETTLE, delay: 0.05 }),
-      });
-      splits.push(split);
-    }
-    // overlap, do not queue: the rest starts at about two thirds of the headline
-    if (rest.length) tl.from(rest, { y: 16, opacity: 0, duration: 0.7, stagger: 0.06, clearProps: 'transform,opacity' }, 0.45);
-  }
-
-  // ---------- answers: panels and the footer rise once as they come into view ----------
-  const RISE = '.press, .specsheet, .sheet-site .contact > *, .foot-top, .foot-col';
-  const rising = gsap.utils.toArray(RISE);
-  gsap.set(rising, { opacity: 0, y: 28 });
-  ScrollTrigger.batch(rising, {
-    start: 'top 90%', once: true,
-    onEnter: (batch) => gsap.to(batch, { opacity: 1, y: 0, duration: 0.7, stagger: 0.06, ease: SETTLE, clearProps: 'transform,opacity', overwrite: true }),
-  });
-  // a keyboard user tabbing ahead must never land on something still invisible
-  const reveal = (e) => {
-    const t = e.target.closest?.(RISE);
-    if (t && e.target.matches?.(':focus-visible')) gsap.set(t, { clearProps: 'transform,opacity' });
-  };
-  document.addEventListener('focusin', reveal);
-
-  // section headlines rise once
-  gsap.utils.toArray('.band .headline, .sec-title h2').forEach((el) => {
-    if (el.getBoundingClientRect().top < innerHeight * 0.9) return;
-    gsap.from(el, { y: 24, opacity: 0, duration: 0.8, ease: SETTLE, clearProps: 'opacity,transform', scrollTrigger: { trigger: el, start: 'top 88%', once: true } });
-  });
-
-  // older sections that still mark themselves with data-rise
-  gsap.utils.toArray('[data-rise]').forEach((el) => {
-    if (el.getBoundingClientRect().top < innerHeight * 0.9 || el.closest('.contact')) return;
-    gsap.from(el, { y: 22, opacity: 0, duration: 0.7, clearProps: 'opacity,transform', scrollTrigger: { trigger: el, start: 'top 90%', once: true } });
-  });
-
-  return () => {
-    document.removeEventListener('focusin', reveal);
-    splits.forEach((s) => s.revert());
-    ScrollTrigger.getAll().forEach((t) => t.kill());
-  };
-});
-
-// fonts and late images change heights; measure again once they are in
-document.fonts?.ready.then(() => ScrollTrigger.refresh()).catch(() => {});
-addEventListener('load', () => ScrollTrigger.refresh());
-
-// Measuring scrolls the page to the top and back. When the browser's jump to a
-// linked section (/packaging/#studio, a product page's "Request a quote") lands
-// in the middle of that, the page is left at the top. Until the visitor moves
-// the page themselves, put the linked section back in view after each measure.
-let moved = false;
-for (const type of ['wheel', 'touchstart', 'keydown', 'pointerdown']) addEventListener(type, () => { moved = true; }, { capture: true, passive: true, once: true });
-const arrived = performance.now();
-ScrollTrigger.addEventListener('refresh', () => {
-  if (moved || location.hash.length < 2 || performance.now() - arrived > 6000) return;
-  let target = null;
-  try { target = document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch (e) { return; }
-  if (!target) return;
-  const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
-  if (Math.abs(target.getBoundingClientRect().top - pad) > 4) target.scrollIntoView({ block: 'start', behavior: 'instant' });
-});
+// eases: decelerate and settle without overshoot, and an accelerating fall
+const SETTLE = 'cubic-bezier(.22,1,.36,1)';
+const ACROSS = 'cubic-bezier(.45,0,.55,1)';
+const FALL = 'cubic-bezier(.55,0,1,.45)';
 
 /**
- * Filtering: record where the panels are, apply the change, and move them from
- * the old layout to the new one. Panels that appear rise in; leaving ones fade.
+ * A small labelled tab travels from `from` to `to` (the packing list counter): it
+ * moves across steadily and falls with growing speed, so it arcs into the counter.
+ * Two nested boxes carry the two movements, each with its own ease.
  */
-export function flip(targets, change) {
-  if (!motionOK()) { change(); return; }
-  const state = Flip.getState(targets);
-  change();
-  Flip.from(state, {
-    duration: 0.5, ease: 'power3.inOut', absolute: true, nested: true, prune: true,
-    onEnter: (els) => gsap.fromTo(els, { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.4, delay: 0.1, clearProps: 'all' }),
-    onLeave: (els) => gsap.to(els, { opacity: 0, scale: 0.96, duration: 0.25 }), // exits faster than entrances
-  });
-  ScrollTrigger.refresh();
-}
-
-/** A small labelled tab travels from `from` to `to` (the packing list counter). */
 export function flyTo(from, to, label, done) {
   if (!motionOK() || !from || !to) { done?.(); return; }
   const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  const across = document.createElement('span');
+  across.className = 'pl-fly-x';
+  across.setAttribute('aria-hidden', 'true');
   const tab = document.createElement('span');
-  tab.className = 'pl-fly'; tab.textContent = label; tab.setAttribute('aria-hidden', 'true');
-  document.body.append(tab);
+  tab.className = 'pl-fly';
+  tab.textContent = label;
+  across.append(tab);
+  document.body.append(across);
   const w = tab.offsetWidth;
-  // duration scales with distance: about 200ms per 300px, within 0.35-0.7s
-  const dist = Math.hypot(b.left - a.left, b.top - a.top);
-  const d = Math.min(0.7, Math.max(0.35, (dist / 300) * 0.2));
-  gsap.set(tab, { x: a.left + a.width / 2 - w / 2, y: a.top + a.height / 2 - 15 });
-  gsap.timeline({ onComplete: () => { tab.remove(); done?.(); } })
-    .to(tab, { x: b.left + b.width / 2 - w / 2, duration: d, ease: 'power2.inOut' }, 0)
-    .to(tab, { y: b.top + b.height / 2 - 15, duration: d, ease: 'power2.in' }, 0)
-    .to(tab, { scale: 0.4, opacity: 0, duration: 0.18 }, d - 0.15);
+  // duration grows with distance: about 200 ms per 300 px, within 350-700 ms
+  const d = Math.round(Math.min(700, Math.max(350, (Math.hypot(b.left - a.left, b.top - a.top) / 300) * 200)));
+  const x0 = a.left + a.width / 2 - w / 2, x1 = b.left + b.width / 2 - w / 2;
+  const y0 = a.top + a.height / 2 - 15, y1 = b.top + b.height / 2 - 15;
+  const runs = [
+    across.animate([{ transform: `translateX(${x0}px)` }, { transform: `translateX(${x1}px)` }], { duration: d, easing: ACROSS, fill: 'forwards' }),
+    tab.animate([{ transform: `translateY(${y0}px)` }, { transform: `translateY(${y1}px)` }], { duration: d, easing: FALL, fill: 'forwards' }),
+    tab.animate([{ scale: 1, opacity: 1 }, { scale: 0.4, opacity: 0 }], { duration: 180, delay: d - 150, fill: 'forwards' }),
+  ];
+  Promise.all(runs.map((r) => r.finished)).catch(() => {}).then(() => { across.remove(); done?.(); });
 }
 
 /** The counter answers when something is added: a small settle, no bounce. */
 export function bump(el) {
   if (!motionOK() || !el) return;
-  gsap.fromTo(el, { scale: 1.25 }, { scale: 1, duration: 0.4, ease: SETTLE, clearProps: 'transform' });
+  el.animate([{ scale: 1.25 }, { scale: 1 }], { duration: 400, easing: SETTLE });
 }
 
-export { gsap, ScrollTrigger };
+/**
+ * Show or hide an element with a short fade and slide (the ink stations' print
+ * layers). `delay` staggers a group; hiding is quicker than showing. The final
+ * state is set on the element itself, so it holds when the animation ends.
+ */
+export function fade(el, on, { delay = 0, dx = -10, dy = 6, instant = false } = {}) {
+  el.getAnimations().forEach((x) => x.cancel());
+  el.style.opacity = on ? '1' : '0';
+  el.style.visibility = on ? 'visible' : 'hidden';
+  if (instant || !motionOK()) return;
+  if (on) {
+    el.animate([{ opacity: 0, transform: `translate(${dx}px, ${dy}px)` }, { opacity: 1, transform: 'none' }], { duration: 450, delay, easing: SETTLE, fill: 'backwards' });
+  } else {
+    // keep it visible while it fades
+    el.style.visibility = 'visible';
+    el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-out' }).finished.then(() => { if (el.style.opacity === '0') el.style.visibility = 'hidden'; }).catch(() => {});
+  }
+}

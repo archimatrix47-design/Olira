@@ -1,13 +1,13 @@
-// The packaging catalogue, in the same carousel as the agriculture range
-// (flow.js). The group buttons choose which products are in the ring, links from
-// other pages can pick a group (?family=food), the detail panel shows sizes,
+// The packaging catalogue, in the same grid as the agriculture range
+// (product-grid.js). The group buttons choose which products are shown, links from
+// other pages can pick a group (?family=food), the details window shows sizes,
 // minimum order and print with "Add to packing list" and "Design it in the
-// studio", and the ring is re-rendered when the admin or the packaging team has
-// changed a product since the page was built.
+// studio", and the grid is updated when the admin or the packaging team has
+// changed a product since the page was built. Products with a photo come first.
 import { $, $$, h, track } from './common.js';
 import { onProducts } from './packaging-data.js';
-import { flowItem, specRows, inStudio } from './catalogue-panel.js';
-import { mountFlow } from './flow.js';
+import { flowItem, knownRows, inStudio, photoFirst } from './catalogue-panel.js';
+import { mountGrid } from './product-grid.js';
 
 const root = $('#catalogue');
 const tabs = $$('.fam');
@@ -19,13 +19,19 @@ const PAGES = JSON.parse($('#productPages')?.textContent || '{}'); // products a
 let current = 'all';
 const byId = (id) => ALL.find((p) => p.id === id);
 
-const flow = mountFlow($('.flow-wrap[data-flow="pack"]', root), {
-  products: ALL.map((p) => flowItem(p, FAMILIES)),
+const grid = mountGrid($('.pgrid-wrap[data-grid="pack"]', root), {
+  products: photoFirst(ALL).map((p) => flowItem(p, FAMILIES)),
   onDetail: (item, panel) => {
     const p = byId(item.id) || {};
+    // the facts the team has set; the ones still to come in one line, not three placeholders
+    const { rows, line } = knownRows(p, FLEXO_MAX);
     const dl = $('.spec-list', panel);
-    dl.replaceChildren(...specRows(p, FLEXO_MAX).flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)]));
+    dl.replaceChildren(...rows.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)]));
     dl.hidden = false;
+    let note = $('.det-pending', panel);
+    if (!note) { note = h('p', { class: 'note det-pending' }); dl.after(note); }
+    note.textContent = line;
+    note.hidden = !line;
     $('.detail-specs', panel).replaceChildren(...(p.specs || []).map((s) => h('li', {}, s)));
     $('.pp-add', panel).dataset.id = p.id;
     const studio = $('#pkStudio'); studio.hidden = !inStudio(p); studio.dataset.id = p.id;
@@ -42,10 +48,10 @@ const flow = mountFlow($('.flow-wrap[data-flow="pack"]', root), {
   onOpen: (item) => track({ event: 'product', product: item.name }),
 });
 
-function apply(fam, keepId) {
+function apply(fam) {
   current = FAMILIES[fam] ? fam : 'all';
-  const list = ALL.filter((p) => current === 'all' || p.family === current);
-  flow.set(list.map((p) => flowItem(p, FAMILIES)), keepId);
+  const list = photoFirst(ALL.filter((p) => current === 'all' || p.family === current));
+  grid.set(list.map((p) => flowItem(p, FAMILIES)));
   tabs.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.family === current)));
   $('#catalogueStatus').textContent = current === 'all' ? `Showing all ${list.length} products.` : `Showing ${list.length} ${FAMILIES[current].toLowerCase()}.`;
   document.dispatchEvent(new CustomEvent('catalogue:rendered'));
@@ -65,7 +71,7 @@ $('#pkStudio')?.addEventListener('click', (e) => {
   const id = e.currentTarget.dataset.id;
   if (!id) return;
   e.preventDefault();
-  flow.close();
+  grid.close();
   document.dispatchEvent(new CustomEvent('studio:pick', { detail: { id } }));
   $('#studio')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 });
@@ -81,14 +87,13 @@ function counts(products) {
 onProducts((products) => {
   ALL = products;
   counts(products);
-  apply(current, flow.current()?.id);
+  apply(current);
 });
 
 // a link to one product (a product the studio cannot preview yet) shows it here
 document.addEventListener('catalogue:show', (e) => {
   const id = e.detail?.id;
-  if (!flow.show(id)) { apply('all', id); flow.show(id); }
-  requestAnimationFrame(() => root.scrollIntoView({ block: 'center' }));
+  if (!grid.show(id)) { apply('all'); grid.show(id); }
 });
 
 const start = new URLSearchParams(location.search).get('family');

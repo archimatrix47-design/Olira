@@ -2,7 +2,7 @@
 // how many colours lights the stations one after another, and each station lays
 // its part of a sample print on kraft stock, sliding into register as it lands.
 import { $, $$ } from './common.js';
-import { gsap, motionOK } from './motion.js';
+import { fade } from './motion.js';
 
 const press = $('#press');
 if (press) {
@@ -11,6 +11,7 @@ if (press) {
   const bars = $$('.colour-bar li', press);
   const note = $('#pressNote');
   let shown = -1;
+  let first = true;
 
   function set(n) {
     if (n === shown) return;
@@ -23,13 +24,12 @@ if (press) {
       : `${n} ink station${n === 1 ? '' : 's'}: ${stations.slice(0, n).map((s) => s.dataset.ink.toLowerCase()).join(', ')}. Each colour is printed by its own station, in register with the others.`;
     layers.forEach((l, i) => {
       const on = i < n;
-      if (!motionOK()) { gsap.set(l, { autoAlpha: on ? 1 : 0, x: 0, y: 0 }); return; }
-      if (on && i >= from) {
-        gsap.fromTo(l, { autoAlpha: 0, x: -10, y: 6 }, { autoAlpha: 1, x: 0, y: 0, duration: 0.45, delay: (i - from) * 0.16, ease: 'power3.out' });
-      } else if (!on) {
-        gsap.to(l, { autoAlpha: 0, duration: 0.2 });
-      }
+      // the first setting appears as it is; a change after that lays the new colours one by one
+      if (first) fade(l, on, { instant: true });
+      else if (on && i >= from) fade(l, true, { delay: (i - from) * 160 });
+      else if (!on && l.style.opacity !== '0') fade(l, false);
     });
+    first = false;
   }
 
   $$('input[name="colours"]', press.closest('section')).forEach((r) => r.addEventListener('change', () => { if (r.checked) set(Number(r.value)); }));

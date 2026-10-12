@@ -4,7 +4,7 @@ import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 ---
 <SiteLayout title="Page not found, Olira Agro Industry" description="The page you are looking for could not be found." noindex>
-  <SiteHeader groups={[[{ href: '/agriculture/', label: 'Agriculture' }, { href: '/packaging/', label: 'Packaging' }]]} />
+  <SiteHeader />
   <main id="main">
     <section class="lost">
       <div class="wrap">
@@ -20,5 +20,5 @@ import SiteFooter from '../components/site/SiteFooter.astro';
     </section>
   </main>
   <SiteFooter note="Olira Agro Industry, Addis Ababa." />
-  <script>import '../scripts/common.js'; import '../scripts/motion.js';</script>
+  <script>import '../scripts/common.js';</script>
 </SiteLayout>

@@ -158,100 +158,43 @@ p { text-wrap: pretty; }
 .switch-line { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 22px 26px; }
 .switch-line p { color: var(--ink-2); }
 
-/* ---------- cover-flow loop ---------- */
-.flow-wrap { position: relative; }
-.flow { position: relative; height: calc(var(--ch) + 56px); perspective: 1800px; outline: none; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-.flow:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 16px; }
-/* The track's own plane sits in front of the side cards (they are pushed back in
-   Z), so it must not take pointer events or clicks on side cards never arrive. */
-.flow-track { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
-.flow-track .flow-card { pointer-events: auto; }
-.flow-track > li { display: contents; }
-/* Each card's place in the ring is two numbers set in the markup and by agri.js:
-   --a is the distance from the front card, --s the side (-1, 0, 1). Spacing is a
-   fraction of the card width, so the stack is laid out before any script runs. */
-
-.flow-card {
-  position: absolute;
-  left: 50%;
-  top: 24px;
-  width: var(--cw);
-  height: var(--ch);
-  margin-left: calc(var(--cw) / -2);
-  padding: 0;
-  border: 0;
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  background: var(--surface-2);
-  transform:
-    translateX(calc(var(--s) * (var(--k0) * var(--cw) + (var(--a) - 1) * var(--k1) * var(--cw))))
-    translateZ(calc(-1 * min(var(--a), 1) * (var(--kz0) * var(--cw) + (var(--a) - 1) * var(--kz1) * var(--cw))))
-    rotateY(calc(var(--s) * -1 * var(--rot)));
-  box-shadow: 0 0 0 1px var(--line), 0 30px 50px -24px rgba(30,20,5,.45);
-  transition: transform .5s var(--ease), opacity .35s var(--ease);
-  will-change: transform;
-}
-.flow-card.is-far { opacity: 0; pointer-events: none; }
-/* Cards step back behind a dark veil instead of a filter, so only opacity
-   animates. --veil is how far back a card sits: 0 in front, more behind. */
-.flow-card::after { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: inherit; background: #0b0a08; opacity: var(--veil, 0); pointer-events: none; transition: opacity .35s var(--ease); }
+/* ---------- product grid (product-grid.js) ---------- */
+.pgrid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 2vw, 20px); }
+@media (min-width: 700px) { .pgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.pgrid > li { min-width: 0; }
+.pg-card { display: grid; gap: 10px; width: 100%; padding: 0; border: 0; background: none; color: var(--ink); text-align: left; cursor: pointer; font: inherit; border-radius: 14px; }
+.pg-media { position: relative; display: block; aspect-ratio: 4 / 5; border-radius: 14px; overflow: hidden; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); transition: transform var(--dur-micro, .15s) var(--ease), box-shadow var(--dur-micro, .15s) var(--ease); }
+.pg-media img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.pg-card .flow-print { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.pg-card.is-cutout .pg-media { background: var(--stage); }
+.pg-card.is-cutout img, .pg-card.is-cutout .flow-print { box-sizing: border-box; object-fit: contain; object-position: 50% 100%; padding: 10% 10% 8%; }
+.pg-ph { position: absolute; inset: 0; display: grid; align-content: center; gap: 8px; padding: 18px; text-align: center; background: var(--stage); color: var(--ink-2); }
+.pg-ph b { font-size: clamp(1.0625rem, .95rem + .5vw, 1.375rem); font-weight: 600; line-height: 1.2; color: var(--ink); }
+.pg-ph small { font-size: .8125rem; }
+.pg-cap { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; align-items: start; padding-inline: 2px; }
+.pg-name { font-size: 1rem; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.pg-sub { grid-column: 1; font-size: .875rem; color: var(--ink-2); }
+.pg-go { grid-column: 2; grid-row: 1; margin-top: 3px; color: var(--ink-2); }
 @media (hover: hover) and (pointer: fine) {
-  .flow-card { transition: transform .5s var(--ease), opacity .35s var(--ease), scale .25s var(--ease-out, var(--ease)); }
-  .flow-card::after { transition-duration: .2s; }
-  
-  .flow-track .flow-card:not(.is-far):hover { scale: 1.05; }
-  .flow-track .flow-card:not(.is-far):not(.is-front):hover .flow-tag { opacity: 1; }
+  .pg-card:hover .pg-media { transform: translateY(-2px); box-shadow: 0 0 0 1px var(--line), 0 18px 30px -18px rgba(30,20,5,.45); }
+  .pg-card:hover .pg-go { color: var(--accent); }
 }
-.flow-card.no-anim { transition: none; }
-.flow-card img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
-.flow-ph { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-2); font-size: .9375rem; }
-/* the front card is where the home page's agriculture half lands (page transitions) */
-.flow-tag { position: absolute; left: 0; right: 0; bottom: 0; padding: 64px 22px 20px; text-align: left; color: #fff; font-size: 1.0625rem; font-weight: 600; background: linear-gradient(to top, rgba(0,0,0,.7), rgba(0,0,0,0)); transition: opacity .3s var(--ease); }
-.flow-tag span { display: block; font-weight: 500; font-size: .8125rem; margin-top: 2px; }
-
-.flow-card:not(.is-front) .flow-tag { opacity: 0; }
-.flow-card.is-front { cursor: zoom-in; }
-/* "View details" on the front card, so the stack reads as something to open */
-.flow-open { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding-inline: 11px 13px; border-radius: 999px; background: rgba(255, 255, 255, .94); color: #1f1c17; font-size: .8125rem; font-weight: 600; box-shadow: 0 6px 18px -6px rgba(0, 0, 0, .45); transition: opacity .3s var(--ease), transform .3s var(--ease), background-color .15s var(--ease); }
-.flow-card:not(.is-front) .flow-open { opacity: 0; transform: scale(.9); }
-.flow-card.is-front:hover .flow-open, .flow-card.is-front:focus-visible .flow-open { background: #fff; transform: translateY(-1px); }
-.flow-card.is-front:hover img { transform: scale(1.03); }
-.flow-card img { transition: transform .5s var(--ease-out, ease); }
-.flow.is-nudge .flow-card.is-front .flow-open { animation: flow-pulse 1.2s var(--ease) 2; }
-@keyframes flow-pulse {
-  0% { box-shadow: 0 6px 18px -6px rgba(0, 0, 0, .45), 0 0 0 0 rgba(255, 255, 255, .85); }
-  70% { box-shadow: 0 6px 18px -6px rgba(0, 0, 0, .45), 0 0 0 14px rgba(255, 255, 255, 0); }
-  100% { box-shadow: 0 6px 18px -6px rgba(0, 0, 0, .45), 0 0 0 0 rgba(255, 255, 255, 0); }
-}
-.flow-actions { display: flex; justify-content: center; margin-top: 12px; }
-.flow-open-btn { gap: 6px; }
-.flow-hint { text-align: center; font-size: .875rem; color: var(--ink-2); margin-top: 6px; }
-.flow-hint .on-mouse { display: none; }
-@media (hover: hover) and (pointer: fine) { .flow-hint .on-mouse { display: inline; } .flow-hint .on-touch { display: none; } }
-.flow-bar { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 10px; }
-.flow-cap { text-align: center; min-width: min(340px, 60vw); }
-.flow-cap h3 { font-size: 1.625rem; }
-.flow-cap p { color: var(--ink-2); font-size: .9375rem; margin-top: 2px; }
-.flow-dots { display: flex; justify-content: center; gap: 4px; margin-top: 10px; }
-.flow-dots button { width: 24px; height: 24px; padding: 0; border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; }
-.flow-dots button::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--line-strong); transition: background-color .15s var(--ease), width .3s var(--ease); }
-.flow-dots button[aria-current="true"]::before { width: 22px; background: var(--accent); }
-.flow-count { display: none; margin: 10px 0 0; text-align: center; font-size: .875rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-/* Windows contrast themes (forced colours) paint every background in one system
-   colour, so the dots (coloured fills) and the cards (a shadow ring, no border)
-   would vanish: draw them with borders in system colours */
+.pg-card:active .pg-media { transform: scale(.98); }
+.pg-card:focus-visible { outline: none; }
+.pg-card:focus-visible .pg-media { outline: 2px solid var(--accent); outline-offset: 3px; }
+.pg-card.is-picked .pg-media { box-shadow: 0 0 0 3px var(--accent); }
 @media (forced-colors: active) {
-  .flow-dots button::before { forced-color-adjust: none; background: Canvas; border: 1px solid ButtonText; }
-  .flow-dots button[aria-current="true"]::before { background: Highlight; border-color: Highlight; }
-  .flow-card { border: 1px solid ButtonText; }
+  .pg-media { border: 1px solid ButtonText; }
+  .pg-card:focus-visible .pg-media, .pg-card.is-picked .pg-media { outline: 3px solid Highlight; outline-offset: 3px; }
 }
-@media (max-width: 760px) {
-  .flow { height: calc(var(--ch) + 40px); }
-  .flow-card { top: 20px; }
-}
-.flow-detail { position: absolute; inset: 0; z-index: 50; display: grid; }
-.detail-box { position: relative; background: var(--surface); border-radius: 14px; overflow: hidden; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); min-height: 100%; box-shadow: 0 0 0 1px var(--line), 0 40px 80px -40px rgba(30,20,5,.5); transform-origin: 0 0; }
+
+/* ---------- the details window (a modal dialog) ---------- */
+.flow-detail { width: min(980px, calc(100vw - 24px)); max-width: none; max-height: calc(100svh - 24px); margin: auto; padding: 0; border: 0; background: transparent; color: var(--ink); overflow: visible; }
+.flow-detail::backdrop { background: rgba(16,20,18,.5); }
+.detail-box { position: relative; background: var(--surface); border-radius: 14px; overflow: hidden; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); max-height: calc(100svh - 24px); box-shadow: 0 0 0 1px var(--line), 0 40px 80px -40px rgba(30,20,5,.5); transform-origin: 0 0; }
+.detail-media { min-height: 320px; background: var(--surface-2); }
+.detail-media.no-photo { display: none; }
 .detail-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .detail-body { padding: clamp(24px, 3vw, 40px); display: flex; flex-direction: column; gap: 10px; overflow: auto; }
 .detail-body > * { transition: opacity .25s var(--ease); }
@@ -261,9 +204,11 @@ p { text-wrap: pretty; }
 .detail-desc { color: var(--ink-2); max-width: 52ch; }
 .detail-body .spec-list { margin: 8px 0 14px; }
 .detail-body .btn { align-self: flex-start; }
+.detail-box:has(.detail-media.no-photo) { grid-template-columns: 1fr; }
 @media (max-width: 760px) {
-  .flow-detail { position: fixed; inset: 0; z-index: 200; padding: 12px; background: rgba(16,20,18,.5); }
-  .detail-box { grid-template-columns: 1fr; grid-template-rows: 200px 1fr; max-height: calc(100svh - 24px); }
+  .detail-box { grid-template-columns: 1fr; grid-template-rows: 200px minmax(0, 1fr); }
+  .detail-media { min-height: 0; }
+  .detail-box:has(.detail-media.no-photo) { grid-template-rows: minmax(0, 1fr); }
 }
 .detail-specs { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 6px; font-size: .9375rem; color: var(--ink); }
 .detail-specs li { padding-left: 16px; position: relative; }
@@ -274,6 +219,10 @@ p { text-wrap: pretty; }
 .spec-list { display: grid; grid-template-columns: auto 1fr; gap: 9px 18px; font-size: .9375rem; }
 .spec-list dt { color: var(--ink-2); }
 .spec-list dd { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; margin: 0; }
+/* price, minimum and lead time the team has not set yet: hidden, named once in a line instead */
+.spec-row[hidden], .pd-pending[hidden], .det-pending[hidden] { display: none; }
+.pd-pending, .det-pending { max-width: 420px; color: var(--ink-2); font-size: .9375rem; }
+.det-pending { margin: -6px 0 14px; }
 
 /* Specification sheet: the facts an importer's quality team checks, set out the
    way their own documents are. A label column, the value in the display face,
@@ -325,7 +274,6 @@ p { text-wrap: pretty; }
 .stage-frame { height: clamp(360px, calc(100svh - 300px), 760px); border-radius: 8px; background: var(--surface-2); overflow: hidden; }
 .stage-canvas { width: 100%; height: 100%; object-fit: contain; display: block; touch-action: none; cursor: grab; }
 .stage-canvas.is-dragging { cursor: grabbing; }
-@media (max-width: 960px) { .stage { position: static; } .stage-frame { height: auto; aspect-ratio: 4 / 5; } }
 
 /* bags: the admin's photographed products, each a card with its own photo */
 .bags { display: grid; gap: 8px; }
@@ -415,7 +363,23 @@ fieldset.choice { border: 0; margin: 0; padding: 0; min-width: 0; }
 .status-line { font-size: .875rem; color: var(--ink); min-height: 1.3em; }
 /* minmax(0, 1fr), not 1fr: a bare 1fr cannot shrink below its content, and the
    canvas made the studio 371px wide on a 320px screen */
-@media (max-width: 960px) { .studio { grid-template-columns: minmax(0, 1fr); } .stage { position: static; } }
+@media (max-width: 960px) { .studio { grid-template-columns: minmax(0, 1fr); } }
+/* Phones and tablets: the preview stays in view as a strip under the bar while the
+   choices scroll beneath it, so every change is seen as it is made; a focused field
+   keeps clear of it. The bags become one sideways row of photos, not a long list. */
+@media (max-width: 960px) {
+  .stage { position: sticky; top: var(--bar-h); z-index: 6; padding: 8px; box-shadow: 0 12px 24px -20px rgba(0,0,0,.45); }
+  .stage-frame { height: 34svh; }
+  .stage-meta { margin-top: 6px; }
+  .stage-meta #stageHelp { display: none; }
+  #studio .panel :is(input, textarea, select, button, .drop) { scroll-margin-top: calc(var(--bar-h) + 34svh + 48px); }
+  .bags { grid-auto-flow: column; grid-auto-columns: 104px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 2px 2px 8px; scrollbar-width: thin; }
+  .bagopt { scroll-snap-align: start; }
+  .bagopt-card { height: 100%; grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: start; gap: 6px; padding: 8px 6px 10px; }
+  .bagopt-photo { width: 72px; height: 72px; }
+  .bagopt-name { font-size: .8125rem; line-height: 1.25; text-align: center; }
+  .bagopt-desc { display: none; }
+}
 
 /* ---------- contact + forms ---------- */
 .contact { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
@@ -501,8 +465,7 @@ a.reach-num:hover { color: var(--accent); text-decoration: underline; }
   @view-transition { navigation: none; }
   html { scroll-behavior: auto; }
   .fade { opacity: 1; transition: none; }
-  .half, .half-peek, .flow-card, .flow-card::after, .detail-body > *, .skip, .bagopt-photo, .size-box { transition: none !important; }
-  .flow.is-nudge .flow-card.is-front .flow-open { animation: none; }
+  .half, .half-peek, .pg-media, .detail-body > *, .skip, .bagopt-photo, .size-box { transition: none !important; }
 }
 
 /* ---------- quote request attachments (packaging) ---------- */
@@ -523,12 +486,7 @@ a.reach-num:hover { color: var(--accent); text-decoration: underline; }
   .opt > span { height: 44px; }
   .opt-swatch > span { width: 44px; height: 44px; }
   .reach-btn { width: 44px; height: 44px; }
-  .flow-dots { gap: 0; }
-  .flow-dots button { width: 44px; height: 44px; }
-  /* too many to fit at 44 px: the position as text, browse with the arrows or a swipe */
-  .flow-dots[data-many] { display: none; }
   .form .check input { width: 24px; height: 24px; margin-top: -2px; }
-  .flow-dots[data-many] + .flow-count { display: block; }
 }
 
 /* ---------- product pages (ProductPage.astro) ---------- */

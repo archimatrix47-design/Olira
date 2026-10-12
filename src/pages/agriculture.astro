@@ -4,16 +4,16 @@ import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 import ContactLines from '../components/site/ContactLines.astro';
 import InquiryForm from '../components/site/InquiryForm.astro';
-import ProductFlow from '../components/site/ProductFlow.astro';
+import ProductGrid from '../components/site/ProductGrid.astro';
 import CertList from '../components/site/CertList.astro';
 import Faq from '../components/site/Faq.astro';
 import ProductIndex from '../components/site/ProductIndex.astro';
 import QuoteBar from '../components/site/QuoteBar.astro';
 import { graph, organizationGraph, breadcrumbs, faqPage, agriUrl, agriFaq, ORG_ID, AGRO_ID } from '../lib/seo';
 import { products, certifications, contact, SITE } from '../lib/site-data';
+import { FACILITY_FACTS } from '../lib/company';
 
-// Ring position of each card with the first product in front (see site.css).
-// the carousel's cards: the same shape the packaging catalogue uses
+// the grid's cards: the same shape the packaging catalogue uses
 const items = products.map((p) => ({ id: p.id, name: p.name, sub: p.category, image: p.image, cat: p.category }));
 
 // each product's own page, for the "Full details" link and the product list
@@ -48,7 +48,7 @@ const jsonLd = graph(
   <Fragment slot="head">
     <link rel="preload" as="image" href="/images/home/sesame-natural-800.avif" type="image/avif" fetchpriority="high">
   </Fragment>
-  <SiteHeader groups={[[{ href: '/agriculture/', label: 'Agriculture' }, { href: '#range', label: 'Range' }, { href: '#specTitle', label: 'Specification' }, { href: '/packaging/', label: 'Packaging' }, { href: '#contact', label: 'Contact' }]]} current="/agriculture/" />
+  <SiteHeader section={[{ href: '#range', label: 'Range' }, { href: '#specTitle', label: 'Specification' }, { href: '#contact', label: 'Get a quote' }]} current="/agriculture/" />
 
   <main id="main">
     <!-- the produce, full bleed, and one line over it -->
@@ -71,31 +71,12 @@ const jsonLd = graph(
 
     <section class="container" id="range" style="padding-block: clamp(56px,7vw,96px)" aria-labelledby="rangeTitle">
       <h2 class="sr-only" id="rangeTitle">Product range</h2>
-      <ProductFlow items={items} label="Agricultural products" kind="agri" lazy>
+      <ProductGrid items={items} label="Agricultural products" kind="agri" lazy>
         <div class="det-acts">
           <a class="btn btn-lg btn-primary" id="detAsk" href="#contact">Ask about this product</a>
-          <a class="act" id="detPage" href="#range">Full details</a>
+          <a class="act" id="detPage" href="#range" data-vt-photo="detail">Full details</a>
         </div>
-      </ProductFlow>
-        <script is:inline>
-          // Links from the home page land on a product line (?p=sesame|pulses|spices|coffee,
-          // or a product id). Runs before first paint so the right card is in front
-          // when the page transition captures it; agri.js reads the result.
-          (function () {
-            var want = new URLSearchParams(location.search).get('p');
-            if (!want) return;
-            want = want.toLowerCase();
-            var cards = [].slice.call(document.querySelectorAll('#flowTrack .flow-card')), n = cards.length;
-            var k = cards.findIndex(function (c) { return c.dataset.id === want || c.dataset.cat === want; });
-            if (k < 0) return;
-            cards.forEach(function (c, i) {
-              var o = ((i - k) % n + n) % n; if (o > n / 2) o -= n; var a = Math.abs(o);
-              c.style.setProperty('--a', a); c.style.setProperty('--s', Math.sign(o)); c.style.zIndex = 20 - a;
-              c.classList.toggle('is-front', o === 0); c.classList.toggle('is-far', a >= 3); c.classList.add('no-anim');
-            });
-            requestAnimationFrame(function () { requestAnimationFrame(function () { cards.forEach(function (c) { c.classList.remove('no-anim'); }); }); });
-          })();
-        </script>
+      </ProductGrid>
       <script type="application/json" id="productsData" set:html={JSON.stringify(products).replace(/</g, '\\u003c')}></script>
       <script type="application/json" id="productPages" set:html={JSON.stringify(pages)}></script>
       <ProductIndex id="agriIndex" groups={[...new Set(products.map((p) => p.category || 'Other'))].map((cat) => ({ label: cat, items: products.filter((p) => (p.category || 'Other') === cat).map((p) => ({ name: p.name, href: pages[p.id] })) }))} />
@@ -106,16 +87,13 @@ const jsonLd = graph(
       <div class="wrap">
       <!-- The facts an importer's quality team checks, laid out as the document
            they check them in: a specification sheet, one row per fact. -->
-      <article class="specsheet" data-rise aria-labelledby="specTitle">
+      <article class="specsheet" aria-labelledby="specTitle">
         <header class="specsheet-head">
           <h2 id="specTitle">Specification</h2>
           <span>Olira Agro, Burayu facility</span>
         </header>
         <dl class="specsheet-rows">
-          <div class="spec-row"><dt>Established</dt><dd class="v">2008</dd><dd class="d">Founded by two agronomists with 50+ years combined</dd></div>
-          <div class="spec-row"><dt>Capacity</dt><dd class="v">20 MT</dd><dd class="d">Sesame processed per day in Burayu</dd></div>
-          <div class="spec-row"><dt>Purity</dt><dd class="v">99.95%</dd><dd class="d">Purity every sesame lot must reach</dd></div>
-          <div class="spec-row"><dt>Food safety</dt><dd class="v">ISO 22000</dd><dd class="d">Food safety certified, with GMP and organic options</dd></div>
+          {FACILITY_FACTS.map((f) => <div class="spec-row"><dt>{f.label}</dt><dd class="v">{f.value}</dd><dd class="d">{f.note}</dd></div>)}
         </dl>
         <CertList />
       </article>
@@ -126,7 +104,7 @@ const jsonLd = graph(
 
     <section class="sheet-sec" id="contact" aria-labelledby="contactTitle">
       <div class="container">
-        <div class="contact" data-rise>
+        <div class="contact">
           <div>
             <h2 id="contactTitle">Talk to our export team.</h2>
             <p class="lede" style="margin-top:20px">Tell us the product, volume and destination port. We answer within 24 hours.</p>
@@ -148,5 +126,5 @@ const jsonLd = graph(
   <QuoteBar href="#contact" after=".ag-hero .acts" until="#contact" />
   <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." />
 
-  <script>import '../scripts/agri.js'; import '../scripts/certs.js'; import '../scripts/motion.js';</script>
+  <script>import '../scripts/agri.js'; import '../scripts/certs.js';</script>
 </SiteLayout>

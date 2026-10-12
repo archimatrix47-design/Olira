@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const read = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const motion = read('src/scripts/motion.js');
@@ -25,16 +25,42 @@ function selectorsWith(block, decl) {
   return out.join(', ');
 }
 
-test('printing before scrolling: everything the scroll reveals hide is shown on paper', () => {
-  const rise = motion.match(/const RISE = '([^']+)'/)?.[1];
-  assert.ok(rise, 'motion.js still names its reveals in RISE');
-  const heads = motion.match(/gsap\.utils\.toArray\('(\.band \.headline, \.sec-title h2)'\)/)?.[1];
-  assert.ok(heads, 'motion.js still reveals the section headlines');
-  const shown = selectorsWith(printBlock(), 'opacity: 1 !important');
-  for (const sel of [...rise.split(','), ...heads.split(','), '[data-rise]', '.door'].map((s) => s.trim())) {
-    assert.ok(shown.includes(sel), `${sel} is shown in print (sheet.css), over GSAP's inline opacity`);
-  }
-  assert.match(selectorsWith(printBlock(), 'transform: none !important'), /\.specsheet/, 'and moved back into place');
+// every public page's own files: scripts (not the staff tools), pages, components, layouts
+function publicFiles() {
+  const out = [];
+  const walk = (dir) => {
+    for (const e of readdirSync(new URL(`../${dir}`, import.meta.url), { withFileTypes: true })) {
+      const rel = `${dir}/${e.name}`;
+      if (e.isDirectory()) { if (!/^src\/(scripts\/(admin|team)|pages\/(admin|team))$/.test(rel)) walk(rel); }
+      else if (/\.(js|ts|astro)$/.test(e.name)) out.push(rel);
+    }
+  };
+  ['src/scripts', 'src/pages', 'src/components/site', 'src/layouts'].forEach(walk);
+  return out;
+}
+// what makes content wait for a scroll: a scroll-triggered library or a reveal marker
+const WAITS = [/ScrollTrigger/, /from ['"]gsap/, /\bdata-rise\b/, /\bdata-reveal\b/];
+
+test('the matchers that find scroll-gated content work', () => {
+  assert.ok(WAITS.some((r) => r.test("import { ScrollTrigger } from 'gsap/ScrollTrigger';")));
+  assert.ok(WAITS.some((r) => r.test('<div class="contact" data-rise>')));
+  assert.equal(WAITS.some((r) => r.test('<div class="contact">')), false);
+});
+
+test('printing before scrolling: nothing on the public pages waits for a scroll to be seen', () => {
+  const files = publicFiles();
+  assert.ok(files.length > 30 && files.includes('src/pages/packaging.astro') && files.includes('src/scripts/motion.js'), `scanned ${files.length} files`);
+  for (const f of files) for (const r of WAITS) assert.equal(r.test(read(f)), false, `${f} matches ${r}`);
+  assert.equal(/"gsap"/.test(read('package.json')), false, 'no animation library is installed');
+  assert.doesNotMatch(motion, /opacity: 0[^}]*\}\s*\)\s*;?\s*$/m, 'motion.js does not leave anything hidden');
+  // the CSS entrances: only with motion allowed, ending on the page's own layout, and off on paper
+  const allowed = css.slice(css.indexOf('@media (prefers-reduced-motion: no-preference) {\n  .door'));
+  assert.match(allowed, /^@media \(prefers-reduced-motion: no-preference\) \{\n {2}\.door \{ animation: enter-rise/);
+  assert.equal(css.split('enter-rise').length - 1, 4, 'the keyframes and the three entrances that use them, nowhere else');
+  const from = css.match(/@keyframes enter-rise \{ from \{ opacity: ([\d.]+); translate: 0 18px; \} \}/);
+  assert.ok(from, 'a "from" only: it ends where the page lays it out');
+  assert.ok(Number(from[1]) >= 0.5, `it starts visible (opacity ${from[1]}): text at 0 is not counted as painted, which delays the largest paint`);
+  assert.match(selectorsWith(printBlock(), 'animation: none !important'), /\*/, 'on paper nothing is mid-entrance');
 });
 
 test('on paper: no header buttons, chat button, quote bar or theme switch; black ink', () => {
