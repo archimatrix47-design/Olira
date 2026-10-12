@@ -10,7 +10,7 @@ export const PAUSE = 150;
 
 /**
  * Is a box (a getBoundingClientRect) on a w x h screen? Across as well as down:
- * the carousel stands its cards side by side at one height. `mx`, `my`: how far
+ * a row of cards can reach past the screen's edge. `mx`, `my`: how far
  * beyond the left and right, and the top and bottom, still counts.
  */
 export function onScreen(r, w, h, mx = 0, my = 0) {
@@ -57,7 +57,7 @@ export function printQueue({
       t = later(() => rest(id), pause);
     },
     /**
-     * Something came into view (a scroll, a filter, the carousel turned): paint it
+     * Something came into view (a scroll, a filter, a details window): paint it
      * once the frame that shows the change is on screen, so the tap that caused it
      * is answered first; not while typing, whose own pause paints it.
      */

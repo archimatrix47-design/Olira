@@ -1,7 +1,7 @@
 ---
-// Home: both businesses side by side, each showing its own products, and the
-// visitor chooses. Nothing else competes with that choice; the footer carries the
-// ways to ask and every other link.
+// Home: who we are in one line, then both businesses side by side, each showing
+// its own products, and the visitor chooses. Below them the company's facts, with
+// links to the proof; the footer carries the ways to ask and every other link.
 import SiteLayout from '../layouts/SiteLayout.astro';
 import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
@@ -9,6 +9,7 @@ import { contact, SITE, packagingProducts, partners, socialLinks } from '../lib/
 import { graph, organizationGraph, ORG_ID, SITE_ID } from '../lib/seo';
 import { cutoutOf, standHTML } from '../scripts/catalogue-panel.js';
 import { thumbSrcset } from '../../lib/thumb-url.js';
+import { COMPANY_LINE, FACILITY_FACTS, SINCE } from '../lib/company';
 
 // A product that still carries its standard photo, as a cut-out at a relative height.
 const stood = (id: string, h: number) => {
@@ -55,12 +56,13 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
 >
   <link slot="head" rel="preload" as="image" href={PRODUCE[0].img} imagesrcset={thumbSrcset(PRODUCE[0].img) || undefined} imagesizes={thumbSrcset(PRODUCE[0].img) ? TILE_SIZES : undefined} fetchpriority="high">
 
-  <SiteHeader groups={[[{ href: '/packaging/', label: 'Packaging' }, { href: '/packaging/#studio', label: 'Mockup studio' }, { href: '/agriculture/', label: 'Agriculture' }, { href: '/packaging/#quote', label: 'Contact' }]]} current="/" />
+  <SiteHeader current="/" />
 
   <main id="main">
     <!-- the first view: both businesses, side by side; the visitor chooses -->
+    <!-- who we are, in one line, before the choice -->
+    <h1 class="home-id"><span class="home-id-name">Olira Agro Industry</span> <span class="home-id-line">{COMPANY_LINE}</span></h1>
     <section class="choose" aria-label="Our two businesses">
-      <h1 class="sr-only">Olira Agro Industry</h1>
       <div class="wrap choose-grid">
         <!-- both doors have the same shape: the words on top, the products below -->
         <article class="door door-agri" aria-labelledby="doorAgri">
@@ -105,6 +107,20 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
       </div>
     </section>
 
+    <!-- the facts behind the company, each one shown in full on the agriculture page -->
+    <section class="proof-strip" aria-labelledby="proofTitle">
+      <div class="wrap">
+        <h2 class="proof-title" id="proofTitle">Since {SINCE}, from our own facility in Burayu</h2>
+        <dl class="proof-facts">
+          {FACILITY_FACTS.map((f) => <div class="proof-fact"><dt>{f.label}</dt><dd class="v">{f.value}</dd><dd class="d">{f.note}</dd></div>)}
+        </dl>
+        <div class="acts center">
+          <a class="act" href="/agriculture/#specTitle">The facility and certificates</a>
+          <a class="act" href="/packaging/#printing">How we print packaging</a>
+        </div>
+      </div>
+    </section>
+
     <!-- the organisations Olira has worked with: logos only, moving slowly right to
          left; hidden until the marketing team has added some (home.js keeps it live) -->
     <section class="partners" aria-labelledby="partnersTitle" data-partners hidden={partners.length === 0}>
@@ -131,5 +147,5 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
 
   <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." />
 
-  <script>import '../scripts/common.js'; import '../scripts/home.js'; import '../scripts/live-print.js'; import '../scripts/motion.js';</script>
+  <script>import '../scripts/common.js'; import '../scripts/home.js'; import '../scripts/live-print.js';</script>
 </SiteLayout>

@@ -1,0 +1,37 @@
+---
+// The product grid, shared by the agriculture range and the packaging catalogue
+// so both show their products the same way: every product at once, and a card
+// opening into its details window. Behaviour is in src/scripts/product-grid.js
+// (mountGrid); cards come from cardHTML there.
+//
+// prefix '' keeps the agriculture page's ids (grid, flowDetail, detName…); any
+// other prefix namespaces them (pkGrid, pkFlowDetail…). The default slot holds the
+// details' actions; the media slot adds layers over the details photo.
+import { cardHTML, EAGER } from '../../scripts/product-grid.js';
+interface Item { id: string; name: string; sub?: string; image?: string | null; cat?: string; cutout?: boolean; note?: string; print?: { cutout: string; quad: number[][]; safeTop?: number } | null }
+// lazy: every card photo waits (the agriculture range is below its hero photo, which must load first)
+interface Props { items: Item[]; label: string; prefix?: string; kind: string; lazy?: boolean }
+const { items, label, prefix = '', kind, lazy = false } = Astro.props;
+const id = (s: string) => (prefix ? prefix + s[0].toUpperCase() + s.slice(1) : s);
+const first = items[0];
+---
+<div class="pgrid-wrap" data-grid={kind} data-lazy={lazy ? '' : undefined}>
+  <ul class="pgrid" id={id('grid')} aria-label={label} set:html={items.map((p, i) => cardHTML(p, { lazy, eager: i < EAGER })).join('')}></ul>
+
+  <dialog class="flow-detail" id={id('flowDetail')} aria-labelledby={id('detName')}>
+    <div class="detail-box" id={id('detailBox')}>
+      <div class="detail-media"><img id={id('detImg')} src={first?.image || '/logo.png'} alt="" width="800" height="1000" decoding="async"><slot name="media" /></div>
+      <div class="detail-body">
+        <button class="round-btn detail-close" id={id('detClose')} type="button" aria-label="Close details">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+        <p class="note det-cat" id={id('detCat')}></p>
+        <h3 class="det-name" id={id('detName')}></h3>
+        <p class="detail-desc" id={id('detDesc')}></p>
+        <dl class="spec-list" id={id('detSpec')}></dl>
+        <ul class="detail-specs" id={id('detSpecs')}></ul>
+        <slot />
+      </div>
+    </div>
+  </dialog>
+</div>

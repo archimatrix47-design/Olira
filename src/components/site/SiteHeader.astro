@@ -1,6 +1,8 @@
 ---
-// The status bar along the top of every public page: logo, two groups of links in
-// the mono voice, the theme switch, and the live packing list. The packaging page
+// The status bar along the top of every public page: logo, the same three links on
+// every page (Agriculture, Packaging, Contact, in that order), the page's own
+// sections after them, the theme switch, and the live packing list. Contact goes to
+// the footer's "Reach us" (call, WhatsApp, email, address), which every page has. The packaging page
 // passes its own button (it opens the drawer in place); every other page gets a
 // link that opens the list on the packaging page, with the count read from this
 // browser: on packaging pages always, elsewhere only once the list holds something.
@@ -10,8 +12,11 @@
 import ThemeButton from './ThemeButton.astro';
 import { BAG_ICON } from './icons';
 interface Link { href: string; label: string }
-interface Props { groups: Link[][]; current?: string }
-const { groups, current } = Astro.props;
+// section: this page's own parts (Range, Studio, Get a quote...); current: the line the page belongs to
+interface Props { section?: Link[]; current?: string }
+const { section = [], current } = Astro.props;
+const PRIMARY: Link[] = [{ href: '/agriculture/', label: 'Agriculture' }, { href: '/packaging/', label: 'Packaging' }, { href: '#reach-us', label: 'Contact' }];
+const groups = section.length ? [PRIMARY, section] : [PRIMARY];
 const own = Astro.slots.has('default');
 const packagingPage = Astro.url.pathname.startsWith('/packaging/');
 ---

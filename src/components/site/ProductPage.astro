@@ -11,7 +11,8 @@ import QuoteBar from './QuoteBar.astro';
 import { thumbUrl } from '../../../lib/thumb-url.js';
 import { standHTML } from '../../scripts/catalogue-panel.js';
 
-export interface Fact { label: string; value: string; note?: string; key?: string } // key: refreshed from the live catalogue (pd-live.js)
+// key: refreshed from the live catalogue (pd-live.js); hero: shown beside the photo; hidden: not set yet
+export interface Fact { label: string; value: string; note?: string; key?: string; hero?: boolean; hidden?: boolean }
 export interface Related { name: string; href: string; image?: string | null; sub?: string; cutout?: boolean }
 interface Props {
   line: 'agri' | 'pack';
@@ -23,6 +24,7 @@ interface Props {
   image?: string | null;
   cutout?: any;                 // packaging: the transparent cut-out with its print area
   facts: Fact[];
+  pending?: string;             // packaging: the facts still to come, as words ("Price and lead time")
   points?: string[];
   related: Related[];
   quoteHref: string;
@@ -33,15 +35,18 @@ interface Props {
 }
 const p = Astro.props;
 const agri = p.line === 'agri';
+const heroFacts = p.facts.some((f) => f.hero) ? p.facts.filter((f) => f.hero) : p.facts.slice(0, 3);
+const pendingText = p.pending ? `${p.pending} ${p.pending.includes(' and ') ? 'are' : 'is'} confirmed in your quote.` : '';
 const lineName = agri ? 'Agriculture' : 'Packaging';
 const linePath = agri ? '/agriculture/' : '/packaging/';
 const lineTitle = agri ? 'Olira Agro' : 'Olira Packaging';
-const nav = agri
-  ? [[{ href: '/agriculture/', label: 'Agriculture' }, { href: '/agriculture/#range', label: 'Range' }, { href: '/packaging/', label: 'Packaging' }, { href: p.quoteHref, label: 'Contact' }]]
-  : [[{ href: '/packaging/', label: 'Packaging' }, { href: '/packaging/#studio', label: 'Mockup studio' }, { href: '/agriculture/', label: 'Agriculture' }, { href: p.quoteHref, label: 'Contact' }]];
+// this product's line: its range, this page's specification, and the quote
+const section = agri
+  ? [{ href: '/agriculture/#range', label: 'Range' }, { href: '#pdSpec', label: 'Specification' }, { href: p.quoteHref, label: 'Get a quote' }]
+  : [{ href: '/packaging/#catalogue-title', label: 'Catalogue' }, { href: '/packaging/#studio', label: 'Mockup studio' }, { href: '#pdSpec', label: 'Specification' }, { href: p.quoteHref, label: 'Get a quote' }];
 ---
 <SiteLayout title={p.title} description={p.metaDescription} ogImage={agri ? '/og-agriculture.jpg' : '/og-packaging.jpg'} ogImageAlt={p.name} ogType="product" jsonLd={p.jsonLd} bodyClass="pd-page">
-  <SiteHeader groups={nav} current={linePath} />
+  <SiteHeader section={section} current={linePath} />
 
   <main id="main">
     <nav class="wrap crumbs" aria-label="Breadcrumb">
@@ -65,8 +70,9 @@ const nav = agri
         <h1 class="pd-title" id="pdTitle">{p.name}</h1>
         {p.description && <p class="sub">{p.description}</p>}
         <dl class="spec-list pd-facts">
-          {p.facts.slice(0, 3).map((f) => <Fragment><dt>{f.label}</dt><dd data-fact={f.key || null}>{f.value}</dd></Fragment>)}
+          {heroFacts.map((f) => <Fragment><dt data-row={f.key || null} hidden={f.hidden}>{f.label}</dt><dd data-fact={f.key || null} data-row={f.key || null} hidden={f.hidden}>{f.value}</dd></Fragment>)}
         </dl>
+        {!agri && <p class="note pd-pending" data-pending-line hidden={!pendingText}>{pendingText}</p>}
         <div class="acts">
           <a class="act fill" href={p.quoteHref}>Request a quote</a>
           {p.studioHref && <a class="act" href={p.studioHref}>Design it in the studio</a>}
@@ -84,8 +90,9 @@ const nav = agri
           </header>
           <dl class="specsheet-rows">
             {p.facts.map((f) => (
-              <div class="spec-row"><dt>{f.label}</dt><dd class="v" data-fact={f.key || null}>{f.value}</dd><dd class="d">{f.note || ''}</dd></div>
+              <div class="spec-row" data-row={f.key || null} hidden={f.hidden}><dt>{f.label}</dt><dd class="v" data-fact={f.key || null}>{f.value}</dd><dd class="d">{f.note || ''}</dd></div>
             ))}
+            {!agri && <div class="spec-row" data-pending-row hidden={!p.pending}><dt>In your quote</dt><dd class="v" data-pending-list>{p.pending}</dd><dd class="d">Confirmed for your size, print and quantity</dd></div>}
           </dl>
           {p.points?.length ? (
             <div class="certs pd-points">
@@ -105,7 +112,7 @@ const nav = agri
           <ul class="pd-cards">
             {p.related.map((r) => (
               <li>
-                <a class="pd-card" href={r.href}>
+                <a class="pd-card" href={r.href} data-vt-photo="card">
                   <span class:list={['pd-card-img', { 'is-cutout': r.cutout, 'is-empty': !r.image }]}>
                     {r.image ? <img src={thumbUrl(r.image, 480)} alt="" width="320" height="400" loading="lazy" decoding="async" /> : <span>{r.name}</span>}
                   </span>
@@ -131,5 +138,5 @@ const nav = agri
   <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." />
 
   <!-- certs.js refreshes the certificates; pd-live.js the packaging prices, minimums and lead time; live-print.js prints the visitor's brand on a packaging cut-out. Each does nothing where its elements are absent. -->
-  <script>import '../../scripts/common.js'; import '../../scripts/certs.js'; import '../../scripts/live-print.js'; import '../../scripts/pd-live.js'; import '../../scripts/motion.js';</script>
+  <script>import '../../scripts/common.js'; import '../../scripts/certs.js'; import '../../scripts/live-print.js'; import '../../scripts/pd-live.js';</script>
 </SiteLayout>

@@ -1,15 +1,16 @@
-// Agriculture page: the range in the shared product carousel (flow.js), the
-// detail panel's purity and minimum order, the "Ask about this product" link,
-// and a fresh render if the admin has changed the products since the build.
+// Agriculture page: the range in the shared product grid (product-grid.js), the
+// details window's purity and minimum order, the "Ask about this product" link,
+// a fresh render if the admin has changed the products since the build, and the
+// home page's product lines (?p=sesame) pointed out when the visitor arrives.
 import { $, h, prefill, getJSON, track } from './common.js';
-import { mountFlow } from './flow.js';
+import { mountGrid } from './product-grid.js';
 import { askedCert, certRequest } from './cert-ask.js';
 
 const toItem = (p) => ({ ...p, sub: p.category, cat: p.category });
 let RAW = JSON.parse($('#productsData').textContent || '[]');
 const PAGES = JSON.parse($('#productPages')?.textContent || '{}'); // products added after the build have no page yet
 
-const flow = mountFlow($('.flow-wrap[data-flow="agri"]'), {
+const grid = mountGrid($('.pgrid-wrap[data-grid="agri"]'), {
   products: RAW.map(toItem),
   onDetail: (p) => {
     const dl = $('#detSpec'); dl.replaceChildren();
@@ -26,8 +27,14 @@ getJSON('/api/products').then((live) => {
   if (!Array.isArray(live) || !live.length) return;
   if (JSON.stringify(live) === JSON.stringify(RAW)) return; // unchanged since the build
   RAW = live;
-  flow.set(live.map(toItem));
+  grid.set(live.map(toItem));
 });
+
+// a product line from the home page (?p=sesame|pulses|spices|coffee, or a product id)
+{
+  const want = (new URLSearchParams(location.search).get('p') || '').toLowerCase();
+  if (want) grid.pick((d) => d.id === want || d.cat === want);
+}
 
 // The enquiry form's product field: a product added since the build is added to
 // it, so the buyer can still pick it.
@@ -53,8 +60,8 @@ function chooseProduct(name) {
 }
 
 $('#detAsk').addEventListener('click', () => {
-  const p = flow.current();
-  flow.close();
+  const p = grid.current();
+  grid.close();
   chooseProduct(p.name);
 });
 

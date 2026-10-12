@@ -22,6 +22,30 @@ document.addEventListener('click', (e) => {
   else if ((a.getAttribute('href') || '').startsWith('mailto:')) track({ event: 'email' });
 });
 
+/* ---------- a product's photo carries over to its own page ----------
+   A link marked data-vt-photo ("Full details" in a details window, a "More from
+   the range" card) names its photo product-photo just before the page changes,
+   and the product page's photo has that name (sheet.css), so the browser moves
+   one into the other (cross-document view transitions; elsewhere, a plain page
+   change). Only one element on a page may hold the name at a time. */
+const VT_PHOTO = 'product-photo';
+export function photoSource(a) {
+  if (a.dataset.vtPhoto === 'detail') return a.closest('.flow-detail')?.querySelector('.detail-media') || null;
+  return a.querySelector('.pd-card-img');
+}
+document.addEventListener('click', (e) => {
+  const a = e.target.closest?.('a[data-vt-photo]');
+  const src = a && photoSource(a);
+  if (!src) return;
+  for (const m of document.querySelectorAll('.pd-media')) m.style.viewTransitionName = 'none';
+  src.style.viewTransitionName = VT_PHOTO;
+});
+// back to this page from the cache: the names go back to how the page was built
+addEventListener('pageshow', (e) => {
+  if (!e.persisted) return;
+  for (const el of document.querySelectorAll('.pd-media, .detail-media, .pd-card-img')) el.style.viewTransitionName = '';
+});
+
 /* ---------- theme ---------- */
 // two switches, one state: the header's (desktop) and the phone menu's
 const root = document.documentElement;

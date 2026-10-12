@@ -9,8 +9,8 @@ import { BAG_ICON } from '../components/site/icons';
 import { thumbUrl, thumbSet } from '../../lib/thumb-url.js';
 import { contact, SITE, packagingProducts, FAMILIES, FLEXO_MAX_COLOURS } from '../lib/site-data';
 import { sizesOf } from '../scripts/mockup/engine.js';
-import { inStudio, flowItem } from '../scripts/catalogue-panel.js';
-import ProductFlow from '../components/site/ProductFlow.astro';
+import { inStudio, flowItem, photoFirst } from '../scripts/catalogue-panel.js';
+import ProductGrid from '../components/site/ProductGrid.astro';
 import Faq from '../components/site/Faq.astro';
 import ProductIndex from '../components/site/ProductIndex.astro';
 import { graph, organizationGraph, breadcrumbs, faqPage, packUrl, packFaq, ORG_ID, PACK_ID } from '../lib/seo';
@@ -48,9 +48,8 @@ const jsonLd = graph(
   breadcrumbs([['Home', '/'], ['Packaging', '/packaging/']]),
   faqPage('/packaging/', faq),
 );
-// the catalogue opens on the first product with a photo, not on a placeholder
-const catalogueItems = packagingProducts.map((p) => flowItem(p, families));
-const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
+// the grid opens on the products with a photo; the rest follow
+const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, families));
 ---
 <SiteLayout
   title="Printed packaging, Olira Packaging"
@@ -62,7 +61,7 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
 >
   {firstBag?.image && <link slot="head" rel="preload" as="image" href={firstBag.image}>}
 
-  <SiteHeader groups={[[{ href: '/packaging/', label: 'Packaging' }, { href: '#studio', label: 'Mockup studio' }, { href: '#printing', label: 'Printing' }, { href: '/agriculture/', label: 'Agriculture' }, { href: '#quote', label: 'Contact' }]]} current="/packaging/">
+  <SiteHeader section={[{ href: '#catalogue-title', label: 'Catalogue' }, { href: '#studio', label: 'Mockup studio' }, { href: '#printing', label: 'Printing' }, { href: '#quote', label: 'Get a quote' }]} current="/packaging/">
     <button class="tab-btn" id="plOpen" type="button" aria-haspopup="dialog" aria-controls="packingList" aria-label="Packing list"><Fragment set:html={BAG_ICON} /><span class="tab-word">Packing list</span> <span class="count" data-zero>0</span></button>
   </SiteHeader>
 
@@ -93,16 +92,16 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
           ))}
         </div>
         <p class="sr-only" id="catalogueStatus" role="status" aria-live="polite"></p>
-        <!-- the catalogue: the same carousel and detail panel as the agriculture range -->
+        <!-- the catalogue: the same grid and details window as the agriculture range -->
         <div id="catalogue" class="catalogue-flow" data-families={JSON.stringify(families)} data-flexo-max={FLEXO_MAX_COLOURS}>
-          <ProductFlow items={catalogueItems} start={catalogueStart} label="Packaging products" kind="pack" prefix="pk">
+          <ProductGrid items={catalogueItems} label="Packaging products" kind="pack" prefix="pk">
             <canvas slot="media" class="flow-print" aria-hidden="true" width="960" height="1200"></canvas>
             <div class="pk-actions">
               <button class="pp-add" type="button" data-id="" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add to packing list</span></button>
               <a class="pp-studio" href="#studio" id="pkStudio">Design it in the studio</a>
-              <a class="pp-studio" href="#catalogue" id="pkPage">Full details</a>
+              <a class="pp-studio" href="#catalogue" id="pkPage" data-vt-photo="detail">Full details</a>
             </div>
-          </ProductFlow>
+          </ProductGrid>
         </div>
         <script type="application/json" id="packagingData" set:html={JSON.stringify(packagingProducts).replace(/</g, '\\u003c')}></script>
         <script type="application/json" id="productPages" set:html={JSON.stringify(pages)}></script>
@@ -113,7 +112,7 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
     <!-- the mockup studio: the visitor's own logo inside a product's print area -->
     <section class="sheet-sec" id="studio" aria-labelledby="studioTitle">
       <div class="container">
-        <div class="sec-title" data-rise>
+        <div class="sec-title">
           <div>
             <span class="kicker">Mockup studio</span>
             <h2 id="studioTitle">Kraft paper bags with your brand on them</h2>
@@ -269,7 +268,7 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
     <!-- flexographic printing, as ink stations on a press -->
     <section class="sheet-sec tone-dark" id="printing" aria-labelledby="printTitle">
       <div class="container">
-        <div class="stations-wrap" data-rise>
+        <div class="stations-wrap">
           <div class="stations-copy">
             <h2 id="printTitle">Flexographic printing.</h2>
             <p class="lede" style="margin-top:18px">Each colour in your print has its own ink station on the press. Choose how many colours each product needs in your packing list, from plain stock to {FLEXO_MAX_COLOURS} colours.</p>
@@ -305,7 +304,7 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
 
     <section class="sheet-sec on-stage" id="quote" aria-labelledby="quoteTitle">
       <div class="container">
-        <div class="contact" data-rise>
+        <div class="contact">
           <div>
             <h2 id="quoteTitle">Request a quote.</h2>
             <p class="lede" style="margin-top:20px">Send the format, size and quantity, with your artwork and the design from the studio if you have them. We usually reply within 24 hours.</p>
@@ -350,5 +349,5 @@ const catalogueStart = Math.max(0, catalogueItems.findIndex((x) => x.image));
   <QuoteBar href="#quote" after=".title-block" until="#quote" />
   <SiteFooter note="Olira Packaging, a product line of Olira Agro Industry, Addis Ababa." />
 
-  <script>import '../scripts/motion.js'; import '../scripts/catalogue.js'; import '../scripts/packing-list.js'; import '../scripts/pack.js'; import '../scripts/stations.js'; import '../scripts/live-print.js';</script>
+  <script>import '../scripts/catalogue.js'; import '../scripts/packing-list.js'; import '../scripts/pack.js'; import '../scripts/stations.js'; import '../scripts/live-print.js';</script>
 </SiteLayout>

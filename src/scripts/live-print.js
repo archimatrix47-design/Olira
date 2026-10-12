@@ -76,17 +76,16 @@ async function paint(c) {
   }
 }
 
-// Only what is on screen is printed: across as well as down (the carousel stands
-// its cards side by side at one height), and not a card the carousel has faded
-// out at the back of the ring or a closed details panel. A little below the
-// screen counts, so a product scrolled to is already printed.
+// Only what is on screen is printed, across as well as down, and not a card in a
+// closed details window. A little below the screen counts, so a product scrolled
+// to is already printed.
 const DOWN = 120;
-const seen = (c) => !c.closest('.is-far, [hidden]') && onScreen(c.getBoundingClientRect(), innerWidth, innerHeight, 0, DOWN);
+const seen = (c) => !c.closest('[hidden]') && onScreen(c.getBoundingClientRect(), innerWidth, innerHeight, 0, DOWN);
 const due = (c) => drawn.get(c) !== wanted(c) && seen(c);
-// the product the visitor is looking at: the open details, else the carousel's front card, else the first on screen
+// the product the visitor is looking at: the open details, else the first card on screen
 const front = () => {
   const list = canvases();
-  return list.find((c) => c.closest('.flow-detail') && seen(c)) || list.find((c) => c.closest('.is-front') && seen(c)) || list.find(seen) || null;
+  return list.find((c) => c.closest('.flow-detail') && seen(c)) || list.find(seen) || null;
 };
 const queue = printQueue({
   front, due, paint,
@@ -97,9 +96,6 @@ const io = 'IntersectionObserver' in window ? new IntersectionObserver((entries)
   if (entries.some((e) => e.isIntersecting)) queue.shown();
 }, { rootMargin: `${DOWN}px 0px` }) : null;
 const watch = () => { canvases().forEach((c) => io?.observe(c)); queue.shown(); };
-// the carousel turned: its new front card now, the cards beside it once they have moved
-const SLIDE = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 520;
-document.addEventListener('flow:moved', () => queue.shown(SLIDE));
 
 function echo() {
   document.querySelectorAll('[data-brand-echo]').forEach((n) => { n.textContent = text(); });

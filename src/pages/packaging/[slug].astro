@@ -4,7 +4,7 @@ import { clipDescription, fitTitle } from '../../lib/meta-text.js';
 import ProductPage from '../../components/site/ProductPage.astro';
 import { packagingProducts, FLEXO_MAX_COLOURS } from '../../lib/site-data';
 import { packSlug, packUrl, graph, organizationGraph, breadcrumbs, ORG_ID, PACK_ID, abs, familyLabel } from '../../lib/seo';
-import { cutoutOf, inStudio, specRows, priceFrom } from '../../scripts/catalogue-panel.js';
+import { cutoutOf, inStudio, specRows, priceFrom, pendingFacts, pendingList } from '../../scripts/catalogue-panel.js';
 
 export function getStaticPaths() {
   return packagingProducts.map((p) => ({ params: { slug: packSlug(p) }, props: { id: p.id } }));
@@ -16,12 +16,15 @@ const cm = (s: any) => (s.w && s.h ? `${[s.w, s.d, s.h].filter(Boolean).join(' x
 
 // the same facts the catalogue shows, with each size spelled out when its measurements are known
 const [sizes, minimum, print, price, ready] = specRows(p, FLEXO_MAX_COLOURS);
-// price, minimum and lead time first: they decide whether to ask at all (the page's hero shows three)
+// price, minimum and lead time first: they decide whether to ask at all. The ones the
+// packaging team has not set yet stay hidden (pd-live.js shows them once set) and one
+// line names them instead, rather than three rows of "confirmed with your quote".
+const pending = pendingFacts(p);
 const facts = [
-  { key: 'price', label: price[0], value: price[1], note: 'For 1,000 units. The quote confirms it for your size, print and quantity' },
-  { key: 'minimum', label: minimum[0], value: minimum[1] },
-  { key: 'ready', label: ready[0], value: ready[1], note: 'From artwork approval' },
-  { key: 'sizes', label: sizes[0], value: sizes[1], note: (p.sizes || []).filter((s: any) => cm(s)).map((s: any) => `${s.label} ${cm(s)}`).join(', ') || 'Made to the size you need' },
+  { key: 'price', label: price[0], value: price[1], note: 'For 1,000 units. The quote confirms it for your size, print and quantity', hero: true, hidden: pending.includes('price') },
+  { key: 'minimum', label: minimum[0], value: minimum[1], hero: true, hidden: pending.includes('minimum') },
+  { key: 'ready', label: ready[0], value: ready[1], note: 'From artwork approval', hero: true, hidden: pending.includes('ready') },
+  { key: 'sizes', label: sizes[0], value: sizes[1], note: (p.sizes || []).filter((s: any) => cm(s)).map((s: any) => `${s.label} ${cm(s)}`).join(', ') || 'Made to the size you need', hero: true },
   { key: 'print', label: print[0], value: print[1], note: 'One ink station per colour, printed in register' },
   { label: 'Group', value: fam },
 ];
@@ -46,7 +49,7 @@ const product = {
   additionalProperty: [
     ...(p.sizes || []).map((s: any) => ({ '@type': 'PropertyValue', name: `Size ${s.label}`, value: cm(s) || s.label })),
     { '@type': 'PropertyValue', name: 'Print', value: print[1] },
-    { '@type': 'PropertyValue', name: 'Minimum order', value: minimum[1] },
+    ...(pending.includes('minimum') ? [] : [{ '@type': 'PropertyValue', name: 'Minimum order', value: minimum[1] }]),
     ...(p.leadTimeDays ? [{ '@type': 'PropertyValue', name: 'Lead time', value: ready[1] }] : []),
     ...(p.specs || []).map((s: string) => ({ '@type': 'PropertyValue', name: 'Key point', value: s })),
   ],
@@ -74,6 +77,7 @@ const jsonLd = graph(organizationGraph(), product, breadcrumbs([['Home', '/'], [
   image={c?.cutout || p.image}
   cutout={c}
   facts={facts}
+  pending={pendingList(pending)}
   points={p.specs}
   related={related}
   quoteHref={`/packaging/?ask=${encodeURIComponent(p.id)}#quote`}

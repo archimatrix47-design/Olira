@@ -5,7 +5,7 @@
 import { SITE, contact, products, packagingProducts, certifications, FLEXO_MAX_COLOURS } from './site-data';
 import { agriUrl, packUrl, familyLabel, agriFaq, packFaq } from './seo';
 import { withStatus } from '../../lib/certificates.js';
-import { specRows, priceFrom, etb } from '../scripts/catalogue-panel.js';
+import { knownRows, priceFrom, etb } from '../scripts/catalogue-panel.js';
 import { cleanSpec, specRowsOf } from '../../lib/agri-spec.js';
 
 const certLines = () => certifications.map((c) => withStatus(c)).filter((c) => c.status !== 'expired').map((c) =>
@@ -55,13 +55,13 @@ export function llmsFull() {
 ${p.description || ''}
 ${(p.specs || []).map((s) => `- ${s}`).join('\n')}`).join('\n\n');
   const pack = packagingProducts.map((p) => {
-    const rows = specRows(p, FLEXO_MAX_COLOURS);
+    const { rows, line } = knownRows(p, FLEXO_MAX_COLOURS);
     const sizes = (p.sizes || []).filter((s) => s.w && s.h).map((s) => `${s.label} ${[s.w, s.d, s.h].filter(Boolean).join(' x ')} cm`);
     return `### ${p.name}
 
 - Page: ${SITE}${packUrl(p)}
 - Group: ${familyLabel[p.family || 'bags'] || 'Packaging'}
-${rows.map(([k, v]) => `- ${k}: ${v}`).join('\n')}${sizes.length ? `\n- Measurements: ${sizes.join('; ')}` : ''}
+${rows.map(([k, v]) => `- ${k}: ${v}`).join('\n')}${line ? `\n- ${line}` : ''}${sizes.length ? `\n- Measurements: ${sizes.join('; ')}` : ''}
 
 ${p.description || ''}
 ${(p.specs || []).map((s) => `- ${s}`).join('\n')}`;

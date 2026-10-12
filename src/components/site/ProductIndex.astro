@@ -1,7 +1,7 @@
 ---
-// Every product as a plain link to its own page, under the carousel: quick to
+// Every product as a plain link to its own page, under the product grid: quick to
 // scan for a buyer who knows what they want, and followable by search engines
-// (the carousel's cards are buttons that open a panel, not links).
+// (the grid's cards are buttons that open a details window, not links).
 interface Group { label: string; items: { name: string; href: string }[] }
 interface Props { groups: Group[]; id: string; title?: string }
 const { groups, id, title = 'Every product' } = Astro.props;

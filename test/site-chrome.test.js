@@ -137,9 +137,8 @@ test('the studio checkbox is 24 px and its whole row is the tap area', () => {
   assert.match(rulesFor(site, '.check.check-row'), /flex: 1 1 auto; min-height: 44px/);
 });
 
-test('in Windows contrast themes the carousel dots and cards keep visible borders', () => {
-  const forced = media(site, '(forced-colors: active) {\n  .flow-dots');
-  assert.match(forced, /\.flow-dots button::before \{ forced-color-adjust: none; background: Canvas; border: 1px solid ButtonText; \}/);
-  assert.match(forced, /\.flow-dots button\[aria-current="true"\]::before \{ background: Highlight; border-color: Highlight; \}/);
-  assert.match(forced, /\.flow-card \{ border: 1px solid ButtonText; \}/);
+test('in Windows contrast themes the product cards keep a visible edge and focus', () => {
+  const forced = media(site, '(forced-colors: active) {\n  .pg-media');
+  assert.match(forced, /\.pg-media \{ border: 1px solid ButtonText; \}/);
+  assert.match(forced, /\.pg-card:focus-visible \.pg-media, \.pg-card\.is-picked \.pg-media \{ outline: 3px solid Highlight;/);
 });

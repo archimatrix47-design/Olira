@@ -3,11 +3,20 @@
 // those facts in place: for packaging the price, minimum and lead time (the
 // catalogue panel does the same through packaging-data.js); for agriculture the
 // purity, minimum and specification sheet. Values are only ever set as text.
-import { specRows } from './catalogue-panel.js';
+import { specRows, pendingFacts, pendingList, pendingLine, QUOTE_FACTS } from './catalogue-panel.js';
 import { SPEC_FIELDS } from '../../lib/agri-spec.js';
 
 const box = document.querySelector('[data-live-product]');
 const set = (key, value) => { for (const dd of document.querySelectorAll(`[data-fact="${key}"]`)) if (dd.textContent !== value) dd.textContent = value; };
+
+/** Packaging: hide the price, minimum and lead time rows not set yet, and name them in one line. */
+export function showPending(pending, doc = document) {
+  for (const key of Object.keys(QUOTE_FACTS)) for (const el of doc.querySelectorAll(`[data-row="${key}"]`)) el.hidden = pending.includes(key);
+  const line = doc.querySelector('[data-pending-line]'), row = doc.querySelector('[data-pending-row]'), list = doc.querySelector('[data-pending-list]');
+  if (line) { line.textContent = pendingLine(pending); line.hidden = !pending.length; }
+  if (list) list.textContent = pendingList(pending);
+  if (row) row.hidden = !pending.length;
+}
 
 if (box && box.dataset.line === 'pack') {
   const LABEL = { sizes: 'Sizes', minimum: 'Minimum order', print: 'Print', price: 'Price', ready: 'Ready in' };
@@ -16,6 +25,8 @@ if (box && box.dataset.line === 'pack') {
     if (!p) return;
     const rows = Object.fromEntries(specRows(p, Number(box.dataset.flexoMax) || 4));
     for (const [key, label] of Object.entries(LABEL)) if (rows[label]) set(key, rows[label]);
+    // a fact the team has set since the build is shown; the ones still to come stay in the single line
+    showPending(pendingFacts(p));
   }).catch(() => {});
 } else if (box) {
   fetch('/api/products').then((r) => (r.ok ? r.json() : null)).then((list) => {
