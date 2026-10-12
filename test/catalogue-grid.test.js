@@ -102,3 +102,12 @@ test('a product photo carries over to its own page, from one named source at a t
   assert.match(read('src/pages/agriculture.astro'), /id="detPage" href="#range" data-vt-photo="detail"/);
   assert.match(read('src/components/site/ProductPage.astro'), /<a class="pd-card" href=\{r\.href\} data-vt-photo="card">/);
 });
+
+test('the details window never shows the previous product: a fresh photo, drawn from the card at once', () => {
+  const grid = read('src/scripts/product-grid.js');
+  assert.match(grid, /const img = old\.cloneNode\(false\);/, 'a new image element each time (one element keeps its old picture until a new file loads)');
+  assert.match(grid, /quick\.getContext\('2d'\)\.drawImage\(seen, 0, 0\);/, 'the card\'s loaded photo is drawn at once');
+  assert.match(grid, /img\.addEventListener\('load', \(\) => \{ quick\.hidden = true; \}, \{ once: true \}\);/, 'and steps aside when the window\'s own image has loaded');
+  assert.match(read('src/components/site/ProductGrid.astro'), /<img id=\{id\('detImg'\)\} alt="" width="800" height="1000" decoding="async" hidden>/, 'a closed window loads no photo');
+  assert.match(read('src/scripts/catalogue.js'), /canvas\.is-printed`\);\n {4}if \(painted\?\.width\) \{ c\.width = painted\.width; c\.height = painted\.height; c\.getContext\('2d'\)\.drawImage\(painted, 0, 0\); \}/, 'packaging: the card\'s print shows at once too');
+});

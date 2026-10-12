@@ -144,9 +144,6 @@
 .lineup .stand { width: 100%; height: auto; filter: drop-shadow(0 18px 18px rgba(60,40,10,.16)); }
 
 /* ---------- home: who we are, the two doors, the facts ---------- */
-/* the page's heading, in one quiet line above the doors: the company and where it is */
-.home-id { --id-h: 44px; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 2px 10px; min-height: var(--id-h); margin: 0; padding: 11px var(--gutter, 16px); text-align: center; font: 400 .9375rem/1.45 var(--font-sans); letter-spacing: 0; color: var(--ink-2); }
-.home-id-name { font-weight: 600; color: var(--ink); }
 .proof-strip { padding-block: clamp(40px, 5vw, 72px) clamp(28px, 3vw, 40px); }
 .proof-title { text-align: center; font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2.25rem); line-height: 1.15; letter-spacing: -.02em; text-wrap: balance; }
 .proof-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: clamp(24px, 3vw, 36px) 0 clamp(18px, 2vw, 26px); border-top: 1px solid var(--line); }
@@ -199,7 +196,7 @@
   .door-pack .lineup { padding-top: 12px; }
 }
 /* short laptop screens (720 px and less): the doors' words and tiles tighten so both
-   doors still end at the bottom of the first screen, under the company line */
+   doors still end at the bottom of the first screen */
 @media (min-width: 861px) and (max-height: 780px) {
   .door-copy { padding-block: 28px 20px; }
   .door .acts { margin-top: 16px; }
@@ -224,7 +221,7 @@
 /* a transparent product image stands whole on the stage colour, like the shipped
    cut-outs; image and print canvas share the same box, so the print lines up */
 .detail-media.is-cutout { background: var(--stage); }
-.detail-media.is-cutout img, .detail-media.is-cutout .flow-print { box-sizing: border-box; object-fit: contain; object-position: 50% 100%; padding: 10% 10% 8%; }
+.detail-media.is-cutout img, .detail-media.is-cutout .flow-print, .detail-media.is-cutout .det-quick { box-sizing: border-box; object-fit: contain; object-position: 50% 100%; padding: 10% 10% 8%; }
 .detail-media .flow-print:not([data-print]) { display: none; }
 .pk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-top: 8px; }
 .pk-actions .pp-add { min-height: 44px; padding-inline: 20px; font-size: .9375rem; }
@@ -555,7 +552,7 @@ main:has(> .choose) + .sheet-foot { margin-top: 12px; }
 /* the two business panels: full bleed, edge to edge, meeting with no gap (and no gap above the footer) */
 .choose { padding: 0; }
 .choose .choose-grid { gap: 0; max-width: none; padding-inline: 0; }
-.choose .door { min-height: calc(100svh - var(--bar-h) - 44px); } /* the company line above takes 44px */
+.choose .door { min-height: calc(100svh - var(--bar-h)); }
 @media (max-width: 860px) { .choose .door { min-height: 0; } } /* stacked: each panel as tall as its content */
 main:has(> .choose) + .sheet-foot { margin-top: 0; }
 /* the panels sit above the footer: a soft shadow falls onto it, so the packaging

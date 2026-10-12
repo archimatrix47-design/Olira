@@ -1,7 +1,7 @@
 ---
-// Home: who we are in one line, then both businesses side by side, each showing
-// its own products, and the visitor chooses. Below them the company's facts, with
-// links to the proof; the footer carries the ways to ask and every other link.
+// Home: both businesses side by side, each showing its own products, and the
+// visitor chooses. Below them the company's facts, with links to the proof; the
+// footer carries the ways to ask and every other link.
 import SiteLayout from '../layouts/SiteLayout.astro';
 import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
@@ -9,7 +9,7 @@ import { contact, SITE, packagingProducts, partners, socialLinks } from '../lib/
 import { graph, organizationGraph, ORG_ID, SITE_ID } from '../lib/seo';
 import { cutoutOf, standHTML } from '../scripts/catalogue-panel.js';
 import { thumbSrcset } from '../../lib/thumb-url.js';
-import { COMPANY_LINE, FACILITY_FACTS, SINCE } from '../lib/company';
+import { FACILITY_FACTS, SINCE } from '../lib/company';
 
 // A product that still carries its standard photo, as a cut-out at a relative height.
 const stood = (id: string, h: number) => {
@@ -60,9 +60,8 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
 
   <main id="main">
     <!-- the first view: both businesses, side by side; the visitor chooses -->
-    <!-- who we are, in one line, before the choice -->
-    <h1 class="home-id"><span class="home-id-name">Olira Agro Industry</span> <span class="home-id-line">{COMPANY_LINE}</span></h1>
     <section class="choose" aria-label="Our two businesses">
+      <h1 class="sr-only">Olira Agro Industry</h1>
       <div class="wrap choose-grid">
         <!-- both doors have the same shape: the words on top, the products below -->
         <article class="door door-agri" aria-labelledby="doorAgri">
