@@ -34,6 +34,17 @@ function setCounts() {
   fb.hidden = !due; fb.textContent = String(due || ''); fb.setAttribute('aria-label', `${due} follow-ups due`);
 }
 
+/** How many filters differ from the defaults, shown on the phone's Filter button. */
+export function countFilters({ sort = 'newest', product = '', line = 'all', owner = '' } = {}) {
+  return (sort !== 'newest') + !!product + (line !== 'all') + !!owner;
+}
+function filtersOn() {
+  const n = countFilters({ sort: $('#inboxSort').value, product: $('#inboxProduct').value, line: $('#inboxLine')?.value || 'all', owner: $('#inboxOwner')?.value || '' });
+  const b = $('#inboxFilterOn');
+  b.textContent = String(n); b.hidden = !n;
+  $('#inboxFilterBtn').setAttribute('aria-label', n ? `Filter, ${n} on` : 'Filter');
+}
+
 export async function show({ params }) {
   if (!bound) {
     bound = true;
@@ -42,6 +53,13 @@ export async function show({ params }) {
     $('#inboxProduct').addEventListener('change', () => { renderList(); writeUrl(); });
     let t; $('#inboxSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { renderList(); writeUrl(); }, 200); });
     $('#inboxRefresh').addEventListener('click', () => load(true));
+    // phones: the filters open and close behind one button
+    $('#inboxFilterBtn').addEventListener('click', () => {
+      const box = $('#inboxFilters'), open = !box.classList.contains('is-open');
+      box.classList.toggle('is-open', open);
+      $('#inboxFilterBtn').setAttribute('aria-expanded', String(open));
+    });
+    $('#inboxFilters').addEventListener('change', filtersOn);
     if (boss()) {
       ['#inboxLine', '#inboxOwner'].forEach((sel) => $(sel).addEventListener('change', () => { renderList(); writeUrl(); }));
       $('#inboxCsv').addEventListener('click', csv);
@@ -66,6 +84,7 @@ export async function show({ params }) {
     $('#inboxOwner').value = owner && $(`#inboxOwner option[value="${CSS.escape(owner)}"]`) ? owner : '';
   }
   await load();
+  filtersOn();
   const want = params.get('lead');
   if (want && all.some((l) => l.id === want)) {
     const l = all.find((x) => x.id === want);

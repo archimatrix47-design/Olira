@@ -215,6 +215,17 @@ form[data-dirty] .a-dirty { display: inline-flex; }
 .t-toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 380px; }
 .t-toolbar-row .input { width: auto; }
 .t-toolbar-row .grow { flex: 1 1 200px; }
+/* the filters: in the row on wider screens; on a phone behind one "Filter" button */
+.t-filters { display: contents; }
+.t-filter-btn { display: none; }
+.t-filter-on { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding-inline: 5px; border-radius: 999px; background: var(--accent); color: var(--on-accent, #fff); font-size: .75rem; font-weight: 600; }
+.t-filter-on[hidden] { display: none; }
+@media (max-width: 760px) {
+  .t-filter-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; flex: none; }
+  .t-filters { display: none; }
+  .t-filters.is-open { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; flex: 1 0 100%; }
+  .t-filters.is-open .input { width: 100%; }
+}
 .t-toolbar .a-check { font-size: .875rem; }
 .t-toolbar > .a-note { flex-basis: 100%; margin: -2px 2px 0; font-size: .8125rem; }
 @media (max-width: 620px) { .t-toolbar .a-seg { flex: 1 1 100%; } }
