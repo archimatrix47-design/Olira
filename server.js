@@ -19,6 +19,7 @@ import { registerCertificates, certificateAttachment } from './lib/certificates.
 import { registerSearchVerification } from './lib/search-verification.js';
 import { registerThumbs } from './lib/thumbs.js';
 import { registerAdminTools } from './lib/admin-tools.js';
+import { servePrecompressed } from './lib/precompressed.js';
 import { registerTargets } from './lib/targets.js';
 import { cleanSpec } from './lib/agri-spec.js';
 import { cleanAgriTerms, GENERIC_PRODUCT } from './lib/enquiry.js';
@@ -2157,6 +2158,8 @@ app.use((req, res, next) => {
 // persistent UPLOADS_DIR is served correctly.
 app.use('/uploads', express.static(uploadsDir));
 
+// the build's compressed copies first (lib/precompressed.js), then the files themselves
+app.use(servePrecompressed(distPath));
 app.use(express.static(distPath));
 
 // Fallback for unmatched routes. express.static above already served every
