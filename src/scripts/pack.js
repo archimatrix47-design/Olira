@@ -4,7 +4,8 @@
 // with the packaging team's workspace. Products without a photo yet are in the
 // catalogue and the packing list, and join the studio as soon as the admin adds one.
 import { $, $$, h, prefill, track, formHooks } from './common.js';
-import { INKS, defaultDesign, prepare, render, toArtboard, clampDesign, snapDesign, drawGuides, exportImage, specLine, saveBlob, usableInStudio, onThemeChange, sizesOf, sizeOf, singular, artworkAdvice } from './mockup/engine.js';
+import { INKS, CANVAS_W, defaultDesign, prepare, render, toArtboard, clampDesign, snapDesign, drawGuides, exportImage, specLine, saveBlob, usableInStudio, onThemeChange, sizesOf, sizeOf, singular, artworkAdvice } from './mockup/engine.js';
+import { onScreen, quickThenFull, fittedWidth } from './print-queue.js';
 import { getProducts, onProducts } from './packaging-data.js';
 import { checkLogo, removeBox } from './mockup/logo-check.js';
 import { thumbUrl, thumbSet } from '../../lib/thumb-url.js';
@@ -46,13 +47,15 @@ pickFromUrl();
 const tpl = () => templates.find((t) => t.id === state.template) || templates[0];
 
 /* ---------------- drawing ---------------- */
-let current = null, pending = 0;
+let current = null, pending = 0; // current: the prepared product on the canvas now (pointer positions map through it)
 let guides = null; // { x, y } while a drag is snapped to the centre lines
-async function draw() {
+// `quick`: at the size the preview is shown (CSS pixels), for each key and drag
+// step; the full 1200 px picture follows once the visitor pauses (preview).
+async function draw({ quick = false } = {}) {
   const t = tpl();
   if (!t) { $('#stageInfo').textContent = 'No bags are set up yet.'; return; }
   const id = ++pending;
-  const B = await prepare(t);
+  const B = await prepare(t, quick ? { width: shownWidth() } : {});
   if (id !== pending) return;
   current = B;
   render(ctx, B, state);
@@ -77,6 +80,22 @@ function backdrop(B) {
   return B.edge;
 }
 const accent = () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#186078';
+
+// The picture's width on screen: the canvas fills its frame and fits the photo inside it.
+function shownWidth() {
+  const r = canvas.getBoundingClientRect();
+  return fittedWidth(r.width, r.height, current ? current.cw / current.ch : canvas.width / canvas.height, CANVAS_W);
+}
+// While the visitor types or drags: a quick picture on the next frame when the
+// studio is in view, and the full one once they pause (or scroll it into view).
+const preview = quickThenFull({
+  quick: () => draw({ quick: true }),
+  full: () => draw(),
+  inView: () => onScreen(canvas.getBoundingClientRect(), innerWidth, innerHeight),
+});
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) preview.seen(); }).observe(canvas);
+}
 
 const live = $('#studioStatus');
 let liveTimer = 0;
@@ -154,9 +173,9 @@ for (const name of ['ink']) {
     draw(); announce(`Preview updated. ${specLine(tpl(), state)}.`); noteChange();
   }));
 }
-$('#text1').addEventListener('input', (e) => { state.text1 = e.target.value; draw(); noteChange(); });
-$('#text2').addEventListener('input', (e) => { state.text2 = e.target.value; draw(); });
-$('#scale').addEventListener('input', (e) => { state.scale = +e.target.value / 100; e.target.setAttribute('aria-valuetext', `${e.target.value} percent`); draw(); });
+$('#text1').addEventListener('input', (e) => { state.text1 = e.target.value; preview.changed(); noteChange(); });
+$('#text2').addEventListener('input', (e) => { state.text2 = e.target.value; preview.changed(); });
+$('#scale').addEventListener('input', (e) => { state.scale = +e.target.value / 100; e.target.setAttribute('aria-valuetext', `${e.target.value} percent`); preview.changed(); });
 $('#scale').addEventListener('change', (e) => announce(`Design size ${e.target.value}%.`));
 $('#oneInk').addEventListener('change', (e) => { state.oneInk = e.target.checked; draw(); advise(); announce(e.target.checked ? 'Logo printed in the ink colour.' : 'Logo printed in its own colours.'); });
 
@@ -324,13 +343,14 @@ canvas.addEventListener('pointermove', (e) => {
   // a short tick on phones as the design settles, once per line
   if (e.pointerType === 'touch' && ((s.x && !guides?.x) || (s.y && !guides?.y))) navigator.vibrate?.(8);
   guides = { x: s.x, y: s.y };
-  state.dx = s.dx; state.dy = s.dy; clampDesign(current, state); draw();
+  state.dx = s.dx; state.dy = s.dy; clampDesign(current, state);
+  preview.step();
 });
 const endDrag = () => {
   if (!drag) return;
   const centred = guides && guides.x && guides.y;
   drag = null; guides = null; canvas.classList.remove('is-dragging');
-  draw();
+  preview.now();
   announce(centred ? 'Design centred on the bag.' : 'Design moved.');
 };
 canvas.addEventListener('pointerup', endDrag);
@@ -352,7 +372,8 @@ const fileBase = () => `olira-${(tpl()?.handle || tpl()?.id || 'bag').replace(/[
 $('#download').addEventListener('click', async () => {
   if (!current) return;
   try {
-    saveBlob(await exportImage(current, state, { type: 'png' }), `${fileBase()}.png`);
+    // always the full 1200 px picture, even straight after typing (the preview may be the quick one)
+    saveBlob(await exportImage(await prepare(tpl()), state, { type: 'png' }), `${fileBase()}.png`);
     announce('Mockup image downloaded.');
     track({ event: 'studio_download' });
   } catch (e) { announce(e.message); }
@@ -377,7 +398,7 @@ formHooks.design = async () => {
     // only the files the chosen design uses
     logo: state.mode === 'brand' ? state.logoFile : null,
     artwork: state.mode === 'artwork' ? state.artworkFile : null,
-    mockup: await exportImage(current, state, { type: 'png', scale: 0.8 }),
+    mockup: await exportImage(await prepare(t), state, { type: 'png', scale: 0.8 }),
   };
 };
 
