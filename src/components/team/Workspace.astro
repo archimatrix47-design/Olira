@@ -119,6 +119,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
       <div class="t-inbox-head">
         <h1 id="h-inbox">{manager ? 'Enquiries' : 'Inbox'}</h1>
         <ul class="t-summary" id="inboxKpis" aria-label={manager ? 'Numbers for both lines' : 'Your numbers'}></ul>
+        <p class="t-phone-line" id="inboxGist"></p>
         <div class="row" style="--gap:6px">
           {manager && <button class="btn btn-ghost btn-sm" type="button" id="inboxCsv">Download CSV</button>}
           <button class="btn btn-ghost btn-sm" type="button" id="inboxRefresh">Refresh</button>

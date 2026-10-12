@@ -89,6 +89,20 @@ export function scoreOf(i) {
   return { score, band, checks: checks.map(([pts, ok, label, gap]) => ({ pts, ok, label, gap })), details: d };
 }
 export const BAND_LABEL = { strong: 'Strong lead', fair: 'Fair lead', thin: 'Thin lead' };
+/** The score as staff read it, with its key: "Score 90", the reasons, and what the bands mean. */
+export const scoreLabel = (sc) => `Score ${sc.score}`;
+export const scoreReasons = (sc) => sc.checks.map((c) => `${c.ok ? `+${c.pts}` : '0'} ${c.label}`);
+export const BAND_KEY = 'Out of 100: strong from 70, fair from 40, thin below 40.';
+
+/**
+ * The enquiry a wide screen opens first instead of an empty pane: the oldest of
+ * those in view still waiting to be accepted (or handed out), or null.
+ */
+export function oldestWaiting(list, waiting) {
+  let best = null;
+  for (const l of list) if (waiting(l) && (!best || Date.parse(l.createdAt) < Date.parse(best.createdAt))) best = l;
+  return best?.id ?? null;
+}
 
 /** Hours from arrival to the first stage change, or null when not recorded. */
 export function firstResponseHours(i) {

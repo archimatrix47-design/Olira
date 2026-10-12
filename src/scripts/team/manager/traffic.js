@@ -44,7 +44,7 @@ function renderKpis(a) {
     kpiCard({ label: 'Page views', value: int(t.views), delta: delta(t.views, p.views), spark: a.series.map((d) => d.views) }),
     kpiCard({ label: 'Visitors', value: int(t.uniques), delta: delta(t.uniques, p.uniques), spark: a.series.map((d) => d.uniques), context: 'Counted once per day each' }),
     kpiCard({ label: 'Pages per visitor', value: t.viewsPerVisitor == null ? NO_DATA : String(t.viewsPerVisitor), delta: t.viewsPerVisitor == null || p.viewsPerVisitor == null ? null : delta(t.viewsPerVisitor, p.viewsPerVisitor), context: 'Typical sites see 1.5 to 3' }),
-    kpiCard({ label: 'Average time on a page', value: duration(t.avgSeconds), delta: t.avgSeconds == null || p.avgSeconds == null ? null : delta(t.avgSeconds, p.avgSeconds), context: 'Only while the page is visible' }),
+    kpiCard({ label: 'Average time on a page', value: duration(t.avgSeconds), delta: t.avgSeconds == null || p.avgSeconds == null ? null : delta(t.avgSeconds, p.avgSeconds, { unit: duration }), context: 'Only while the page is visible' }),
     kpiCard({ label: 'Read to the end', value: leaves ? pct((deepAll / leaves) * 100, 0) : NO_DATA, context: 'Scrolled at least three quarters of the page' }),
   );
 }

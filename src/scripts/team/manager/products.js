@@ -4,7 +4,7 @@
 import { $, h, toast } from '../../admin/api.js';
 import * as store from '../../admin/store.js';
 import { sparkline, deltaChip, empty } from '../../admin/charts.js';
-import { int, decimal, delta, NO_DATA } from '../../admin/format.js';
+import { int, decimal, delta, per100, NO_DATA } from '../../admin/format.js';
 import { inPeriod } from '../../admin/leads.js';
 import { agriCompleteness, packCompleteness } from '../../admin/completeness.js';
 import { priceFrom, etb } from '../../catalogue-panel.js';
@@ -54,7 +54,7 @@ function renderAgri(a, items) {
         h('th', { scope: 'row' }, p.name, ...flags),
         h('td', { class: 'num' }, int(s.clicks), deltaChip(delta(s.clicks, s.prevClicks), true)),
         h('td', { class: 'num' }, int(s.inquiries)),
-        h('td', { class: 'num' }, s.clicks ? decimal((s.inquiries / s.clicks) * 100) : NO_DATA),
+        h('td', { class: 'num' }, s.clicks ? per100((s.inquiries / s.clicks) * 100, 'Opens') : NO_DATA),
         h('td', {}, s.daily?.some(Boolean) ? sparkline(s.daily, { width: 110, height: 28, label: `${p.name} opened per day` }) : h('span', { class: 'a-note' }, 'No opens')),
         h('td', {}, meter(c.score, c.missing)));
     })));

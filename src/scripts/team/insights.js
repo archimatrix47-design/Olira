@@ -6,7 +6,7 @@ import { $, h, api, toast } from '../admin/api.js';
 import * as store from '../admin/store.js';
 import { kpiCard } from '../admin/widgets.js';
 import { trendChart, tableFor, sparkline, barList, deltaChip, empty } from '../admin/charts.js';
-import { int, decimal, delta, hours, duration, pct, shortDate, countryName, CHANNEL_NAMES, NO_DATA } from '../admin/format.js';
+import { int, decimal, delta, hours, duration, pct, per100, believable, shortDate, countryName, CHANNEL_NAMES, NO_DATA } from '../admin/format.js';
 import { inPeriod, firstResponseHours, median } from '../admin/leads.js';
 import { leads, session } from './session.js';
 import { renderTargets } from './targets.js';
@@ -54,8 +54,8 @@ function renderKpis(a, cur, prev) {
   $('#insKpis').replaceChildren(
     kpiCard({ label: 'Views of your pages', value: int(a.views), delta: delta(a.views, a.prevViews), spark: a.series.map((d) => d.views), context: `${int(a.pages.length)} pages viewed` }),
     kpiCard({ label: 'Enquiries', value: int(cur.length), delta: delta(cur.length, prev.length), context: 'Received in this period' }),
-    kpiCard({ label: 'Enquiries per 100 views', value: rate == null ? NO_DATA : decimal(rate), delta: rate == null || prevRate == null ? null : delta(rate, prevRate, { points: true }), context: 'How well your pages turn into enquiries' }),
-    kpiCard({ label: 'First response (median)', value: resp == null ? NO_DATA : hours(resp), delta: resp == null || prevResp == null ? null : delta(resp, prevResp, { higherIsBetter: false }), context: 'From arrival to the first step' }),
+    kpiCard({ label: 'Enquiries per 100 views', value: per100(rate, 'Views'), delta: believable(rate) && believable(prevRate) ? delta(rate, prevRate, { points: true }) : null, context: rate > 100 ? 'More enquiries than counted views: some visits were not tracked, so the rate cannot be read' : 'How well your pages turn into enquiries' }),
+    kpiCard({ label: 'First response (median)', value: resp == null ? NO_DATA : hours(resp), delta: resp == null || prevResp == null ? null : delta(resp, prevResp, { higherIsBetter: false, unit: hours }), context: 'From arrival to the first step' }),
     kpiCard({ label: 'Won', value: int(won.length), delta: delta(won.length, prevWon.length), context: valueOf(won) || 'No quote value recorded' }),
   );
 }
@@ -102,7 +102,7 @@ function renderProducts(a) {
         h('th', { scope: 'row' }, p.name, flag),
         h('td', { class: 'num' }, int(p.opens), deltaChip(delta(p.opens, p.prevOpens), true)),
         h('td', { class: 'num' }, int(p.enquiries)),
-        h('td', { class: 'num' }, per == null ? NO_DATA : decimal(per)),
+        h('td', { class: 'num' }, per == null ? NO_DATA : per100(per, 'Opens')),
         h('td', {}, p.daily.some(Boolean) ? sparkline(p.daily, { width: 110, height: 28, label: `${p.name} opened per day` }) : h('span', { class: 'a-note' }, 'No opens')));
     }))));
 }
