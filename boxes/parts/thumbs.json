@@ -1,0 +1,19 @@
+{
+  "id": "thumbs",
+  "name": "Small photos",
+  "does": "Small copies of catalogue photos, made once and kept.",
+  "kind": "catalogue",
+  "plugged": true,
+  "files": [
+    "lib/thumbs.js",
+    "lib/thumb-url.js"
+  ],
+  "tests": [
+    "test/thumbs.test.js"
+  ],
+  "uses": [
+    "storage"
+  ],
+  "data": [],
+  "reads": []
+}

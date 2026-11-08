@@ -1,0 +1,21 @@
+---
+// Admin screen: activity. Filled in by scripts/admin/activity.js.
+---
+<section class="a-view" data-view="activity" aria-labelledby="h-activity" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-activity">Activity</h1>
+      <p>Who signed in, failed sign-ins and lockouts, and every change to the website's settings and catalogues, newest first. Enquiry work stays in the workspaces.</p>
+    </div>
+  </div>
+  <div class="a-card t-toolbar">
+    <div class="a-seg" role="radiogroup" aria-label="Show">
+      <label><input type="radio" name="activityKind" value="" checked><span>Everything</span></label>
+      <label><input type="radio" name="activityKind" value="problem"><span>Problems</span></label>
+      <label><input type="radio" name="activityKind" value="signin"><span>Sign-ins</span></label>
+      <label><input type="radio" name="activityKind" value="change"><span>Changes</span></label>
+    </div>
+    <p class="sr-only" id="activitySummary" role="status" aria-live="polite"></p>
+  </div>
+  <div class="a-card"><ol class="a-activity" id="activityList"><li class="v-skeleton"></li></ol></div>
+</section>

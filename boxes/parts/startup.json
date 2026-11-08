@@ -1,0 +1,24 @@
+{
+  "id": "startup",
+  "name": "Start-up",
+  "does": "What happens once when the server really starts: a masked settings summary, safety checks, listening.",
+  "kind": "foundation",
+  "plugged": true,
+  "files": [
+    "lib/startup.js"
+  ],
+  "tests": [
+    "test/hosting.test.js"
+  ],
+  "uses": [
+    "admin-sign-in",
+    "certificates",
+    "email",
+    "storage"
+  ],
+  "data": [],
+  "reads": [],
+  "settings": [
+    "PORT"
+  ]
+}

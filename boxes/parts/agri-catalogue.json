@@ -1,0 +1,39 @@
+{
+  "id": "agri-catalogue",
+  "name": "Agriculture catalogue",
+  "does": "The agriculture products: the public pages, the team editing them, photos and specifications.",
+  "kind": "catalogue",
+  "plugged": true,
+  "files": [
+    "lib/agri-products.js",
+    "lib/agri-spec.js",
+    "src/pages/agriculture.astro",
+    "src/pages/agriculture/[slug].astro",
+    "src/scripts/agri.js",
+    "src/scripts/team/agri-products.js",
+    "src/components/team/views/AgriProducts.astro"
+  ],
+  "tests": [
+    "test/agri-spec.test.js"
+  ],
+  "uses": [
+    "certificates",
+    "contact",
+    "enquiries",
+    "facts-spreadsheet",
+    "image-upload",
+    "manager-reports",
+    "product-pages",
+    "seo",
+    "site-data",
+    "site-shell",
+    "staff-accounts",
+    "staff-ui",
+    "storage",
+    "thumbs"
+  ],
+  "data": [
+    "products.json"
+  ],
+  "reads": []
+}

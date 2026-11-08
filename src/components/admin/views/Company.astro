@@ -1,0 +1,46 @@
+---
+// Admin screen: company. Filled in by scripts/admin/company.js.
+---
+<section class="a-view" data-view="company" aria-labelledby="h-company" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-company">Company details</h1>
+      <p>Phone numbers, email and addresses shown on every page of the website and used by the enquiry forms.</p>
+    </div>
+  </div>
+  <form class="a-form a-settings" id="companyForm" novalidate>
+    <div class="a-card a-group">
+      <h2>Phone and email</h2>
+        <div class="a-field">
+          <label for="cPhones">Phone numbers</label>
+          <textarea class="input" id="cPhones" name="phones" aria-describedby="cPhonesHint" style="min-height:96px"></textarea>
+          <p class="hint" id="cPhonesHint">One per line. The first is the main sales number, also used for WhatsApp unless the marketing teams set a WhatsApp link in their Contact links. The second is shown as the office line.</p>
+        </div>
+        <div class="a-field">
+          <label for="cEmails">Email addresses</label>
+          <textarea class="input" id="cEmails" name="emails" aria-describedby="cEmailsHint" style="min-height:96px"></textarea>
+          <p class="hint" id="cEmailsHint">One per line. The first is shown on the website.</p>
+        </div>
+    </div>
+    <div class="a-card a-group">
+      <h2>Head office address</h2>
+        <div class="a-field"><label for="aLine2">Building and room</label><input class="input" id="aLine2" name="address.line2" placeholder="Soreti Building, 2nd Floor, Room 214"></div>
+        <div class="a-field"><label for="aLine1">Area</label><input class="input" id="aLine1" name="address.line1" placeholder="Lemi Kura Subcity, Woreda 08"></div>
+        <div class="a-field"><label for="aPo">P.O. Box</label><input class="input" id="aPo" name="address.poBox" placeholder="P.O. Box 46325"></div>
+        <div class="a-field"><label for="aCity">City</label><input class="input" id="aCity" name="address.city" placeholder="Addis Ababa"></div>
+        <div class="a-field"><label for="aCountry">Country</label><input class="input" id="aCountry" name="address.country" placeholder="Ethiopia"></div>
+        <div class="a-field"><label for="oName">Short office name</label><input class="input" id="oName" name="office.name" placeholder="Soreti Building"></div>
+        <div class="a-field"><label for="oCity">Short office area</label><input class="input" id="oCity" name="office.city" placeholder="Lemi Kura, Addis Ababa"></div>
+      <p class="a-note">The short name and area appear together in the home page footer.</p>
+    </div>
+    <div class="a-card a-group">
+      <h2>Processing facility</h2>
+        <div class="a-field"><label for="fName">Name</label><input class="input" id="fName" name="factory.name" placeholder="Burayu"></div>
+        <div class="a-field"><label for="fCity">Location</label><input class="input" id="fCity" name="factory.city" placeholder="15 km West of Addis Ababa"></div>
+        <div class="a-field"><label for="fLat">Latitude</label><input class="input" id="fLat" name="factory.lat" inputmode="decimal" placeholder="9.0366"></div>
+        <div class="a-field"><label for="fLng">Longitude</label><input class="input" id="fLng" name="factory.lng" inputmode="decimal" placeholder="38.6364"></div>
+      <p class="a-note">The coordinates are printed on the home page. New coordinates appear after the next deploy; phone, email and addresses update straight away.</p>
+    </div>
+    <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save company details</button></div>
+  </form>
+</section>

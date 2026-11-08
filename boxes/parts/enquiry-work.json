@@ -1,0 +1,46 @@
+{
+  "id": "enquiry-work",
+  "name": "Working enquiries",
+  "does": "The inboxes, pipeline, replies, quotes, buyers and files, for the teams and the manager.",
+  "kind": "sales",
+  "plugged": true,
+  "files": [
+    "lib/workspace.js",
+    "lib/lead-rules.js",
+    "src/scripts/team/inbox.js",
+    "src/scripts/team/lists.js",
+    "src/scripts/team/compose.js",
+    "src/scripts/team/quote.js",
+    "src/scripts/team/buyers.js",
+    "src/scripts/team/buyer-groups.js",
+    "src/scripts/team/manager/pipeline.js",
+    "src/scripts/admin/stage-control.js",
+    "src/components/team/views/Inbox.astro",
+    "src/components/team/views/Pipeline.astro",
+    "src/components/team/views/Followups.astro",
+    "src/components/team/views/Buyers.astro",
+    "src/components/team/views/Quotes.astro"
+  ],
+  "tests": [
+    "test/workspace.test.js",
+    "test/buyers.test.js"
+  ],
+  "uses": [
+    "agri-catalogue",
+    "branding",
+    "certificates",
+    "contact",
+    "email",
+    "enquiries",
+    "lead-store",
+    "packaging-catalogue",
+    "packing-list",
+    "site-basics",
+    "staff-accounts",
+    "staff-ui",
+    "storage",
+    "web-guards"
+  ],
+  "data": [],
+  "reads": []
+}

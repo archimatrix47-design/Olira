@@ -1,0 +1,21 @@
+{
+  "id": "packing-list",
+  "name": "Packing list",
+  "does": "Several products, sizes and quantities gathered into one quote request.",
+  "kind": "sales",
+  "files": [
+    "src/scripts/packing-list.js",
+    "src/scripts/team/bundle-view.js"
+  ],
+  "tests": [],
+  "checkedBy": "test/catalogue.test.js checks bundles on the server; browser journeys use the list.",
+  "uses": [
+    "home-page",
+    "packaging-catalogue",
+    "product-pages",
+    "site-shell",
+    "staff-ui"
+  ],
+  "data": [],
+  "reads": []
+}

@@ -1,0 +1,19 @@
+{
+  "id": "wiring",
+  "name": "The wiring",
+  "does": "Connects every box. server.js plugs them in one line at a time, the board records what each was given, and the boxes tool saves and checks the map.",
+  "kind": "foundation",
+  "files": [
+    "server.js",
+    "lib/board.js",
+    "scripts/boxes.mjs",
+    "scripts/boxes-map.template.html"
+  ],
+  "tests": [
+    "test/boxes.test.js",
+    "test/api.test.js"
+  ],
+  "uses": [],
+  "data": [],
+  "reads": []
+}

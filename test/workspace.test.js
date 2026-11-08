@@ -26,7 +26,8 @@ process.env.TEAM_REPLY_RATE_PER_MIN = '1000';
 
 const { app } = await import('../server.js');
 const { sniffFile } = await import('../lib/workspace.js');
-const { validQuad, backgroundOf, sameShotScore } = await import('../lib/packaging.js');
+const { validQuad } = await import('../lib/packaging-rules.js');
+const { backgroundOf, sameShotScore } = await import('../lib/packaging.js');
 
 let server, base;
 const UA = 'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/120 Safari/537.36';

@@ -5,7 +5,11 @@ import './motion.js'; // keyboard or pointer, for motion decisions
 import { $, $$, api, getToken, setToken, whenSessionExpires, toast } from './api.js';
 import * as setup from './setup.js';
 import * as company from './company.js';
-import * as settings from './settings.js';
+import { showCertifications } from './certifications.js';
+import { showLogo } from './logo.js';
+import { showEmail } from './email.js';
+import { showMarketing } from './marketing.js';
+import { showSecurity } from './password.js';
 import * as team from './team.js';
 import * as activity from './activity.js';
 import * as ai from './ai.js';
@@ -15,11 +19,11 @@ const VIEWS = {
   overview: setup.show,
   team: team.show,
   company: company.show,
-  certifications: company.showCertifications,
-  logo: settings.showLogo,
-  email: settings.showEmail,
-  marketing: settings.showMarketing,
-  security: settings.showSecurity,
+  certifications: showCertifications,
+  logo: showLogo,
+  email: showEmail,
+  marketing: showMarketing,
+  security: showSecurity,
   activity: activity.show,
   ai: ai.show,
 };

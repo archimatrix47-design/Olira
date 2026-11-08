@@ -5,7 +5,7 @@
 import { $, h, api, toast, confirmDialog, busy, uploadImage } from '../admin/api.js';
 import { scrollBehavior } from '../admin/motion.js';
 import { watch, clean, touch, mayLeave } from '../admin/tools.js';
-import { agriCompleteness, completeLine } from '../admin/completeness.js';
+import { agriCompleteness, completeLine } from '../../../lib/completeness.js';
 import { SPEC_FIELDS } from '../../../lib/agri-spec.js';
 import { thumbUrl } from '../../../lib/thumb-url.js';
 import { mountFactsImport } from './facts-import.js';

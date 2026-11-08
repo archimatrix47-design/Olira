@@ -1,0 +1,20 @@
+{
+  "id": "facts-spreadsheet",
+  "name": "Facts spreadsheet",
+  "does": "The catalogue facts as a spreadsheet: download, fill in, import with a preview, saved whole or not at all.",
+  "kind": "catalogue",
+  "files": [
+    "lib/facts-csv.js",
+    "src/scripts/team/facts-import.js"
+  ],
+  "tests": [
+    "test/facts-csv.test.js"
+  ],
+  "uses": [
+    "agri-catalogue",
+    "packaging-catalogue",
+    "staff-ui"
+  ],
+  "data": [],
+  "reads": []
+}

@@ -47,7 +47,7 @@ export const products = read<Product[]>('products.json', []);
 
 // Packaging products, managed in the admin. Those with a photo and print corners are also the mockup studio's bags.
 // normalise() is the server's own: older records read as bags with the three studio sizes.
-import { normalise, FAMILIES } from '../../lib/packaging.js';
+import { normalise, FAMILIES } from '../../lib/packaging-rules.js';
 export { FAMILIES };
 export interface PackagingSize { id: string; label: string; w: number | null; d: number | null; h: number | null; minOrder: number | null; pricePer1000?: number | null }
 export interface PackagingProduct {

@@ -6,8 +6,8 @@
 // Enquiry text comes from strangers, so it is only ever written as text.
 import { $, $$, h, api, getToken, toast, confirmDialog, formatDate, timeAgo } from '../admin/api.js';
 import { bundleTable, bundleCount, bundleText } from './bundle-view.js';
-import { STAGES, scoreOf, BAND_LABEL, BAND_KEY, scoreLabel, scoreReasons, oldestWaiting, firstResponseHours, median, ageHours, termChips } from '../admin/leads.js';
-import { hours, int } from '../admin/format.js';
+import { STAGES, scoreOf, BAND_LABEL, BAND_KEY, scoreLabel, scoreReasons, oldestWaiting, firstResponseHours, median, ageHours, termChips } from '../../../lib/lead-rules.js';
+import { hours, int } from '../../../lib/format.js';
 import { session, leads, putLead, dropLead, OPEN, CLOSED, isMine, toAccept as waiting, stageName, followupsOf, lineOf, LINE_LABEL, LINE_NAME, teamOf } from './session.js';
 import { composer } from './compose.js';
 import { confirmSelect } from '../admin/stage-control.js';

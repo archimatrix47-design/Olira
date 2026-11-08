@@ -1,0 +1,16 @@
+{
+  "id": "staging",
+  "name": "Staging copy",
+  "does": "The password-protected copy of the site: kept out of search engines and never mails real people.",
+  "kind": "foundation",
+  "plugged": true,
+  "files": [
+    "lib/staging.js"
+  ],
+  "tests": [
+    "test/staging.test.js"
+  ],
+  "uses": [],
+  "data": [],
+  "reads": []
+}

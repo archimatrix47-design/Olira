@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { toCsv, parseCsv, packRows, packImport, PACK_HEADER, agriRows, agriImport, AGRI_HEADER } from '../lib/facts-csv.js';
-import { normalise } from '../lib/packaging.js';
+import { normalise } from '../lib/packaging-rules.js';
 
 const products = [normalise({ id: 'pk_pouch', name: 'Kraft pouches', family: 'foil', minOrder: 5000, sizes: [{ id: 'small', label: 'Small', w: 12, d: 6, h: 20 }, { id: 'large', label: 'Large' }] })];
 const edit = (rows, f) => toCsv(f(rows.map((r) => r.map(String))));

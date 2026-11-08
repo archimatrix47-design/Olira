@@ -1,0 +1,19 @@
+{
+  "id": "static-site",
+  "name": "Pages and files",
+  "does": "Serves the built pages and uploads, sets how long browsers keep them, and answers the 404 and any server error.",
+  "kind": "foundation",
+  "plugged": true,
+  "files": [
+    "lib/static-site.js",
+    "lib/precompressed.js"
+  ],
+  "tests": [
+    "test/precompressed.test.js"
+  ],
+  "uses": [
+    "storage"
+  ],
+  "data": [],
+  "reads": []
+}

@@ -1,0 +1,48 @@
+---
+// Admin screen: team. Filled in by scripts/admin/team.js.
+---
+<section class="a-view" data-view="team" aria-labelledby="h-team" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-team">Staff accounts</h1>
+      <p>Everyone who works the website signs in at /team/ with their own email and password. Marketing team members answer their line's enquiries and keep its catalogue, contact links and partner logos up to date. Managers see every enquiry in both lines, hand them to team members, and follow the numbers. Buyers' replies go to the person who wrote.</p>
+    </div>
+  </div>
+  <div class="a-two" style="align-items:start">
+    <div class="a-card">
+      <h2>People</h2>
+      <p id="teamSummary"></p>
+      <ul class="a-rows a-team-rows" id="teamList"></ul>
+    </div>
+    <div class="a-card">
+      <h2 id="teamTitle">Add a person</h2>
+      <form class="a-form" id="teamForm" novalidate style="margin-top:18px">
+        <div class="a-field"><label for="tmName">Name</label><input class="input" id="tmName" name="name" maxlength="80" required autocomplete="off"></div>
+        <div class="a-field"><label for="tmEmail">Work email</label><input class="input" id="tmEmail" name="email" type="email" maxlength="200" required autocomplete="off" aria-describedby="tmEmailHint"><p class="hint" id="tmEmailHint">They sign in with it, and buyers' replies go to it.</p></div>
+        <fieldset class="a-field a-fieldset" aria-describedby="tmRoleHint">
+          <legend class="a-label">Role</legend>
+          <div class="a-seg">
+            <label><input type="radio" name="role" value="agri" required><span>Agriculture team</span></label>
+            <label><input type="radio" name="role" value="pack"><span>Packaging team</span></label>
+            <label><input type="radio" name="role" value="manager"><span>Manager</span></label>
+          </div>
+          <p class="hint" id="tmRoleHint">A manager sees every enquiry in both lines and the traffic numbers. The administrator's own tasks stay here.</p>
+        </fieldset>
+        <div class="a-field">
+          <label for="tmPass">Password</label>
+          <div class="a-pass">
+            <input class="input" id="tmPass" name="password" type="password" autocomplete="new-password" maxlength="256" aria-describedby="teamPwHint">
+            <button class="btn btn-ghost btn-sm" type="button" id="teamPwToggle" aria-pressed="false">Show</button>
+          </div>
+          <p class="hint" id="teamPwHint"></p>
+          <button class="btn btn-secondary btn-sm" type="button" id="teamGenerate" style="justify-self:start">Create a strong password</button>
+        </div>
+        <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="active" checked> Account switched on</label>
+        <div class="a-actions">
+          <button class="btn btn-primary btn-lg" type="submit" id="teamSave">Add person</button>
+          <button class="btn btn-ghost btn-lg" type="button" id="teamCancel" hidden>Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>

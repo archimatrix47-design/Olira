@@ -1,0 +1,20 @@
+{
+  "id": "web-guards",
+  "name": "Web guards",
+  "does": "What stands in front of every request: one site address, security headers, allowed origins, rate limits.",
+  "kind": "foundation",
+  "plugged": true,
+  "files": [
+    "lib/web-guards.js",
+    "lib/csp.js"
+  ],
+  "tests": [
+    "test/csp.test.js"
+  ],
+  "uses": [
+    "ai-access",
+    "storage"
+  ],
+  "data": [],
+  "reads": []
+}

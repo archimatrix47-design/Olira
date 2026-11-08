@@ -1,0 +1,40 @@
+{
+  "id": "ai-access",
+  "name": "AI access",
+  "does": "The performance log for an AI: read-only keys, the on and off switch, and the manager asking a model on their own computer.",
+  "kind": "insight",
+  "plugged": true,
+  "files": [
+    "lib/ai-access.js",
+    "lib/ai-log.js",
+    "src/scripts/admin/ai.js",
+    "src/scripts/team/manager/ask.js",
+    "src/scripts/team/manager/ask-model.js",
+    "src/components/admin/views/AiAccess.astro",
+    "src/components/team/views/Ask.astro"
+  ],
+  "tests": [
+    "test/ai-access.test.js",
+    "test/ai-log.test.js",
+    "test/ask-model.test.js"
+  ],
+  "uses": [
+    "admin-sign-in",
+    "certificates",
+    "enquiry-work",
+    "manager-reports",
+    "packaging-catalogue",
+    "page-speed",
+    "product-pages",
+    "site-log",
+    "staff-accounts",
+    "staff-ui",
+    "storage",
+    "targets",
+    "web-guards"
+  ],
+  "data": [
+    "ai-access.json"
+  ],
+  "reads": []
+}

@@ -1,0 +1,28 @@
+{
+  "id": "marketing-tags",
+  "name": "Marketing tags",
+  "does": "The optional Google Analytics and Ads tags. Nothing from Google loads until an ID is saved.",
+  "kind": "admin",
+  "plugged": true,
+  "files": [
+    "lib/integrations.js",
+    "src/scripts/admin/marketing.js",
+    "src/components/admin/views/Marketing.astro",
+    "src/pages/admin-integrations.astro"
+  ],
+  "tests": [],
+  "checkedBy": "test/api.test.js saves integrations with and without a session.",
+  "uses": [
+    "admin-panel",
+    "admin-sign-in",
+    "search-verification",
+    "staff-ui",
+    "staging",
+    "storage",
+    "web-guards"
+  ],
+  "data": [
+    "integrations-config.json"
+  ],
+  "reads": []
+}

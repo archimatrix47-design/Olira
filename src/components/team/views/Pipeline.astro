@@ -1,0 +1,21 @@
+---
+// Workspace screen: pipeline. Filled in by scripts/team/manager/pipeline.js.
+---
+<section class="a-view" data-view="pipeline" aria-labelledby="h-pipeline" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-pipeline">Pipeline</h1>
+      <p>Every open enquiry by stage, with the value of the quotes in each. Open a card to work the enquiry.</p>
+    </div>
+    <div class="a-head-tools">
+      <div class="a-seg" role="radiogroup" aria-label="Business line">
+        <label><input type="radio" name="pipeLine" value="all" checked><span>Both lines</span></label>
+        <label><input type="radio" name="pipeLine" value="agri"><span>Agriculture</span></label>
+        <label><input type="radio" name="pipeLine" value="pack"><span>Packaging</span></label>
+      </div>
+      <label class="a-period"><span>Handled by</span><select class="input" id="pipeOwner"><option value="">Anyone</option></select></label>
+    </div>
+  </div>
+  <p class="t-follow-sum" id="pipeSummary" aria-live="polite"></p>
+  <div class="t-board" id="pipeBoard" aria-label="Enquiries by stage"></div>
+</section>

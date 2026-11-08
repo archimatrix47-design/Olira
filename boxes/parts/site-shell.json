@@ -1,0 +1,39 @@
+{
+  "id": "site-shell",
+  "name": "Site frame",
+  "does": "What every public page shares: the layout, header, footer, theme, motion and the site's design tokens.",
+  "kind": "public",
+  "files": [
+    "src/layouts/SiteLayout.astro",
+    "src/components/site/SiteHeader.astro",
+    "src/components/site/SiteFooter.astro",
+    "src/components/site/ThemeButton.astro",
+    "src/components/site/icons.ts",
+    "src/scripts/common.js",
+    "src/scripts/motion.js",
+    "src/pages/404.astro",
+    "src/styles/tokens.css",
+    "src/styles/ambient.css",
+    "src/styles/site.css",
+    "src/styles/sheet.css",
+    "src/assets/logo.png",
+    "src/env.d.ts"
+  ],
+  "tests": [
+    "test/site-chrome.test.js",
+    "test/site-nav.test.js",
+    "test/print.test.js"
+  ],
+  "uses": [
+    "analytics",
+    "branding",
+    "contact",
+    "marketing-tags",
+    "packing-list",
+    "page-speed",
+    "site-data",
+    "social-links"
+  ],
+  "data": [],
+  "reads": []
+}

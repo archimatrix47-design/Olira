@@ -6,8 +6,8 @@ import { $, h, api, toast } from '../admin/api.js';
 import * as store from '../admin/store.js';
 import { kpiCard } from '../admin/widgets.js';
 import { trendChart, tableFor, sparkline, barList, deltaChip, empty } from '../admin/charts.js';
-import { int, decimal, delta, hours, duration, pct, per100, believable, shortDate, countryName, CHANNEL_NAMES, NO_DATA } from '../admin/format.js';
-import { inPeriod, firstResponseHours, median } from '../admin/leads.js';
+import { int, decimal, delta, hours, duration, pct, per100, believable, shortDate, countryName, CHANNEL_NAMES, NO_DATA } from '../../../lib/format.js';
+import { inPeriod, firstResponseHours, median } from '../../../lib/lead-rules.js';
 import { leads, session } from './session.js';
 import { renderTargets } from './targets.js';
 

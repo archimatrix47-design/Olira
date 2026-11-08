@@ -1,0 +1,27 @@
+{
+  "id": "product-pages",
+  "name": "Product cards and pages",
+  "does": "The product card, grid, details panel and page that both catalogues share, and the facts each one shows.",
+  "kind": "catalogue",
+  "files": [
+    "lib/catalogue-facts.js",
+    "src/components/site/ProductGrid.astro",
+    "src/components/site/ProductIndex.astro",
+    "src/components/site/ProductPage.astro",
+    "src/scripts/product-grid.js",
+    "src/scripts/catalogue-panel.js"
+  ],
+  "tests": [],
+  "checkedBy": "test/catalogue-grid.test.js reads its facts; browser journeys open the pages.",
+  "uses": [
+    "certificates",
+    "enquiries",
+    "mockup-studio",
+    "packaging-catalogue",
+    "site-data",
+    "site-shell",
+    "thumbs"
+  ],
+  "data": [],
+  "reads": []
+}

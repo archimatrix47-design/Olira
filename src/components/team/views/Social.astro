@@ -1,0 +1,26 @@
+---
+// Workspace screen: social. Filled in by scripts/team/social.js.
+import { SOCIAL_PLATFORMS } from '../../../../lib/social.js';
+---
+<section class="a-view" data-view="social" aria-labelledby="h-social" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-social">Contact links</h1>
+      <p>WhatsApp, Telegram and the social pages in the floating contact button on every page of the website, and in the footer. Paste the full address of each profile; blank ones are hidden. The other marketing team can change these too.</p>
+    </div>
+  </div>
+  <form class="a-form a-settings t-social-form" id="tSocialForm" novalidate>
+    <div class="a-card a-group">
+      {SOCIAL_PLATFORMS.map((p) => (
+        <div class="a-field">
+          <label for={`ts-${p.key}`}>{p.label}</label>
+          <input class="input" id={`ts-${p.key}`} name={p.key} type="url" placeholder={p.placeholder} autocomplete="off" aria-describedby={`ts-${p.key}-err${p.hint ? ` ts-${p.key}-hint` : ''}`}>
+          {p.hint && <p class="hint" id={`ts-${p.key}-hint`}>{p.hint}</p>}
+          <p class="err" id={`ts-${p.key}-err`} hidden></p>
+        </div>
+      ))}
+    </div>
+    <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit" id="tSocialSave">Save contact links</button></div>
+    <p class="sr-only" id="tSocialLive" role="status" aria-live="polite"></p>
+  </form>
+</section>

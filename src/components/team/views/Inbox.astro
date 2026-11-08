@@ -1,0 +1,62 @@
+---
+// Workspace screen: inbox. Filled in by scripts/team/inbox.js.
+interface Props { manager: boolean; pack: boolean; team: boolean }
+const { manager, pack, team } = Astro.props;
+---
+<section class="a-view" data-view="inbox" aria-labelledby="h-inbox" hidden>
+  <div class="t-inbox-head">
+    <h1 id="h-inbox">{manager ? 'Enquiries' : 'Inbox'}</h1>
+    <ul class="t-summary" id="inboxKpis" aria-label={manager ? 'Numbers for both lines' : 'Your numbers'}></ul>
+    <p class="t-phone-line" id="inboxGist"></p>
+    <div class="row" style="--gap:6px">
+      {manager && <button class="btn btn-ghost btn-sm" type="button" id="inboxCsv">Download CSV</button>}
+      <button class="btn btn-ghost btn-sm" type="button" id="inboxRefresh">Refresh</button>
+    </div>
+  </div>
+  <div class="a-card t-toolbar">
+    <div class="a-seg" role="radiogroup" aria-label="Show">
+      <label><input type="radio" name="inboxFilter" value="unassigned" checked><span>{manager ? 'Not handed out' : 'To accept'} <b data-filter-count="unassigned"></b></span></label>
+      {team && <label><input type="radio" name="inboxFilter" value="mine"><span>Mine <b data-filter-count="mine"></b></span></label>}
+      <label><input type="radio" name="inboxFilter" value="open"><span>All open <b data-filter-count="open"></b></span></label>
+      <label><input type="radio" name="inboxFilter" value="closed"><span>Closed <b data-filter-count="closed"></b></span></label>
+      {manager && <label><input type="radio" name="inboxFilter" value="all"><span>Everything <b data-filter-count="all"></b></span></label>}
+    </div>
+    <div class="t-toolbar-row">
+      <label class="sr-only" for="inboxSearch">Search enquiries</label>
+      <input class="input grow" id="inboxSearch" type="search" placeholder="Search name, company, email or message" aria-keyshortcuts="/">
+      <!-- on a phone the filters fold behind one button, which says how many are on -->
+      <button class="btn btn-secondary btn-sm t-filter-btn" type="button" id="inboxFilterBtn" aria-expanded="false" aria-controls="inboxFilters">Filter <b class="t-filter-on" id="inboxFilterOn" hidden></b></button>
+      <div class="t-filters" id="inboxFilters">
+      {manager && (
+        <Fragment>
+          <label class="sr-only" for="inboxLine">Business line</label>
+          <select class="input" id="inboxLine">
+            <option value="all">Both lines</option>
+            <option value="agri">Agriculture</option>
+            <option value="pack">Packaging</option>
+          </select>
+          <label class="sr-only" for="inboxOwner">Handled by</label>
+          <select class="input" id="inboxOwner"><option value="">Anyone</option></select>
+        </Fragment>
+      )}
+      <span class="t-filter" hidden>
+        <label class="sr-only" for="inboxProduct">Product</label>
+        <select class="input" id="inboxProduct"><option value="">Every product</option></select>
+      </span>
+      <label class="sr-only" for="inboxSort">Sort</label>
+      <select class="input" id="inboxSort">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="score">Strongest leads first</option>
+      </select>
+      </div>
+    </div>
+    <p class="sr-only" id="inboxSummary" role="status" aria-live="polite"></p>
+  </div>
+  <div class="t-inbox">
+    <ul class="t-list" id="inboxList" aria-label="Enquiries"></ul>
+    <article class="t-detail a-card" id="leadDetail" aria-live="off">
+      <div class="a-empty"><strong>Choose an enquiry</strong>{manager ? 'Hand it to someone on its team, or reply and quote yourself.' : pack ? 'Accept one to make it yours, then reply, send a mockup and quote.' : 'Accept one to make it yours, then reply and quote.'}</div>
+    </article>
+  </div>
+</section>

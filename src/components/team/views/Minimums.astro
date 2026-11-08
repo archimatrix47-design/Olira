@@ -1,0 +1,25 @@
+---
+// Workspace screen: minimums. Filled in by scripts/team/minimums.js.
+---
+<section class="a-view" data-view="minimums" aria-labelledby="h-minimums" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-minimums">Prices and minimums</h1>
+      <p>The smallest quantity a visitor can request, the price per 1,000 units and how many working days an order takes, per product and, where they differ, per size. The packaging page, its product pages and the packing list use them straight away; a request below the minimum is not accepted, and prices are shown as an estimate that the quote confirms. Leave a size blank to use the product's value; leave both blank to agree it in the quote.</p>
+    </div>
+  </div>
+  <div class="a-sheet-tools">
+    <p class="hint">Easier away from the screen? Download every product and size as a spreadsheet, fill in the blank cells, and import it: you see each change before anything is saved.</p>
+    <div class="a-head-actions">
+      <button class="btn btn-secondary" type="button" id="tFactsDownload">Download as a spreadsheet</button>
+      <button class="btn btn-secondary" type="button" id="tFactsImport">Import a filled spreadsheet</button>
+      <input type="file" id="tFactsFile" accept=".csv,text/csv" hidden aria-hidden="true" tabindex="-1">
+    </div>
+  </div>
+  <section class="a-card a-import" id="tFactsPreview" aria-label="Spreadsheet import" hidden></section>
+  <p class="sr-only" id="tMinLive" role="status" aria-live="polite"></p>
+  <form class="t-min" id="tMinForm" novalidate>
+    <div class="t-min-list" id="tMinList"><p class="note">Loading the products.</p></div>
+    <div class="a-actions a-savebar"><span class="a-dirty a-grow" id="tMinDirty">Unsaved changes</span><button class="btn btn-primary" type="submit" id="tMinSave">Save prices and minimums</button></div>
+  </form>
+</section>

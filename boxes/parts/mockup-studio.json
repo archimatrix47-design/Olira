@@ -1,0 +1,36 @@
+{
+  "id": "mockup-studio",
+  "name": "Mockup studio",
+  "does": "A visitor sees their brand on a product, as a photo or a 3D box, and sends the design with their request.",
+  "kind": "sales",
+  "files": [
+    "src/scripts/pack.js",
+    "src/scripts/live-print.js",
+    "src/scripts/print-queue.js",
+    "src/scripts/stations.js",
+    "src/scripts/studio-memory.js",
+    "src/scripts/studio-3d.js",
+    "src/scripts/studio-3d-scene.js",
+    "src/scripts/mockup/engine.js",
+    "src/scripts/mockup/logo-check.js",
+    "src/scripts/team/mockups.js",
+    "src/components/team/views/Mockups.astro"
+  ],
+  "tests": [
+    "test/live-print.test.js",
+    "test/ux.test.js"
+  ],
+  "uses": [
+    "branding",
+    "enquiry-work",
+    "home-page",
+    "packaging-catalogue",
+    "product-pages",
+    "site-shell",
+    "staff-accounts",
+    "staff-ui",
+    "thumbs"
+  ],
+  "data": [],
+  "reads": []
+}

@@ -1,7 +1,7 @@
 // Who is signed in to the workspace, and the enquiries loaded for them: a
 // team member's line, or both lines for a manager.
 import { api } from '../admin/api.js';
-import { STAGES } from '../admin/leads.js';
+import { STAGES } from '../../../lib/lead-rules.js';
 
 // line: 'agri' | 'pack' | 'manager'. oversees: a manager, who works both lines.
 export const session = { user: null, members: [], line: 'agri', oversees: false };

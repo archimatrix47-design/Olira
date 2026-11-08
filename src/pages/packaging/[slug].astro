@@ -6,7 +6,7 @@ import { packagingProducts, FLEXO_MAX_COLOURS } from '../../lib/site-data';
 import { packSlug, packUrl, graph, organizationGraph, breadcrumbs, ORG_ID, PACK_ID, abs, familyLabel } from '../../lib/seo';
 import { cutoutOf, inStudio, specRows, priceFrom, pendingFacts, pendingList } from '../../scripts/catalogue-panel.js';
 import { has3d } from '../../../lib/box-styles.js';
-import { minimumFor } from '../../../lib/packaging.js';
+import { minimumFor } from '../../../lib/packaging-rules.js';
 
 export function getStaticPaths() {
   return packagingProducts.map((p) => ({ params: { slug: packSlug(p) }, props: { id: p.id } }));

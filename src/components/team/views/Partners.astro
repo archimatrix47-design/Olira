@@ -1,0 +1,32 @@
+---
+// Workspace screen: partners. Filled in by scripts/team/partners.js.
+---
+<section class="a-view" data-view="partners" aria-labelledby="h-partners" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-partners">Partner logos</h1>
+      <p>The organisations Olira has worked with, moving slowly across the home page under the two businesses. Add a logo with the organisation's name, put them in order, and save. With none saved, the row is hidden. The other marketing team can change these too.</p>
+    </div>
+  </div>
+  <div class="t-pt-layout">
+    <div class="a-card t-pt-add">
+      <h2>Add a logo</h2>
+      <label class="a-drop" id="tPtDrop">
+        <input type="file" id="tPtFile" accept="image/png,image/svg+xml,image/webp,image/jpeg" aria-labelledby="tPtDropTitle" aria-describedby="tPtHint">
+        <img id="tPtPreview" alt="" hidden>
+        <strong id="tPtDropTitle">Upload the logo</strong>
+        <span id="tPtHint">The organisation's official logo, on a transparent background: SVG or PNG is best, up to 5 MB. Only show logos you have permission to use.</span>
+      </label>
+      <div class="a-field"><label for="tPtName">Organisation</label><input class="input" id="tPtName" maxlength="80" autocomplete="off" placeholder="Food and Agriculture Organization (FAO)"><p class="err" id="tPtNameErr" hidden></p></div>
+      <div class="a-field"><label for="tPtUrl">Link (optional)</label><input class="input" id="tPtUrl" type="url" maxlength="300" autocomplete="off" placeholder="https://www.fao.org"><p class="err" id="tPtUrlErr" hidden></p></div>
+      <button class="btn btn-secondary" type="button" id="tPtAdd" disabled>Add to the list</button>
+    </div>
+    <div class="a-card t-pt-listcard">
+      <h2>On the home page</h2>
+      <ol class="t-pt-list" id="tPtList" aria-label="Partner logos, in order"></ol>
+      <p class="note" id="tPtEmpty">No logos yet. The row is hidden on the home page until the first one is saved.</p>
+      <div class="t-ph-actions"><button class="btn btn-primary" type="button" id="tPtSave" disabled>Save partner logos</button><span class="note" id="tPtNote"></span></div>
+    </div>
+  </div>
+  <p class="sr-only" id="tPtLive" role="status" aria-live="polite"></p>
+</section>

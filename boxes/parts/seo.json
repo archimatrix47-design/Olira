@@ -1,0 +1,26 @@
+{
+  "id": "seo",
+  "name": "Search and AI listings",
+  "does": "What search engines and AI assistants read: structured data, FAQ, sitemap and llms.txt.",
+  "kind": "public",
+  "files": [
+    "src/lib/seo.ts",
+    "src/lib/llms.ts",
+    "src/lib/meta-text.js",
+    "src/pages/sitemap.xml.ts",
+    "src/pages/llms.txt.ts",
+    "src/pages/llms-full.txt.ts",
+    "src/components/site/Faq.astro"
+  ],
+  "tests": [
+    "test/meta-text.test.js"
+  ],
+  "uses": [
+    "agri-catalogue",
+    "certificates",
+    "product-pages",
+    "site-data"
+  ],
+  "data": [],
+  "reads": []
+}

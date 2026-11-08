@@ -8,7 +8,7 @@ import { scrollBehavior } from '../admin/motion.js';
 import * as store from '../admin/store.js';
 import { DEFAULT_QUAD, convex, cornerEditor } from '../admin/corners.js';
 import { watch, clean, touch, mayLeave } from '../admin/tools.js';
-import { packCompleteness, completeLine } from '../admin/completeness.js';
+import { packCompleteness, completeLine } from '../../../lib/completeness.js';
 import { thumbUrl } from '../../../lib/thumb-url.js';
 import { has3d } from '../../../lib/box-styles.js';
 

@@ -1,0 +1,26 @@
+{
+  "id": "admin-sign-in",
+  "name": "Admin sign-in",
+  "does": "The admin password and sessions, and the guard every admin-only route stands behind.",
+  "kind": "foundation",
+  "plugged": true,
+  "files": [
+    "lib/admin-auth.js",
+    "src/scripts/admin/password.js",
+    "src/components/admin/views/Password.astro"
+  ],
+  "tests": [],
+  "checkedBy": "test/api.test.js signs in, is locked out and changes the password.",
+  "uses": [
+    "admin-panel",
+    "site-basics",
+    "staff-ui",
+    "storage",
+    "web-guards"
+  ],
+  "data": [
+    "auth.json",
+    "admin-reset.txt"
+  ],
+  "reads": []
+}

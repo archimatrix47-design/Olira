@@ -1,6 +1,6 @@
 // Grouping enquiries by buyer, and what is known about each buyer. Pure: no page,
 // no session, so the tests run it in Node (test/buyers.test.js); buyers.js shows it.
-import { detailsOf } from '../admin/leads.js';
+import { detailsOf } from '../../../lib/lead-rules.js';
 
 const OPEN = ['new', 'read', 'contacted', 'quoted'];
 const lineOf = (l) => (l?.line === 'pack' ? 'pack' : 'agri');

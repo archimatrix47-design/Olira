@@ -25,7 +25,7 @@ export const INKS = { black: ['Black', '#1E1B16'], teal: ['Teal', '#186078'], le
 // visitor's own finished design (a full page) printed in full colour across the panel
 export const defaultDesign = () => ({ size: 'medium', ink: 'teal', logo: null, oneInk: false, text1: 'YOUR BRAND', text2: 'yourbrand.com', scale: 1, dx: 0, dy: 0, mode: 'brand', artwork: null, fit: 'cover' });
 // a photo with its print corners: the rule lives in catalogue-facts.js, shared with the catalogue and staff screens
-export { hasPhotoMockup as usableInStudio } from '../catalogue-facts.js';
+export { hasPhotoMockup as usableInStudio } from '../../../lib/catalogue-facts.js';
 
 export const makeCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 

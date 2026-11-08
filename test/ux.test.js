@@ -4,8 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { toSaved, fromSaved } from '../src/scripts/studio-memory.js';
-import { specRows } from '../src/scripts/catalogue-facts.js';
-import { normalise } from '../lib/packaging.js';
+import { specRows } from '../lib/catalogue-facts.js';
+import { normalise } from '../lib/packaging-rules.js';
 
 const templates = [{ id: 'pk_twisted' }, { id: 'pk_medbox' }];
 const inks = { teal: [], black: [] };

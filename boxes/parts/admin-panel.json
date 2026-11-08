@@ -1,0 +1,31 @@
+{
+  "id": "admin-panel",
+  "name": "Admin panel",
+  "does": "The admin page: its sign-in, sections, and the overview of how the site is set up.",
+  "kind": "admin",
+  "files": [
+    "src/pages/admin.astro",
+    "src/scripts/admin/main.js",
+    "src/scripts/admin/setup.js",
+    "src/scripts/admin/form-help.js",
+    "src/components/admin/views/Overview.astro"
+  ],
+  "tests": [],
+  "checkedBy": "Browser journeys on the sandbox (visitor and staff paths), and the whole-page build comparison.",
+  "uses": [
+    "admin-sign-in",
+    "admin-tools",
+    "ai-access",
+    "branding",
+    "certificates",
+    "contact",
+    "email",
+    "marketing-tags",
+    "product-pages",
+    "site-shell",
+    "staff-accounts",
+    "staff-ui"
+  ],
+  "data": [],
+  "reads": []
+}

@@ -23,7 +23,8 @@ process.env.GENERAL_RATE_PER_MIN = '1000';
 process.env.INQUIRY_RATE_PER_MIN = '1000';
 
 const { app } = await import('../server.js');
-const { normalise, checkBundle, minimumFor, units, mergeSeedCatalogue, FAMILIES } = await import('../lib/packaging.js');
+const { normalise, checkBundle, minimumFor, units, FAMILIES } = await import('../lib/packaging-rules.js');
+const { mergeSeedCatalogue } = await import('../lib/packaging.js');
 
 let server, base;
 const UA = 'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/120 Safari/537.36';
@@ -125,7 +126,7 @@ test('the packaging team sets minimums; the agriculture team cannot', async () =
 });
 
 test('prices and lead time: set by the packaging team, public, and kept when the product form saves', async () => {
-  const { priceFor, pricePer1000, leadDays } = await import('../lib/packaging.js');
+  const { priceFor, pricePer1000, leadDays } = await import('../lib/packaging-rules.js');
   // self-check of the readers
   assert.equal(pricePer1000('1,250.555'), 1250.56);
   assert.equal(pricePer1000(''), null);

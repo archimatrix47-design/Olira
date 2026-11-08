@@ -1,0 +1,31 @@
+---
+// Admin screen: overview. Filled in by scripts/admin/setup.js.
+---
+<section class="a-view" data-view="overview" aria-labelledby="h-overview" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-overview">Overview</h1>
+      <p>What the website needs to run well, and the accounts that work it. Enquiries, traffic and the product catalogues are in the manager's and the teams' workspaces.</p>
+    </div>
+  </div>
+
+  <div class="a-card a-attention" aria-labelledby="h-attention">
+    <h2 id="h-attention">Needs attention</h2>
+    <ul class="a-alerts" id="ovAttention"><li class="v-skeleton"></li></ul>
+  </div>
+
+  <div class="a-grid12">
+    <div class="a-card span-8">
+      <div class="a-card-head"><div><h2>Website setup</h2><p>Your settings, and the content the teams keep up to date.</p></div></div>
+      <ul class="a-checklist" id="ovHealth"></ul>
+    </div>
+    <div class="a-card span-4">
+      <div class="a-card-head"><div><h2>Accounts</h2><p>Who works the website.</p></div></div>
+      <dl class="a-facts" id="ovAccounts"></dl>
+    </div>
+    <div class="a-card span-12" aria-labelledby="h-site">
+      <div class="a-card-head"><div><h2 id="h-site">Site health</h2><p>What the server reports right now. Checked each time this page opens.</p></div><span class="a-status" id="ovSiteState">Checking</span></div>
+      <dl class="a-facts a-facts-row" id="ovSite"></dl>
+    </div>
+  </div>
+</section>

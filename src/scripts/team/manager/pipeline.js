@@ -4,8 +4,8 @@
 // be changed on the card, with the same confirm step as the enquiry screen. The
 // board scrolls sideways on narrow screens, with a fade on the side that has more.
 import { $, $$, h, api, toast, formatDate, timeAgo } from '../../admin/api.js';
-import { scoreOf, BAND_LABEL, scoreLabel, scoreReasons, STAGES, stageLabel } from '../../admin/leads.js';
-import { int } from '../../admin/format.js';
+import { scoreOf, BAND_LABEL, scoreLabel, scoreReasons, STAGES, stageLabel } from '../../../../lib/lead-rules.js';
+import { int } from '../../../../lib/format.js';
 import { confirmSelect } from '../../admin/stage-control.js';
 import { leads, putLead, followupsOf, lineOf, LINE_LABEL, teamOf } from '../session.js';
 

@@ -6,8 +6,8 @@ import { $, h, toast, timeAgo } from '../../admin/api.js';
 import * as store from '../../admin/store.js';
 import { barList, empty } from '../../admin/charts.js';
 import { kpiCard } from '../../admin/widgets.js';
-import { int, pct, hours, NO_DATA } from '../../admin/format.js';
-import { firstResponseHours, median, inPeriod } from '../../admin/leads.js';
+import { int, pct, hours, NO_DATA } from '../../../../lib/format.js';
+import { firstResponseHours, median, inPeriod } from '../../../../lib/lead-rules.js';
 import { session, leads, followupsOf, OPEN, LINE_LABEL } from '../session.js';
 import { money } from './pipeline.js';
 

@@ -1,0 +1,20 @@
+{
+  "id": "site-data",
+  "name": "Site data for the build",
+  "does": "Reads the live data folder when the pages are built, so they carry the current facts.",
+  "kind": "public",
+  "files": [
+    "src/lib/site-data.ts",
+    "src/lib/company.ts",
+    "src/data/cutouts.json",
+    "src/data/burayu-contours.json"
+  ],
+  "tests": [],
+  "checkedBy": "scripts/pipeline-test.mjs builds real pages from changed data.",
+  "uses": [
+    "packaging-catalogue",
+    "social-links"
+  ],
+  "data": [],
+  "reads": []
+}

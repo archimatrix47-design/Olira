@@ -1,0 +1,20 @@
+{
+  "id": "site-health",
+  "name": "Site health check",
+  "does": "The address an uptime monitor watches: folders writable, build present, enquiry store answering.",
+  "kind": "insight",
+  "plugged": true,
+  "files": [
+    "lib/health.js"
+  ],
+  "tests": [],
+  "checkedBy": "test/api.test.js and test/hosting.test.js read /api/health.",
+  "uses": [
+    "admin-sign-in",
+    "analytics",
+    "lead-store",
+    "storage"
+  ],
+  "data": [],
+  "reads": []
+}

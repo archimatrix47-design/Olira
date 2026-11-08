@@ -1,0 +1,32 @@
+{
+  "id": "staff-accounts",
+  "name": "Staff accounts",
+  "does": "Who may sign in to the workspaces, with which role, and the guards the staff routes stand behind.",
+  "kind": "foundation",
+  "plugged": true,
+  "files": [
+    "lib/staff-accounts.js",
+    "src/pages/team/index.astro",
+    "src/scripts/team/signin.js",
+    "src/scripts/team/session.js",
+    "src/scripts/team/account.js",
+    "src/scripts/admin/team.js",
+    "src/components/admin/views/StaffAccounts.astro",
+    "src/components/team/views/Account.astro"
+  ],
+  "tests": [],
+  "checkedBy": "test/workspace.test.js signs in as each role and checks what each may reach.",
+  "uses": [
+    "admin-sign-in",
+    "enquiry-work",
+    "site-basics",
+    "site-shell",
+    "staff-ui",
+    "storage",
+    "web-guards"
+  ],
+  "data": [
+    "team.json"
+  ],
+  "reads": []
+}

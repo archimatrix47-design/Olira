@@ -1,0 +1,31 @@
+---
+// Admin screen: logo. Filled in by scripts/admin/logo.js.
+---
+<section class="a-view" data-view="logo" aria-labelledby="h-logo" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-logo">Logo</h1>
+      <p>Shown in the header and footer of every page. Transparent PNG works best.</p>
+    </div>
+  </div>
+  <div class="a-two" style="align-items:start">
+    <div class="a-card">
+      <h2>Current logo</h2>
+      <div class="a-logo-box" style="margin-top:16px"><img id="logoCurrent" src="/logo.png" alt="Current logo"></div>
+      <p class="a-note" id="logoSource" style="margin-top:10px"></p>
+      <div class="a-actions"><button class="btn btn-danger-quiet" type="button" id="logoReset" hidden>Use the original logo</button></div>
+    </div>
+    <div class="a-card">
+      <h2>Upload a new logo</h2>
+      <form class="a-form" id="logoForm" novalidate>
+        <label class="a-drop" id="logoDrop">
+          <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" aria-describedby="logoHint">
+          <strong id="logoDropTitle">Choose or drop a file</strong>
+          <span id="logoHint">PNG, JPG, WebP or SVG. Saved as WebP, up to 600 px wide.</span>
+        </label>
+        <div class="a-logo-box" id="logoPreviewBox" hidden><img id="logoPreview" alt="New logo preview"></div>
+        <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Save logo</button></div>
+      </form>
+    </div>
+  </div>
+</section>

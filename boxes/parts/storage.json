@@ -1,0 +1,20 @@
+{
+  "id": "storage",
+  "name": "Storage and logs",
+  "does": "Where everything is kept: the data and upload folders, safe file writes, the audit log and the error log.",
+  "kind": "foundation",
+  "plugged": true,
+  "files": [
+    "lib/storage.js"
+  ],
+  "tests": [],
+  "checkedBy": "Every test runs on it; test/admin-tools.test.js reads the audit log it writes.",
+  "uses": [
+    "site-basics"
+  ],
+  "data": [
+    "admin-audit.log",
+    "error.log"
+  ],
+  "reads": []
+}

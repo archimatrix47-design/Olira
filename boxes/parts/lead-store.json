@@ -1,0 +1,23 @@
+{
+  "id": "lead-store",
+  "name": "Enquiry store",
+  "does": "Where enquiries are kept: a database when there is one, a file otherwise, so a buyer is never lost.",
+  "kind": "sales",
+  "plugged": true,
+  "files": [
+    "lib/lead-store.js"
+  ],
+  "tests": [
+    "test/lead-store.test.js"
+  ],
+  "uses": [
+    "enquiry-work",
+    "storage"
+  ],
+  "data": [
+    "inquiries.json",
+    "inquiries-pending.json",
+    "database.json"
+  ],
+  "reads": []
+}

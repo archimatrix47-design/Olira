@@ -1,0 +1,15 @@
+---
+// Workspace screen: followups. Filled in by scripts/team/lists.js.
+interface Props { manager: boolean }
+const { manager } = Astro.props;
+---
+<section class="a-view" data-view="followups" aria-labelledby="h-followups" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-followups">Follow-ups</h1>
+      <p>{manager ? 'Enquiries that are waiting on someone, in both lines, with who holds each. Buyers who hear back within a day are far more likely to order.' : 'Enquiries that are waiting on you. Buyers who hear back within a day are far more likely to order, so start at the top.'}</p>
+    </div>
+  </div>
+  <p class="t-follow-sum" id="followupSum" aria-live="polite"></p>
+  <div id="followupList" class="t-follow"></div>
+</section>

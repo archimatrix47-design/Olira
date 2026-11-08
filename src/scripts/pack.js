@@ -11,7 +11,7 @@ import { onScreen, quickThenFull, fittedWidth } from './print-queue.js';
 import { getProducts, onProducts } from './packaging-data.js';
 import { checkLogo, removeBox } from './mockup/logo-check.js';
 import { thumbUrl, thumbSet } from '../../lib/thumb-url.js';
-import { studioOrder } from './catalogue-facts.js';
+import { studioOrder } from '../../lib/catalogue-facts.js';
 import { MEMORY_KEY, toSaved, fromSaved } from './studio-memory.js';
 import { has3d } from '../../lib/box-styles.js';
 import { view3d } from './studio-3d.js';

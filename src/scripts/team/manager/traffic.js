@@ -4,7 +4,7 @@ import { $, h, toast } from '../../admin/api.js';
 import * as store from '../../admin/store.js';
 import { barList, stackBar, heatmap, tableFor, empty } from '../../admin/charts.js';
 import { kpiCard, freshness } from '../../admin/widgets.js';
-import { int, pct, duration, delta, NO_DATA, WEEKDAYS, hourLabel, CHANNEL_NAMES, CHANNEL_HELP, countryName, languageName, pageName } from '../../admin/format.js';
+import { int, pct, duration, delta, NO_DATA, WEEKDAYS, hourLabel, CHANNEL_NAMES, CHANNEL_HELP, countryName, languageName, pageName } from '../../../../lib/format.js';
 
 const view = () => $('[data-view="traffic"]');
 

@@ -1,0 +1,31 @@
+---
+// Workspace screen: people. Filled in by scripts/team/manager/people.js.
+interface Props { PERIODS: [number, string][] }
+const { PERIODS } = Astro.props;
+---
+<section class="a-view" data-view="people" aria-labelledby="h-people" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-people">Team performance</h1>
+      <p>How each person is doing with the enquiries they hold: how fast they answer, what they quote and what they win. Enquiries count in the period they arrived.</p>
+    </div>
+    <label class="a-period"><span>Period</span>
+      <select class="input" data-period>{PERIODS.map(([v, t]) => <option value={v} selected={v === 30}>{t}</option>)}</select>
+    </label>
+  </div>
+  <div class="a-kpis" id="peopleKpis" aria-label="Team numbers"></div>
+  <div class="a-card">
+    <div class="a-card-head"><div><h2>People</h2><p>Open is everything they hold now, whatever the period. Overdue is follow-ups past due.</p></div></div>
+    <div class="a-scroll" id="peopleTable"></div>
+  </div>
+  <div class="a-grid12">
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Workload</h2><p>Open enquiries each person holds now.</p></div></div>
+      <div id="peopleLoad"></div>
+    </div>
+    <div class="a-card span-6">
+      <div class="a-card-head"><div><h2>Won in the period</h2><p>Quote value on enquiries marked Won, by who won them.</p></div></div>
+      <div id="peopleWon"></div>
+    </div>
+  </div>
+</section>

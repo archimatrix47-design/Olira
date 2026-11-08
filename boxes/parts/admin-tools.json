@@ -1,0 +1,31 @@
+{
+  "id": "admin-tools",
+  "name": "Activity and health",
+  "does": "The admin activity log, a test email, the site health card and the overview counts.",
+  "kind": "admin",
+  "plugged": true,
+  "files": [
+    "lib/admin-tools.js",
+    "src/scripts/admin/activity.js",
+    "src/components/admin/views/Activity.astro"
+  ],
+  "tests": [
+    "test/admin-tools.test.js"
+  ],
+  "uses": [
+    "admin-sign-in",
+    "analytics",
+    "email",
+    "lead-store",
+    "site-health",
+    "staff-ui",
+    "storage",
+    "web-guards"
+  ],
+  "data": [
+    "email-status.json"
+  ],
+  "reads": [
+    "team.json"
+  ]
+}

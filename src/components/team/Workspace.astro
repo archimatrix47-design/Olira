@@ -12,7 +12,6 @@ import '../../styles/admin-insights.css';
 import '../../styles/team.css';
 import '../../styles/staff-theme.css'; // the staff look: monochrome, brand on the header (load last)
 import ThemeButton from '../site/ThemeButton.astro';
-import { SOCIAL_PLATFORMS } from '../../../lib/social.js';
 import Dashboard from './views/Dashboard.astro';
 import Traffic from './views/Traffic.astro';
 import Ask from './views/Ask.astro';
@@ -20,6 +19,18 @@ import Report from './views/Report.astro';
 import AgriProducts from './views/AgriProducts.astro';
 import PackProducts from './views/PackProducts.astro';
 import Insights from './views/Insights.astro';
+import Inbox from './views/Inbox.astro';
+import Pipeline from './views/Pipeline.astro';
+import Followups from './views/Followups.astro';
+import Buyers from './views/Buyers.astro';
+import Quotes from './views/Quotes.astro';
+import People from './views/People.astro';
+import ManagerProducts from './views/ManagerProducts.astro';
+import Mockups from './views/Mockups.astro';
+import Minimums from './views/Minimums.astro';
+import Social from './views/Social.astro';
+import Partners from './views/Partners.astro';
+import Account from './views/Account.astro';
 
 interface Props { line: 'agri' | 'pack' | 'manager' }
 const { line } = Astro.props;
@@ -117,309 +128,33 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
     <a class="a-back" href="#menu">All sections</a>
     {manager && <Dashboard />}
     <!-- INBOX: for the manager, every enquiry in both lines -->
-    <section class="a-view" data-view="inbox" aria-labelledby="h-inbox" hidden>
-      <div class="t-inbox-head">
-        <h1 id="h-inbox">{manager ? 'Enquiries' : 'Inbox'}</h1>
-        <ul class="t-summary" id="inboxKpis" aria-label={manager ? 'Numbers for both lines' : 'Your numbers'}></ul>
-        <p class="t-phone-line" id="inboxGist"></p>
-        <div class="row" style="--gap:6px">
-          {manager && <button class="btn btn-ghost btn-sm" type="button" id="inboxCsv">Download CSV</button>}
-          <button class="btn btn-ghost btn-sm" type="button" id="inboxRefresh">Refresh</button>
-        </div>
-      </div>
-      <div class="a-card t-toolbar">
-        <div class="a-seg" role="radiogroup" aria-label="Show">
-          <label><input type="radio" name="inboxFilter" value="unassigned" checked><span>{manager ? 'Not handed out' : 'To accept'} <b data-filter-count="unassigned"></b></span></label>
-          {team && <label><input type="radio" name="inboxFilter" value="mine"><span>Mine <b data-filter-count="mine"></b></span></label>}
-          <label><input type="radio" name="inboxFilter" value="open"><span>All open <b data-filter-count="open"></b></span></label>
-          <label><input type="radio" name="inboxFilter" value="closed"><span>Closed <b data-filter-count="closed"></b></span></label>
-          {manager && <label><input type="radio" name="inboxFilter" value="all"><span>Everything <b data-filter-count="all"></b></span></label>}
-        </div>
-        <div class="t-toolbar-row">
-          <label class="sr-only" for="inboxSearch">Search enquiries</label>
-          <input class="input grow" id="inboxSearch" type="search" placeholder="Search name, company, email or message" aria-keyshortcuts="/">
-          <!-- on a phone the filters fold behind one button, which says how many are on -->
-          <button class="btn btn-secondary btn-sm t-filter-btn" type="button" id="inboxFilterBtn" aria-expanded="false" aria-controls="inboxFilters">Filter <b class="t-filter-on" id="inboxFilterOn" hidden></b></button>
-          <div class="t-filters" id="inboxFilters">
-          {manager && (
-            <Fragment>
-              <label class="sr-only" for="inboxLine">Business line</label>
-              <select class="input" id="inboxLine">
-                <option value="all">Both lines</option>
-                <option value="agri">Agriculture</option>
-                <option value="pack">Packaging</option>
-              </select>
-              <label class="sr-only" for="inboxOwner">Handled by</label>
-              <select class="input" id="inboxOwner"><option value="">Anyone</option></select>
-            </Fragment>
-          )}
-          <span class="t-filter" hidden>
-            <label class="sr-only" for="inboxProduct">Product</label>
-            <select class="input" id="inboxProduct"><option value="">Every product</option></select>
-          </span>
-          <label class="sr-only" for="inboxSort">Sort</label>
-          <select class="input" id="inboxSort">
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="score">Strongest leads first</option>
-          </select>
-          </div>
-        </div>
-        <p class="sr-only" id="inboxSummary" role="status" aria-live="polite"></p>
-      </div>
-      <div class="t-inbox">
-        <ul class="t-list" id="inboxList" aria-label="Enquiries"></ul>
-        <article class="t-detail a-card" id="leadDetail" aria-live="off">
-          <div class="a-empty"><strong>Choose an enquiry</strong>{manager ? 'Hand it to someone on its team, or reply and quote yourself.' : pack ? 'Accept one to make it yours, then reply, send a mockup and quote.' : 'Accept one to make it yours, then reply and quote.'}</div>
-        </article>
-      </div>
-    </section>
+    <Inbox manager={manager} pack={pack} team={team} />
 
     {manager && (
-      <section class="a-view" data-view="pipeline" aria-labelledby="h-pipeline" hidden>
-        <div class="a-head">
-          <div>
-            <h1 id="h-pipeline">Pipeline</h1>
-            <p>Every open enquiry by stage, with the value of the quotes in each. Open a card to work the enquiry.</p>
-          </div>
-          <div class="a-head-tools">
-            <div class="a-seg" role="radiogroup" aria-label="Business line">
-              <label><input type="radio" name="pipeLine" value="all" checked><span>Both lines</span></label>
-              <label><input type="radio" name="pipeLine" value="agri"><span>Agriculture</span></label>
-              <label><input type="radio" name="pipeLine" value="pack"><span>Packaging</span></label>
-            </div>
-            <label class="a-period"><span>Handled by</span><select class="input" id="pipeOwner"><option value="">Anyone</option></select></label>
-          </div>
-        </div>
-        <p class="t-follow-sum" id="pipeSummary" aria-live="polite"></p>
-        <div class="t-board" id="pipeBoard" aria-label="Enquiries by stage"></div>
-      </section>
+      <Pipeline />
     )}
 
     <!-- FOLLOW-UPS -->
-    <section class="a-view" data-view="followups" aria-labelledby="h-followups" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-followups">Follow-ups</h1>
-          <p>{manager ? 'Enquiries that are waiting on someone, in both lines, with who holds each. Buyers who hear back within a day are far more likely to order.' : 'Enquiries that are waiting on you. Buyers who hear back within a day are far more likely to order, so start at the top.'}</p>
-        </div>
-      </div>
-      <p class="t-follow-sum" id="followupSum" aria-live="polite"></p>
-      <div id="followupList" class="t-follow"></div>
-    </section>
+    <Followups manager={manager} />
 
     <!-- QUOTES -->
     <!-- BUYERS: every company that has enquired, with its whole history (scripts/team/buyers.js) -->
-    <section class="a-view" data-view="buyers" aria-labelledby="h-buyers" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-buyers">Buyers <span class="a-h1-count" id="buyerCount"></span></h1>
-          <p>{manager ? 'Everyone who has enquired, in both lines, grouped by company: their people, every enquiry and quote, and where each stands.' : 'Everyone who has enquired, grouped by company: their people, every enquiry and quote, and where each stands. A returning buyer is recognised here.'}</p>
-        </div>
-      </div>
-      <div class="a-card t-toolbar">
-        <div class="t-toolbar-row">
-          <label class="sr-only" for="buyerSearch">Search buyers</label>
-          <input class="input grow" id="buyerSearch" type="search" placeholder="Search company, person, email or product">
-          {manager && (
-            <Fragment>
-              <label class="sr-only" for="buyerLine">Business line</label>
-              <select class="input" id="buyerLine"><option value="all">Both lines</option><option value="agri">Agriculture</option><option value="pack">Packaging</option></select>
-            </Fragment>
-          )}
-          <label class="sr-only" for="buyerSort">Sort</label>
-          <select class="input" id="buyerSort">
-            <option value="recent">Latest contact first</option>
-            <option value="enquiries">Most enquiries</option>
-            <option value="value">Highest quoted value</option>
-            <option value="name">By name</option>
-          </select>
-        </div>
-        <p class="sr-only" id="buyerSummary" role="status" aria-live="polite"></p>
-      </div>
-      <div class="t-inbox">
-        <ul class="t-list" id="buyerList" aria-label="Buyers"></ul>
-        <article class="t-detail a-card" id="buyerDetail" aria-live="off"></article>
-      </div>
-    </section>
+    <Buyers manager={manager} pack={pack} />
 
-    <section class="a-view" data-view="quotes" aria-labelledby="h-quotes" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-quotes">Quotes</h1>
-          <p>Every quote saved on an enquiry, newest first. Open one to follow up, or print it again.</p>
-        </div>
-      </div>
-      <div class="a-card"><div class="a-scroll" id="quoteTable"></div></div>
-    </section>
+    <Quotes />
 
     {manager && (
       <Fragment>
-        <section class="a-view" data-view="people" aria-labelledby="h-people" hidden>
-          <div class="a-head">
-            <div>
-              <h1 id="h-people">Team performance</h1>
-              <p>How each person is doing with the enquiries they hold: how fast they answer, what they quote and what they win. Enquiries count in the period they arrived.</p>
-            </div>
-            <label class="a-period"><span>Period</span>
-              <select class="input" data-period>{PERIODS.map(([v, t]) => <option value={v} selected={v === 30}>{t}</option>)}</select>
-            </label>
-          </div>
-          <div class="a-kpis" id="peopleKpis" aria-label="Team numbers"></div>
-          <div class="a-card">
-            <div class="a-card-head"><div><h2>People</h2><p>Open is everything they hold now, whatever the period. Overdue is follow-ups past due.</p></div></div>
-            <div class="a-scroll" id="peopleTable"></div>
-          </div>
-          <div class="a-grid12">
-            <div class="a-card span-6">
-              <div class="a-card-head"><div><h2>Workload</h2><p>Open enquiries each person holds now.</p></div></div>
-              <div id="peopleLoad"></div>
-            </div>
-            <div class="a-card span-6">
-              <div class="a-card-head"><div><h2>Won in the period</h2><p>Quote value on enquiries marked Won, by who won them.</p></div></div>
-              <div id="peopleWon"></div>
-            </div>
-          </div>
-        </section>
+        <People PERIODS={PERIODS} />
         <Report />
         <Traffic />
         <Ask />
-        <section class="a-view" data-view="products" aria-labelledby="h-products" hidden>
-          <div class="a-head">
-            <div>
-              <h1 id="h-products">Products</h1>
-              <p>Which products draw interest and enquiries, and how complete each is on the website. The marketing teams edit the catalogues in their workspaces.</p>
-            </div>
-            <label class="a-period"><span>Period</span>
-              <select class="input" data-period>{PERIODS.map(([v, t]) => <option value={v} selected={v === 30}>{t}</option>)}</select>
-            </label>
-          </div>
-          <div class="a-card">
-            <div class="a-card-head"><div><h2>Agriculture products</h2><p>Details opened on the agriculture page, enquiries that named the product, and how complete its content is. Sorted by interest.</p></div></div>
-            <div id="prPerformance"></div>
-          </div>
-          <div class="a-card">
-            <div class="a-card-head"><div><h2>Packaging products</h2><p>How often each product was asked for in a packing list or a studio design this period, and what it still needs on the website.</p></div></div>
-            <div id="pkPerformance"></div>
-          </div>
-        </section>
+        <ManagerProducts PERIODS={PERIODS} />
       </Fragment>
     )}
 
     {pack && (
-      <section class="a-view" data-view="mockups" aria-labelledby="h-mockups" hidden>
-        <div class="a-head">
-          <div>
-            <h1 id="h-mockups">Mockups</h1>
-            <p>Put a client's logo on any of our bags, download the picture, or save it to their enquiry to send with a reply.</p>
-          </div>
-        </div>
-        <div class="studio t-studio">
-          <div class="a-card stage">
-            <canvas class="stage-canvas" id="tmCanvas" width="1200" height="1680" tabindex="0" role="img" aria-label="Mockup preview" aria-describedby="tmInfo tmHelp"></canvas>
-            <div class="stage-meta">
-              <span class="note" id="tmHelp">Drag the design on the bag, or focus the preview and use the arrow keys.</span>
-              <span class="note" id="tmInfo"></span>
-            </div>
-          </div>
-          <div class="a-card panel">
-            <p class="sr-only" id="tmStatus" role="status" aria-live="polite"></p>
-            <div class="a-field">
-              <label for="tmLead">For enquiry</label>
-              <select class="input" id="tmLead"><option value="">No enquiry, just a picture</option></select>
-            </div>
-            <fieldset class="a-fieldset a-field">
-              <legend class="a-label">Bag</legend>
-              <div class="t-bags" id="tmBags"></div>
-            </fieldset>
-            <fieldset class="a-fieldset a-field">
-              <legend class="a-label">Size</legend>
-              <!-- the chosen product's own sizes, filled in by mockups.js -->
-              <div class="chips" id="tmSizes"></div>
-            </fieldset>
-            <fieldset class="a-fieldset a-field">
-              <legend class="a-label">Design</legend>
-              <div class="a-seg" role="radiogroup" aria-label="Design">
-                <label><input type="radio" name="tmMode" value="brand" checked><span>Logo and text</span></label>
-                <label><input type="radio" name="tmMode" value="artwork"><span>Full artwork</span></label>
-              </div>
-            </fieldset>
-            <!-- full artwork: the client's finished design across the print area -->
-            <div class="a-field" data-tm-mode="artwork" hidden>
-              <span class="a-label" id="tmArtLabel">Artwork</span>
-              <label class="a-drop" id="tmArtDrop">
-                <input type="file" id="tmArtFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" aria-labelledby="tmArtLabel tmArtTitle" aria-describedby="tmArtHint">
-                <strong id="tmArtTitle">Upload the artwork</strong>
-                <span>The finished design, the whole page: PNG, JPG, WebP or SVG.</span>
-              </label>
-              <div class="a-field" id="tmArtFromLeadWrap" hidden>
-                <label for="tmArtFromLead">Or use a file the client sent</label>
-                <select class="input" id="tmArtFromLead"></select>
-              </div>
-              <div class="a-seg" role="radiogroup" aria-label="Fit">
-                <label><input type="radio" name="tmFit" value="cover" checked><span>Fill the print area</span></label>
-                <label><input type="radio" name="tmFit" value="contain"><span>Show all of it</span></label>
-              </div>
-              <p class="a-note" id="tmArtHint"></p>
-              <p class="t-logo-note" id="tmArtAdvice" hidden></p>
-              <button class="btn btn-ghost btn-sm" type="button" id="tmRemoveArt" hidden style="justify-self:start">Remove artwork</button>
-            </div>
-            <div class="a-field" data-tm-mode="brand">
-              <span class="a-label" id="tmLogoLabel">Logo</span>
-              <div class="t-logo-sources">
-                <label class="a-drop" id="tmDrop">
-                  <input type="file" id="tmLogoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" aria-labelledby="tmLogoLabel tmDropTitle">
-                  <strong id="tmDropTitle">Upload a logo</strong>
-                  <span>PNG, JPG, SVG or WebP from your computer.</span>
-                </label>
-                <div class="a-field" id="tmFromLeadWrap" hidden>
-                  <label for="tmFromLead">Or use a file the client sent</label>
-                  <select class="input" id="tmFromLead"></select>
-                </div>
-              </div>
-              <!-- the same logo check as the public studio, with its fixes -->
-              <div class="t-logo-note" id="tmLogoAdvice" hidden>
-                <p id="tmLogoAdviceText"></p>
-                <div class="row" style="--gap:8px;flex-wrap:wrap;margin-top:8px">
-                  <button class="btn btn-secondary btn-sm" type="button" id="tmFixBox" hidden>Remove the white box</button>
-                  <button class="btn btn-secondary btn-sm" type="button" id="tmFixInk" hidden>Print it in the ink colour</button>
-                </div>
-              </div>
-              <div class="row" style="justify-content:space-between;--gap:10px;flex-wrap:wrap">
-                <label class="a-check"><input type="checkbox" id="tmOneInk"> Print the logo in the ink colour</label>
-                <button class="btn btn-ghost btn-sm" type="button" id="tmRemoveLogo" hidden>Remove logo</button>
-              </div>
-            </div>
-            <div class="a-two" data-tm-mode="brand">
-              <div class="a-field"><label for="tmText1">Main text</label><input class="input" id="tmText1" maxlength="18" autocomplete="off"></div>
-              <div class="a-field"><label for="tmText2">Second line</label><input class="input" id="tmText2" maxlength="28" autocomplete="off"></div>
-            </div>
-            <fieldset class="a-fieldset a-field" data-tm-mode="brand">
-              <legend class="a-label">Ink colour</legend>
-              <div class="chips">
-                <label class="opt opt-swatch" title="Black"><input type="radio" name="tmInk" value="black"><span style="--sw:#1E1B16"></span><b class="sr-only">Black</b></label>
-                <label class="opt opt-swatch" title="Teal"><input type="radio" name="tmInk" value="teal" checked><span style="--sw:#186078"></span><b class="sr-only">Teal</b></label>
-                <label class="opt opt-swatch" title="Leaf green"><input type="radio" name="tmInk" value="leaf"><span style="--sw:#4A5E17"></span><b class="sr-only">Leaf green</b></label>
-                <label class="opt opt-swatch" title="Red"><input type="radio" name="tmInk" value="red"><span style="--sw:#A3301E"></span><b class="sr-only">Red</b></label>
-                <label class="opt opt-swatch" title="White"><input type="radio" name="tmInk" value="white"><span style="--sw:#FAF7F0"></span><b class="sr-only">White</b></label>
-              </div>
-            </fieldset>
-            <div class="a-field">
-              <label for="tmScale">Design size</label>
-              <input class="range" id="tmScale" type="range" min="50" max="140" value="100" aria-valuetext="100 percent">
-            </div>
-            <div class="row" style="--gap:8px;flex-wrap:wrap">
-              <button class="btn btn-secondary btn-sm" type="button" id="tmCentre">Centre design</button>
-            </div>
-            <div class="panel-actions">
-              <button class="btn btn-secondary" type="button" id="tmDownloadPng">Download PNG</button>
-              <button class="btn btn-secondary" type="button" id="tmDownloadJpg">Download JPG</button>
-            </div>
-            <button class="btn btn-primary btn-lg" type="button" id="tmSave" disabled>Save to the enquiry</button>
-            <p class="a-note" id="tmSaveNote">Choose an enquiry above to save the mockup to it. Saved mockups can be attached to a reply.</p>
-          </div>
-        </div>
-      </section>
+      <Mockups />
     )}
 
     {team && <Insights lineName={pack ? 'packaging' : 'agriculture'} />}
@@ -429,114 +164,22 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
     {pack && (
       <Fragment>
       <!-- MINIMUM ORDERS: what visitors can put in a packing list -->
-      <section class="a-view" data-view="minimums" aria-labelledby="h-minimums" hidden>
-        <div class="a-head">
-          <div>
-            <h1 id="h-minimums">Prices and minimums</h1>
-            <p>The smallest quantity a visitor can request, the price per 1,000 units and how many working days an order takes, per product and, where they differ, per size. The packaging page, its product pages and the packing list use them straight away; a request below the minimum is not accepted, and prices are shown as an estimate that the quote confirms. Leave a size blank to use the product's value; leave both blank to agree it in the quote.</p>
-          </div>
-        </div>
-        <div class="a-sheet-tools">
-          <p class="hint">Easier away from the screen? Download every product and size as a spreadsheet, fill in the blank cells, and import it: you see each change before anything is saved.</p>
-          <div class="a-head-actions">
-            <button class="btn btn-secondary" type="button" id="tFactsDownload">Download as a spreadsheet</button>
-            <button class="btn btn-secondary" type="button" id="tFactsImport">Import a filled spreadsheet</button>
-            <input type="file" id="tFactsFile" accept=".csv,text/csv" hidden aria-hidden="true" tabindex="-1">
-          </div>
-        </div>
-        <section class="a-card a-import" id="tFactsPreview" aria-label="Spreadsheet import" hidden></section>
-        <p class="sr-only" id="tMinLive" role="status" aria-live="polite"></p>
-        <form class="t-min" id="tMinForm" novalidate>
-          <div class="t-min-list" id="tMinList"><p class="note">Loading the products.</p></div>
-          <div class="a-actions a-savebar"><span class="a-dirty a-grow" id="tMinDirty">Unsaved changes</span><button class="btn btn-primary" type="submit" id="tMinSave">Save prices and minimums</button></div>
-        </form>
-      </section>
+      <Minimums />
       </Fragment>
     )}
 
     {team && (
     <Fragment>
     <!-- CONTACT LINKS: the floating contact button and the footer, for both teams -->
-    <section class="a-view" data-view="social" aria-labelledby="h-social" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-social">Contact links</h1>
-          <p>WhatsApp, Telegram and the social pages in the floating contact button on every page of the website, and in the footer. Paste the full address of each profile; blank ones are hidden. The other marketing team can change these too.</p>
-        </div>
-      </div>
-      <form class="a-form a-settings t-social-form" id="tSocialForm" novalidate>
-        <div class="a-card a-group">
-          {SOCIAL_PLATFORMS.map((p) => (
-            <div class="a-field">
-              <label for={`ts-${p.key}`}>{p.label}</label>
-              <input class="input" id={`ts-${p.key}`} name={p.key} type="url" placeholder={p.placeholder} autocomplete="off" aria-describedby={`ts-${p.key}-err${p.hint ? ` ts-${p.key}-hint` : ''}`}>
-              {p.hint && <p class="hint" id={`ts-${p.key}-hint`}>{p.hint}</p>}
-              <p class="err" id={`ts-${p.key}-err`} hidden></p>
-            </div>
-          ))}
-        </div>
-        <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit" id="tSocialSave">Save contact links</button></div>
-        <p class="sr-only" id="tSocialLive" role="status" aria-live="polite"></p>
-      </form>
-    </section>
+    <Social />
 
     <!-- PARTNER LOGOS: the organisations on the home page, for both teams -->
-    <section class="a-view" data-view="partners" aria-labelledby="h-partners" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-partners">Partner logos</h1>
-          <p>The organisations Olira has worked with, moving slowly across the home page under the two businesses. Add a logo with the organisation's name, put them in order, and save. With none saved, the row is hidden. The other marketing team can change these too.</p>
-        </div>
-      </div>
-      <div class="t-pt-layout">
-        <div class="a-card t-pt-add">
-          <h2>Add a logo</h2>
-          <label class="a-drop" id="tPtDrop">
-            <input type="file" id="tPtFile" accept="image/png,image/svg+xml,image/webp,image/jpeg" aria-labelledby="tPtDropTitle" aria-describedby="tPtHint">
-            <img id="tPtPreview" alt="" hidden>
-            <strong id="tPtDropTitle">Upload the logo</strong>
-            <span id="tPtHint">The organisation's official logo, on a transparent background: SVG or PNG is best, up to 5 MB. Only show logos you have permission to use.</span>
-          </label>
-          <div class="a-field"><label for="tPtName">Organisation</label><input class="input" id="tPtName" maxlength="80" autocomplete="off" placeholder="Food and Agriculture Organization (FAO)"><p class="err" id="tPtNameErr" hidden></p></div>
-          <div class="a-field"><label for="tPtUrl">Link (optional)</label><input class="input" id="tPtUrl" type="url" maxlength="300" autocomplete="off" placeholder="https://www.fao.org"><p class="err" id="tPtUrlErr" hidden></p></div>
-          <button class="btn btn-secondary" type="button" id="tPtAdd" disabled>Add to the list</button>
-        </div>
-        <div class="a-card t-pt-listcard">
-          <h2>On the home page</h2>
-          <ol class="t-pt-list" id="tPtList" aria-label="Partner logos, in order"></ol>
-          <p class="note" id="tPtEmpty">No logos yet. The row is hidden on the home page until the first one is saved.</p>
-          <div class="t-ph-actions"><button class="btn btn-primary" type="button" id="tPtSave" disabled>Save partner logos</button><span class="note" id="tPtNote"></span></div>
-        </div>
-      </div>
-      <p class="sr-only" id="tPtLive" role="status" aria-live="polite"></p>
-    </section>
+    <Partners />
     </Fragment>
     )}
 
     <!-- ACCOUNT -->
-    <section class="a-view" data-view="account" aria-labelledby="h-account" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-account">My account</h1>
-          <p>Buyers' replies to the emails you send from here go to your work email. The site administrator creates accounts and can reset your password.</p>
-        </div>
-      </div>
-      <div class="a-settings">
-        <div class="a-card a-group">
-          <h2>Signed in as</h2>
-          <dl class="t-profile" id="accountProfile"></dl>
-        </div>
-        <form class="a-form" id="accountPassForm" novalidate>
-          <div class="a-card a-group">
-            <h2>Change password</h2>
-            <div class="a-field"><label for="apCurrent">Current password</label><input class="input" id="apCurrent" type="password" autocomplete="current-password" required></div>
-            <div class="a-field"><label for="apNew">New password</label><input class="input" id="apNew" type="password" autocomplete="new-password" minlength="12" required aria-describedby="apHint"><p class="hint" id="apHint">At least 12 characters.</p></div>
-            <div class="a-field"><label for="apNew2">Type it again</label><input class="input" id="apNew2" type="password" autocomplete="new-password" required aria-describedby="apErr"><p class="err" id="apErr" role="alert" hidden></p></div>
-          </div>
-          <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Change password</button></div>
-        </form>
-      </div>
-    </section>
+    <Account />
   </main>
 </div>
 

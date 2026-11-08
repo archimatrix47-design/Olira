@@ -1,0 +1,15 @@
+{
+  "id": "page-speed",
+  "name": "Real page speed",
+  "does": "How fast the site is for real visitors, measured in their browsers and kept only as counts.",
+  "kind": "insight",
+  "files": [
+    "lib/vitals.js",
+    "src/scripts/vitals.js"
+  ],
+  "tests": [],
+  "checkedBy": "test/ai-log.test.js reads the measures; test/ai-access.test.js sends them through the beacon.",
+  "uses": [],
+  "data": [],
+  "reads": []
+}
