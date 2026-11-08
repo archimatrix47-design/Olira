@@ -100,6 +100,7 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 <script is:inline>(function(){var s=document.querySelector('[data-printed]');function d(){try{s.textContent=', '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}catch(e){}}d();addEventListener('beforeprint',d);})();</script>
 <ContactFab />
 <script>import '../scripts/fab.js';</script>
+<script>import '../scripts/vitals.js'; // real visitors' page speed, counted with the beacon below</script>
 <script is:inline>
   // First-party analytics: no cookies, no third party, nothing stored in the
   // browser. The server counts visitors with a salted hash that changes daily.

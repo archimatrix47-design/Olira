@@ -156,6 +156,23 @@ test('SECURITY: integrations writes require an admin session', async () => {
   assert.equal((await post('/api/integrations/ads', { conversionId: '1234567890' })).status, 401);
 });
 
+test('the logo is only ever a file the admin uploaded (every page shows it)', async () => {
+  const admin = await adminLogin();
+  const auth = { Authorization: `Bearer ${admin}` };
+  for (const bad of ['javascript:alert(1)', 'https://evil.example/logo.png', '/uploads/../../server.js', '/uploads/logo-123.webp', { src: 'x' }]) {
+    const r = await post('/api/branding', { logo: bad }, auth);
+    assert.equal(r.status, 400, `logo ${JSON.stringify(bad)} refused (a missing file too)`);
+  }
+  fs.mkdirSync(path.join(tmp, 'uploads'), { recursive: true });
+  fs.writeFileSync(path.join(tmp, 'uploads', 'logo-1700000000000.webp'), 'x');
+  const ok = await post('/api/branding', { logo: '/uploads/logo-1700000000000.webp' }, auth);
+  assert.equal(ok.status, 200);
+  assert.equal((await (await get('/api/branding')).json()).logo, '/uploads/logo-1700000000000.webp');
+  assert.equal((await post('/api/branding', { logo: '' }, auth)).status, 200, 'the logo can be cleared');
+  assert.equal((await (await get('/api/branding')).json()).logo, null);
+});
+
+
 test('admin can save integrations with a token', async () => {
   const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
   const r = await post('/api/integrations/analytics', { measurementId: 'G-ABCDEFGHIJ', propertyId: '' }, { Authorization: `Bearer ${token}` });
@@ -346,4 +363,6 @@ test('progressive lockout returns 429 after repeated failures', async () => {
   }
   assert.equal(sawLockout, true);
 });
+
+
 

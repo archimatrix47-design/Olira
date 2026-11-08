@@ -15,6 +15,7 @@ import ThemeButton from '../site/ThemeButton.astro';
 import { SOCIAL_PLATFORMS } from '../../../lib/social.js';
 import Dashboard from './views/Dashboard.astro';
 import Traffic from './views/Traffic.astro';
+import Ask from './views/Ask.astro';
 import Report from './views/Report.astro';
 import AgriProducts from './views/AgriProducts.astro';
 import PackProducts from './views/PackProducts.astro';
@@ -48,11 +49,12 @@ const icon: Record<string, string> = {
   partners: '<rect x="3" y="7" width="7" height="10" rx="1.5"/><rect x="14" y="7" width="7" height="10" rx="1.5"/><path d="M10 12h4"/>',
   account: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>',
   buyers: '<path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-5h6v5M9 11h.01M15 11h.01"/>',
+  ask: '<path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2M12 16.5h.01"/>',
 };
 const nav: { label: string, items: string[][] }[] = manager ? [
   { label: 'Daily', items: [['dashboard', 'Dashboard'], ['inbox', 'Enquiries'], ['pipeline', 'Pipeline'], ['followups', 'Follow-ups']] },
   { label: 'Sales', items: [['buyers', 'Buyers'], ['quotes', 'Quotes'], ['people', 'Team performance'], ['report', 'Report']] },
-  { label: 'Website', items: [['traffic', 'Traffic'], ['products', 'Products']] },
+  { label: 'Website', items: [['traffic', 'Traffic'], ['products', 'Products'], ['ask', 'Ask the data']] },
   { label: 'You', items: [['account', 'My account']] },
 ] : [
   { label: 'Sales', items: [['inbox', 'Inbox'], ['followups', 'Follow-ups'], ['quotes', 'Quotes'], ['buyers', 'Buyers'], ...(pack ? [['mockups', 'Mockups']] : [])] },
@@ -281,6 +283,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
         </section>
         <Report />
         <Traffic />
+        <Ask />
         <section class="a-view" data-view="products" aria-labelledby="h-products" hidden>
           <div class="a-head">
             <div>
@@ -313,7 +316,7 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
         </div>
         <div class="studio t-studio">
           <div class="a-card stage">
-            <canvas class="stage-canvas" id="tmCanvas" width="1200" height="1680" tabindex="0" role="img" aria-label="Bag mockup preview" aria-describedby="tmInfo tmHelp"></canvas>
+            <canvas class="stage-canvas" id="tmCanvas" width="1200" height="1680" tabindex="0" role="img" aria-label="Mockup preview" aria-describedby="tmInfo tmHelp"></canvas>
             <div class="stage-meta">
               <span class="note" id="tmHelp">Drag the design on the bag, or focus the preview and use the arrow keys.</span>
               <span class="note" id="tmInfo"></span>
@@ -433,6 +436,15 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
             <p>The smallest quantity a visitor can request, the price per 1,000 units and how many working days an order takes, per product and, where they differ, per size. The packaging page, its product pages and the packing list use them straight away; a request below the minimum is not accepted, and prices are shown as an estimate that the quote confirms. Leave a size blank to use the product's value; leave both blank to agree it in the quote.</p>
           </div>
         </div>
+        <div class="a-sheet-tools">
+          <p class="hint">Easier away from the screen? Download every product and size as a spreadsheet, fill in the blank cells, and import it: you see each change before anything is saved.</p>
+          <div class="a-head-actions">
+            <button class="btn btn-secondary" type="button" id="tFactsDownload">Download as a spreadsheet</button>
+            <button class="btn btn-secondary" type="button" id="tFactsImport">Import a filled spreadsheet</button>
+            <input type="file" id="tFactsFile" accept=".csv,text/csv" hidden aria-hidden="true" tabindex="-1">
+          </div>
+        </div>
+        <section class="a-card a-import" id="tFactsPreview" aria-label="Spreadsheet import" hidden></section>
         <p class="sr-only" id="tMinLive" role="status" aria-live="polite"></p>
         <form class="t-min" id="tMinForm" novalidate>
           <div class="t-min-list" id="tMinList"><p class="note">Loading the products.</p></div>

@@ -3,12 +3,18 @@
 // (the print area); the drawing itself lives in mockup/engine.js and is shared
 // with the packaging team's workspace. Products without a photo yet are in the
 // catalogue and the packing list, and join the studio as soon as the admin adds one.
+// A box the packaging team has given a 3D shape and measurements joins it too,
+// shown as a 3D box (studio-3d.js) until it has a photo.
 import { $, $$, h, prefill, track, formHooks } from './common.js';
 import { INKS, CANVAS_W, defaultDesign, prepare, render, toArtboard, clampDesign, snapDesign, drawGuides, exportImage, specLine, saveBlob, usableInStudio, onThemeChange, sizesOf, sizeOf, singular, artworkAdvice } from './mockup/engine.js';
 import { onScreen, quickThenFull, fittedWidth } from './print-queue.js';
 import { getProducts, onProducts } from './packaging-data.js';
 import { checkLogo, removeBox } from './mockup/logo-check.js';
 import { thumbUrl, thumbSet } from '../../lib/thumb-url.js';
+import { studioOrder } from './catalogue-facts.js';
+import { MEMORY_KEY, toSaved, fromSaved } from './studio-memory.js';
+import { has3d } from '../../lib/box-styles.js';
+import { view3d } from './studio-3d.js';
 
 // designer use, for the admin insights: counted once per page view except downloads and quotes
 let changedOnce = false;
@@ -20,8 +26,20 @@ const chips = $('#templateChips');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
 let products = getProducts();
-let templates = products.filter(usableInStudio);
+let templates = studioOrder(products);
 const state = { template: templates[0]?.id || null, logoFile: null, artworkFile: null, ...defaultDesign() };
+
+// the last design made in this browser (studio-memory.js): choices only, never files;
+// a product named in the address (below) still wins
+let saved = null;
+try { saved = fromSaved(localStorage.getItem(MEMORY_KEY), { templates, inks: INKS }); } catch (e) { saved = null; }
+if (saved) Object.assign(state, saved);
+/** Keep the design once the visitor has changed something (a first visit stores nothing). */
+function remember() {
+  if (!changedOnce) return;
+  try { localStorage.setItem(MEMORY_KEY, JSON.stringify(toSaved(state))); } catch (e) { /* private window: this visit only */ }
+  const again = document.getElementById('startAgain'); if (again) again.hidden = false;
+}
 
 // ?handle=twisted (home page links) picks the first bag with that handle; ?bag=<id> picks one exactly
 const params = new URLSearchParams(location.search);
@@ -50,11 +68,24 @@ const tpl = () => templates.find((t) => t.id === state.template) || templates[0]
 let current = null, pending = 0; // current: the prepared product on the canvas now (pointer positions map through it)
 let guides = null; // { x, y } while a drag is snapped to the centre lines
 // `quick`: at the size the preview is shown (CSS pixels), for each key and drag
-// step; the full 1200 px picture follows once the visitor pauses (preview).
+// step; the full 1200 px picture follows once the visitor pauses (preview). The
+// request summary and the 3D box wait for that full drawing, so a key costs only
+// the quick picture.
+const drawn = (t) => document.dispatchEvent(new CustomEvent('studio:drawn', { detail: { state, product: t } }));
 async function draw({ quick = false } = {}) {
   const t = tpl();
-  if (!t) { $('#stageInfo').textContent = 'No bags are set up yet.'; return; }
+  if (!t) { $('#stageInfo').textContent = 'No products are set up yet.'; return; }
   const id = ++pending;
+  if (!usableInStudio(t)) {
+    // a box with no photo yet: only the 3D view shows it (studio-3d.js), so the
+    // last product's photo must not stay on the stage while it loads
+    current = null;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.parentElement.style.backgroundColor = '';
+    $('#stageInfo').textContent = specLine(t, state);
+    if (!quick) { updateSummary(); drawn(t); remember(); }
+    return;
+  }
   const B = await prepare(t, quick ? { width: shownWidth() } : {});
   if (id !== pending) return;
   current = B;
@@ -62,8 +93,12 @@ async function draw({ quick = false } = {}) {
   drawGuides(ctx, B, guides, accent(), state.mode);
   canvas.parentElement.style.backgroundColor = backdrop(B);
   $('#stageInfo').textContent = specLine(t, state);
+  if (quick) return;
   updateSummary();
   if (state.mode === 'artwork') adviseArtwork();
+  // the 3D view (studio-3d.js) draws the same design on its box
+  drawn(t);
+  remember();
 }
 // The frame around the fitted photo takes the colour of the photo's own edge, so
 // the backdrop the bag was photographed on simply continues to the frame.
@@ -117,19 +152,24 @@ function buildChips() {
     if (t.description) text.append(h('span', { class: 'bagopt-desc' }, t.description));
     if (t.minOrder) text.append(h('span', { class: 'bagopt-desc' }, `Minimum order ${Number(t.minOrder).toLocaleString('en-US')}`));
     const card = h('span', { class: 'bagopt-card' });
-    const set = thumbSet(t.image, 56);
-    card.append(h('img', { class: 'bagopt-photo', src: thumbUrl(t.image, 120), ...(set ? { srcset: set } : {}), alt: '', width: '56', height: '56', loading: 'lazy', decoding: 'async' }), text);
+    const set = t.image && thumbSet(t.image, 56);
+    card.append(t.image
+      ? h('img', { class: 'bagopt-photo', src: thumbUrl(t.image, 120), ...(set ? { srcset: set } : {}), alt: '', width: '56', height: '56', loading: 'lazy', decoding: 'async' })
+      : h('span', { class: 'bagopt-photo bagopt-3d', 'aria-hidden': 'true' }, '3D'), text);
     const label = h('label', { class: 'bagopt' });
     label.append(input, card);
     return label;
   }));
   bindTemplateChips();
 }
+// the flat-packed bundles note is about bags: only shown while a bag is chosen
+const syncBundles = () => { const n = $('#bundlesNote'); if (n) n.hidden = (tpl()?.family || 'bags') !== 'bags'; };
 function bindTemplateChips() {
   $$('input[name="template"]', chips).forEach((r) => r.addEventListener('change', () => {
     if (!r.checked) return;
     state.template = r.value; state.dx = 0; state.dy = 0;
     buildSizes();
+    syncBundles();
     draw().then(() => announce(`Preview updated. ${specLine(tpl(), state)}.`)); noteChange();
   }));
 }
@@ -155,6 +195,7 @@ function buildSizes() {
     if (s.w && s.h) { const box = h('span', { class: 'size-box', 'aria-hidden': 'true' }); box.style.setProperty('--w', s.w); box.style.setProperty('--h', s.h); card.append(box); }
     card.append(h('span', { class: 'size-name' }, s.label));
     if (s.dims) card.append(h('span', { class: 'size-dims' }, s.dims));
+    if (s.holds) card.append(h('span', { class: 'size-holds' }, `Holds ${s.holds}`));
     const label = h('label', { class: 'sizeopt' }); label.append(input, card);
     input.addEventListener('change', () => { if (!input.checked) return; state.size = s.id; draw(); announce(`Preview updated. ${specLine(tpl(), state)}.`); noteChange(); });
     return label;
@@ -235,7 +276,7 @@ function loadLogo(file) {
   img.onload = () => {
     state.logo = img; state.logoFile = file;
     $('#dropTitle').textContent = file.name; sub.textContent = 'Choose or drop another file to replace it.';
-    $('#removeLogo').hidden = false; draw(); announce(`Logo added: ${file.name}. It is on the bag preview.`);
+    $('#removeLogo').hidden = false; draw(); announce(`Logo added: ${file.name}. It is on the preview.`);
     readLogo(img, true);
     track({ event: 'studio_logo' });
   };
@@ -285,7 +326,7 @@ function loadArtwork(file) {
   const sub = $('#artSub');
   if (!file) return;
   if (file.type === 'application/pdf') {
-    sub.textContent = 'A PDF cannot be previewed here yet. Export the page as a PNG or JPG to see it on the bag; you can attach the PDF itself to your quote request.';
+    sub.textContent = 'A PDF cannot be previewed here yet. Export the page as a PNG or JPG to see it on the product; you can attach the PDF itself to your quote request.';
     announce(sub.textContent); return;
   }
   if (!/^image\/(png|jpeg|svg\+xml|webp)$/.test(file.type)) { sub.textContent = 'Please choose a PNG, JPG, WebP or SVG image of your design.'; announce(sub.textContent); return; }
@@ -351,7 +392,7 @@ const endDrag = () => {
   const centred = guides && guides.x && guides.y;
   drag = null; guides = null; canvas.classList.remove('is-dragging');
   preview.now();
-  announce(centred ? 'Design centred on the bag.' : 'Design moved.');
+  announce(centred ? 'Design centred.' : 'Design moved.');
 };
 canvas.addEventListener('pointerup', endDrag);
 canvas.addEventListener('pointercancel', endDrag);
@@ -366,14 +407,20 @@ $$('[data-nudge]').forEach((b) => b.addEventListener('click', () => {
   const m = { left: [-30, 0], right: [30, 0], up: [0, -30], down: [0, 30] }[dir];
   move(m[0], m[1], `Design moved ${dir}.`);
 }));
-$('#resetPos').addEventListener('click', () => { state.dx = 0; state.dy = 0; draw(); announce('Design centred on the bag.'); });
+$('#resetPos').addEventListener('click', () => { state.dx = 0; state.dy = 0; draw(); announce('Design centred.'); });
 
-const fileBase = () => `olira-${(tpl()?.handle || tpl()?.id || 'bag').replace(/[^\w-]+/g, '')}-${state.size}-mockup`;
+const fileBase = () => `olira-${(tpl()?.handle || tpl()?.id || 'packaging').replace(/[^\w-]+/g, '')}-${state.size}-mockup`;
 $('#download').addEventListener('click', async () => {
-  if (!current) return;
+  if (!current && !view3d.on()) {
+    // a box with no photo whose 3D view is not ready: say why nothing happened
+    announce(view3d.state() === 'failed' ? 'This device cannot show the 3D box, so there is no picture to download.' : 'The 3D box is still loading. Try again in a moment.');
+    return;
+  }
   try {
-    // always the full 1200 px picture, even straight after typing (the preview may be the quick one)
-    saveBlob(await exportImage(await prepare(tpl()), state, { type: 'png' }), `${fileBase()}.png`);
+    // the 3D box as it is turned now; else always the full 1200 px picture, even
+    // straight after typing (the preview may be the quick one)
+    if (view3d.on()) saveBlob(await view3d.snapshot(), `${fileBase()}-3d.png`);
+    else saveBlob(await exportImage(await prepare(tpl()), state, { type: 'png' }), `${fileBase()}.png`);
     announce('Mockup image downloaded.');
     track({ event: 'studio_download' });
   } catch (e) { announce(e.message); }
@@ -387,18 +434,25 @@ function updateSummary() {
   const what = state.mode === 'artwork'
     ? (state.artworkFile ? `, with your artwork (${state.artworkFile.name})` : ', no artwork yet')
     : (state.logoFile ? `, with your logo (${state.logoFile.name})` : ', no logo yet');
-  out.textContent = `${specLine(tpl(), state)}${what}. A picture of the mockup is included.`;
+  // a box with no photo can only be pictured in 3D; where that cannot run, the settings still go
+  const noPicture = !usableInStudio(tpl()) && view3d.state() === 'failed';
+  out.textContent = `${specLine(tpl(), state)}${what}. ${noPicture ? 'No picture can be made on this device; the team will draw it from these settings.' : 'A picture of the mockup is included.'}`;
 }
 formHooks.design = async () => {
-  if (!current || !sendDesign?.checked) return null;
   const t = tpl();
+  if (!t || !sendDesign?.checked) return null;
+  const on3d = view3d.on(), photo = usableInStudio(t);
+  if (!photo && !has3d(t)) return null;
+  // a box shown only in 3D is sent as a 3D design even when its picture could not be made
+  const as3d = on3d || !photo;
   return {
     design: { template: t.id, templateName: t.name, size: state.size, ink: state.ink, text1: state.text1, text2: state.text2, scale: state.scale, dx: Math.round(state.dx), dy: Math.round(state.dy), oneInk: state.oneInk, hasLogo: !!state.logoFile, logoCheck: state.logoFile ? uploadCheck : '', boxRemoved: !!state.logoFile && boxRemoved,
-      mode: state.mode, fit: state.fit, hasArtwork: state.mode === 'artwork' && !!state.artworkFile },
+      mode: state.mode, fit: state.fit, hasArtwork: state.mode === 'artwork' && !!state.artworkFile,
+      view: as3d ? '3d' : 'photo', board: as3d ? view3d.board() : '' },
     // only the files the chosen design uses
     logo: state.mode === 'brand' ? state.logoFile : null,
     artwork: state.mode === 'artwork' ? state.artworkFile : null,
-    mockup: await exportImage(await prepare(t), state, { type: 'png', scale: 0.8 }),
+    mockup: on3d ? await view3d.snapshot() : photo ? await exportImage(await prepare(t), state, { type: 'png', scale: 0.8 }) : null,
   };
 };
 
@@ -421,20 +475,49 @@ document.addEventListener('studio:pick', (e) => {
 /* ---------------- start ---------------- */
 buildSizes();
 syncRadios();
-draw().catch(() => { $('#stageInfo').textContent = 'The bag image could not load. Refresh the page to try again.'; });
+syncBundles();
+// a remembered design: its text is the visitor's own, so the brand typed above leaves it be (live-print.js)
+if (saved) {
+  for (const [id, key] of [['text1', 'text1'], ['text2', 'text2']]) {
+    const el = document.getElementById(id);
+    if (el && saved[key] !== undefined) { el.value = state[key]; el.dataset.own = '1'; }
+  }
+  const sc = $('#scale'); sc.value = Math.round(state.scale * 100); sc.setAttribute('aria-valuetext', `${sc.value} percent`);
+  $('#oneInk').checked = !!state.oneInk;
+  const again = document.getElementById('startAgain'); if (again) again.hidden = false;
+}
+document.getElementById('startAgain')?.addEventListener('click', (e) => {
+  try { localStorage.removeItem(MEMORY_KEY); } catch (x) { /* nothing kept */ }
+  Object.assign(state, defaultDesign(), { template: templates[0]?.id || null, logo: null, logoFile: null, artwork: null, artworkFile: null });
+  changedOnce = false;
+  for (const id of ['text1', 'text2']) { const el = document.getElementById(id); if (el) { delete el.dataset.own; el.value = state[id]; } }
+  const sc = $('#scale'); sc.value = 100; sc.setAttribute('aria-valuetext', '100 percent');
+  $('#oneInk').checked = false;
+  buildChips(); buildSizes(); syncRadios(); syncBundles();
+  document.dispatchEvent(new CustomEvent('studio:reset')); // live-print.js puts the typed brand back in
+  draw();
+  e.currentTarget.hidden = true;
+  announce('The studio is back to a new design.');
+  $('#text1').focus();
+});
+draw().catch(() => { $('#stageInfo').textContent = 'The product image could not load. Refresh the page to try again.'; });
 document.fonts?.load('700 60px "Inter"').then(() => draw()).catch(() => {});
 // a bag with a dark theme photo switches with the page
 onThemeChange(() => draw());
-// warm the other bags so switching is instant
-templates.slice(0, 4).forEach((t) => { if (t.id !== state.template) prepare(t).catch(() => {}); });
+// warm the other photographed products so switching is instant (a box shown only in 3D has no photo to fetch)
+templates.filter(usableInStudio).slice(0, 4).forEach((t) => { if (t.id !== state.template) prepare(t).catch(() => {}); });
+
+// the 3D view could not start: the request summary stops promising a picture of a box with no photo
+document.addEventListener('studio:3d-unavailable', updateSummary);
 
 // products changed in the admin since this page was built
 onProducts((list) => {
   products = list;
-  templates = list.filter(usableInStudio);
+  templates = studioOrder(list);
   if (!templates.some((t) => t.id === state.template)) state.template = templates[0]?.id || null;
   if (!changedOnce) pickFromUrl();
   buildChips();
   buildSizes();
+  syncBundles();
   draw();
 });

@@ -8,6 +8,7 @@ import * as company from './company.js';
 import * as settings from './settings.js';
 import * as team from './team.js';
 import * as activity from './activity.js';
+import * as ai from './ai.js';
 import { initShell, watch } from './tools.js';
 
 const VIEWS = {
@@ -20,6 +21,7 @@ const VIEWS = {
   marketing: settings.showMarketing,
   security: settings.showSecurity,
   activity: activity.show,
+  ai: ai.show,
 };
 const initialised = new Set();
 

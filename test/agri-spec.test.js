@@ -38,7 +38,7 @@ test('only the known fields, one short line each (self-check)', () => {
   assert.equal(s.packing.length, 120);
   assert.deepEqual(specRowsOf({ packing: 'PP bags', moisture: '6% max' }), [['Moisture', '6% max'], ['Packing', 'PP bags']], 'rows follow the list order');
   assert.ok(SPEC_FIELDS.length >= 10);
-  for (const k of ['terms', 'inspection', 'samples', 'payment']) assert.ok(SPEC_FIELDS.some((f) => f.key === k), `the importer's ${k} can be filled in`);
+  for (const k of ['terms', 'inspection', 'samples', 'payment', 'aflatoxin', 'hsCode']) assert.ok(SPEC_FIELDS.some((f) => f.key === k), `the importer's ${k} can be filled in`);
   assert.deepEqual(specRowsOf({ terms: 'FOB Djibouti', samples: '1 kg' }), [['Trade terms', 'FOB Djibouti'], ['Samples', '1 kg']], 'and show only once filled in');
 });
 

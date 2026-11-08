@@ -14,6 +14,10 @@
 }
 
 :root[data-theme="dark"] .half-bg img, :root[data-theme="dark"] .half-peek img { filter: brightness(.78) saturate(.9); }
+/* the logo's dark teal wordmark on the dark header and footer: lifted, same hues
+   (about 6.8:1 on the page; a filter, so a logo the admin uploads is lifted too) */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.brand, .foot-logo) img { filter: brightness(1.75) saturate(1.05); } }
+:root[data-theme="dark"] :is(.brand, .foot-logo) img { filter: brightness(1.75) saturate(1.05); }
 
 /* ---------- base ---------- */
 html { scroll-behavior: smooth; scroll-padding-top: 80px; overflow-x: clip; }
@@ -172,6 +176,8 @@ p { text-wrap: pretty; }
 .pg-ph { position: absolute; inset: 0; display: grid; align-content: center; gap: 8px; padding: 18px; text-align: center; background: var(--stage); color: var(--ink-2); }
 .pg-ph b { font-size: clamp(1.0625rem, .95rem + .5vw, 1.375rem); font-weight: 600; line-height: 1.2; color: var(--ink); }
 .pg-ph small { font-size: .8125rem; }
+/* a box the studio shows in 3D while it has no photo */
+.pg-3d { justify-self: center; margin-top: 4px; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; font-style: normal; font-size: .75rem; font-weight: 600; color: var(--ink-2); }
 .pg-cap { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; align-items: start; padding-inline: 2px; }
 .pg-name { font-size: 1rem; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
 .pg-sub { grid-column: 1; font-size: .875rem; color: var(--ink-2); }
@@ -277,6 +283,23 @@ p { text-wrap: pretty; }
 .stage-frame { height: clamp(360px, calc(100svh - 300px), 760px); border-radius: 8px; background: var(--surface-2); overflow: hidden; }
 .stage-canvas { width: 100%; height: 100%; object-fit: contain; display: block; touch-action: none; cursor: grab; }
 .stage-canvas.is-dragging { cursor: grabbing; }
+/* the studio's 3D box over the photo mockup, and its controls (studio-3d.js) */
+.stage-frame { position: relative; }
+.stage-3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+.stage-3d[hidden] { display: none; }
+.stage-3d:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.stage-3d-bar { display: grid; gap: 12px; margin-top: 12px; }
+.stage-3d-bar[hidden], .stage-3d-bar [hidden] { display: none; }
+.stage-3d-controls { display: grid; gap: 10px; }
+.views-3d { display: flex; flex-wrap: wrap; gap: 6px; }
+.views-3d [aria-pressed="true"] { border-color: var(--ink); background: var(--surface-2); }
+/* on the stage, for a box with no photo: loading, or why no box can be shown */
+.stage-3d-msg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px; text-align: center; font-size: .9375rem; color: var(--ink-2); text-wrap: balance; }
+.stage-3d-msg[hidden] { display: none; }
+/* the studio's small notes stay readable on a tablet, where the panel runs wide */
+#studio .note { max-width: 36em; }
+/* a box with no photo yet, in the studio's product list */
+.bagopt-3d { display: grid; place-items: center; font-weight: 700; font-size: .875rem; letter-spacing: .02em; color: var(--ink-2); border: 1px dashed var(--line-strong); }
 
 /* bags: the admin's photographed products, each a card with its own photo */
 .bags { display: grid; gap: 8px; }
@@ -314,6 +337,7 @@ p { text-wrap: pretty; }
 .size-box { width: calc(var(--w) * var(--cm)); height: calc(var(--h) * var(--cm)); margin-bottom: 8px; border: 1.5px solid currentColor; border-radius: 2px; background: var(--kraft-fill); transition: transform .3s var(--ease); }
 .size-name { font-weight: 600; font-size: .9375rem; color: var(--ink); }
 .size-dims { font-size: .875rem; text-align: center; text-wrap: balance; font-variant-numeric: tabular-nums; }
+.size-holds { font-size: .8125rem; text-align: center; text-wrap: balance; color: var(--ink-2); }
 .sizeopt input:checked + .sizeopt-card { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .sizeopt input:checked + .sizeopt-card .size-name { color: var(--accent); }
 .sizeopt input:focus-visible + .sizeopt-card { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -360,6 +384,11 @@ fieldset.choice { border: 0; margin: 0; padding: 0; min-width: 0; }
 .nudge .round-btn { width: 44px; height: 44px; border-radius: 12px; }
 .check { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; font-size: .875rem; color: var(--ink-2); min-height: 32px; }
 .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.start-again { justify-self: start; margin-top: 4px; }
+/* the packing list: the size and its measurements on a row of their own, then quantity and print */
+.pl-fields .pl-size { grid-column: 1 / -1; }
+.pl-undo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--surface-2, rgba(0,0,0,.04)); font-size: .875rem; color: var(--ink); }
+.pl-undo[hidden] { display: none; }
 /* a studio option: a 24 px box, and the whole row (44 px tall) is the label to tap */
 .check.check-row { flex: 1 1 auto; min-height: 44px; }
 .check.check-row input { flex: none; width: 24px; height: 24px; margin: 0; }
@@ -372,10 +401,12 @@ fieldset.choice { border: 0; margin: 0; padding: 0; min-width: 0; }
    keeps clear of it. The bags become one sideways row of photos, not a long list. */
 @media (max-width: 960px) {
   .stage { position: sticky; top: var(--bar-h); z-index: 6; padding: 8px; box-shadow: 0 12px 24px -20px rgba(0,0,0,.45); }
-  .stage-frame { height: 34svh; }
+  /* a little lower than before, so the choices under it get more of the screen */
+  .stage-frame { height: 28svh; }
   .stage-meta { margin-top: 6px; }
   .stage-meta #stageHelp { display: none; }
-  #studio .panel :is(input, textarea, select, button, .drop) { scroll-margin-top: calc(var(--bar-h) + 34svh + 48px); }
+  .stage-meta #stageInfo { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #studio .panel :is(input, textarea, select, button, .drop) { scroll-margin-top: calc(var(--bar-h) + 28svh + 44px); }
   .bags { grid-auto-flow: column; grid-auto-columns: 104px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 2px 2px 8px; scrollbar-width: thin; }
   .bagopt { scroll-snap-align: start; }
   .bagopt-card { height: 100%; grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: start; gap: 6px; padding: 8px 6px 10px; }
@@ -502,6 +533,13 @@ a.reach-num:hover { color: var(--accent); text-decoration: underline; }
 .pd { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(28px, 5vw, 72px); align-items: center; padding-block: clamp(20px, 3vw, 40px) clamp(48px, 6vw, 88px); }
 .pd-media { position: relative; aspect-ratio: 4 / 5; border-radius: 14px; overflow: hidden; background: var(--stage); display: grid; place-items: center; }
 .pd-media > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* a box with no photo yet: its 3D preview in the panel (pd-pack.js) */
+.pd-media.has-3d .pd-tile { display: none; }
+.pd-media.is-loading-3d .pd-tile::after { content: "Loading the 3D box"; display: block; margin-top: 8px; font-size: .875rem; font-weight: 400; color: var(--ink-2); }
+.pd-3d-bar { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 6px; z-index: 2; }
+.pd-3d-note { margin: 10px 0 0; max-width: 46ch; }
+/* "Add to packing list" is a button set like the links beside it */
+button.act { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
 /* a cut-out stands on the floor of the frame at a fixed share of its height, so tall
    bags and wide boxes both fit whole (a grid row has no height for 100% to use) */
 .pd-media.is-cutout .stand { position: absolute; left: 50%; bottom: 7%; height: 82%; width: auto; transform: translateX(-50%); filter: drop-shadow(0 18px 18px rgba(60,40,10,.16)); }

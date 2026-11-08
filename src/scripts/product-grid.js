@@ -22,12 +22,13 @@ export const EAGER = 4;
 export const DETAIL_SIZES = '(max-width: 760px) calc(100vw - 24px), 450px';
 
 /** What a card shows: a change to any of it means the card is rebuilt, otherwise it is kept (and its print). */
-export const itemKey = (p) => JSON.stringify([p.id, p.name, p.sub || '', p.image || '', p.cutout ? 1 : 0, p.print || null, p.note || '']);
+export const itemKey = (p) => JSON.stringify([p.id, p.name, p.sub || '', p.image || '', p.cutout ? 1 : 0, p.print || null, p.note || '', p.in3d ? 1 : 0]);
 
 /**
  * One card. p: { id, name, sub, image, cat?, cutout?, note?, print? } where print is
  * { cutout, quad, safeTop } when the brand is printed on it live, and note is the
- * line a card without a photo shows instead (its sizes). `lazy`: the photo waits for
+ * line a card without a photo shows instead (its sizes); in3d says the studio shows
+ * that product as a 3D box. `lazy`: the photo waits for
  * the browser; `eager`: it loads at once.
  */
 export function cardHTML(p, { eager = false, lazy = false } = {}) {
@@ -35,7 +36,7 @@ export function cardHTML(p, { eager = false, lazy = false } = {}) {
   const media = p.image
     ? `<img src="${esc(p.image)}"${set ? ` srcset="${esc(set)}" sizes="${CARD_SIZES}"` : ''} alt="" width="800" height="1000" draggable="false" decoding="async" loading="${eager && !lazy ? 'eager' : 'lazy'}">`
       + (p.print ? `<canvas class="flow-print" data-print data-cutout="${esc(p.print.cutout)}" data-quad="${esc(JSON.stringify(p.print.quad))}" data-safe-top="${Number(p.print.safeTop ?? 0.04)}" data-ink="teal" width="640" height="800" aria-hidden="true"></canvas>` : '')
-    : `<span class="pg-ph" aria-hidden="true"><b>${esc(p.name)}</b>${p.note ? `<small>${esc(p.note)}</small>` : ''}</span>`;
+    : `<span class="pg-ph" aria-hidden="true"><b>${esc(p.name)}</b>${p.note ? `<small>${esc(p.note)}</small>` : ''}${p.in3d ? '<em class="pg-3d">See it in 3D</em>' : ''}</span>`;
   return `<li data-id="${esc(p.id)}" data-key="${esc(itemKey(p))}"><button type="button" class="pg-card${p.cutout ? ' is-cutout' : ''}${p.image ? '' : ' no-photo'}" data-id="${esc(p.id)}" data-cat="${esc((p.cat || '').toLowerCase())}" aria-haspopup="dialog"><span class="pg-media">${media}</span><span class="pg-cap"><span class="pg-name">${esc(p.name)}</span>${p.sub ? `<span class="pg-sub">${esc(p.sub)}</span>` : ''}${OPEN_ICON}</span></button></li>`;
 }
 

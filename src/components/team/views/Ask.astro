@@ -1,0 +1,50 @@
+---
+// Manager: ask the website's performance log (lib/ai-log.js) in plain words. The
+// answer comes from the local model the admin connected (lib/ai-access.js), reached
+// from this browser only. Filled in by scripts/team/manager/ask.js.
+const IDEAS = [
+  'Which products do visitors look at but rarely ask about?',
+  'Where do our visitors come from, and which of them send enquiries?',
+  'Is the website fast enough for visitors on phones?',
+  'What should the teams fill in first in the catalogues?',
+  'How quickly are enquiries answered, and is it getting better?',
+];
+---
+<!-- ASK THE DATA: questions about the website, answered by the local model -->
+<section class="a-view" data-view="ask" aria-labelledby="h-ask" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-ask">Ask the data</h1>
+      <p>Ask how the website is doing, in plain words. A model on your own computer answers from the website's performance log: visits, speed, products, enquiries and catalogues, as counts and totals. No names, emails or messages are in it, and nothing leaves your computer.</p>
+    </div>
+    <div class="a-head-actions">
+      <label class="a-period"><span>Period</span>
+        <select class="input" id="askDays">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="365">Last 12 months</option>
+        </select>
+      </label>
+      <button class="btn btn-secondary" type="button" id="askDownload">Download the data log</button>
+    </div>
+  </div>
+  <p class="a-card a-ask-model" id="askModel">Checking for a local model.</p>
+  <div class="a-card a-ask">
+    <div class="a-ask-ideas" id="askIdeas" role="group" aria-label="Questions to start with">
+      {IDEAS.map((q) => <button class="btn btn-secondary btn-sm" type="button" data-ask-idea>{q}</button>)}
+    </div>
+    <form class="a-ask-form" id="askForm" novalidate>
+      <label class="a-label" for="askQ">Your question</label>
+      <textarea class="input" id="askQ" rows="3" maxlength="500" placeholder="For example: which pages do visitors leave quickly?"></textarea>
+      <div class="a-actions">
+        <button class="btn btn-primary" type="submit" id="askGo">Ask</button>
+        <button class="btn btn-secondary" type="button" id="askStop" hidden>Stop</button>
+        <button class="btn btn-ghost" type="button" id="askClear" hidden>Start a new conversation</button>
+      </div>
+    </form>
+    <p class="sr-only" id="askStatus" role="status" aria-live="polite"></p>
+    <div class="a-ask-thread" id="askThread"></div>
+  </div>
+  <p class="hint">A model can misread a figure. Before acting on an answer, check the number in Traffic, Report or Products.</p>
+</section>

@@ -143,7 +143,7 @@ function renderActions(a) {
     errors.length ? h('div', { style: 'margin-top:18px' }, h('h3', { class: 'a-label', style: 'margin-bottom:10px' }, 'Form problems'), barList(errors, { tone: 'context' })) : h('span'),
     contact.length ? tableFor('Contact actions', ['Action', 'Count'], [...contact, ...errors].map((i) => [i.label, int(i.value)])) : h('span'));
   const studio = actionItems([
-    ['studio_change', 'Changed the bag or print'], ['studio_logo', 'Uploaded a logo'], ['studio_download', 'Downloaded a mockup'],
+    ['studio_change', 'Changed the product or print'], ['studio_logo', 'Uploaded a logo'], ['studio_artwork', 'Uploaded finished artwork'], ['view_3d', 'Turned a box in 3D'], ['lid_3d', 'Opened a box lid in 3D'], ['studio_download', 'Downloaded a mockup'],
     ['studio_quote', 'Asked for a quote from the design'], ['studio_quote_only', 'Asked for a quote on a quote only bag'],
   ], a);
   // the logo check: uploads that would print badly, and how many took the fix
@@ -152,7 +152,7 @@ function renderActions(a) {
   const used = a.events?.studio_change || 0, quotes = (a.events?.studio_quote || 0) + (a.events?.studio_quote_only || 0);
   const warned = a.events?.studio_logo_warn || 0, fixed = a.events?.studio_logo_fix || 0, uploads = a.events?.studio_logo || 0;
   $('#trStudio').replaceChildren(
-    barList(studio, { tone: 'b', emptyText: 'No one has used the bag designer in this period yet.' }),
+    barList(studio, { tone: 'b', emptyText: 'No one has used the mockup studio in this period yet.' }),
     views ? h('p', { class: 'v-note' }, `${pct((used / views) * 100, 0)} of packaging page views changed the design. ${int(quotes)} went on to ask for a quote.`) : h('span'),
     logos.length ? h('div', { style: 'margin-top:18px' }, h('h3', { class: 'a-label', style: 'margin-bottom:10px' }, 'Logo check'), barList(logos, { tone: 'context' }),
       h('p', { class: 'v-note' }, `${int(warned)} of ${int(uploads)} uploaded ${uploads === 1 ? 'logo' : 'logos'} ${warned === 1 ? 'was' : 'were'} on a white box or too pale for kraft paper, and ${int(fixed)} ${fixed === 1 ? 'was' : 'were'} fixed with one click. The team sees which enquiries these were.`)) : h('span'),
@@ -163,7 +163,7 @@ function renderActions(a) {
 // the catalogue and packing list: what visitors add, send, and where a minimum order stops them
 function packingList(a, views) {
   const items = actionItems([
-    ['catalogue_filter', 'Filtered the catalogue by group'], ['bundle_add', 'Added a product to a packing list'],
+    ['catalogue_filter', 'Filtered the catalogue by group'], ['bundle_add', 'Added a product to a packing list'], ['bundle_add_page', 'Of those, from a product page'],
     ['bundle_remove', 'Removed a product'], ['bundle_below_min', 'Stopped by a minimum order'], ['bundle_send', 'Sent a packing list for a quote'],
   ], a);
   if (!items.length) return h('div', { style: 'margin-top:18px' }, h('h3', { class: 'a-label', style: 'margin-bottom:10px' }, 'Packing list'), empty('No one has used the packing list in this period yet.'));

@@ -10,6 +10,7 @@
 // page's products) shows Olira's own logo instead, whatever is typed.
 import { prepare, render, defaultDesign, INKS } from './mockup/engine.js';
 import { printQueue, onScreen } from './print-queue.js';
+import { hasPhotoMockup } from './catalogue-facts.js';
 
 const KEY = 'olira-brand';
 const MAX = 18;
@@ -49,7 +50,7 @@ function productOf(c) {
 const drawn = new WeakMap();
 async function paint(c) {
   const p = productOf(c);
-  if (!p?.image || !Array.isArray(p.quad) || p.quad.length !== 4) return;
+  if (!hasPhotoMockup(p)) return;
   const want = wanted(c);
   drawn.set(c, want);
   try {
@@ -106,8 +107,11 @@ function echo() {
 const studioText = document.getElementById('text1');
 let studioOwn = false;
 studioText?.addEventListener('input', (e) => { if (e.isTrusted) studioOwn = true; });
+// "Start again" in the studio: the typed brand comes back
+document.addEventListener('studio:reset', () => { studioOwn = false; toStudio(); });
 function toStudio() {
-  if (!studioText || studioOwn || !brand.trim()) return;
+  // a design the visitor kept from an earlier visit (studio-memory.js) is theirs too
+  if (!studioText || studioOwn || studioText.dataset.own === '1' || !brand.trim()) return;
   studioText.value = text().toUpperCase();
   studioText.dispatchEvent(new Event('input', { bubbles: true }));
 }

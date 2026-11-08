@@ -4,7 +4,7 @@
 // card in the shared product grid (product-grid.js).
 // The pure facts live in catalogue-facts.js and are re-exported here.
 import CUTOUTS from '../data/cutouts.json';
-import { isCutoutImage } from './catalogue-facts.js';
+import { isCutoutImage, hasPhotoMockup } from './catalogue-facts.js';
 
 export * from './catalogue-facts.js';
 
@@ -18,7 +18,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
  */
 export const cutoutOf = (p) => {
   if (p?.image && (p.cutout || isCutoutImage(p.image))) {
-    return { image: p.image, cutout: p.image, width: p.width || 1000, height: p.height || 1400, quad: Array.isArray(p.quad) && p.quad.length === 4 ? p.quad : null, safeTop: p.safeTop };
+    return { image: p.image, cutout: p.image, width: p.width || 1000, height: p.height || 1400, quad: hasPhotoMockup(p) ? p.quad : null, safeTop: p.safeTop };
   }
   const c = CUTOUTS[p?.id];
   return c && c.image === p.image ? { ...c, safeTop: p.safeTop } : null;

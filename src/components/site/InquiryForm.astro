@@ -107,7 +107,8 @@ const terms = extra === 'port';
       ? <label for="message">Message</label>
       : <label for="message">Message <span class="req" aria-hidden="true">*</span></label>}
     {/* agriculture: a chosen product can stand in for the message (common.js, server.js) */}
-    <textarea id="message" name="message" required={!terms} maxlength="1800" placeholder={messagePlaceholder} aria-describedby="message-error" data-msg-required={messageRequired} data-optional-with={terms ? 'product' : null}></textarea>
+    {/* packaging: a packing list or the studio design already says what is wanted, so the message is optional then (common.js) */}
+    <textarea id="message" name="message" required={!terms} maxlength="1800" placeholder={messagePlaceholder} aria-describedby="message-error" data-msg-required={messageRequired} data-optional-with={terms ? 'product' : null} data-optional-with-list={attachments ? '' : null}></textarea>
     <p class="field-error" id="message-error" hidden></p>
   </div>
   {attachments && (
@@ -118,7 +119,7 @@ const terms = extra === 'port';
         <p class="note" id={`${p}-files-hint`} style="margin:0;font-weight:400">Optional. Up to 3 files, 10 MB each: PDF, AI, EPS, SVG, PNG, JPG or WebP.</p>
         <p class="field-error" id={`${p}-files-error`} hidden></p>
       </div>
-      <label class="check"><input type="checkbox" name="sendDesign" value="1" data-send-design aria-describedby={`${p}-design-summary`}> Send my bag design from the mockup studio</label>
+      <label class="check"><input type="checkbox" name="sendDesign" value="1" data-send-design aria-describedby={`${p}-design-summary`}> Send my design from the mockup studio</label>
       <p class="note" id={`${p}-design-summary`} data-design-summary style="margin:-6px 0 0 28px"></p>
       <div class="consent" data-consent hidden>
         <label class="check"><input type="checkbox" name="consent" value="1" id={`${p}-consent`} aria-describedby={`${p}-consent-error`}> Olira Packaging may keep these files and my design to prepare the quote and artwork.</label>

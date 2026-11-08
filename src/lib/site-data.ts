@@ -54,6 +54,7 @@ export interface PackagingProduct {
   id: string; name: string; handle?: string; family?: string; description?: string; moq?: string; specs?: string[];
   sizes?: PackagingSize[]; minOrder?: number | null; printColours?: number | null;
   pricePer1000?: number | null; leadTimeDays?: number | null; // ETB per 1,000 units; working days
+  shape3d?: string | null; board3d?: string; // the studio's 3D view, lib/box-styles.js
   image?: string | null; imageDark?: string | null; width?: number | null; height?: number | null;
   quad?: number[][] | null; safeTop?: number; site?: boolean; team?: boolean;
 }
@@ -63,10 +64,11 @@ export const FLEXO_MAX_COLOURS = 4;
 export const packagingProducts = read<PackagingProduct[]>('packaging-products.json', [])
   .filter((p) => p && p.id && p.site !== false && p.name)
   .map((raw) => normalise(raw) as PackagingProduct)
-  .map(({ id, name, handle, family, description, moq, specs, sizes, minOrder, printColours, pricePer1000, leadTimeDays, image, imageDark, width, height, quad, safeTop }) => ({
+  .map(({ id, name, handle, family, description, moq, specs, sizes, minOrder, printColours, pricePer1000, leadTimeDays, shape3d, board3d, image, imageDark, width, height, quad, safeTop }) => ({
     id, name, handle: handle || '', family: family || 'bags', description: description || '', moq: moq || '', specs: specs || [],
     sizes: sizes || [], minOrder: minOrder ?? null, printColours: printColours ?? null,
     pricePer1000: pricePer1000 ?? null, leadTimeDays: leadTimeDays ?? null,
+    shape3d: shape3d ?? null, board3d: board3d || 'kraft',
     image: image || null, imageDark: image ? imageDark || null : null, width, height,
     quad: image && Array.isArray(quad) && quad.length === 4 ? quad : null, safeTop: safeTop ?? 0.1,
   }));

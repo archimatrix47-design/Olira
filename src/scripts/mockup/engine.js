@@ -24,7 +24,8 @@ export const INKS = { black: ['Black', '#1E1B16'], teal: ['Teal', '#186078'], le
 // mode 'brand' is a logo and two lines of text in one ink; mode 'artwork' is the
 // visitor's own finished design (a full page) printed in full colour across the panel
 export const defaultDesign = () => ({ size: 'medium', ink: 'teal', logo: null, oneInk: false, text1: 'YOUR BRAND', text2: 'yourbrand.com', scale: 1, dx: 0, dy: 0, mode: 'brand', artwork: null, fit: 'cover' });
-export const usableInStudio = (p) => !!(p && p.image && Array.isArray(p.quad) && p.quad.length === 4);
+// a photo with its print corners: the rule lives in catalogue-facts.js, shared with the catalogue and staff screens
+export { hasPhotoMockup as usableInStudio } from '../catalogue-facts.js';
 
 export const makeCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 
@@ -362,7 +363,7 @@ export async function exportImage(B, design, { type = 'png', scale = 1 } = {}) {
  */
 export function sizesOf(p) {
   const own = Array.isArray(p?.sizes) ? p.sizes.filter((s) => s && s.id && s.label) : [];
-  if (own.length) return own.map((s) => ({ id: s.id, label: s.label, w: s.w, d: s.d, h: s.h, minOrder: s.minOrder ?? null, dims: s.w && s.h ? `${[s.w, s.d, s.h].filter(Boolean).join(' x ')} cm` : '' }));
+  if (own.length) return own.map((s) => ({ id: s.id, label: s.label, w: s.w, d: s.d, h: s.h, holds: s.holds || '', minOrder: s.minOrder ?? null, dims: s.w && s.h ? `${[s.w, s.d, s.h].filter(Boolean).join(' x ')} cm` : '' }));
   return Object.entries(SIZES).map(([id, s]) => { const [w, d, h] = s.dims.match(/[\d.]+/g).map(Number); return { id, label: s.label, w, d, h, minOrder: null, dims: s.dims }; });
 }
 export function sizeOf(p, id) {

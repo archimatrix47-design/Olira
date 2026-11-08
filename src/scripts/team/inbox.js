@@ -500,13 +500,15 @@ function designSummary(l) {
   const d = l.design;
   // a full artwork (printed in full colour across the print area), or a logo and text in one ink
   const chips = d.mode === 'artwork' ? [
-    ['Bag', d.templateName || d.template], ['Size', d.size], ['Design', 'Full artwork, full colour'],
+    ['Product', d.templateName || d.template], ['Size', d.size], ['Design', 'Full artwork, full colour'],
     ['Artwork', d.hasArtwork ? 'Sent, see Files' : 'Not sent'], ['Fit', d.fit === 'contain' ? 'Whole page shown' : 'Fills the print area'],
   ] : [
-    ['Bag', d.templateName || d.template], ['Size', d.size], ['Ink', d.ink],
+    ['Product', d.templateName || d.template], ['Size', d.size], ['Ink', d.ink],
     d.text1 ? ['Main text', d.text1] : null, d.text2 ? ['Second line', d.text2] : null,
     ['Logo', d.hasLogo ? 'Sent, see Files' : 'Not sent'], d.oneInk ? ['Logo colour', 'In the ink colour'] : null,
   ].filter(Boolean);
+  // designed on the 3D box: the picture sent is the box, and the board the client chose
+  if (d.view === '3d') chips.push(['Preview', `3D box${d.board ? `, ${d.board === 'white' ? 'white board' : 'brown kraft'}` : ''}`]);
   const wrap = h('div', { class: 't-design' }, h('div', { class: 'a-chips' }, chips.map(([k, v]) => h('span', { class: 'a-chip' }, h('b', {}, k), v))));
   // the studio's logo check on the file the client sent: tells the team to ask for better artwork
   const logoNote = d.logoCheck === 'boxed'

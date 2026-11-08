@@ -56,7 +56,7 @@ ${p.description || ''}
 ${(p.specs || []).map((s) => `- ${s}`).join('\n')}`).join('\n\n');
   const pack = packagingProducts.map((p) => {
     const { rows, line } = knownRows(p, FLEXO_MAX_COLOURS);
-    const sizes = (p.sizes || []).filter((s) => s.w && s.h).map((s) => `${s.label} ${[s.w, s.d, s.h].filter(Boolean).join(' x ')} cm`);
+    const sizes = (p.sizes || []).filter((s) => s.w && s.h).map((s) => `${s.label} ${[s.w, s.d, s.h].filter(Boolean).join(' x ')} cm${s.holds ? ` (holds ${s.holds})` : ''}`);
     return `### ${p.name}
 
 - Page: ${SITE}${packUrl(p)}

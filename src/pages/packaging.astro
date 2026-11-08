@@ -9,7 +9,7 @@ import { BAG_ICON } from '../components/site/icons';
 import { thumbUrl, thumbSet } from '../../lib/thumb-url.js';
 import { contact, SITE, packagingProducts, FAMILIES, FLEXO_MAX_COLOURS } from '../lib/site-data';
 import { sizesOf } from '../scripts/mockup/engine.js';
-import { inStudio, flowItem, photoFirst } from '../scripts/catalogue-panel.js';
+import { studioOrder, flowItem, photoFirst } from '../scripts/catalogue-panel.js';
 import ProductGrid from '../components/site/ProductGrid.astro';
 import Faq from '../components/site/Faq.astro';
 import ProductIndex from '../components/site/ProductIndex.astro';
@@ -20,7 +20,7 @@ import { graph, organizationGraph, breadcrumbs, faqPage, packUrl, packFaq, ORG_I
 // studio; the rest are quoted from the packing list until their photo is added.
 const families = Object.fromEntries(FAMILIES.map((f) => [f.id, f.label]));
 const famsInUse = FAMILIES.filter((f) => packagingProducts.some((p) => p.family === f.id));
-const studioBags = packagingProducts.filter(inStudio);
+const studioBags = studioOrder(packagingProducts);
 const firstBag = studioBags[0];
 const firstSizes = firstBag ? sizesOf(firstBag) : [];
 const firstSize = firstSizes.find((s) => s.id === 'medium') || firstSizes[0];
@@ -61,7 +61,7 @@ const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, fami
 >
   {firstBag?.image && <link slot="head" rel="preload" as="image" href={firstBag.image}>}
 
-  <SiteHeader section={[{ href: '#catalogue-title', label: 'Catalogue' }, { href: '#studio', label: 'Mockup studio' }, { href: '#printing', label: 'Printing' }, { href: '#quote', label: 'Get a quote' }]} current="/packaging/">
+  <SiteHeader section={[{ href: '#catalogue-title', label: 'Catalogue' }, { href: '#studio', label: 'Mockup studio' }, { href: '#printing', label: 'Printing' }, { href: '#quote', label: 'Request a quote' }]} current="/packaging/">
     <button class="tab-btn" id="plOpen" type="button" aria-haspopup="dialog" aria-controls="packingList" aria-label="Packing list"><Fragment set:html={BAG_ICON} /><span class="tab-word">Packing list</span> <span class="count" data-zero>0</span></button>
   </SiteHeader>
 
@@ -115,15 +115,15 @@ const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, fami
         <div class="sec-title">
           <div>
             <span class="kicker">Mockup studio</span>
-            <h2 id="studioTitle">Kraft paper bags with your brand on them</h2>
+            <h2 id="studioTitle">Packaging with your brand on it</h2>
           </div>
-          <p class="lede">Twisted and flat handle paper bags for shops, cafés, bakeries and brands. Made to your size, printed with your logo and supplied flat-packed in bundles.</p>
+          <p class="lede">Paper bags, food boxes, medical packets and foil bags for shops, cafés, bakeries and brands. Made to your size and printed with your logo.</p>
         </div>
 
         <div class="studio">
           <div class="sheet stage">
             <div class="stage-frame">
-              <canvas class="stage-canvas" id="bagCanvas" width="1200" height={firstBag?.width ? Math.round(1200 * (firstBag.height || 1) / firstBag.width) : 1680} tabindex="0" role="img" aria-label="Bag mockup preview with your design" aria-describedby="stageInfo stageHelp"></canvas>
+              <canvas class="stage-canvas" id="bagCanvas" width="1200" height={firstBag?.width ? Math.round(1200 * (firstBag.height || 1) / firstBag.width) : 1680} tabindex="0" role="img" aria-label="Mockup preview with your design" aria-describedby="stageInfo stageHelp"></canvas>
             </div>
             <div class="stage-meta">
               <span class="note" id="stageHelp">Drag the design inside the print area, or focus the preview and use the arrow keys. Hold Shift to move further.</span>
@@ -132,17 +132,17 @@ const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, fami
           </div>
 
           <div class="sheet panel">
-            <p class="note panel-intro">Choose a bag, add your logo and text or your own full artwork, and move the design into place. Download the mockup or send the design with your quote request.</p>
+            <p class="note panel-intro">Choose a product, add your logo and text or your own full artwork, and move the design into place. Download the mockup or send the design with your quote request.</p>
             <p class="sr-only" id="studioStatus" role="status" aria-live="polite"></p>
 
             <fieldset class="choice">
-              <legend class="field-label">Bag</legend>
+              <legend class="field-label">Product</legend>
               <div class="bags" id="templateChips">
                 {studioBags.map((p) => (
                   <label class="bagopt">
                     <input type="radio" name="template" value={p.id} data-handle={p.handle} checked={p.id === firstBag?.id}>
                     <span class="bagopt-card">
-                      <img class="bagopt-photo" src={thumbUrl(p.image, 120)} srcset={thumbSet(p.image, 56)} alt="" width="56" height="56" loading="lazy" decoding="async">
+                      {p.image ? <img class="bagopt-photo" src={thumbUrl(p.image, 120)} srcset={thumbSet(p.image, 56)} alt="" width="56" height="56" loading="lazy" decoding="async"> : <span class="bagopt-photo bagopt-3d" aria-hidden="true">3D</span>}
                       <span class="bagopt-text">
                         <span class="bagopt-name">{p.name}</span>
                         {p.description && <span class="bagopt-desc">{p.description}</span>}
@@ -152,7 +152,7 @@ const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, fami
                 ))}
               </div>
             </fieldset>
-            <p class="bundles note"><b>Flat-packed bundles</b> Bags supplied folded and stacked in bundles, ready to store and use. Brown kraft as standard, white kraft on request.</p>
+            <p class="bundles note" id="bundlesNote" hidden={firstBag?.family !== 'bags'}><b>Flat-packed bundles</b> Bags supplied folded and stacked in bundles, ready to store and use. Brown kraft as standard, white kraft on request.</p>
 
             <fieldset class="choice">
               <legend class="field-label">Size <span class="legend-note">drawn to scale</span></legend>
@@ -259,7 +259,8 @@ const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, fami
               <button class="btn btn-lg btn-secondary" type="button" id="download" aria-describedby="downloadHint">Download PNG</button>
               <a class="btn btn-lg btn-primary" href="#quote" id="useDesign">Quote this design</a>
             </div>
-            <p class="note" id="downloadHint">Your logo and artwork stay in your browser unless you choose to send them with a quote request. Bag photos are for preview; production finish and print can vary.</p>
+            <button class="btn btn-ghost btn-sm start-again" type="button" id="startAgain" hidden>Start again with a new design</button>
+            <p class="note" id="downloadHint">Your logo and artwork stay in your browser unless you choose to send them with a quote request. Product photos are for preview; production finish and print can vary.</p>
           </div>
         </div>
       </div>
@@ -346,8 +347,8 @@ const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, fami
     <p class="sr-only" id="plStatus" role="status" aria-live="polite"></p>
   </dialog>
 
-  <QuoteBar href="#quote" after=".title-block" until="#quote" />
-  <SiteFooter note="Olira Packaging, a product line of Olira Agro Industry, Addis Ababa." />
+  <QuoteBar href="#quote" after=".title-block" until="#quote, #studio .panel" />
+  <SiteFooter note="Olira Packaging, a product line of Olira Agro Industry, Addis Ababa." line="pack" />
 
   <script>import '../scripts/catalogue.js'; import '../scripts/packing-list.js'; import '../scripts/pack.js'; import '../scripts/stations.js'; import '../scripts/live-print.js';</script>
 </SiteLayout>

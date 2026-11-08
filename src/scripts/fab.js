@@ -8,6 +8,12 @@ import { SOCIAL_PAGES } from '../../lib/social.js';
 
 const fab = document.querySelector('[data-fab]');
 if (fab) {
+  // On the home page the two doors fill a desktop's first screen with their own ways
+  // to ask: the circle waits until they scroll away, so it never sits on the photos.
+  const doors = document.querySelector('.choose');
+  if (doors && 'IntersectionObserver' in window && matchMedia('(min-width: 900px)').matches) {
+    new IntersectionObserver(([e]) => fab.classList.toggle('is-waiting', e.intersectionRatio > 0.6), { threshold: [0, 0.6, 1] }).observe(doors);
+  }
   const main = fab.querySelector('.fab-main');
   const list = fab.querySelector('.fab-list');
   const pop = fab.querySelector('.fab-pop');
