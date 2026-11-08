@@ -5,6 +5,8 @@ import ProductPage from '../../components/site/ProductPage.astro';
 import { packagingProducts, FLEXO_MAX_COLOURS } from '../../lib/site-data';
 import { packSlug, packUrl, graph, organizationGraph, breadcrumbs, ORG_ID, PACK_ID, abs, familyLabel } from '../../lib/seo';
 import { cutoutOf, inStudio, specRows, priceFrom, pendingFacts, pendingList } from '../../scripts/catalogue-panel.js';
+import { has3d } from '../../../lib/box-styles.js';
+import { minimumFor } from '../../../lib/packaging.js';
 
 export function getStaticPaths() {
   return packagingProducts.map((p) => ({ params: { slug: packSlug(p) }, props: { id: p.id } }));
@@ -15,7 +17,9 @@ const fam = familyLabel[p.family || 'bags'] || 'Packaging';
 const cm = (s: any) => (s.w && s.h ? `${[s.w, s.d, s.h].filter(Boolean).join(' x ')} cm` : '');
 
 // the same facts the catalogue shows, with each size spelled out when its measurements are known
-const [sizes, minimum, print, price, ready] = specRows(p, FLEXO_MAX_COLOURS);
+const rowsOf = specRows(p, FLEXO_MAX_COLOURS);
+const [sizes, minimum, print, price, ready] = rowsOf;
+const fits = rowsOf.find(([label]) => label === 'What fits');
 // price, minimum and lead time first: they decide whether to ask at all. The ones the
 // packaging team has not set yet stay hidden (pd-live.js shows them once set) and one
 // line names them instead, rather than three rows of "confirmed with your quote".
@@ -25,6 +29,7 @@ const facts = [
   { key: 'minimum', label: minimum[0], value: minimum[1], hero: true, hidden: pending.includes('minimum') },
   { key: 'ready', label: ready[0], value: ready[1], note: 'From artwork approval', hero: true, hidden: pending.includes('ready') },
   { key: 'sizes', label: sizes[0], value: sizes[1], note: (p.sizes || []).filter((s: any) => cm(s)).map((s: any) => `${s.label} ${cm(s)}`).join(', ') || 'Made to the size you need', hero: true },
+  ...(fits ? [{ key: 'fits', label: fits[0], value: fits[1], note: 'From the packaging team' }] : []),
   { key: 'print', label: print[0], value: print[1], note: 'One ink station per colour, printed in register' },
   { label: 'Group', value: fam },
 ];
@@ -85,4 +90,6 @@ const jsonLd = graph(organizationGraph(), product, breadcrumbs([['Home', '/'], [
   jsonLd={jsonLd}
   productId={p.id}
   flexoMax={FLEXO_MAX_COLOURS}
+  listItem={{ sizeId: p.sizes?.[0]?.id || '', min: minimumFor(p as any, p.sizes?.[0]?.id) }}
+  box3d={!p.image && has3d(p) ? { id: p.id, name: p.name, sizes: p.sizes, shape3d: p.shape3d, board3d: p.board3d } : null}
 />

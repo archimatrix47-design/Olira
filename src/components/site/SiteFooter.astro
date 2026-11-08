@@ -10,8 +10,14 @@
 import { contact, socialLinks } from '../../lib/site-data';
 import ReachIcons from './ReachIcons.astro';
 import contoursUrl from '../../data/burayu-contours.json?url';
-interface Props { note: string }
-const { note } = Astro.props;
+// line: the business this page belongs to, whose way to ask leads; none (home, 404) keeps both equal
+interface Props { note: string; line?: 'agri' | 'pack' }
+const { note, line } = Astro.props;
+const ASK = {
+  pack: { href: '/packaging/#quote', label: 'Request a packaging quote' },
+  agri: { href: '/agriculture/#contact', label: 'Talk to the export team' },
+};
+const asks = line === 'agri' ? [ASK.agri, ASK.pack] : [ASK.pack, ASK.agri];
 const year = new Date().getFullYear();
 ---
 <footer class="sheet-foot">
@@ -23,8 +29,7 @@ const year = new Date().getFullYear();
         <p class="foot-lede">Agricultural exports and printed packaging since 2008.</p>
       </div>
       <div class="acts foot-acts">
-        <a class="act fill" href="/packaging/#quote">Request a packaging quote</a>
-        <a class="act" href="/agriculture/#contact">Talk to the export team</a>
+        {asks.map((a, i) => <a class={`act${line && i === 0 ? ' fill' : ''}`} href={a.href}>{a.label}</a>)}
       </div>
     </div>
 

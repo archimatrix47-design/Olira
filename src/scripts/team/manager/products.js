@@ -6,6 +6,7 @@ import * as store from '../../admin/store.js';
 import { sparkline, deltaChip, empty } from '../../admin/charts.js';
 import { int, decimal, delta, per100, NO_DATA } from '../../admin/format.js';
 import { inPeriod } from '../../admin/leads.js';
+import { inStudio, hasPhotoMockup } from '../../catalogue-facts.js';
 import { agriCompleteness, packCompleteness } from '../../admin/completeness.js';
 import { priceFrom, etb } from '../../catalogue-panel.js';
 
@@ -65,8 +66,8 @@ function renderAgri(a, items) {
       : 'Every product has a photo, a full description, purity, minimum order, key points and a specification.'));
 }
 
-// A packaging product is designable in the studio once it has a photo and its print corners.
-const inStudio = (p) => !!(p.image && Array.isArray(p.quad) && p.quad.length === 4);
+// Designable in the studio: a photo with its print corners, or a measured box shown in 3D
+// (catalogue-facts.js, the same rule as the packaging page).
 
 function renderPack(bags, leads) {
   const box = $('#pkPerformance');
@@ -93,7 +94,7 @@ function renderPack(bags, leads) {
         h('td', { class: 'num' }, int(q)),
         h('td', { class: 'num' }, int(d)),
         h('td', {}, yes(!!p.image)),
-        h('td', {}, inStudio(p) ? 'Yes' : h('span', { class: 'flag info' }, p.image ? 'Needs print corners' : 'Needs a photo')),
+        h('td', {}, hasPhotoMockup(p) ? 'Yes' : inStudio(p) ? h('span', { class: 'flag info' }, 'Yes, as a 3D box; needs a photo') : h('span', { class: 'flag info' }, p.image ? 'Needs print corners' : 'Needs a photo')),
         h('td', {}, p.minOrder ? `${int(p.minOrder)} units` : (p.sizes || []).some((z) => z.minOrder) ? 'Per size' : h('span', { class: 'a-note' }, 'Agreed per quote')),
         h('td', {}, from ? `${from.varies || from.partial ? 'From ' : ''}${etb(from.price)}` : h('span', { class: 'flag' }, 'No price')),
         h('td', {}, p.leadTimeDays ? `${p.leadTimeDays} working days` : h('span', { class: 'a-note' }, 'Per quote')),

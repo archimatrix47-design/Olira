@@ -1,5 +1,6 @@
 ---
 // Packaging team: the catalogue on the packaging page. scripts/team/pack-products.js.
+import { BOX_STYLES, BOARDS } from '../../../../lib/box-styles.js';
 ---
 <!-- PACKAGING PRODUCTS: the catalogue, looked after by the packaging team -->
 <section class="a-view" data-view="products" aria-labelledby="h-packaging" hidden>
@@ -71,11 +72,28 @@
         </div>
         <fieldset class="a-field a-sizes">
           <legend class="a-label">Sizes</legend>
-          <p class="hint" id="pkSizesHint">In centimetres, width x depth (gusset) x height. A size's own minimum replaces the product minimum. Leave the measurements blank if you do not want them shown.</p>
-          <div class="a-size-head" aria-hidden="true"><span>Name</span><span>W</span><span>D</span><span>H</span><span>Minimum</span><span></span></div>
+          <p class="hint" id="pkSizesHint">In centimetres, width x depth (gusset) x height. "Holds" is what the size takes, as you have measured it, for example 250 g coffee or 2 loaves; buyers see it beside the size. A size's own minimum replaces the product minimum. Leave a box blank if you do not want it shown.</p>
+          <div class="a-size-head" aria-hidden="true"><span>Name</span><span>W</span><span>D</span><span>H</span><span>Holds</span><span>Minimum</span><span></span></div>
           <ol class="a-size-list" id="pkSizes"></ol>
           <button class="btn btn-secondary btn-sm" type="button" id="pkAddSize">Add a size</button>
         </fieldset>
+        <div class="a-two">
+          <div class="a-field">
+            <label for="pkShape3d">3D view</label>
+            <select class="input" id="pkShape3d" name="shape3d" aria-describedby="pkShape3dHint">
+              <option value="">None, photo only</option>
+              {Object.entries(BOX_STYLES).map(([id, s]) => <option value={id}>{s.label}</option>)}
+            </select>
+            <p class="hint" id="pkShape3dHint">For boxes. {Object.values(BOX_STYLES).map((s) => `${s.label}: ${s.hint.toLowerCase()}.`).join(' ')} Once every size above has its width, depth and height, visitors can turn the box in 3D in the studio, at the size they choose, even before it has a photo. Bags and pouches keep None.</p>
+          </div>
+          <div class="a-field">
+            <label for="pkBoard3d">Board in the 3D view</label>
+            <select class="input" id="pkBoard3d" name="board3d" aria-describedby="pkBoard3dHint">
+              {Object.entries(BOARDS).map(([id, label]) => <option value={id}>{label}</option>)}
+            </select>
+            <p class="hint" id="pkBoard3dHint">The board this box is made in. Choose Both only if you make it in brown kraft and in white; visitors can then switch between them.</p>
+          </div>
+        </div>
         <div class="a-field">
           <label for="pkDesc">Description</label>
           <textarea class="input" id="pkDesc" name="description" required maxlength="1000" aria-describedby="pkDescErr"></textarea>

@@ -29,6 +29,7 @@ if (LINE === 'manager') {
     report: (opts) => import('./manager/report.js').then((m) => m.show(opts)),
     traffic: (opts) => import('./manager/traffic.js').then((m) => m.show(opts)),
     products: (opts) => import('./manager/products.js').then((m) => m.show(opts)),
+    ask: (opts) => import('./manager/ask.js').then((m) => m.show(opts)),
   });
 } else {
   VIEWS.social = () => import('./social.js').then((m) => m.show());

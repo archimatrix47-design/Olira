@@ -266,7 +266,7 @@
 .pl-line-name small { display: block; margin-top: 2px; font-size: .8125rem; font-weight: 400; color: var(--ink-2); }
 .pl-remove { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--fill-1); color: var(--ink-2); display: grid; place-items: center; cursor: pointer; }
 .pl-remove:hover { color: var(--danger); }
-.pl-fields { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.pl-fields { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .pl-field { display: grid; gap: 6px; min-width: 0; font-size: .75rem; color: var(--ink-2); }
 .pl-field select, .pl-field input { height: 44px; min-width: 0; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--tile); color: var(--ink); font: 400 .9375rem var(--font-sans); padding-inline: 12px; font-variant-numeric: tabular-nums; }
 .pl-field input:focus, .pl-field select:focus { outline: 2px solid transparent; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-subtle); }
@@ -454,6 +454,8 @@ main:has(> .choose) + .sheet-foot { margin-top: 12px; }
    through it to the page (the footer's Admin link sat underneath), so only the
    circle, the open channels and the number card take clicks */
 .fab, .fab-list { pointer-events: none; }
+/* home, desktop: hidden while the two doors fill the screen (fab.js) */
+.fab.is-waiting { opacity: 0; visibility: hidden; transition: opacity var(--dur-micro) var(--ease), visibility 0s linear var(--dur-micro); }
 .fab-main, .fab .fab-pop { pointer-events: auto; }
 .fab-main { position: relative; width: 58px; height: 58px; border: 0; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; cursor: pointer; box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--shadow) 45%, transparent), 0 0 0 1px color-mix(in srgb, var(--white) 12%, transparent) inset; transition: transform var(--dur-ui) var(--settle), background-color var(--dur-micro) var(--ease); }
 .fab-main:hover { background: var(--accent-hover); transform: scale(1.04); }

@@ -20,6 +20,12 @@ import { registerSearchVerification } from './lib/search-verification.js';
 import { registerThumbs } from './lib/thumbs.js';
 import { registerAdminTools } from './lib/admin-tools.js';
 import { servePrecompressed } from './lib/precompressed.js';
+import { builtScriptHashes, scriptSources, PERMISSIONS_POLICY } from './lib/csp.js';
+import { cleanSample, addSample, mergeInto, pageGroup } from './lib/vitals.js';
+import { buildAiLog, snapshotOf } from './lib/ai-log.js';
+import { registerAiAccess } from './lib/ai-access.js';
+import { cleanTargets } from './lib/targets.js';
+import { toCsv, agriRows, agriImport } from './lib/facts-csv.js';
 import { registerTargets } from './lib/targets.js';
 import { cleanSpec } from './lib/agri-spec.js';
 import { cleanAgriTerms, GENERIC_PRODUCT } from './lib/enquiry.js';
@@ -79,6 +85,8 @@ app.use((req, res, next) => {
 const REPO_DATA_DIR = path.join(__dirname, 'data');
 const dataDir = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : REPO_DATA_DIR;
 const uploadsDir = process.env.UPLOADS_DIR ? path.resolve(process.env.UPLOADS_DIR) : path.join(__dirname, 'public', 'uploads');
+// the built site; DIST_DIR lets the data pipeline test serve a throwaway build
+const distPath = process.env.DIST_DIR ? path.resolve(process.env.DIST_DIR) : path.join(__dirname, 'dist');
 const productImagesDir = path.join(uploadsDir, 'products');
 
 [dataDir, uploadsDir, productImagesDir].forEach((d) => {
@@ -178,17 +186,22 @@ const corsOptions = {
 // Middleware
 app.use(requestLogger);
 
-// Enhanced security headers with Helmet
+// Enhanced security headers with Helmet. Scripts: the site's own files, its built
+// inline scripts by hash (lib/csp.js, read again whenever a build replaces the
+// pages), and googletagmanager.com for the optional Analytics/Ads tag set in the
+// admin panel. No 'unsafe-inline', no 'unsafe-eval'.
+const scriptSrc = scriptSources(builtScriptHashes(distPath));
+// the local AI model's address, on the admin's and the manager's pages only (lib/ai-access.js, set below)
+let aiAccess = null;
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      // googletagmanager.com: the optional Analytics/Ads tag set in the admin panel
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "fonts.googleapis.com", "https://www.googletagmanager.com"],
+      scriptSrc,
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       fontSrc: ["'self'", "fonts.googleapis.com", "fonts.gstatic.com"],
-      connectSrc: ["'self'", "https:"],
+      connectSrc: ["'self'", "https:", (req) => aiAccess?.connectSource(req) || "'self'"],
       frameSrc: ["'self'", "https://www.google.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"]
@@ -208,6 +221,8 @@ app.use(helmet({
   noSniff: true,
   xssFilter: true
 }));
+// camera, microphone, location and the rest: never used by the site, switched off
+app.use((req, res, next) => { res.setHeader('Permissions-Policy', PERMISSIONS_POLICY); next(); });
 
 // Disable X-Powered-By header (security best practice)
 app.disable('x-powered-by');
@@ -987,7 +1002,7 @@ app.post('/api/inquiry', (req, res, next) => workspace.parseIntake(req, res, nex
         </div>` : ''}
         ${fileNote || design ? `<div style="margin-bottom: 15px;">
           <strong style="color: #39572f;">Design and files:</strong><br/>
-          ${sanitizeHtml([design ? 'Bag design from the mockup studio' : '', fileNote].filter(Boolean).join(', '))}
+          ${sanitizeHtml([design ? `Design from the mockup studio${design.view === '3d' ? ' (3D box)' : ''}` : '', fileNote].filter(Boolean).join(', '))}
         </div>` : ''}
         ${rec ? `<p style="margin: 18px 0 0;"><a href="${sanitizeHtml(workspace.workspaceUrl(rec))}" style="color: #186078; font-weight: bold;">Open it in the ${line === 'pack' ? 'packaging' : 'agriculture'} workspace</a></p>` : ''}
       </div>
@@ -1293,6 +1308,9 @@ function cleanDesign(d) {
     mode: d.mode === 'artwork' ? 'artwork' : 'brand',
     fit: d.fit === 'contain' ? 'contain' : 'cover',
     hasArtwork: d.mode === 'artwork' && d.hasArtwork === true,
+    // seen as a 3D box (lib/box-styles.js) rather than the photo, and on which board
+    view: d.view === '3d' ? '3d' : 'photo',
+    board: d.view === '3d' && ['kraft', 'white'].includes(d.board) ? d.board : '',
   };
 }
 
@@ -1353,6 +1371,27 @@ app.post('/api/products', staffOnly(['agri'], AGRI_ONLY), (req, res) => {
   }
 
   res.status(400).json({ error: 'Body must contain { product: {...} }' });
+});
+
+// The agriculture products' facts as a spreadsheet (lib/facts-csv.js, UX-2): the
+// purity, minimum and specification sheet of each product, downloaded and imported
+// back, previewed first and saved only when every row is acceptable.
+app.get('/api/products/facts.csv', staffOnly(['agri'], AGRI_ONLY), (req, res) => {
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', 'attachment; filename="olira-agriculture-facts.csv"');
+  res.set('Cache-Control', 'no-store');
+  res.send(toCsv(agriRows(readJsonFile(productsPath, []))));
+});
+app.post('/api/products/facts', staffOnly(['agri'], AGRI_ONLY), (req, res) => {
+  const text = typeof req.body?.csv === 'string' ? req.body.csv : '';
+  if (!text.trim() || text.length > 300_000) return res.status(400).json({ error: 'Choose the CSV file you downloaded and filled in (up to 300 KB).' });
+  const list = readJsonFile(productsPath, []);
+  const r = agriImport(text, list);
+  if (req.body?.apply !== true || r.errors.length || !r.changes.length) return res.json({ changes: r.changes, errors: r.errors, applied: false });
+  const next = r.next.map((p) => ({ ...p, spec: cleanSpec(p.spec) }));
+  if (!writeJsonFile(productsPath, next)) return res.status(500).json({ error: 'The changes could not be saved.' });
+  audit('agri_facts_imported', req, { changes: r.changes.length, by: req.teamUser.id });
+  res.json({ changes: r.changes, errors: [], applied: true });
 });
 
 // POST /api/products/order (agriculture team) — body { ids: [...] }. Reorders the
@@ -1477,6 +1516,9 @@ app.post('/api/contact-details', adminAuth, (req, res) => {
 
 // ----- BRANDING (logo + tagline) -----
 
+// a logo saved by /api/upload/logo: /uploads/logo-<time>.<ext>
+const LOGO_RE = /^\/uploads\/logo-\d+\.(webp|png|jpe?g|svg)$/;
+
 app.get('/api/branding', (req, res) => {
   res.json(readJsonFile(brandingPath, { logo: null, tagline: '' }));
 });
@@ -1484,8 +1526,14 @@ app.get('/api/branding', (req, res) => {
 app.post('/api/branding', adminAuth, (req, res) => {
   const { logo, tagline } = req.body;
   const current = readJsonFile(brandingPath, { logo: null, tagline: '' });
+  // every page puts the logo in its header: only a file uploaded through
+  // /api/upload/logo (or none) may be saved, never a link or another path
+  if (logo !== undefined && logo !== null && logo !== '') {
+    const ok = typeof logo === 'string' && LOGO_RE.test(logo) && fs.existsSync(path.join(uploadsDir, path.basename(logo)));
+    if (!ok) return res.status(400).json({ error: 'Upload the logo again.' });
+  }
   const next = {
-    logo: logo !== undefined ? logo : current.logo,
+    logo: logo !== undefined ? (logo || null) : current.logo,
     tagline: tagline !== undefined ? String(tagline).slice(0, 500) : current.tagline
   };
   if (!writeJsonFile(brandingPath, next)) {
@@ -1565,7 +1613,8 @@ function emptyDay() {
     heat: {},          // "weekday-hour" in Addis Ababa time (EAT, UTC+3)
     eng: {},           // per page: leaves, engaged, seconds, time buckets, deep scrolls
     events: {},        // contact, bag designer and form actions
-    inquiryLines: {}   // agri / pack
+    inquiryLines: {},  // agri / pack
+    vitals: {}         // real visitors' page speed: counts per bucket, per kind of page and device (lib/vitals.js)
   };
 }
 
@@ -1581,6 +1630,7 @@ function getDay(key) {
   d.views ||= 0; d.inquiries ||= 0;
   d.channels ||= {}; d.campaigns ||= {}; d.langs ||= {}; d.countries ||= {};
   d.entries ||= {}; d.heat ||= {}; d.eng ||= {}; d.events ||= {}; d.inquiryLines ||= {};
+  d.vitals ||= {};
   return d;
 }
 
@@ -1624,7 +1674,7 @@ function eatHeatKey(now = Date.now()) {
 // studio_logo_warn / studio_logo_fix: the logo check flagged an upload, and the
 // visitor applied its one-click fix. home_product: pointed at a product on the
 // home page to see its photo.
-const TRACK_EVENTS = new Set(['reveal_phone', 'reveal_whatsapp', 'telegram', 'email', 'studio_logo', 'studio_download', 'studio_quote', 'studio_change', 'studio_quote_only', 'studio_logo_warn', 'studio_logo_fix', 'home_product', 'bundle_add', 'bundle_remove', 'bundle_below_min', 'bundle_send', 'catalogue_filter', 'form_start', 'form_invalid', 'form_fail']);
+const TRACK_EVENTS = new Set(['reveal_phone', 'reveal_whatsapp', 'telegram', 'email', 'studio_logo', 'studio_artwork', 'studio_download', 'view_3d', 'lid_3d', 'bundle_add_page', 'studio_quote', 'studio_change', 'studio_quote_only', 'studio_logo_warn', 'studio_logo_fix', 'home_product', 'bundle_add', 'bundle_remove', 'bundle_below_min', 'bundle_send', 'catalogue_filter', 'form_start', 'form_invalid', 'form_fail']);
 
 function pruneAnalytics() {
   const cutoff = new Date(Date.now() - ANALYTICS_RETENTION_DAYS * 86400000);
@@ -1717,6 +1767,16 @@ app.post('/api/track', makeRateLimiter(60, 'track'), (req, res) => {
     return res.status(204).end();
   }
 
+  // Page speed, measured in the visitor's browser (src/scripts/vitals.js): each
+  // number only adds 1 to a bucket for its kind of page and device (lib/vitals.js)
+  if (body.event === 'vitals') {
+    const sample = cleanSample(body);
+    if (!sample) return res.status(204).end();
+    addSample(getDay(dayKey).vitals, pageGroup(rawPath), deviceFromUa(ua), sample);
+    analyticsDirty = true;
+    return res.status(204).end();
+  }
+
   // Contact, bag designer and form actions (fixed list; anything else ignored)
   if (typeof body.event === 'string') {
     if (!TRACK_EVENTS.has(body.event)) return res.status(204).end();
@@ -1793,7 +1853,7 @@ function aggregateAnalytics(days, offset = 0) {
     series: [], views: 0, uniques: 0, inquiries: 0,
     pages: {}, referrers: {}, devices: { desktop: 0, mobile: 0, tablet: 0 }, productClicks: {}, productInquiries: {},
     productDaily: {}, channels: {}, campaigns: {}, langs: {}, countries: {}, entries: {}, heat: {}, events: {},
-    inquiryLines: {}, funnel: {}, eng: {}, leaves: 0, engaged: 0, secs: 0, trackedDays: 0
+    inquiryLines: {}, funnel: {}, eng: {}, leaves: 0, engaged: 0, secs: 0, trackedDays: 0, vitals: {}
   };
   const add = (target, src) => { for (const [k, v] of Object.entries(src || {})) target[k] = (target[k] || 0) + (Number(v) || 0); };
   for (let i = days - 1; i >= 0; i--) {
@@ -1812,6 +1872,7 @@ function aggregateAnalytics(days, offset = 0) {
     add(a.channels, d.channels); add(a.campaigns, d.campaigns); add(a.langs, d.langs); add(a.countries, d.countries);
     add(a.entries, d.entries); add(a.heat, d.heat); add(a.events, d.events); add(a.inquiryLines, d.inquiryLines);
     add(a.funnel, dayFunnel(d));
+    mergeInto(a.vitals, d.vitals);
     for (const [p, e] of Object.entries(d.eng || {})) {
       const t = (a.eng[p] ||= { n: 0, engaged: 0, secs: 0, deep: 0, b: [0, 0, 0, 0, 0] });
       t.n += e.n || 0; t.engaged += e.engaged || 0; t.secs += e.secs || 0; t.deep += e.deep || 0;
@@ -2081,7 +2142,7 @@ registerTargets(app, { dataDir, readJsonFile, writeJsonFile, audit, roleAuth: wo
 registerPartners(app, { dataDir, uploadsDir, readJsonFile, writeJsonFile, audit, logError, roleAuth: workspace.roleAuth });
 
 const packaging = registerPackaging(app, {
-  dataDir, uploadsDir, publicDirs: [path.join(__dirname, 'dist'), path.join(__dirname, 'public')],
+  dataDir, uploadsDir, publicDirs: [distPath, path.join(__dirname, 'public')],
   readJsonFile, writeJsonFile, audit, logError, roleAuth: workspace.roleAuth,
 });
 
@@ -2132,7 +2193,71 @@ app.get('/api/health', (req, res) => {
 
 // Serve static files from dist directory (Astro build output)
 // Must come after all API routes to not interfere with them
-const distPath = path.join(__dirname, 'dist');
+
+// ----- AI ACCESS: the website's performance log, for an AI to read -----
+// lib/ai-log.js builds it (counts and totals only) from the same aggregation as the
+// Traffic page; lib/ai-access.js gives it to AI reader keys and to the manager's
+// local model. ai-log.jsonl keeps one line of main figures per day, for trends.
+const aiHistoryPath = path.join(dataDir, 'ai-log.jsonl');
+const builtPages = new Map();
+/** A page the build really made (so a made-up address in the analytics never reaches the log). */
+function isBuiltPage(p) {
+  if (builtPages.has(p)) return builtPages.get(p);
+  const file = path.join(distPath, p.endsWith('/') ? path.join(p, 'index.html') : p);
+  const ok = file.startsWith(distPath) && fs.existsSync(file);
+  if (builtPages.size < 2000) builtPages.set(p, ok);
+  return ok;
+}
+async function buildSiteLog({ days, snapshot = false }) {
+  // a day's snapshot covers yesterday (UTC), whole; the log covers the days up to now
+  const now = snapshot ? Date.parse(`${todayKey()}T00:00:00Z`) - 1 : Date.now();
+  const offset = snapshot ? 1 : 0;
+  const inquiries = await leads.all();
+  let store = null;
+  try { store = await leads.status(); } catch (e) { store = { ok: false }; }
+  return buildAiLog({
+    now, days,
+    cur: aggregateAnalytics(days, offset), prev: aggregateAnalytics(days, offset + days),
+    inquiries,
+    packaging: packaging.catalogue(),
+    agri: readJsonFile(productsPath, []) || [],
+    certificates: certificates.list(),
+    emailStatus: readJsonFile(path.join(dataDir, 'email-status.json'), null),
+    health: { failing: runHealthChecks().failing, store },
+    targets: cleanTargets(readJsonFile(path.join(dataDir, 'targets.json'), {}) || {}).targets,
+    isKnownPath: isBuiltPage,
+    firstTracked: Object.keys(analytics.days).filter((k) => analytics.days[k].heat).sort()[0] || null,
+    site: siteUrl(),
+  });
+}
+function readAiHistory() {
+  try {
+    return fs.readFileSync(aiHistoryPath, 'utf8').split('\n').filter(Boolean)
+      .map((l) => { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean).slice(-800);
+  } catch (e) { return []; }
+}
+async function snapshotYesterday() {
+  const hist = readAiHistory();
+  const yesterday = todayKey(new Date(Date.now() - 86400000));
+  if (hist.some((h) => h.date === yesterday)) return;
+  try {
+    const line = snapshotOf(await buildSiteLog({ days: 1, snapshot: true }));
+    if (line.date !== yesterday) return;
+    if (hist.length >= 1000) fs.writeFileSync(aiHistoryPath, [...hist.slice(-799), line].map((x) => JSON.stringify(x)).join('\n') + '\n');
+    else fs.appendFileSync(aiHistoryPath, JSON.stringify(line) + '\n');
+  } catch (e) { logError('ai-history', e); }
+}
+if (process.env.NODE_ENV !== 'test') {
+  setTimeout(snapshotYesterday, 60000).unref();
+  setInterval(snapshotYesterday, 3600000).unref();
+}
+aiAccess = registerAiAccess(app, {
+  dataDir, readJsonFile, writeJsonFile, adminAuth, audit,
+  managerOnly: staffOnly(['manager'], 'The website data log is for managers.'),
+  rateLimit: makeRateLimiter(30, 'ai'),
+  buildLog: ({ days }) => buildSiteLog({ days }),
+  history: readAiHistory,
+});
 
 // the admin's activity log, test email and site health (lib/admin-tools.js)
 registerAdminTools(app, { adminAuth, rateLimit, auditLogPath, dataDir, uploadsDir, distPath, readJsonFile, writeJsonFile, sendEmail, loadEmailConfig, audit, logError, healthChecks: runHealthChecks, leads });

@@ -169,9 +169,16 @@ export function readVolume(v) {
   return /^\d+(\.\d+)?$/.test(t) && Number(t) > 0 && Number(t) <= 100000 ? t : null;
 }
 
+/** Packaging: the packing list (shown in the form) or the ticked studio design already says what is wanted. */
+const listOrDesign = (form) => {
+  const list = form?.querySelector('[data-pl-summary]'), design = form?.querySelector('[data-send-design]');
+  return !!((list && !list.hidden) || design?.checked);
+};
+
 function checkField(el) {
   const v = el.value.trim();
   if (el.name === 'website') return '';
+  if (el.dataset.optionalWithList !== undefined && !v && listOrDesign(el.form)) return '';
   // agriculture: a chosen product says what the buyer wants, so the message is optional
   if (el.dataset.optionalWith) {
     const other = el.form?.elements[el.dataset.optionalWith]?.value || '';
@@ -207,6 +214,19 @@ for (const form of $$('form[data-endpoint]')) {
   const syncConsent = () => { if (consentRow) consentRow.hidden = !attaching(); };
   fileInput?.addEventListener('change', () => { showError(fileInput, checkFiles(fileInput)); syncConsent(); });
   designBox?.addEventListener('change', syncConsent);
+  // the message's "required" (and its star) follows the packing list and the studio design
+  const message = $('textarea[data-optional-with-list]', form);
+  const syncMessage = () => {
+    if (!message) return;
+    const optional = listOrDesign(form);
+    message.required = !optional;
+    const star = form.querySelector('label[for="message"] .req');
+    if (star) star.hidden = optional;
+    if (optional && !message.value.trim()) showError(message, '');
+  };
+  designBox?.addEventListener('change', syncMessage);
+  document.addEventListener('packinglist:changed', syncMessage);
+  syncMessage();
   consent?.addEventListener('change', () => { if (consent.checked) showError(consent, ''); });
   fields.forEach((el) => {
     el.addEventListener('blur', () => { if (el.value.trim()) showError(el, checkField(el)); });

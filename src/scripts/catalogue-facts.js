@@ -4,9 +4,20 @@
 // come, and its card in the product grid (product-grid.js). catalogue-panel.js
 // re-exports all of it beside the cut-outs, which need the shipped cutouts.json.
 
+import { has3d } from '../../lib/box-styles.js';
+
 const fmt = (n) => Number(n).toLocaleString('en-US');
 
-export const inStudio = (p) => !!(p.image && Array.isArray(p.quad) && p.quad.length === 4);
+/**
+ * A photo with the corners of its print area: the studio's photo mockup, and the
+ * live print on cards. The one copy of this rule (engine.js, live-print.js and the
+ * staff screens import it), so they can never disagree about a product.
+ */
+export const hasPhotoMockup = (p) => !!(p && p.image && Array.isArray(p.quad) && p.quad.length === 4);
+/** In the studio: a photo mockup, or a measured box the studio shows in 3D. */
+export const inStudio = (p) => hasPhotoMockup(p) || has3d(p);
+/** The studio's products in its order: photographed ones first, then boxes shown only in 3D. */
+export const studioOrder = (list) => [...list.filter(hasPhotoMockup), ...list.filter((p) => !hasPhotoMockup(p) && has3d(p))];
 /** An uploaded image on a transparent background (the server names it "-cutout-"). */
 export const isCutoutImage = (image) => /^\/uploads\/packaging\/[\w.-]+-cutout-\d+\.webp$/.test(image || '');
 
@@ -33,12 +44,15 @@ export function specRows(p, flexoMax = 4) {
   const lowest = minimums.length ? Math.min(...minimums) : null;
   const colours = Number.isInteger(p.printColours) ? p.printColours : flexoMax;
   const from = priceFrom(p);
+  const fits = sizes.filter((s) => s.holds).map((s) => `${s.label}: ${s.holds}`);
   return [
     ['Sizes', sizes.length ? sizes.map((s) => s.label).join(', ') : 'Made to your size'],
     ['Minimum order', lowest ? `${minimums.length > 1 && new Set(minimums).size > 1 ? 'From ' : ''}${fmt(lowest)}` : 'Confirmed with your quote'],
     ['Print', colours === 0 ? 'Plain, unprinted' : `Flexographic, up to ${colours} colour${colours === 1 ? '' : 's'}`],
     ['Price', from ? `${from.varies || from.partial ? 'From ' : ''}${etb(from.price)} per 1,000` : 'Price in your quote'],
     ['Ready in', Number.isInteger(p.leadTimeDays) && p.leadTimeDays > 0 ? `${p.leadTimeDays} working day${p.leadTimeDays === 1 ? '' : 's'}` : 'Confirmed with your quote'],
+    // what each size holds, only as the team measured it; last, so the first five rows keep their places
+    ...(fits.length ? [['What fits', fits.join('; ')]] : []),
   ];
 }
 
@@ -82,9 +96,10 @@ export const flowItem = (p, families = {}) => ({
   id: p.id, name: p.name, sub: families[p.family] || '', cat: p.family || 'bags', image: p.image || null,
   description: p.description || '', family: p.family || 'bags',
   cutout: !!(p.image && (p.cutout || isCutoutImage(p.image))), // shown whole on the stage colour, not cropped
-  print: p.image && Array.isArray(p.quad) && p.quad.length === 4 ? { cutout: p.image, quad: p.quad, safeTop: p.safeTop } : null,
-  // a card without a photo shows its sizes instead
+  print: hasPhotoMockup(p) ? { cutout: p.image, quad: p.quad, safeTop: p.safeTop } : null,
+  // a card without a photo shows its sizes instead, and says when the studio shows it as a 3D box
   note: p.image ? '' : (Array.isArray(p.sizes) && p.sizes.length ? p.sizes.map((s) => s.label).join(', ') : 'Made to your size'),
+  in3d: !p.image && has3d(p),
 });
 
 /** Products with a photo first, in the team's order, then the rest: the grid opens on photos. */

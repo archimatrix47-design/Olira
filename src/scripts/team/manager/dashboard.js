@@ -150,7 +150,7 @@ function renderFunnels(a) {
   const pack = [
     { label: 'Visitors', value: f.visit || 0 },
     { label: 'Saw packaging', value: f.pack || 0 },
-    { label: 'Used the bag designer', value: f.studio || 0 },
+    { label: 'Used the mockup studio', value: f.studio || 0 },
     { label: 'Reached for contact', value: f.contactPack || 0, hint: 'Call, WhatsApp, email or form' },
     { label: 'Sent an enquiry', value: f.enquiryPack || 0 },
   ];

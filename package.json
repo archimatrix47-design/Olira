@@ -12,6 +12,7 @@
     "dev:api": "node server.js --port 3000",
     "build": "astro build && node scripts/convert-to-webp.mjs public && node scripts/precompress.mjs",
     "test": "node --test",
+    "test:pipeline": "node --test scripts/pipeline-test.mjs",
     "preview": "astro preview",
     "check": "astro check",
     "astro": "astro",
@@ -26,7 +27,8 @@
     "multer": "^2.1.1",
     "mysql2": "^3.24.5",
     "nodemailer": "^10.1.0",
-    "sharp": "^0.35.5"
+    "sharp": "^0.35.5",
+    "three": "0.186.1"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

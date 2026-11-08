@@ -27,7 +27,8 @@ export function packCompleteness(p) {
     [25, !!p.image, 'photo'],
     [15, !!(p.image && Array.isArray(p.quad) && p.quad.length === 4), 'print corners'],
     [15, !!p.minOrder || (sizes.length > 0 && sizes.every((s) => s.minOrder)), 'minimum order'],
-    [10, sizes.every((s) => s.w && s.h), 'measurements of each size'],
+    // a box shown in 3D needs the depth too: it is never drawn at a guessed size
+    [10, sizes.every((s) => s.w && s.h && (!p.shape3d || s.d)), 'measurements of each size'],
     [25, sizes.length ? sizes.every((s) => s.pricePer1000 || p.pricePer1000) : !!p.pricePer1000, 'price'],
     [10, !!p.leadTimeDays, 'lead time'],
   ]);

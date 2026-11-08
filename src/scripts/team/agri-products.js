@@ -8,6 +8,7 @@ import { watch, clean, touch, mayLeave } from '../admin/tools.js';
 import { agriCompleteness, completeLine } from '../admin/completeness.js';
 import { SPEC_FIELDS } from '../../../lib/agri-spec.js';
 import { thumbUrl } from '../../../lib/thumb-url.js';
+import { mountFactsImport } from './facts-import.js';
 
 let items = [];
 let editingId = null;
@@ -17,7 +18,14 @@ const form = $('#productForm');
 const field = (name) => form.elements.namedItem(name);
 
 export async function show() {
-  if (!bound) { bound = true; bind(); }
+  if (!bound) {
+    bound = true; bind();
+    mountFactsImport({
+      download: '/api/products/facts.csv', upload: '/api/products/facts', filename: 'olira-agriculture-facts.csv',
+      downloadBtn: $('#aFactsDownload'), importBtn: $('#aFactsImport'), fileInput: $('#aFactsFile'), preview: $('#aFactsPreview'),
+      onSaved: load,
+    });
+  }
   await load();
 }
 
@@ -183,6 +191,7 @@ function fill(p) {
   $('#productSave').textContent = 'Save changes';
   $('#productDangerZone').hidden = false;
   clearErrors(); preview();
+  syncSpecCopy();
   showEditor(true);
   clean(form);
 }
@@ -198,6 +207,31 @@ async function edit(p) {
   field('name').focus({ preventScroll: true });
 }
 
+/* ---------- copy a specification from another product (UX-3) ---------- */
+const copySel = $('#pSpecCopy');
+/** The products whose specification can be copied into the one being edited. */
+function syncSpecCopy() {
+  if (!copySel) return;
+  const sources = items.filter((p) => p.id !== editingId && SPEC_FIELDS.some((f) => p.spec?.[f.key]));
+  copySel.replaceChildren(h('option', { value: '' }, 'Choose a product'), ...sources.map((p) => h('option', { value: p.id }, p.name)));
+  $('#pSpecCopyRow').hidden = !sources.length;
+}
+copySel?.addEventListener('change', async () => {
+  const src = items.find((p) => p.id === copySel.value);
+  copySel.value = '';
+  if (!src) return;
+  const incoming = SPEC_FIELDS.filter((f) => src.spec?.[f.key]);
+  const replaced = incoming.filter((f) => { const v = field(`spec.${f.key}`).value.trim(); return v && v !== src.spec[f.key]; });
+  if (replaced.length) {
+    const ok = await confirmDialog({ title: `Replace ${replaced.length} value${replaced.length === 1 ? '' : 's'}?`, body: `${replaced.map((f) => f.label).join(', ')} already ${replaced.length === 1 ? 'has a value' : 'have values'} here. ${src.name}'s will take ${replaced.length === 1 ? 'its' : 'their'} place. Nothing is saved until you save the product.`, confirm: 'Replace' });
+    if (!ok) return;
+  }
+  for (const f of incoming) field(`spec.${f.key}`).value = src.spec[f.key];
+  touch(form);
+  toast(`${incoming.length} specification value${incoming.length === 1 ? '' : 's'} copied from ${src.name}. Change what differs, then save.`);
+  field(`spec.${incoming[0]?.key || SPEC_FIELDS[0].key}`).focus();
+});
+
 function startAdd() {
   mode = 'add';
   editingId = null;
@@ -207,6 +241,7 @@ function startAdd() {
   $('#productSave').textContent = 'Save product';
   $('#productDangerZone').hidden = true;
   clearErrors(); preview();
+  syncSpecCopy();
   showEditor(true);
   clean(form);
   if (items.length) renderList();

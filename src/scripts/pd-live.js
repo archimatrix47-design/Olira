@@ -5,6 +5,7 @@
 // purity, minimum and specification sheet. Values are only ever set as text.
 import { specRows, pendingFacts, pendingList, pendingLine, QUOTE_FACTS } from './catalogue-panel.js';
 import { SPEC_FIELDS } from '../../lib/agri-spec.js';
+import { showFits } from './pd-fits.js';
 
 const box = document.querySelector('[data-live-product]');
 const set = (key, value) => { for (const dd of document.querySelectorAll(`[data-fact="${key}"]`)) if (dd.textContent !== value) dd.textContent = value; };
@@ -25,6 +26,7 @@ if (box && box.dataset.line === 'pack') {
     if (!p) return;
     const rows = Object.fromEntries(specRows(p, Number(box.dataset.flexoMax) || 4));
     for (const [key, label] of Object.entries(LABEL)) if (rows[label]) set(key, rows[label]);
+    showFits(rows['What fits'] || '');
     // a fact the team has set since the build is shown; the ones still to come stay in the single line
     showPending(pendingFacts(p));
   }).catch(() => {});

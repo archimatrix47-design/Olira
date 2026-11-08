@@ -2,6 +2,9 @@ import { defineConfig } from 'astro/config';
 
 export default defineConfig({
   output: 'static',
+  // ASTRO_OUT_DIR: the data pipeline test (scripts/pipeline-test.mjs) builds into a
+  // throwaway folder so it never replaces the site being served from dist/
+  outDir: process.env.ASTRO_OUT_DIR || './dist',
 
   // Image optimization
   image: {

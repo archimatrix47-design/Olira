@@ -167,6 +167,63 @@ test('prices and lead time: set by the packaging team, public, and kept when the
   assert.equal(c.product.leadTimeDays, null);
 });
 
+test('the packaging team sets a 3D shape and board; the page gets them, nothing else may', async () => {
+  const admin = await adminToken();
+  const pack = await member(admin, { name: 'Selam', email: 'selam.box@example.com', role: 'pack' });
+  const full = (await json(await req('GET', '/api/packaging-products?scope=all', { token: pack }))).find((p) => p.id === 'pk_pizza');
+  assert.equal(full.shape3d, null, 'none until the team chooses');
+  assert.equal(full.board3d, 'kraft');
+  const save = (extra) => req('POST', '/api/team/packaging-products', { token: pack, body: { product: { ...full, ...extra } } });
+  assert.equal((await save({ shape3d: 'rocket' })).status, 400, 'an unknown style is refused');
+  assert.equal((await save({ board3d: 'gold' })).status, 400, 'an unknown board is refused');
+  const r = await save({ shape3d: 'mailer', board3d: 'both' });
+  assert.equal(r.status, 200, JSON.stringify(await json(r.clone())));
+  const pub = (await json(await req('GET', '/api/packaging-products'))).find((p) => p.id === 'pk_pizza');
+  assert.equal(pub.shape3d, 'mailer');
+  assert.equal(pub.board3d, 'both');
+  // a save without the fields keeps them; None clears the style
+  assert.equal((await save({ shape3d: undefined, board3d: undefined })).status, 200);
+  assert.equal((await json(await req('GET', '/api/packaging-products'))).find((p) => p.id === 'pk_pizza').shape3d, 'mailer');
+  assert.equal((await save({ shape3d: '' })).status, 200);
+  assert.equal((await json(await req('GET', '/api/packaging-products'))).find((p) => p.id === 'pk_pizza').shape3d, null);
+});
+
+test('the teams import their facts from a spreadsheet: previewed, then saved whole or not at all', async () => {
+  const admin = await adminToken();
+  const pack = await member(admin, { name: 'Yonas', email: 'yonas.sheet@example.com', role: 'pack' });
+  const agri = await member(admin, { name: 'Meron', email: 'meron.sheet@example.com', role: 'agri' });
+  const { toCsv, parseCsv } = await import('../lib/facts-csv.js');
+  assert.equal((await req('GET', '/api/team/packaging-products/facts.csv', { token: agri })).status, 403, "packaging facts are the packaging team's");
+  assert.equal((await req('GET', '/api/products/facts.csv', { token: pack })).status, 403, "agriculture facts are the agriculture team's");
+  const dl = await req('GET', '/api/team/packaging-products/facts.csv', { token: pack });
+  assert.equal(dl.status, 200);
+  assert.match(dl.headers.get('content-type'), /text\/csv/);
+  const rows = parseCsv(await dl.text());
+  const fries = rows.findIndex((r) => r[0] === 'pk_fries' && r[2] === '');
+  rows[fries][9] = '900';
+  const csv = toCsv(rows);
+  const stored = () => JSON.parse(fs.readFileSync(path.join(tmp, 'packaging-products.json'), 'utf8')).find((p) => p.id === 'pk_fries');
+  const preview = await json(await req('POST', '/api/team/packaging-products/facts', { token: pack, body: { csv } }));
+  assert.equal(preview.applied, false);
+  assert.deepEqual(preview.changes.map((c) => [c.field, c.to]), [['Price per 1,000', 900]]);
+  assert.notEqual(stored().pricePer1000, 900, 'a preview saves nothing');
+  const bad = parseCsv(csv); bad[fries][8] = 'lots';
+  const refused = await json(await req('POST', '/api/team/packaging-products/facts', { token: pack, body: { csv: toCsv(bad), apply: true } }));
+  assert.equal(refused.applied, false);
+  assert.ok(refused.errors.length);
+  assert.notEqual(stored().pricePer1000, 900, 'a file with a bad row saves nothing at all');
+  const saved = await json(await req('POST', '/api/team/packaging-products/facts', { token: pack, body: { csv, apply: true } }));
+  assert.equal(saved.applied, true);
+  assert.equal(stored().pricePer1000, 900);
+  assert.equal((await json(await req('GET', '/api/packaging-products'))).find((p) => p.id === 'pk_fries').pricePer1000, 900, 'the website shows it at once');
+  // agriculture
+  const arows = parseCsv(await (await req('GET', '/api/products/facts.csv', { token: agri })).text());
+  arows[1][arows[0].indexOf('HS code')] = '1207.40';
+  const a = await json(await req('POST', '/api/products/facts', { token: agri, body: { csv: toCsv(arows), apply: true } }));
+  assert.equal(a.applied, true);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(tmp, 'products.json'), 'utf8')).find((p) => p.id === arows[1][0]).spec.hsCode, '1207.40');
+});
+
 test('a bundle under the minimum is refused by the server, and nothing is saved', async () => {
   const before = fs.existsSync(path.join(tmp, 'inquiries.json')) ? inquiries().length : 0;
   const r = await send({ product: 'Packaging', line: 'pack', bundle: [{ productId: 'pk_pizza', sizeId: 'small', qty: 500 }] });
@@ -187,6 +244,37 @@ test('a valid bundle is saved on the lead and routed to the packaging team', asy
   const lead = inquiries()[0];
   assert.equal(lead.line, 'pack');
   assert.deepEqual(lead.bundle.map((b) => [b.productId, b.size, b.qty]), [['pk_pizza', 'Large', 6000], ['pk_foil', 'Medium', 1500]]);
+});
+
+test('a measurement that is not one is refused with its size named; a decimal comma is read', async () => {
+  const admin = await adminToken();
+  const pack = await member(admin, { name: 'Tigist', email: 'tigist.sizes@example.com', role: 'pack' });
+  const save = (sizes) => req('POST', '/api/team/packaging-products', { token: pack, body: { product: { name: 'Size check box', description: 'Checks sizes', family: 'food', sizes } } });
+  for (const bad of [600, 0, -2, 'wide', '1e9']) {
+    const r = await save([{ label: 'Small', w: 20, d: 20, h: 5 }, { label: 'Odd', w: 20, d: 20, h: bad }]);
+    assert.equal(r.status, 400, `height ${bad} refused`);
+    assert.match((await json(r)).error, /Odd/, 'the size is named');
+  }
+  const r = await save([{ label: 'Small', w: '20,5', d: ' 12 ', h: '' }]);
+  assert.equal(r.status, 200);
+  const s = (await json(r)).product.sizes[0];
+  assert.deepEqual([s.w, s.d, s.h], [20.5, 12, null], 'a decimal comma is read; blank stays blank');
+});
+
+test('a studio design keeps only a known view and board (3D box or photo)', async () => {
+  const sent = async (design) => {
+    const r = await send({ product: 'Pizza boxes', line: 'pack', name: `Design ${design.view}`, design: JSON.stringify({ template: 'pk_pizza', templateName: 'Pizza boxes', ...design }) });
+    assert.ok([200, 500].includes(r.status), String(r.status));
+    return inquiries()[0].design;
+  };
+  const ok = await sent({ view: '3d', board: 'white' });
+  assert.equal(ok.view, '3d');
+  assert.equal(ok.board, 'white');
+  const odd = await sent({ view: 'hologram', board: '<b>gold</b>' });
+  assert.equal(odd.view, 'photo', 'an unknown view is read as the photo mockup');
+  assert.equal(odd.board, '', 'an unknown board never reaches the team inbox');
+  const photo = await sent({ view: 'photo', board: 'kraft' });
+  assert.equal(photo.board, '', 'a board only goes with a 3D design');
 });
 
 test('a saved request is reported as received even when no mail can be sent', async () => {

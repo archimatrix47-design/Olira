@@ -86,7 +86,9 @@ function renderDialog() {
         const o = h('option', { value: s.id }, `${s.label}${dims}`); o.selected = s.id === l.sizeId; sel.append(o);
       }
       sel.addEventListener('change', () => { l.sizeId = sel.value; save(); refreshLine(li, l); renderSummary(); renderEstimate(); });
-      fields.append(field('Size', sel));
+      const sizeField = field('Size', sel);
+      sizeField.classList.add('pl-size'); // a whole row: the size name with its measurements, never cut
+      fields.append(sizeField);
     }
     const min = minimumFor(p, l.sizeId);
     const qty = h('input', { name: `qty-${i}`, inputmode: 'numeric', autocomplete: 'off', value: l.qty === '' ? '' : String(l.qty), placeholder: min ? fmt(min) : 'For example 5,000', 'aria-describedby': `plMin-${i}` });
@@ -141,6 +143,8 @@ function renderSummary() {
   const qtyField = $('#p-qty')?.closest('.field');
   if (qtyField) qtyField.hidden = lines.length > 0; // each line carries its own quantity
   $('#plSummaryCount').textContent = `${lines.length} product${lines.length === 1 ? '' : 's'}`;
+  // the quote form's message is optional while the list is attached (common.js)
+  document.dispatchEvent(new CustomEvent('packinglist:changed', { detail: { lines: lines.length } }));
   $('#plSummaryBody').replaceChildren(...lines.map((l) => {
     const p = byId(l.productId);
     const s = (p.sizes || []).find((x) => x.id === l.sizeId);
@@ -191,15 +195,32 @@ function add(id, fromEl) {
   renderAll();
   announce(`${p.name} added to the packing list. ${lines.length} product${lines.length === 1 ? '' : 's'} in the list.`);
 }
+// a removed line can be put back for a few seconds, where it was, as it was
+let undoTimer = 0;
+const undoBar = h('div', { class: 'pl-undo', hidden: '' });
+$('#plLines')?.before(undoBar);
 function remove(i) {
   const p = byId(lines[i]?.productId);
-  lines.splice(i, 1);
+  const [gone] = lines.splice(i, 1);
   save();
   track({ event: 'bundle_remove' });
   renderAll();
   renderDialog();
-  announce(`${p?.name || 'Product'} removed.`);
-  ($('.pl-line .pl-remove', dialog) || $('#plClose')).focus();
+  clearTimeout(undoTimer);
+  const undo = h('button', { class: 'btn btn-secondary btn-sm', type: 'button' }, 'Undo');
+  undo.addEventListener('click', () => {
+    clearTimeout(undoTimer);
+    lines.splice(Math.min(i, lines.length), 0, gone);
+    save(); renderAll(); renderDialog();
+    undoBar.hidden = true;
+    announce(`${p?.name || 'Product'} is back in the packing list.`);
+    ($$('.pl-line .pl-remove', dialog)[Math.min(i, lines.length - 1)] || $('#plClose')).focus();
+  });
+  undoBar.replaceChildren(h('span', {}, `${p?.name || 'Product'} removed.`), undo);
+  undoBar.hidden = false;
+  undoTimer = setTimeout(() => { undoBar.hidden = true; }, 8000);
+  announce(`${p?.name || 'Product'} removed. Undo is available for a few seconds.`);
+  undo.focus();
 }
 function open(focusIndex) {
   if (!dialog) return;

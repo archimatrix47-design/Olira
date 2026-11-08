@@ -48,7 +48,7 @@ const jsonLd = graph(
   <Fragment slot="head">
     <link rel="preload" as="image" href="/images/home/sesame-natural-800.avif" type="image/avif" fetchpriority="high">
   </Fragment>
-  <SiteHeader section={[{ href: '#range', label: 'Range' }, { href: '#specTitle', label: 'Specification' }, { href: '#contact', label: 'Get a quote' }]} current="/agriculture/" />
+  <SiteHeader section={[{ href: '#range', label: 'Range' }, { href: '#specTitle', label: 'Specification' }, { href: '#contact', label: 'Talk to sales' }]} current="/agriculture/" />
 
   <main id="main">
     <!-- the produce, full bleed, and one line over it -->
@@ -124,7 +124,7 @@ const jsonLd = graph(
   </main>
 
   <QuoteBar href="#contact" after=".ag-hero .acts" until="#contact" />
-  <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." />
+  <SiteFooter note="Head office, Addis Ababa. Processing facility, Burayu, Oromia." line="agri" />
 
   <script>import '../scripts/agri.js'; import '../scripts/certs.js';</script>
 </SiteLayout>

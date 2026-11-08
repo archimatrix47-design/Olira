@@ -6,6 +6,7 @@ import * as store from './store.js';
 import { statusIcon } from './widgets.js';
 import { int } from './format.js';
 import { certAlerts, certHealth } from './cert-alerts.js';
+import { inStudio } from '../catalogue-facts.js';
 
 const view = () => $('[data-view="overview"]');
 
@@ -49,8 +50,8 @@ function renderAttention(setup, site) {
     i.href ? h('a', { class: `btn btn-sm ${i.level === 'high' ? 'btn-primary' : 'btn-secondary'}`, href: i.href }, i.action) : null)));
 }
 
-// A packaging product is one visitors can design once it has a photo and print corners.
-const inStudio = (p) => !!(p.image && Array.isArray(p.quad) && p.quad.length === 4);
+// Designable in the studio: a photo with print corners, or a measured box shown in 3D
+// (catalogue-facts.js, the same rule as the packaging page).
 
 function renderHealth(setup, prods, bags) {
   const list = prods || [];

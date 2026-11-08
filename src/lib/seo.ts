@@ -95,6 +95,7 @@ export function packFaq() {
     { q: 'What packaging does Olira make?', a: `${list(families.map((f: { label: string; n: number }) => `${f.label} (${f.n} products)`))}, made to your size and printed with your logo.` },
     { q: 'Can you print our logo?', a: 'Yes. We print with flexographic presses, one ink station per colour, from plain stock up to 4 colours. Choose the colours for each product in your packing list.' },
     { q: 'Can I see my design before I order?', a: 'Yes. The mockup studio on the packaging page puts your logo, text or full artwork on our bags and boxes. Download the mockup, or send it with your quote request.' },
+    { q: 'How do I choose the right size?', a: 'Measure the width, depth and height of what goes inside, then choose the size whose measurements are a little larger. Where the team has measured it, each size also says what it holds, for example in grams of coffee. Not sure? Send your product\'s measurements with your request and we will suggest a size.' },
     { q: 'Which artwork files should I send?', a: 'PDF, AI, EPS or SVG print best. PNG, JPG and WebP also work. Attach up to 3 files of 10 MB each to the quote request.' },
     { q: 'How do I get a quote?', a: 'Add the products you need to the packing list, with the size, quantity and print colours of each, and send it with your artwork. We usually reply within 24 hours.' },
   ];

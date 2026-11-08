@@ -9,8 +9,14 @@ import { SPEC_FIELDS } from '../../../../lib/agri-spec.js';
       <h1 id="h-products">Agriculture products</h1>
       <p>The agricultural products in the stack on the agriculture page, in this order. The first product is the card in front.</p>
     </div>
-    <button class="btn btn-primary" type="button" id="productNew">Add product</button>
+    <div class="a-head-actions">
+      <button class="btn btn-secondary" type="button" id="aFactsDownload">Download as a spreadsheet</button>
+      <button class="btn btn-secondary" type="button" id="aFactsImport">Import a filled spreadsheet</button>
+      <input type="file" id="aFactsFile" accept=".csv,text/csv" hidden aria-hidden="true" tabindex="-1">
+      <button class="btn btn-primary" type="button" id="productNew">Add product</button>
+    </div>
   </div>
+  <section class="a-card a-import" id="aFactsPreview" aria-label="Spreadsheet import" hidden></section>
   <div class="a-products" id="productPanes">
     <div class="a-card">
       <h2>Order on the website</h2>
@@ -63,6 +69,11 @@ import { SPEC_FIELDS } from '../../../../lib/agri-spec.js';
         </div>
         <fieldset class="a-fieldset a-spec" aria-describedby="pSpecHint">
           <legend class="a-label">Specification</legend>
+          <div class="a-field a-spec-copy" id="pSpecCopyRow" hidden>
+            <label for="pSpecCopy">Start from another product's specification</label>
+            <select class="input" id="pSpecCopy" aria-describedby="pSpecCopyHint"><option value="">Choose a product</option></select>
+            <p class="hint" id="pSpecCopyHint">Fills the fields below from that product, for you to change what differs. Nothing is saved until you save the product.</p>
+          </div>
           <p class="hint" id="pSpecHint">What an importer's quality team checks. Fill in what you can state for every shipment and leave the rest blank. Shown as the specification sheet on the product's page.</p>
           <div class="a-two">
             {SPEC_FIELDS.map((f) => (

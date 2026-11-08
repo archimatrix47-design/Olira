@@ -5,6 +5,7 @@
 // POST /api/team/packaging-products/:id/minimums, which changes nothing else.
 import { $, $$, h, api, toast, busy } from '../admin/api.js';
 import { clean } from '../admin/tools.js';
+import { mountFactsImport } from './facts-import.js';
 
 const FAMILY = { bags: 'Paper bags', food: 'Bakery and food boxes', medical: 'Medical packets', foil: 'Aluminium foil bags' };
 const num = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -31,6 +32,12 @@ export async function show() {
     bound = true;
     form().addEventListener('submit', submit);
     form().addEventListener('input', mark);
+    mountFactsImport({
+      download: '/api/team/packaging-products/facts.csv', upload: '/api/team/packaging-products/facts', filename: 'olira-packaging-facts.csv',
+      downloadBtn: $('#tFactsDownload'), importBtn: $('#tFactsImport'), fileInput: $('#tFactsFile'), preview: $('#tFactsPreview'),
+      // the screen shows the saved values: anything typed here and not saved is replaced
+      onSaved: async () => { form().removeAttribute('data-dirty'); clean(form()); await show(); },
+    });
   }
   if (form().hasAttribute('data-dirty')) return; // keep unsaved changes when coming back
   try {

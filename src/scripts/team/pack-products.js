@@ -10,6 +10,7 @@ import { DEFAULT_QUAD, convex, cornerEditor } from '../admin/corners.js';
 import { watch, clean, touch, mayLeave } from '../admin/tools.js';
 import { packCompleteness, completeLine } from '../admin/completeness.js';
 import { thumbUrl } from '../../../lib/thumb-url.js';
+import { has3d } from '../../../lib/box-styles.js';
 
 let items = [];
 let bound = false;
@@ -58,7 +59,9 @@ function renderList(focusId, which) {
         p.minOrder ? `minimum ${num(p.minOrder)}` : 'no minimum set',
         p.site === false ? 'Hidden on the website' : null,
         usable(p) ? (p.imageDark ? 'Visitors can design it in the studio, with a dark mode photo' : 'Visitors can design it in the studio')
+          : has3d(p) ? `Visitors can design it in the studio as a 3D box; ${p.image ? 'place the print corners' : 'add a photo'} for the photo mockup too`
           : p.image ? 'Quote only on the website: place the print corners to put it in the studio' : 'Quote only on the website: add a photo to put it in the studio',
+        p.shape3d && !has3d(p) ? 'the 3D view waits for the width, depth and height of each size' : null,
         p.team === false ? 'not in Mockups' : null,
       ].filter(Boolean).join(', ')),
       (() => { const c = packCompleteness(p); return h('p', { class: `a-missing${c.complete ? ' is-done' : ''}` }, c.complete ? 'Complete' : `Missing: ${c.missing.join(', ')}`); })())),
@@ -174,6 +177,8 @@ function fill(p) {
   field('family').value = p.family || 'bags';
   field('minOrder').value = p.minOrder ? num(p.minOrder) : '';
   field('printColours').value = Number.isInteger(p.printColours) ? String(p.printColours) : '';
+  field('shape3d').value = p.shape3d || '';
+  field('board3d').value = p.board3d || 'kraft';
   setSizes(p.sizes || []);
   field('specs').value = (p.specs || []).join('\n');
   field('site').checked = p.site !== false;
@@ -290,6 +295,7 @@ function addSizeRow(s) {
     input('sizeW', 'Width in cm', s.w, { inputmode: 'decimal', maxlength: '6' }),
     input('sizeD', 'Depth in cm', s.d, { inputmode: 'decimal', maxlength: '6' }),
     input('sizeH', 'Height in cm', s.h, { inputmode: 'decimal', maxlength: '6' }),
+    input('sizeHolds', 'What this size holds', s.holds, { maxlength: '60', placeholder: '250 g coffee' }),
     input('sizeMin', 'Minimum order for this size', s.minOrder ? num(s.minOrder) : '', { inputmode: 'numeric', maxlength: '12', placeholder: 'As product' }),
     h('button', { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': 'Remove this size', title: 'Remove', onclick: removeRow }, svgIcon('M6 6l12 12M18 6L6 18')));
   $('#pkSizes').append(li);
@@ -298,14 +304,14 @@ function setSizes(list) { $('#pkSizes').replaceChildren(); list.forEach(addSizeR
 function readSizes() {
   const out = [];
   for (const li of $$('#pkSizes li')) {
-    const [label, w, d, hgt, min] = $$('input', li).map((i) => i.value.trim());
-    if (!label && !w && !d && !hgt && !min) continue;
+    const [label, w, d, hgt, holds, min] = $$('input', li).map((i) => i.value.trim());
+    if (!label && !w && !d && !hgt && !holds && !min) continue;
     const dim = (v) => (v ? Number(v.replace(',', '.')) : null);
     const m = unitsOf(min);
     if (!label) return { error: 'Give every size a name, for example Medium.', el: $('input', li) };
     if ([w, d, hgt].some((v) => v && !(dim(v) > 0 && dim(v) <= 500))) return { error: `The measurements of ${label} must be centimetres, up to 500.`, el: $$('input', li)[1] };
-    if (Number.isNaN(m)) return { error: `The minimum for ${label} must be a whole number of units.`, el: $$('input', li)[4] };
-    out.push({ id: li.dataset.sizeId || undefined, label, w: dim(w), d: dim(d), h: dim(hgt), minOrder: m });
+    if (Number.isNaN(m)) return { error: `The minimum for ${label} must be a whole number of units.`, el: $$('input', li)[5] };
+    out.push({ id: li.dataset.sizeId || undefined, label, w: dim(w), d: dim(d), h: dim(hgt), holds, minOrder: m });
   }
   return { sizes: out };
 }
@@ -330,6 +336,7 @@ async function submit(e) {
   const product = {
     id: draft.id || undefined, name, description, handle: field('handle').value.trim(), specs,
     family: field('family').value, minOrder, sizes: sz.sizes, printColours: field('printColours').value === '' ? null : Number(field('printColours').value),
+    shape3d: field('shape3d').value || null, board3d: field('board3d').value,
     image: draft.image, imageDark: draft.imageDark, width: draft.width, height: draft.height, quad: draft.image ? draft.quad : null, safeTop: draft.safeTop,
     site: field('site').checked, team: field('team').checked,
   };
@@ -339,7 +346,9 @@ async function submit(e) {
     store.invalidate('packaging');
     const idx = items.findIndex((p) => p.id === r.product.id);
     if (idx >= 0) items[idx] = r.product; else items.push(r.product);
-    toast(idx >= 0 ? `${r.product.name} saved. The packaging page shows the change now.` : `${r.product.name} added to the packaging page.`);
+    // a 3D shape waits for the measurements: say so, or the team wonders where the box is
+    const waiting = r.product.shape3d && !has3d(r.product) ? ' The 3D view appears once every size has its width, depth and height.' : '';
+    toast((idx >= 0 ? `${r.product.name} saved. The packaging page shows the change now.` : `${r.product.name} added to the packaging page.`) + waiting);
     done();
     // the saved product stays open, as it now is on the website
     fill(r.product);
