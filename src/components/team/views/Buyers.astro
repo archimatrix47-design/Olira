@@ -1,0 +1,37 @@
+---
+// Workspace screen: buyers. Filled in by scripts/team/buyers.js.
+interface Props { manager: boolean; pack: boolean }
+const { manager, pack } = Astro.props;
+---
+<section class="a-view" data-view="buyers" aria-labelledby="h-buyers" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-buyers">Buyers <span class="a-h1-count" id="buyerCount"></span></h1>
+      <p>{manager ? 'Everyone who has enquired, in both lines, grouped by company: their people, every enquiry and quote, and where each stands.' : 'Everyone who has enquired, grouped by company: their people, every enquiry and quote, and where each stands. A returning buyer is recognised here.'}</p>
+    </div>
+  </div>
+  <div class="a-card t-toolbar">
+    <div class="t-toolbar-row">
+      <label class="sr-only" for="buyerSearch">Search buyers</label>
+      <input class="input grow" id="buyerSearch" type="search" placeholder="Search company, person, email or product">
+      {manager && (
+        <Fragment>
+          <label class="sr-only" for="buyerLine">Business line</label>
+          <select class="input" id="buyerLine"><option value="all">Both lines</option><option value="agri">Agriculture</option><option value="pack">Packaging</option></select>
+        </Fragment>
+      )}
+      <label class="sr-only" for="buyerSort">Sort</label>
+      <select class="input" id="buyerSort">
+        <option value="recent">Latest contact first</option>
+        <option value="enquiries">Most enquiries</option>
+        <option value="value">Highest quoted value</option>
+        <option value="name">By name</option>
+      </select>
+    </div>
+    <p class="sr-only" id="buyerSummary" role="status" aria-live="polite"></p>
+  </div>
+  <div class="t-inbox">
+    <ul class="t-list" id="buyerList" aria-label="Buyers"></ul>
+    <article class="t-detail a-card" id="buyerDetail" aria-live="off"></article>
+  </div>
+</section>

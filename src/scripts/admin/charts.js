@@ -4,7 +4,7 @@
 // in a legend where possible, nothing is encoded by colour alone, and every
 // chart ships a table with the same numbers.
 import { h } from './api.js';
-import { int, shortDate } from './format.js';
+import { int, shortDate } from '../../../lib/format.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 export function s(tag, attrs = {}, ...kids) {

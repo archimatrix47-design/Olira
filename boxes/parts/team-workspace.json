@@ -1,0 +1,32 @@
+{
+  "id": "team-workspace",
+  "name": "Team workspace",
+  "does": "The workspace page for each team and the manager: its sections and sign-in check.",
+  "kind": "staff",
+  "files": [
+    "src/components/team/Workspace.astro",
+    "src/pages/team/agriculture.astro",
+    "src/pages/team/packaging.astro",
+    "src/pages/team/manager.astro",
+    "src/scripts/team/main.js"
+  ],
+  "tests": [],
+  "checkedBy": "Browser journeys on the sandbox (visitor and staff paths), and the whole-page build comparison.",
+  "uses": [
+    "admin-sign-in",
+    "agri-catalogue",
+    "ai-access",
+    "analytics",
+    "enquiry-work",
+    "manager-reports",
+    "mockup-studio",
+    "packaging-catalogue",
+    "partners",
+    "site-shell",
+    "social-links",
+    "staff-accounts",
+    "staff-ui"
+  ],
+  "data": [],
+  "reads": []
+}

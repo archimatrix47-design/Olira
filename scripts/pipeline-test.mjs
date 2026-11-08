@@ -42,7 +42,7 @@ const snapshot = (dir) => Object.fromEntries(fs.readdirSync(dir, { recursive: tr
 const repoBefore = snapshot(REPO_DATA);
 
 const { app } = await import('../server.js');
-const facts = await import('../src/scripts/catalogue-facts.js');
+const facts = await import('../lib/catalogue-facts.js');
 
 let server, B;
 test.before(async () => {
@@ -381,4 +381,18 @@ test('14. a restarted server reads the same data; the repo data folder is untouc
   assert.equal(seen.aflatoxin, '4 ppb total max', 'the specification survives a restart');
   assert.equal(seen.hasHidden, false);
   assert.deepEqual(snapshot(REPO_DATA), repoBefore, 'nothing in the repo data folder changed');
+});
+
+test('15. the performance log: an AI reader key reads what just happened, in counts only', async () => {
+  const made = await req('POST', '/api/admin/ai-access/keys', { token: T.admin, body: { name: 'Pipeline reader' } });
+  assert.equal(made.status, 200);
+  assert.equal((await req('GET', '/api/ai/log', { token: made.json.key })).status, 403, 'off until the admin switches it on');
+  await req('POST', '/api/admin/ai-access', { token: T.admin, body: { enabled: true } });
+  const r = await req('GET', '/api/ai/log?days=7', { token: made.json.key });
+  assert.equal(r.status, 200);
+  const log = r.json, text = JSON.stringify(log);
+  assert.ok(log.enquiries.byLine.packaging >= 1 && log.enquiries.byLine.agriculture >= 1, 'the enquiries of stage 12 are counted');
+  assert.equal(log.catalogue.agriculture.products, readData('products.json').length, 'the agriculture catalogue as stored');
+  assert.equal(log.catalogue.packaging.products, readData('packaging-products.json').filter((p) => p.site !== false).length, 'the packaging catalogue as stored');
+  for (const s of ['Pipeline Buyer', 'Pipeline Importer', 'buyer.pipeline@example.com', 'importer.pipeline@example.com', 'Sesame for Rotterdam', 'Pipeline boxes, please']) assert.ok(!text.includes(s), `${s} must not be in the log`);
 });

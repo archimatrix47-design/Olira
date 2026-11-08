@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cleanAgriTerms, INCOTERMS } from '../lib/enquiry.js';
-import { detailsOf, scoreOf, termChips } from '../src/scripts/admin/leads.js';
+import { detailsOf, scoreOf, termChips } from '../lib/lead-rules.js';
 
 for (const key of ['NODE_ENV', 'PORT', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_NAME', 'RECIPIENT_EMAIL', 'CORS_ORIGINS', 'SITE_URL']) process.env[key] = '';
 process.env.NODE_ENV = 'test';

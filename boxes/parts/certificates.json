@@ -1,0 +1,36 @@
+{
+  "id": "certificates",
+  "name": "Certificates",
+  "does": "Certifications with proof: the file, validity, expiry reminders, and the list on the public pages.",
+  "kind": "admin",
+  "plugged": true,
+  "files": [
+    "lib/certificates.js",
+    "src/scripts/admin/certifications.js",
+    "src/scripts/admin/cert-alerts.js",
+    "src/components/admin/views/Certifications.astro",
+    "src/components/site/CertList.astro",
+    "src/scripts/certs.js",
+    "src/scripts/cert-ask.js"
+  ],
+  "tests": [
+    "test/certificates.test.js",
+    "test/cert-ask.test.js"
+  ],
+  "uses": [
+    "admin-panel",
+    "admin-sign-in",
+    "email",
+    "site-basics",
+    "site-data",
+    "site-shell",
+    "staff-accounts",
+    "staff-ui",
+    "storage"
+  ],
+  "data": [
+    "certifications.json",
+    "certificate-reminders.json"
+  ],
+  "reads": []
+}

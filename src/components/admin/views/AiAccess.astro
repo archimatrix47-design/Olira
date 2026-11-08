@@ -1,0 +1,63 @@
+---
+// Admin screen: ai. Filled in by scripts/admin/ai.js.
+---
+<section class="a-view" data-view="ai" aria-labelledby="h-ai" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-ai">AI access</h1>
+      <p>An AI assistant can read how the website is doing: visits, page speed, what visitors look at and ask for, how fast enquiries are answered, and what the catalogues still miss. It reads counts and totals only, never an enquiry, a name, an email address, a phone number or a message. You create its account and switch it on or off here; the figures themselves are for the manager.</p>
+    </div>
+    <span class="a-status" id="aiState">Checking</span>
+  </div>
+  <div class="a-settings">
+    <div class="a-card a-group">
+      <div class="a-group-head"><h2 id="h-ai-switch">Access</h2></div>
+      <label class="a-check"><input class="a-switch" type="checkbox" role="switch" id="aiEnabled" aria-describedby="aiEnabledHint"> AI reader accounts may read the website's performance log</label>
+      <p class="hint" id="aiEnabledHint">Off, every account is refused at once. The accounts are kept, so switching on again needs no new key.</p>
+    </div>
+
+    <div class="a-card a-group">
+      <div class="a-group-head"><h2 id="h-ai-keys">Reader accounts</h2></div>
+      <p class="hint">One account for each AI tool, named after it. Each has a key the tool sends with every request; the key is shown once, when the account is made. Anyone holding a key can read the log, so remove an account you no longer use.</p>
+      <div id="aiKeys"></div>
+      <form class="a-ai-new" id="aiKeyForm" novalidate>
+        <div class="a-field"><label for="aiKeyName">New account</label><input class="input" id="aiKeyName" name="name" maxlength="40" placeholder="Claude" autocomplete="off"></div>
+        <button class="btn btn-secondary" type="submit">Create the account</button>
+      </form>
+      <div class="a-ai-key" id="aiKeyShown" hidden>
+        <p><strong>Copy this key now. It is shown only this once.</strong></p>
+        <div class="a-ai-keyrow"><input class="input" id="aiKeyValue" readonly aria-label="The new key"><button class="btn btn-primary" type="button" id="aiKeyCopy">Copy</button></div>
+        <p class="hint" id="aiKeyHow"></p>
+        <div class="a-actions"><button class="btn btn-secondary" type="button" id="aiKeyDone">I have copied it</button></div>
+      </div>
+    </div>
+
+    <form class="a-form" id="aiLlmForm" novalidate>
+      <div class="a-card a-group">
+        <div class="a-group-head"><h2 id="h-ai-llm">Local AI model</h2></div>
+        <p class="hint">A model running on the manager's own computer (Ollama or LM Studio, both free) can answer the manager's questions under Ask the data. The question and the log go from the manager's browser straight to that computer: this website never sends them anywhere, and nothing is paid for.</p>
+        <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="enabled"> Offer Ask the data to the manager</label>
+        <div class="a-field"><label for="aiKind">Program</label><select class="input" id="aiKind" name="kind"><option value="ollama">Ollama</option><option value="openai">LM Studio, or another OpenAI-compatible server</option></select></div>
+        <div class="a-field"><label for="aiUrl">Address</label><input class="input" id="aiUrl" name="url" placeholder="http://localhost:11434" autocomplete="off" aria-describedby="aiUrlHint"><p class="hint" id="aiUrlHint">On the manager's computer: http://localhost:11434 for Ollama, http://localhost:1234/v1 for LM Studio. Only that computer or your office network is accepted.</p></div>
+        <div class="a-field"><label for="aiModel">Model</label><input class="input" id="aiModel" name="model" placeholder="llama3.1:8b" autocomplete="off" aria-describedby="aiModelHint"><p class="hint" id="aiModelHint">Its name as the program lists it.</p></div>
+      </div>
+      <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save the local model</button></div>
+    </form>
+    <div class="a-card a-group">
+      <div class="a-group-head"><h2 id="h-ai-test">Check the connection</h2></div>
+      <p class="hint">From the manager's computer: asks the program which models it has. Save any changes first.</p>
+      <div class="a-actions"><button class="btn btn-secondary" type="button" id="aiLlmTest">Check the connection</button></div>
+      <p class="a-test-result" id="aiLlmResult" role="status" aria-live="polite" hidden></p>
+      <details class="a-ai-setup">
+        <summary>How to set it up</summary>
+        <ol>
+          <li>On the manager's computer, install Ollama from ollama.com (or LM Studio from lmstudio.ai).</li>
+          <li>Download a model. For Ollama, in a terminal: <code>ollama pull llama3.1:8b</code> (about 5 GB; the computer needs 8 GB of memory or more).</li>
+          <li>Let this website talk to it. Ollama: set the environment variable <code>OLLAMA_ORIGINS</code> to <code>https://oliraagroindustry.com</code> and restart Ollama. LM Studio: in its server settings, switch on CORS.</li>
+          <li>Here: fill in the address and the model, switch it on, save, then check the connection.</li>
+          <li>The browser may ask whether this site may reach devices on your network. Allow it.</li>
+        </ol>
+      </details>
+    </div>
+  </div>
+</section>

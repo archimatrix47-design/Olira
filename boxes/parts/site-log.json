@@ -1,0 +1,31 @@
+{
+  "id": "site-log",
+  "name": "Performance log",
+  "does": "Gathers the figures for the AI data log and keeps one line of main figures per day, for trends.",
+  "kind": "insight",
+  "plugged": true,
+  "files": [
+    "lib/site-log.js"
+  ],
+  "tests": [],
+  "checkedBy": "test/ai-access.test.js reads the finished log.",
+  "uses": [
+    "agri-catalogue",
+    "ai-access",
+    "analytics",
+    "certificates",
+    "lead-store",
+    "packaging-catalogue",
+    "site-basics",
+    "site-health",
+    "storage",
+    "targets"
+  ],
+  "data": [
+    "ai-log.jsonl"
+  ],
+  "reads": [
+    "email-status.json",
+    "targets.json"
+  ]
+}

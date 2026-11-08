@@ -1,0 +1,31 @@
+{
+  "id": "manager-reports",
+  "name": "Manager reports",
+  "does": "The manager's dashboard, team performance, report and product completeness.",
+  "kind": "insight",
+  "files": [
+    "lib/completeness.js",
+    "src/scripts/team/manager/dashboard.js",
+    "src/scripts/team/manager/people.js",
+    "src/scripts/team/manager/report.js",
+    "src/scripts/team/manager/products.js",
+    "src/components/team/views/Dashboard.astro",
+    "src/components/team/views/People.astro",
+    "src/components/team/views/Report.astro",
+    "src/components/team/views/ManagerProducts.astro"
+  ],
+  "tests": [
+    "test/staff-numbers.test.js"
+  ],
+  "uses": [
+    "certificates",
+    "enquiry-work",
+    "product-pages",
+    "site-shell",
+    "staff-accounts",
+    "staff-ui",
+    "targets"
+  ],
+  "data": [],
+  "reads": []
+}

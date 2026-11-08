@@ -5,8 +5,8 @@ import { $, $$, h, toast } from '../../admin/api.js';
 import * as store from '../../admin/store.js';
 import { columns, barList, tableFor, empty } from '../../admin/charts.js';
 import { kpiCard, bucketsFor } from '../../admin/widgets.js';
-import { int, pct, hours, delta, NO_DATA } from '../../admin/format.js';
-import { STAGES, lineOfLead, scoreOf, firstResponseHours, median, RESPONSE_BUCKETS, inPeriod, ageHours } from '../../admin/leads.js';
+import { int, pct, hours, delta, NO_DATA } from '../../../../lib/format.js';
+import { STAGES, lineOfLead, scoreOf, firstResponseHours, median, RESPONSE_BUCKETS, inPeriod, ageHours } from '../../../../lib/lead-rules.js';
 import { OPEN } from '../session.js';
 
 let everything = [];

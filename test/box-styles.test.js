@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { has3d, boxStyle, boxBoard, boxOf, cmLabel, BOX_STYLES, BOARDS } from '../lib/box-styles.js';
-import { inStudio, studioOrder, hasPhotoMockup } from '../src/scripts/catalogue-facts.js';
+import { inStudio, studioOrder, hasPhotoMockup } from '../lib/catalogue-facts.js';
 
 const measured = [{ id: 's', label: 'Small', w: 25, d: 25, h: 4 }, { id: 'l', label: 'Large', w: 40, d: 40, h: 5 }];
 const box = (extra) => ({ id: 'pk_pizza', name: 'Pizza boxes', shape3d: 'mailer', sizes: measured, ...extra });

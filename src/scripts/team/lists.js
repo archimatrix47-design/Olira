@@ -1,6 +1,6 @@
 // Follow-ups (what is waiting on the team) and Quotes (every saved quote).
 import { $, h, toast, formatDate, timeAgo } from '../admin/api.js';
-import { hours } from '../admin/format.js';
+import { hours } from '../../../lib/format.js';
 import { session, leads, followupsOf, isMine, stageName, lineOf, LINE_LABEL } from './session.js';
 import { printQuote } from './quote.js';
 

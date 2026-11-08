@@ -1,0 +1,14 @@
+{
+  "id": "site-basics",
+  "name": "Site basics",
+  "does": "Small shared facts: who is calling, what counts as a bot, the site address, clean form text.",
+  "kind": "foundation",
+  "files": [
+    "lib/site-basics.js"
+  ],
+  "tests": [],
+  "checkedBy": "Used on every request; exercised through test/api.test.js.",
+  "uses": [],
+  "data": [],
+  "reads": []
+}

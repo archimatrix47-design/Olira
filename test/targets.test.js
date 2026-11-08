@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cleanTargets } from '../lib/targets.js';
-import { progress, monthOf } from '../src/scripts/team/targets-progress.js';
+import { progress, monthOf } from '../lib/targets-progress.js';
 
 for (const key of ['NODE_ENV', 'PORT', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_NAME', 'RECIPIENT_EMAIL', 'CORS_ORIGINS', 'SITE_URL']) process.env[key] = '';
 process.env.NODE_ENV = 'test';

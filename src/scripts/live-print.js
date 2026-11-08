@@ -10,7 +10,7 @@
 // page's products) shows Olira's own logo instead, whatever is typed.
 import { prepare, render, defaultDesign, INKS } from './mockup/engine.js';
 import { printQueue, onScreen } from './print-queue.js';
-import { hasPhotoMockup } from './catalogue-facts.js';
+import { hasPhotoMockup } from '../../lib/catalogue-facts.js';
 
 const KEY = 'olira-brand';
 const MAX = 18;

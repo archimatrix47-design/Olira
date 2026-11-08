@@ -10,7 +10,7 @@ const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/(\w:)/, '$1');
 const files = [];
 const walk = (d) => { for (const f of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, f.name); if (f.isDirectory()) walk(p); else if (/\.(js|astro)$/.test(f.name)) files.push(p); } };
 walk(path.join(ROOT, 'src'));
-const server = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
+const server = fs.readFileSync(path.join(ROOT, 'lib/analytics.js'), 'utf8');
 const allowed = new Set([...(server.match(/const TRACK_EVENTS = new Set\(\[([^\]]+)\]\)/)?.[1] || '').matchAll(/'([a-z_]+)'/g)].map((m) => m[1]));
 // handled on their own in the /api/track route
 for (const special of ['product', 'leave', 'vitals']) if (new RegExp(`body\.event === '${special}'`).test(server)) allowed.add(special);

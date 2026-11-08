@@ -1,0 +1,34 @@
+{
+  "id": "contact",
+  "name": "Company details",
+  "does": "The address, emails and phone numbers. Phone numbers reach a visitor only when they press a call or WhatsApp button.",
+  "kind": "admin",
+  "plugged": true,
+  "files": [
+    "lib/contact.js",
+    "src/scripts/admin/company.js",
+    "src/components/admin/views/Company.astro",
+    "src/components/site/ContactFab.astro",
+    "src/components/site/ContactLines.astro",
+    "src/components/site/ReachIcons.astro",
+    "src/scripts/fab.js",
+    "src/scripts/reach.js"
+  ],
+  "tests": [],
+  "checkedBy": "test/api.test.js checks numbers never appear in public responses.",
+  "uses": [
+    "admin-panel",
+    "admin-sign-in",
+    "site-basics",
+    "site-data",
+    "site-shell",
+    "social-links",
+    "staff-ui",
+    "storage",
+    "web-guards"
+  ],
+  "data": [
+    "contact-details.json"
+  ],
+  "reads": []
+}

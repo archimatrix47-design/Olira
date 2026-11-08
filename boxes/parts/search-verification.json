@@ -1,0 +1,21 @@
+{
+  "id": "search-verification",
+  "name": "Search verification",
+  "does": "Proves to Google and others that the site is ours.",
+  "kind": "admin",
+  "plugged": true,
+  "files": [
+    "lib/search-verification.js"
+  ],
+  "tests": [
+    "test/search-verification.test.js"
+  ],
+  "uses": [
+    "admin-sign-in",
+    "marketing-tags",
+    "storage",
+    "web-guards"
+  ],
+  "data": [],
+  "reads": []
+}

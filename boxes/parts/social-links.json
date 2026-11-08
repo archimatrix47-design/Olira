@@ -1,0 +1,25 @@
+{
+  "id": "social-links",
+  "name": "Social links",
+  "does": "The social pages and WhatsApp link. The public list leaves the WhatsApp number out.",
+  "kind": "catalogue",
+  "plugged": true,
+  "files": [
+    "lib/social-links.js",
+    "lib/social.js",
+    "src/scripts/team/social.js",
+    "src/scripts/social-icons.js",
+    "src/components/team/views/Social.astro"
+  ],
+  "tests": [],
+  "checkedBy": "test/workspace.test.js and test/api.test.js cover both lists.",
+  "uses": [
+    "staff-accounts",
+    "staff-ui",
+    "storage"
+  ],
+  "data": [
+    "social-links.json"
+  ],
+  "reads": []
+}

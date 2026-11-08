@@ -1,0 +1,38 @@
+{
+  "id": "staff-ui",
+  "name": "Staff look and parts",
+  "does": "What the staff screens share: the look, the API helper, charts, number formats and the unsaved-changes guard.",
+  "kind": "staff",
+  "files": [
+    "src/scripts/admin/api.js",
+    "src/scripts/admin/tools.js",
+    "src/scripts/admin/charts.js",
+    "src/scripts/admin/widgets.js",
+    "src/scripts/admin/store.js",
+    "src/scripts/admin/motion.js",
+    "lib/format.js",
+    "src/styles/admin.css",
+    "src/styles/admin-insights.css",
+    "src/styles/team.css",
+    "src/styles/staff-theme.css"
+  ],
+  "tests": [],
+  "checkedBy": "test/staff-numbers.test.js reads its formats; browser checks use every screen.",
+  "uses": [
+    "admin-sign-in",
+    "admin-tools",
+    "agri-catalogue",
+    "analytics",
+    "branding",
+    "certificates",
+    "contact",
+    "email",
+    "enquiry-work",
+    "marketing-tags",
+    "packaging-catalogue",
+    "social-links",
+    "staff-accounts"
+  ],
+  "data": [],
+  "reads": []
+}

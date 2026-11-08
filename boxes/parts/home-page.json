@@ -1,0 +1,25 @@
+{
+  "id": "home-page",
+  "name": "Home page",
+  "does": "The first page: both businesses, the product strip and the company in brief.",
+  "kind": "public",
+  "files": [
+    "src/pages/index.astro",
+    "src/scripts/home.js",
+    "src/scripts/marquee.js"
+  ],
+  "tests": [],
+  "checkedBy": "Browser journeys on the sandbox (visitor and staff paths), and the whole-page build comparison.",
+  "uses": [
+    "mockup-studio",
+    "packaging-catalogue",
+    "partners",
+    "product-pages",
+    "seo",
+    "site-data",
+    "site-shell",
+    "thumbs"
+  ],
+  "data": [],
+  "reads": []
+}

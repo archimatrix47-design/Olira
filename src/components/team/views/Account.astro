@@ -1,0 +1,26 @@
+---
+// Workspace screen: account. Filled in by scripts/team/account.js.
+---
+<section class="a-view" data-view="account" aria-labelledby="h-account" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-account">My account</h1>
+      <p>Buyers' replies to the emails you send from here go to your work email. The site administrator creates accounts and can reset your password.</p>
+    </div>
+  </div>
+  <div class="a-settings">
+    <div class="a-card a-group">
+      <h2>Signed in as</h2>
+      <dl class="t-profile" id="accountProfile"></dl>
+    </div>
+    <form class="a-form" id="accountPassForm" novalidate>
+      <div class="a-card a-group">
+        <h2>Change password</h2>
+        <div class="a-field"><label for="apCurrent">Current password</label><input class="input" id="apCurrent" type="password" autocomplete="current-password" required></div>
+        <div class="a-field"><label for="apNew">New password</label><input class="input" id="apNew" type="password" autocomplete="new-password" minlength="12" required aria-describedby="apHint"><p class="hint" id="apHint">At least 12 characters.</p></div>
+        <div class="a-field"><label for="apNew2">Type it again</label><input class="input" id="apNew2" type="password" autocomplete="new-password" required aria-describedby="apErr"><p class="err" id="apErr" role="alert" hidden></p></div>
+      </div>
+      <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Change password</button></div>
+    </form>
+  </div>
+</section>

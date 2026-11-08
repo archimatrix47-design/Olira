@@ -1,0 +1,36 @@
+{
+  "id": "analytics",
+  "name": "Visitor counts",
+  "does": "The site's own counts: no cookies, no third party, no IP address kept. Answers the Traffic and Insights screens.",
+  "kind": "insight",
+  "plugged": true,
+  "files": [
+    "lib/analytics.js",
+    "src/scripts/team/insights.js",
+    "src/scripts/team/manager/traffic.js",
+    "src/components/team/views/Insights.astro",
+    "src/components/team/views/Traffic.astro"
+  ],
+  "tests": [
+    "test/insights.test.js",
+    "test/track-events.test.js"
+  ],
+  "uses": [
+    "admin-sign-in",
+    "agri-catalogue",
+    "enquiries",
+    "enquiry-work",
+    "packaging-catalogue",
+    "page-speed",
+    "site-basics",
+    "staff-accounts",
+    "staff-ui",
+    "storage",
+    "targets",
+    "web-guards"
+  ],
+  "data": [
+    "analytics.json"
+  ],
+  "reads": []
+}

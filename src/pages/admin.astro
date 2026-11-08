@@ -10,6 +10,16 @@ import '../styles/admin.css';
 import '../styles/admin-insights.css';
 import '../styles/staff-theme.css'; // the staff look: monochrome, brand on the header (load last)
 import ThemeButton from '../components/site/ThemeButton.astro';
+import Overview from '../components/admin/views/Overview.astro';
+import Company from '../components/admin/views/Company.astro';
+import Certifications from '../components/admin/views/Certifications.astro';
+import Logo from '../components/admin/views/Logo.astro';
+import StaffAccounts from '../components/admin/views/StaffAccounts.astro';
+import Email from '../components/admin/views/Email.astro';
+import AiAccess from '../components/admin/views/AiAccess.astro';
+import Activity from '../components/admin/views/Activity.astro';
+import Marketing from '../components/admin/views/Marketing.astro';
+import Password from '../components/admin/views/Password.astro';
 
 const icon: Record<string, string> = {
   overview: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
@@ -93,376 +103,34 @@ const Svg = (name: string) => `<svg width="18" height="18" viewBox="0 0 24 24" f
     <a class="a-back" href="#menu">All sections</a>
 
     <!-- OVERVIEW: the website's setup, and the accounts that run it -->
-    <section class="a-view" data-view="overview" aria-labelledby="h-overview" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-overview">Overview</h1>
-          <p>What the website needs to run well, and the accounts that work it. Enquiries, traffic and the product catalogues are in the manager's and the teams' workspaces.</p>
-        </div>
-      </div>
-
-      <div class="a-card a-attention" aria-labelledby="h-attention">
-        <h2 id="h-attention">Needs attention</h2>
-        <ul class="a-alerts" id="ovAttention"><li class="v-skeleton"></li></ul>
-      </div>
-
-      <div class="a-grid12">
-        <div class="a-card span-8">
-          <div class="a-card-head"><div><h2>Website setup</h2><p>Your settings, and the content the teams keep up to date.</p></div></div>
-          <ul class="a-checklist" id="ovHealth"></ul>
-        </div>
-        <div class="a-card span-4">
-          <div class="a-card-head"><div><h2>Accounts</h2><p>Who works the website.</p></div></div>
-          <dl class="a-facts" id="ovAccounts"></dl>
-        </div>
-        <div class="a-card span-12" aria-labelledby="h-site">
-          <div class="a-card-head"><div><h2 id="h-site">Site health</h2><p>What the server reports right now. Checked each time this page opens.</p></div><span class="a-status" id="ovSiteState">Checking</span></div>
-          <dl class="a-facts a-facts-row" id="ovSite"></dl>
-        </div>
-      </div>
-    </section>
+    <Overview />
 
     <!-- COMPANY -->
-    <section class="a-view" data-view="company" aria-labelledby="h-company" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-company">Company details</h1>
-          <p>Phone numbers, email and addresses shown on every page of the website and used by the enquiry forms.</p>
-        </div>
-      </div>
-      <form class="a-form a-settings" id="companyForm" novalidate>
-        <div class="a-card a-group">
-          <h2>Phone and email</h2>
-            <div class="a-field">
-              <label for="cPhones">Phone numbers</label>
-              <textarea class="input" id="cPhones" name="phones" aria-describedby="cPhonesHint" style="min-height:96px"></textarea>
-              <p class="hint" id="cPhonesHint">One per line. The first is the main sales number, also used for WhatsApp unless the marketing teams set a WhatsApp link in their Contact links. The second is shown as the office line.</p>
-            </div>
-            <div class="a-field">
-              <label for="cEmails">Email addresses</label>
-              <textarea class="input" id="cEmails" name="emails" aria-describedby="cEmailsHint" style="min-height:96px"></textarea>
-              <p class="hint" id="cEmailsHint">One per line. The first is shown on the website.</p>
-            </div>
-        </div>
-        <div class="a-card a-group">
-          <h2>Head office address</h2>
-            <div class="a-field"><label for="aLine2">Building and room</label><input class="input" id="aLine2" name="address.line2" placeholder="Soreti Building, 2nd Floor, Room 214"></div>
-            <div class="a-field"><label for="aLine1">Area</label><input class="input" id="aLine1" name="address.line1" placeholder="Lemi Kura Subcity, Woreda 08"></div>
-            <div class="a-field"><label for="aPo">P.O. Box</label><input class="input" id="aPo" name="address.poBox" placeholder="P.O. Box 46325"></div>
-            <div class="a-field"><label for="aCity">City</label><input class="input" id="aCity" name="address.city" placeholder="Addis Ababa"></div>
-            <div class="a-field"><label for="aCountry">Country</label><input class="input" id="aCountry" name="address.country" placeholder="Ethiopia"></div>
-            <div class="a-field"><label for="oName">Short office name</label><input class="input" id="oName" name="office.name" placeholder="Soreti Building"></div>
-            <div class="a-field"><label for="oCity">Short office area</label><input class="input" id="oCity" name="office.city" placeholder="Lemi Kura, Addis Ababa"></div>
-          <p class="a-note">The short name and area appear together in the home page footer.</p>
-        </div>
-        <div class="a-card a-group">
-          <h2>Processing facility</h2>
-            <div class="a-field"><label for="fName">Name</label><input class="input" id="fName" name="factory.name" placeholder="Burayu"></div>
-            <div class="a-field"><label for="fCity">Location</label><input class="input" id="fCity" name="factory.city" placeholder="15 km West of Addis Ababa"></div>
-            <div class="a-field"><label for="fLat">Latitude</label><input class="input" id="fLat" name="factory.lat" inputmode="decimal" placeholder="9.0366"></div>
-            <div class="a-field"><label for="fLng">Longitude</label><input class="input" id="fLng" name="factory.lng" inputmode="decimal" placeholder="38.6364"></div>
-          <p class="a-note">The coordinates are printed on the home page. New coordinates appear after the next deploy; phone, email and addresses update straight away.</p>
-        </div>
-        <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save company details</button></div>
-      </form>
-    </section>
+    <Company />
 
     <!-- CERTIFICATIONS: each with the certificate itself, so buyers can check it -->
-    <section class="a-view" data-view="certifications" aria-labelledby="h-certs" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-certs">Certifications</h1>
-          <p>Shown on the agriculture page and the product pages with the certificate itself, so buyers can open and check it. Without its document a certification shows as "copy on request"; once its "valid until" date passes it comes off the website.</p>
-        </div>
-        <button class="btn btn-primary" type="button" id="certNew">Add certification</button>
-      </div>
-      <p class="a-note" id="certSummary" role="status" aria-live="polite"></p>
-      <div class="a-two a-certs" style="align-items:start">
-        <div class="a-card">
-          <h2>Certifications</h2>
-          <ul class="a-rows a-team-rows" id="certList"></ul>
-        </div>
-        <div class="a-card">
-          <h2 id="certTitle">Add a certification</h2>
-          <form class="a-form" id="certForm" novalidate style="margin-top:18px">
-            <input type="hidden" name="id">
-            <input type="hidden" name="file">
-            <div class="a-field"><label for="certName">Name</label><input class="input" id="certName" name="name" required maxlength="120" placeholder="ISO 22000:2018"></div>
-            <div class="a-field"><label for="certDesc">What it covers</label><input class="input" id="certDesc" name="description" maxlength="300" placeholder="Food safety management system"></div>
-            <div class="a-two">
-              <div class="a-field"><label for="certIssuer">Issued by</label><input class="input" id="certIssuer" name="issuer" maxlength="120" placeholder="The certification body"></div>
-              <div class="a-field"><label for="certNumber">Certificate number</label><input class="input" id="certNumber" name="number" maxlength="80"></div>
-            </div>
-            <div class="a-two">
-              <div class="a-field"><label for="certFrom">Valid from</label><input class="input" id="certFrom" name="validFrom" type="date"></div>
-              <div class="a-field"><label for="certUntil">Valid until</label><input class="input" id="certUntil" name="validUntil" type="date" aria-describedby="certUntilHint"><p class="hint" id="certUntilHint">The manager and you are warned 60 days before; on the day it passes the certification comes off the website.</p></div>
-            </div>
-            <div class="a-field"><label for="certScope">Scope (optional)</label><textarea class="input" id="certScope" name="scope" maxlength="300" style="min-height:72px" placeholder="For example: cleaning, sorting and packing of sesame and pulses, Burayu facility"></textarea></div>
-            <div class="a-field"><label for="certVerify">Register link (optional)</label><input class="input" id="certVerify" name="verifyUrl" type="url" maxlength="300" placeholder="https://" aria-describedby="certVerifyHint"><p class="hint" id="certVerifyHint">The issuer's public page where anyone can check this certificate, if it has one. Shown as "Check with the issuer".</p></div>
-            <div class="a-field">
-              <span class="a-label" id="certFileLabel">The certificate</span>
-              <label class="a-drop" id="certDrop">
-                <input type="file" id="certFile" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp" aria-labelledby="certFileLabel certDropTitle" aria-describedby="certFileHint">
-                <strong id="certDropTitle">Upload the certificate</strong>
-                <span id="certFileHint">A PDF, or a scan as JPG, PNG or WebP, up to 10 MB. Buyers can open it from the website.</span>
-              </label>
-              <p class="a-note" id="certFileNow" hidden></p>
-            </div>
-            <div class="a-danger-zone" id="certDangerZone" hidden>
-              <button class="btn btn-danger-quiet btn-sm" type="button" id="certDelete">Delete certification</button>
-            </div>
-            <div class="a-actions a-savebar">
-              <span class="a-dirty a-grow">Unsaved changes</span>
-              <button class="btn btn-ghost" type="button" id="certCancel" hidden>Cancel</button>
-              <button class="btn btn-primary" type="submit" id="certSave">Add certification</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </section>
+    <Certifications />
 
     <!-- LOGO -->
-    <section class="a-view" data-view="logo" aria-labelledby="h-logo" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-logo">Logo</h1>
-          <p>Shown in the header and footer of every page. Transparent PNG works best.</p>
-        </div>
-      </div>
-      <div class="a-two" style="align-items:start">
-        <div class="a-card">
-          <h2>Current logo</h2>
-          <div class="a-logo-box" style="margin-top:16px"><img id="logoCurrent" src="/logo.png" alt="Current logo"></div>
-          <p class="a-note" id="logoSource" style="margin-top:10px"></p>
-          <div class="a-actions"><button class="btn btn-danger-quiet" type="button" id="logoReset" hidden>Use the original logo</button></div>
-        </div>
-        <div class="a-card">
-          <h2>Upload a new logo</h2>
-          <form class="a-form" id="logoForm" novalidate>
-            <label class="a-drop" id="logoDrop">
-              <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" aria-describedby="logoHint">
-              <strong id="logoDropTitle">Choose or drop a file</strong>
-              <span id="logoHint">PNG, JPG, WebP or SVG. Saved as WebP, up to 600 px wide.</span>
-            </label>
-            <div class="a-logo-box" id="logoPreviewBox" hidden><img id="logoPreview" alt="New logo preview"></div>
-            <div class="a-actions"><button class="btn btn-primary btn-lg" type="submit">Save logo</button></div>
-          </form>
-        </div>
-      </div>
-    </section>
+    <Logo />
 
     <!-- TEAM -->
-    <section class="a-view" data-view="team" aria-labelledby="h-team" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-team">Staff accounts</h1>
-          <p>Everyone who works the website signs in at /team/ with their own email and password. Marketing team members answer their line's enquiries and keep its catalogue, contact links and partner logos up to date. Managers see every enquiry in both lines, hand them to team members, and follow the numbers. Buyers' replies go to the person who wrote.</p>
-        </div>
-      </div>
-      <div class="a-two" style="align-items:start">
-        <div class="a-card">
-          <h2>People</h2>
-          <p id="teamSummary"></p>
-          <ul class="a-rows a-team-rows" id="teamList"></ul>
-        </div>
-        <div class="a-card">
-          <h2 id="teamTitle">Add a person</h2>
-          <form class="a-form" id="teamForm" novalidate style="margin-top:18px">
-            <div class="a-field"><label for="tmName">Name</label><input class="input" id="tmName" name="name" maxlength="80" required autocomplete="off"></div>
-            <div class="a-field"><label for="tmEmail">Work email</label><input class="input" id="tmEmail" name="email" type="email" maxlength="200" required autocomplete="off" aria-describedby="tmEmailHint"><p class="hint" id="tmEmailHint">They sign in with it, and buyers' replies go to it.</p></div>
-            <fieldset class="a-field a-fieldset" aria-describedby="tmRoleHint">
-              <legend class="a-label">Role</legend>
-              <div class="a-seg">
-                <label><input type="radio" name="role" value="agri" required><span>Agriculture team</span></label>
-                <label><input type="radio" name="role" value="pack"><span>Packaging team</span></label>
-                <label><input type="radio" name="role" value="manager"><span>Manager</span></label>
-              </div>
-              <p class="hint" id="tmRoleHint">A manager sees every enquiry in both lines and the traffic numbers. The administrator's own tasks stay here.</p>
-            </fieldset>
-            <div class="a-field">
-              <label for="tmPass">Password</label>
-              <div class="a-pass">
-                <input class="input" id="tmPass" name="password" type="password" autocomplete="new-password" maxlength="256" aria-describedby="teamPwHint">
-                <button class="btn btn-ghost btn-sm" type="button" id="teamPwToggle" aria-pressed="false">Show</button>
-              </div>
-              <p class="hint" id="teamPwHint"></p>
-              <button class="btn btn-secondary btn-sm" type="button" id="teamGenerate" style="justify-self:start">Create a strong password</button>
-            </div>
-            <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="active" checked> Account switched on</label>
-            <div class="a-actions">
-              <button class="btn btn-primary btn-lg" type="submit" id="teamSave">Add person</button>
-              <button class="btn btn-ghost btn-lg" type="button" id="teamCancel" hidden>Cancel</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </section>
+    <StaffAccounts />
 
     <!-- EMAIL -->
-    <section class="a-view" data-view="email" aria-labelledby="h-email" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-email">Email delivery</h1>
-          <p>The mail account that sends enquiry notifications to the teams and managers, a confirmation to the visitor, and the replies written in the workspaces.</p>
-        </div>
-        <span class="a-status" id="emailState">Checking</span>
-      </div>
-      <form class="a-form a-settings" id="emailForm" novalidate>
-        <div class="a-card a-group">
-          <div class="a-field"><label for="eHost">SMTP server</label><input class="input" id="eHost" name="smtpHost" required placeholder="smtp.gmail.com" autocomplete="off"></div>
-          <div class="a-field"><label for="ePort">Port</label><input class="input" id="ePort" name="smtpPort" required inputmode="numeric" placeholder="587" aria-describedby="ePortHint"><p class="hint" id="ePortHint">587 for TLS, 465 for SSL.</p></div>
-          <div class="a-field"><label for="eUser">Sending account</label><input class="input" id="eUser" name="smtpUser" type="email" required autocomplete="off" placeholder="notifications@gmail.com"></div>
-          <div class="a-field"><label for="ePass">Password or app password</label><input class="input" id="ePass" name="smtpPassword" type="password" autocomplete="new-password" aria-describedby="ePassHint"><p class="hint" id="ePassHint">Leave blank to keep the saved password. For Gmail, create an app password at myaccount.google.com/apppasswords.</p></div>
-          <div class="a-field"><label for="eTo">Send enquiries to</label><input class="input" id="eTo" name="recipientEmail" type="email" required placeholder="info@oliraagroindustry.com"></div>
-          <div class="a-field"><label for="eFrom">Sender name</label><input class="input" id="eFrom" name="fromName" placeholder="Olira Agro Industry"></div>
-        </div>
-        <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save email settings</button></div>
-      </form>
-      <div class="a-card a-group a-settings" aria-labelledby="h-email-test">
-        <div class="a-group-head"><h2 id="h-email-test">Test the settings</h2></div>
-        <p class="hint">Sends a short email to the enquiry address with the saved settings, and shows what the mail server answered. Save any changes first.</p>
-        <div class="a-actions"><button class="btn btn-secondary" type="button" id="emailTest">Send a test email</button></div>
-        <p class="a-test-result" id="emailTestResult" role="status" aria-live="polite" hidden></p>
-      </div>
-    </section>
+    <Email />
 
     <!-- AI ACCESS: reader accounts, the switch, the local model (lib/ai-access.js); never the data -->
-    <section class="a-view" data-view="ai" aria-labelledby="h-ai" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-ai">AI access</h1>
-          <p>An AI assistant can read how the website is doing: visits, page speed, what visitors look at and ask for, how fast enquiries are answered, and what the catalogues still miss. It reads counts and totals only, never an enquiry, a name, an email address, a phone number or a message. You create its account and switch it on or off here; the figures themselves are for the manager.</p>
-        </div>
-        <span class="a-status" id="aiState">Checking</span>
-      </div>
-      <div class="a-settings">
-        <div class="a-card a-group">
-          <div class="a-group-head"><h2 id="h-ai-switch">Access</h2></div>
-          <label class="a-check"><input class="a-switch" type="checkbox" role="switch" id="aiEnabled" aria-describedby="aiEnabledHint"> AI reader accounts may read the website's performance log</label>
-          <p class="hint" id="aiEnabledHint">Off, every account is refused at once. The accounts are kept, so switching on again needs no new key.</p>
-        </div>
-
-        <div class="a-card a-group">
-          <div class="a-group-head"><h2 id="h-ai-keys">Reader accounts</h2></div>
-          <p class="hint">One account for each AI tool, named after it. Each has a key the tool sends with every request; the key is shown once, when the account is made. Anyone holding a key can read the log, so remove an account you no longer use.</p>
-          <div id="aiKeys"></div>
-          <form class="a-ai-new" id="aiKeyForm" novalidate>
-            <div class="a-field"><label for="aiKeyName">New account</label><input class="input" id="aiKeyName" name="name" maxlength="40" placeholder="Claude" autocomplete="off"></div>
-            <button class="btn btn-secondary" type="submit">Create the account</button>
-          </form>
-          <div class="a-ai-key" id="aiKeyShown" hidden>
-            <p><strong>Copy this key now. It is shown only this once.</strong></p>
-            <div class="a-ai-keyrow"><input class="input" id="aiKeyValue" readonly aria-label="The new key"><button class="btn btn-primary" type="button" id="aiKeyCopy">Copy</button></div>
-            <p class="hint" id="aiKeyHow"></p>
-            <div class="a-actions"><button class="btn btn-secondary" type="button" id="aiKeyDone">I have copied it</button></div>
-          </div>
-        </div>
-
-        <form class="a-form" id="aiLlmForm" novalidate>
-          <div class="a-card a-group">
-            <div class="a-group-head"><h2 id="h-ai-llm">Local AI model</h2></div>
-            <p class="hint">A model running on the manager's own computer (Ollama or LM Studio, both free) can answer the manager's questions under Ask the data. The question and the log go from the manager's browser straight to that computer: this website never sends them anywhere, and nothing is paid for.</p>
-            <label class="a-check"><input class="a-switch" type="checkbox" role="switch" name="enabled"> Offer Ask the data to the manager</label>
-            <div class="a-field"><label for="aiKind">Program</label><select class="input" id="aiKind" name="kind"><option value="ollama">Ollama</option><option value="openai">LM Studio, or another OpenAI-compatible server</option></select></div>
-            <div class="a-field"><label for="aiUrl">Address</label><input class="input" id="aiUrl" name="url" placeholder="http://localhost:11434" autocomplete="off" aria-describedby="aiUrlHint"><p class="hint" id="aiUrlHint">On the manager's computer: http://localhost:11434 for Ollama, http://localhost:1234/v1 for LM Studio. Only that computer or your office network is accepted.</p></div>
-            <div class="a-field"><label for="aiModel">Model</label><input class="input" id="aiModel" name="model" placeholder="llama3.1:8b" autocomplete="off" aria-describedby="aiModelHint"><p class="hint" id="aiModelHint">Its name as the program lists it.</p></div>
-          </div>
-          <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save the local model</button></div>
-        </form>
-        <div class="a-card a-group">
-          <div class="a-group-head"><h2 id="h-ai-test">Check the connection</h2></div>
-          <p class="hint">From the manager's computer: asks the program which models it has. Save any changes first.</p>
-          <div class="a-actions"><button class="btn btn-secondary" type="button" id="aiLlmTest">Check the connection</button></div>
-          <p class="a-test-result" id="aiLlmResult" role="status" aria-live="polite" hidden></p>
-          <details class="a-ai-setup">
-            <summary>How to set it up</summary>
-            <ol>
-              <li>On the manager's computer, install Ollama from ollama.com (or LM Studio from lmstudio.ai).</li>
-              <li>Download a model. For Ollama, in a terminal: <code>ollama pull llama3.1:8b</code> (about 5 GB; the computer needs 8 GB of memory or more).</li>
-              <li>Let this website talk to it. Ollama: set the environment variable <code>OLLAMA_ORIGINS</code> to <code>https://oliraagroindustry.com</code> and restart Ollama. LM Studio: in its server settings, switch on CORS.</li>
-              <li>Here: fill in the address and the model, switch it on, save, then check the connection.</li>
-              <li>The browser may ask whether this site may reach devices on your network. Allow it.</li>
-            </ol>
-          </details>
-        </div>
-      </div>
-    </section>
+    <AiAccess />
 
     <!-- ACTIVITY -->
-    <section class="a-view" data-view="activity" aria-labelledby="h-activity" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-activity">Activity</h1>
-          <p>Who signed in, failed sign-ins and lockouts, and every change to the website's settings and catalogues, newest first. Enquiry work stays in the workspaces.</p>
-        </div>
-      </div>
-      <div class="a-card t-toolbar">
-        <div class="a-seg" role="radiogroup" aria-label="Show">
-          <label><input type="radio" name="activityKind" value="" checked><span>Everything</span></label>
-          <label><input type="radio" name="activityKind" value="problem"><span>Problems</span></label>
-          <label><input type="radio" name="activityKind" value="signin"><span>Sign-ins</span></label>
-          <label><input type="radio" name="activityKind" value="change"><span>Changes</span></label>
-        </div>
-        <p class="sr-only" id="activitySummary" role="status" aria-live="polite"></p>
-      </div>
-      <div class="a-card"><ol class="a-activity" id="activityList"><li class="v-skeleton"></li></ol></div>
-    </section>
+    <Activity />
 
     <!-- MARKETING -->
-    <section class="a-view" data-view="marketing" aria-labelledby="h-marketing" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-marketing">Marketing tags</h1>
-          <p>Optional Google tools. Nothing from Google loads on the website until an ID is saved here.</p>
-        </div>
-      </div>
-      <div class="a-settings">
-        <form class="a-form" id="gaForm" novalidate>
-          <div class="a-card a-group">
-            <div class="a-group-head"><h2>Google Analytics 4</h2><span class="a-status" id="gaState">Not set</span></div>
-            <div class="a-field"><label for="gaId">Measurement ID</label><input class="input" id="gaId" name="measurementId" placeholder="G-XXXXXXXXXX" pattern="G-[A-Z0-9]{10}" aria-describedby="gaHint"><p class="hint" id="gaHint">Google Analytics, Admin, Data streams, your web stream. Leave blank to turn it off.</p></div>
-            <div class="a-field"><label for="gaProp">Property ID (optional)</label><input class="input" id="gaProp" name="propertyId" inputmode="numeric"></div>
-          </div>
-          <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save analytics</button></div>
-        </form>
-        <form class="a-form" id="adsForm" novalidate>
-          <div class="a-card a-group">
-            <div class="a-group-head"><h2>Google Ads conversions</h2><span class="a-status" id="adsState">Not set</span></div>
-            <div class="a-field"><label for="adsId">Conversion ID</label><input class="input" id="adsId" name="conversionId" inputmode="numeric" placeholder="10 digits" pattern="[0-9]{10}"></div>
-            <div class="a-field"><label for="adsLabel">Conversion label</label><input class="input" id="adsLabel" name="conversionLabel"></div>
-            <div class="a-field"><label for="adsValue">Value per enquiry (USD)</label><input class="input" id="adsValue" name="conversionValue" inputmode="decimal" placeholder="10"></div>
-          </div>
-          <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save conversions</button></div>
-        </form>
-        <form class="a-form" id="verifyForm" novalidate>
-          <div class="a-card a-group">
-            <div class="a-group-head"><h2>Search engine verification</h2><span class="a-status" id="verifyState">Not set</span></div>
-            <p class="hint">Proves to Google and Bing that the website is yours, so you can see its search results and send them the sitemap. Verifying with a DNS record in cPanel does the same; use whichever is easier.</p>
-            <div class="a-field"><label for="verifyGoogle">Google Search Console file name</label><input class="input" id="verifyGoogle" name="google" placeholder="google1a2b3c4d5e6f7a8b.html" autocomplete="off" spellcheck="false" aria-describedby="verifyGoogleHint verifyErr"><p class="hint" id="verifyGoogleHint">Search Console, Add property, URL prefix, HTML file. Paste the file's name; you do not need to download it. <a id="verifyGoogleLink" href="#" target="_blank" rel="noopener" hidden>Check the file</a></p></div>
-            <div class="a-field"><label for="verifyBing">Bing Webmaster Tools code</label><input class="input" id="verifyBing" name="bing" placeholder="32 letters and digits" autocomplete="off" spellcheck="false" aria-describedby="verifyBingHint verifyErr"><p class="hint" id="verifyBingHint">Bing Webmaster Tools, Add a site, XML file or HTML meta tag. Paste the code, or the whole meta tag. <a id="verifyBingLink" href="/BingSiteAuth.xml" target="_blank" rel="noopener" hidden>Check the file</a></p></div>
-            <p class="err" id="verifyErr" role="alert" hidden></p>
-          </div>
-          <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save verification</button></div>
-        </form>
-      </div>
-    </section>
+    <Marketing />
 
     <!-- SECURITY -->
-    <section class="a-view" data-view="security" aria-labelledby="h-security" hidden>
-      <div class="a-head">
-        <div>
-          <h1 id="h-security">Password</h1>
-          <p>Change the admin password. It works straight away; you stay signed in on this device.</p>
-        </div>
-      </div>
-      <form class="a-form a-settings" id="passForm" novalidate>
-        <div class="a-card a-group">
-          <div class="a-field"><label for="newPass">New password</label><input class="input" id="newPass" type="password" autocomplete="new-password" minlength="12" required aria-describedby="newPassHint"><p class="hint" id="newPassHint">At least 12 characters. A short sentence is easy to remember and hard to guess.</p></div>
-          <div class="a-field"><label for="newPass2">Type it again</label><input class="input" id="newPass2" type="password" autocomplete="new-password" required aria-describedby="passErr"><p class="err" id="passErr" role="alert" hidden></p></div>
-        </div>
-        <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Change password</button></div>
-      </form>
-    </section>
+    <Password />
   </main>
 </div>
 

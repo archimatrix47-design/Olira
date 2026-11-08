@@ -1,0 +1,24 @@
+---
+// Workspace screen: products. Filled in by scripts/team/manager/products.js.
+interface Props { PERIODS: [number, string][] }
+const { PERIODS } = Astro.props;
+---
+<section class="a-view" data-view="products" aria-labelledby="h-products" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-products">Products</h1>
+      <p>Which products draw interest and enquiries, and how complete each is on the website. The marketing teams edit the catalogues in their workspaces.</p>
+    </div>
+    <label class="a-period"><span>Period</span>
+      <select class="input" data-period>{PERIODS.map(([v, t]) => <option value={v} selected={v === 30}>{t}</option>)}</select>
+    </label>
+  </div>
+  <div class="a-card">
+    <div class="a-card-head"><div><h2>Agriculture products</h2><p>Details opened on the agriculture page, enquiries that named the product, and how complete its content is. Sorted by interest.</p></div></div>
+    <div id="prPerformance"></div>
+  </div>
+  <div class="a-card">
+    <div class="a-card-head"><div><h2>Packaging products</h2><p>How often each product was asked for in a packing list or a studio design this period, and what it still needs on the website.</p></div></div>
+    <div id="pkPerformance"></div>
+  </div>
+</section>

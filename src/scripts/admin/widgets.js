@@ -1,7 +1,7 @@
 // Small shared pieces for the insight views.
 import { h } from './api.js';
 import { sparkline, deltaChip } from './charts.js';
-import { NO_DATA, longDate } from './format.js';
+import { NO_DATA, longDate } from '../../../lib/format.js';
 
 /** KPI card: label, value, delta and sparkline, context (dataviz.md §5). */
 export function kpiCard({ label, value, delta, spark, context, sparkLabel }) {

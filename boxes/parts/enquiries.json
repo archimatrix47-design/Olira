@@ -1,0 +1,30 @@
+{
+  "id": "enquiries",
+  "name": "Enquiries arriving",
+  "does": "A buyer sends an enquiry: it is checked, saved before any email is tried, routed to its team, and acknowledged.",
+  "kind": "sales",
+  "plugged": true,
+  "files": [
+    "lib/enquiries.js",
+    "lib/enquiry.js",
+    "src/components/site/InquiryForm.astro",
+    "src/components/site/QuoteBar.astro",
+    "src/scripts/quote-bar.js"
+  ],
+  "tests": [
+    "test/enquiry.test.js"
+  ],
+  "uses": [
+    "analytics",
+    "email",
+    "enquiry-work",
+    "lead-store",
+    "packaging-catalogue",
+    "site-data",
+    "staff-accounts",
+    "storage",
+    "web-guards"
+  ],
+  "data": [],
+  "reads": []
+}

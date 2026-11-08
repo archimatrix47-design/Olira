@@ -3,7 +3,7 @@
 // files on the enquiry. If the website cannot send, the same email opens in the
 // member's own mail app and can be logged on the timeline.
 import { h, api, toast, confirmDialog } from '../admin/api.js';
-import { scoreOf } from '../admin/leads.js';
+import { scoreOf } from '../../../lib/lead-rules.js';
 import { session, lineOf } from './session.js';
 
 const first = (name) => String(name || '').trim().split(/\s+/)[0] || '';

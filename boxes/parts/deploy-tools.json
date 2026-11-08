@@ -1,0 +1,26 @@
+{
+  "id": "deploy-tools",
+  "name": "Deploy and upkeep",
+  "does": "Deploying, restarting, backing up, the uptime check, and preparing images at build time.",
+  "kind": "tools",
+  "files": [
+    "scripts/deploy.sh",
+    "scripts/restart-app.sh",
+    "scripts/backup-data.sh",
+    "scripts/uptime-check.sh",
+    "scripts/convert-to-webp.mjs",
+    "scripts/gen-contours.mjs",
+    "scripts/indexnow.mjs",
+    "scripts/precompress.mjs"
+  ],
+  "tests": [
+    "scripts/pipeline-test.mjs",
+    "test/deploy-script.test.js",
+    "test/uptime-check.test.js"
+  ],
+  "uses": [
+    "static-site"
+  ],
+  "data": [],
+  "reads": []
+}

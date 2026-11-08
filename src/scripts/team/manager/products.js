@@ -4,10 +4,10 @@
 import { $, h, toast } from '../../admin/api.js';
 import * as store from '../../admin/store.js';
 import { sparkline, deltaChip, empty } from '../../admin/charts.js';
-import { int, decimal, delta, per100, NO_DATA } from '../../admin/format.js';
-import { inPeriod } from '../../admin/leads.js';
-import { inStudio, hasPhotoMockup } from '../../catalogue-facts.js';
-import { agriCompleteness, packCompleteness } from '../../admin/completeness.js';
+import { int, decimal, delta, per100, NO_DATA } from '../../../../lib/format.js';
+import { inPeriod } from '../../../../lib/lead-rules.js';
+import { inStudio, hasPhotoMockup } from '../../../../lib/catalogue-facts.js';
+import { agriCompleteness, packCompleteness } from '../../../../lib/completeness.js';
 import { priceFrom, etb } from '../../catalogue-panel.js';
 
 const view = () => $('[data-view="products"]');

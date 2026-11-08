@@ -1,0 +1,51 @@
+{
+  "id": "packaging-catalogue",
+  "name": "Packaging catalogue",
+  "does": "The packaging products: rules, photos, sizes, minimums, prices, the public catalogue and the team editing it.",
+  "kind": "catalogue",
+  "plugged": true,
+  "files": [
+    "lib/packaging.js",
+    "lib/packaging-rules.js",
+    "lib/box-styles.js",
+    "src/pages/packaging.astro",
+    "src/pages/packaging/[slug].astro",
+    "src/scripts/catalogue.js",
+    "src/scripts/packaging-data.js",
+    "src/scripts/pd-live.js",
+    "src/scripts/pd-fits.js",
+    "src/scripts/pd-pack.js",
+    "src/scripts/team/pack-products.js",
+    "src/scripts/team/minimums.js",
+    "src/scripts/admin/corners.js",
+    "src/components/team/views/PackProducts.astro",
+    "src/components/team/views/Minimums.astro"
+  ],
+  "tests": [
+    "test/catalogue.test.js",
+    "test/catalogue-grid.test.js",
+    "test/box-styles.test.js"
+  ],
+  "uses": [
+    "agri-catalogue",
+    "contact",
+    "enquiries",
+    "facts-spreadsheet",
+    "manager-reports",
+    "mockup-studio",
+    "packing-list",
+    "product-pages",
+    "seo",
+    "site-data",
+    "site-shell",
+    "staff-accounts",
+    "staff-ui",
+    "storage",
+    "thumbs"
+  ],
+  "data": [
+    "packaging-products.json",
+    "packaging-seeded.json"
+  ],
+  "reads": []
+}

@@ -1,7 +1,7 @@
 // The month against its targets, one card per line: the manager's dashboard
 // (both lines, and the form to set them) and each team's Insights (its own line).
 import { h, api, toast } from '../admin/api.js';
-import { progress } from './targets-progress.js';
+import { progress } from '../../../lib/targets-progress.js';
 import { LINE_LABEL } from './session.js';
 
 const n = (v) => Number(v || 0).toLocaleString('en-US');

@@ -1,0 +1,23 @@
+{
+  "id": "partners",
+  "name": "Partner logos",
+  "does": "The partner logos on the home page, looked after by the marketing teams.",
+  "kind": "catalogue",
+  "plugged": true,
+  "files": [
+    "lib/partners.js",
+    "src/scripts/team/partners.js",
+    "src/components/team/views/Partners.astro"
+  ],
+  "tests": [],
+  "checkedBy": "test/workspace.test.js covers who may change them.",
+  "uses": [
+    "staff-accounts",
+    "staff-ui",
+    "storage"
+  ],
+  "data": [
+    "partners.json"
+  ],
+  "reads": []
+}

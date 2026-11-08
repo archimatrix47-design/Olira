@@ -83,9 +83,9 @@ test('the figures are what the staff screens count', () => {
 });
 
 test('every counted action has a meaning, and every part of the log is described', () => {
-  const server = fs.readFileSync(new URL('../server.js', import.meta.url), 'utf8');
+  const server = fs.readFileSync(new URL('../lib/analytics.js', import.meta.url), 'utf8');
   const list = server.match(/const TRACK_EVENTS = new Set\(\[([^\]]+)\]\)/);
-  assert.ok(list, 'TRACK_EVENTS found in server.js');
+  assert.ok(list, 'TRACK_EVENTS found in lib/analytics.js');
   const events = [...list[1].matchAll(/'([a-z_0-9]+)'/g)].map((m) => m[1]).sort();
   assert.ok(events.length > 20);
   assert.deepEqual(Object.keys(ACTIONS).sort(), events, 'a new event needs its meaning in ACTIONS');

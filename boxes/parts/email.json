@@ -1,0 +1,28 @@
+{
+  "id": "email",
+  "name": "Email delivery",
+  "does": "The mail account the site sends from, and sendEmail, which every box that writes to someone goes through.",
+  "kind": "foundation",
+  "plugged": true,
+  "files": [
+    "lib/email.js",
+    "src/scripts/admin/email.js",
+    "src/components/admin/views/Email.astro"
+  ],
+  "tests": [
+    "test/mail.test.js"
+  ],
+  "uses": [
+    "admin-panel",
+    "admin-sign-in",
+    "admin-tools",
+    "staff-ui",
+    "staging",
+    "storage",
+    "web-guards"
+  ],
+  "data": [
+    "email-config.json"
+  ],
+  "reads": []
+}

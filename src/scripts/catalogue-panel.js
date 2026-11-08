@@ -4,9 +4,9 @@
 // card in the shared product grid (product-grid.js).
 // The pure facts live in catalogue-facts.js and are re-exported here.
 import CUTOUTS from '../data/cutouts.json';
-import { isCutoutImage, hasPhotoMockup } from './catalogue-facts.js';
+import { isCutoutImage, hasPhotoMockup } from '../../lib/catalogue-facts.js';
 
-export * from './catalogue-facts.js';
+export * from '../../lib/catalogue-facts.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 

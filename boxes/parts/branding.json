@@ -1,0 +1,25 @@
+{
+  "id": "branding",
+  "name": "Logo and tagline",
+  "does": "The logo and tagline every page shows.",
+  "kind": "admin",
+  "plugged": true,
+  "files": [
+    "lib/branding.js",
+    "src/scripts/admin/logo.js",
+    "src/components/admin/views/Logo.astro"
+  ],
+  "tests": [],
+  "checkedBy": "test/api.test.js saves and refuses logos.",
+  "uses": [
+    "admin-panel",
+    "admin-sign-in",
+    "image-upload",
+    "staff-ui",
+    "storage"
+  ],
+  "data": [
+    "branding.json"
+  ],
+  "reads": []
+}

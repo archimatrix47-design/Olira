@@ -1,0 +1,24 @@
+{
+  "id": "targets",
+  "name": "Monthly targets",
+  "does": "The month's targets per line, and progress against them.",
+  "kind": "sales",
+  "plugged": true,
+  "files": [
+    "lib/targets.js",
+    "lib/targets-progress.js",
+    "src/scripts/team/targets.js"
+  ],
+  "tests": [
+    "test/targets.test.js"
+  ],
+  "uses": [
+    "staff-accounts",
+    "staff-ui",
+    "storage"
+  ],
+  "data": [
+    "targets.json"
+  ],
+  "reads": []
+}

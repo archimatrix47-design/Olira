@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { pendingFacts, pendingLine, pendingList, knownRows, specRows, photoFirst, flowItem } from '../src/scripts/catalogue-facts.js';
+import { pendingFacts, pendingLine, pendingList, knownRows, specRows, photoFirst, flowItem } from '../lib/catalogue-facts.js';
 import { cardHTML, itemKey } from '../src/scripts/product-grid.js';
 
 // The product grid and the quote facts (fresh-eyes review FR-R9, FR-R11): every

@@ -4,9 +4,9 @@
 import { $, h, api, toast, timeAgo, formatDate } from './api.js';
 import * as store from './store.js';
 import { statusIcon } from './widgets.js';
-import { int } from './format.js';
+import { int } from '../../../lib/format.js';
 import { certAlerts, certHealth } from './cert-alerts.js';
-import { inStudio } from '../catalogue-facts.js';
+import { inStudio } from '../../../lib/catalogue-facts.js';
 
 const view = () => $('[data-view="overview"]');
 

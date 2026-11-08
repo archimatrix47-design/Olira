@@ -1,0 +1,40 @@
+---
+// Admin screen: marketing. Filled in by scripts/admin/marketing.js.
+---
+<section class="a-view" data-view="marketing" aria-labelledby="h-marketing" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-marketing">Marketing tags</h1>
+      <p>Optional Google tools. Nothing from Google loads on the website until an ID is saved here.</p>
+    </div>
+  </div>
+  <div class="a-settings">
+    <form class="a-form" id="gaForm" novalidate>
+      <div class="a-card a-group">
+        <div class="a-group-head"><h2>Google Analytics 4</h2><span class="a-status" id="gaState">Not set</span></div>
+        <div class="a-field"><label for="gaId">Measurement ID</label><input class="input" id="gaId" name="measurementId" placeholder="G-XXXXXXXXXX" pattern="G-[A-Z0-9]{10}" aria-describedby="gaHint"><p class="hint" id="gaHint">Google Analytics, Admin, Data streams, your web stream. Leave blank to turn it off.</p></div>
+        <div class="a-field"><label for="gaProp">Property ID (optional)</label><input class="input" id="gaProp" name="propertyId" inputmode="numeric"></div>
+      </div>
+      <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save analytics</button></div>
+    </form>
+    <form class="a-form" id="adsForm" novalidate>
+      <div class="a-card a-group">
+        <div class="a-group-head"><h2>Google Ads conversions</h2><span class="a-status" id="adsState">Not set</span></div>
+        <div class="a-field"><label for="adsId">Conversion ID</label><input class="input" id="adsId" name="conversionId" inputmode="numeric" placeholder="10 digits" pattern="[0-9]{10}"></div>
+        <div class="a-field"><label for="adsLabel">Conversion label</label><input class="input" id="adsLabel" name="conversionLabel"></div>
+        <div class="a-field"><label for="adsValue">Value per enquiry (USD)</label><input class="input" id="adsValue" name="conversionValue" inputmode="decimal" placeholder="10"></div>
+      </div>
+      <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save conversions</button></div>
+    </form>
+    <form class="a-form" id="verifyForm" novalidate>
+      <div class="a-card a-group">
+        <div class="a-group-head"><h2>Search engine verification</h2><span class="a-status" id="verifyState">Not set</span></div>
+        <p class="hint">Proves to Google and Bing that the website is yours, so you can see its search results and send them the sitemap. Verifying with a DNS record in cPanel does the same; use whichever is easier.</p>
+        <div class="a-field"><label for="verifyGoogle">Google Search Console file name</label><input class="input" id="verifyGoogle" name="google" placeholder="google1a2b3c4d5e6f7a8b.html" autocomplete="off" spellcheck="false" aria-describedby="verifyGoogleHint verifyErr"><p class="hint" id="verifyGoogleHint">Search Console, Add property, URL prefix, HTML file. Paste the file's name; you do not need to download it. <a id="verifyGoogleLink" href="#" target="_blank" rel="noopener" hidden>Check the file</a></p></div>
+        <div class="a-field"><label for="verifyBing">Bing Webmaster Tools code</label><input class="input" id="verifyBing" name="bing" placeholder="32 letters and digits" autocomplete="off" spellcheck="false" aria-describedby="verifyBingHint verifyErr"><p class="hint" id="verifyBingHint">Bing Webmaster Tools, Add a site, XML file or HTML meta tag. Paste the code, or the whole meta tag. <a id="verifyBingLink" href="/BingSiteAuth.xml" target="_blank" rel="noopener" hidden>Check the file</a></p></div>
+        <p class="err" id="verifyErr" role="alert" hidden></p>
+      </div>
+      <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save verification</button></div>
+    </form>
+  </div>
+</section>

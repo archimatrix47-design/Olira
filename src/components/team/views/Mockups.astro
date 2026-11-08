@@ -1,0 +1,116 @@
+---
+// Workspace screen: mockups. Filled in by scripts/team/mockups.js.
+---
+<section class="a-view" data-view="mockups" aria-labelledby="h-mockups" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-mockups">Mockups</h1>
+      <p>Put a client's logo on any of our bags, download the picture, or save it to their enquiry to send with a reply.</p>
+    </div>
+  </div>
+  <div class="studio t-studio">
+    <div class="a-card stage">
+      <canvas class="stage-canvas" id="tmCanvas" width="1200" height="1680" tabindex="0" role="img" aria-label="Mockup preview" aria-describedby="tmInfo tmHelp"></canvas>
+      <div class="stage-meta">
+        <span class="note" id="tmHelp">Drag the design on the bag, or focus the preview and use the arrow keys.</span>
+        <span class="note" id="tmInfo"></span>
+      </div>
+    </div>
+    <div class="a-card panel">
+      <p class="sr-only" id="tmStatus" role="status" aria-live="polite"></p>
+      <div class="a-field">
+        <label for="tmLead">For enquiry</label>
+        <select class="input" id="tmLead"><option value="">No enquiry, just a picture</option></select>
+      </div>
+      <fieldset class="a-fieldset a-field">
+        <legend class="a-label">Bag</legend>
+        <div class="t-bags" id="tmBags"></div>
+      </fieldset>
+      <fieldset class="a-fieldset a-field">
+        <legend class="a-label">Size</legend>
+        <!-- the chosen product's own sizes, filled in by mockups.js -->
+        <div class="chips" id="tmSizes"></div>
+      </fieldset>
+      <fieldset class="a-fieldset a-field">
+        <legend class="a-label">Design</legend>
+        <div class="a-seg" role="radiogroup" aria-label="Design">
+          <label><input type="radio" name="tmMode" value="brand" checked><span>Logo and text</span></label>
+          <label><input type="radio" name="tmMode" value="artwork"><span>Full artwork</span></label>
+        </div>
+      </fieldset>
+      <!-- full artwork: the client's finished design across the print area -->
+      <div class="a-field" data-tm-mode="artwork" hidden>
+        <span class="a-label" id="tmArtLabel">Artwork</span>
+        <label class="a-drop" id="tmArtDrop">
+          <input type="file" id="tmArtFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" aria-labelledby="tmArtLabel tmArtTitle" aria-describedby="tmArtHint">
+          <strong id="tmArtTitle">Upload the artwork</strong>
+          <span>The finished design, the whole page: PNG, JPG, WebP or SVG.</span>
+        </label>
+        <div class="a-field" id="tmArtFromLeadWrap" hidden>
+          <label for="tmArtFromLead">Or use a file the client sent</label>
+          <select class="input" id="tmArtFromLead"></select>
+        </div>
+        <div class="a-seg" role="radiogroup" aria-label="Fit">
+          <label><input type="radio" name="tmFit" value="cover" checked><span>Fill the print area</span></label>
+          <label><input type="radio" name="tmFit" value="contain"><span>Show all of it</span></label>
+        </div>
+        <p class="a-note" id="tmArtHint"></p>
+        <p class="t-logo-note" id="tmArtAdvice" hidden></p>
+        <button class="btn btn-ghost btn-sm" type="button" id="tmRemoveArt" hidden style="justify-self:start">Remove artwork</button>
+      </div>
+      <div class="a-field" data-tm-mode="brand">
+        <span class="a-label" id="tmLogoLabel">Logo</span>
+        <div class="t-logo-sources">
+          <label class="a-drop" id="tmDrop">
+            <input type="file" id="tmLogoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" aria-labelledby="tmLogoLabel tmDropTitle">
+            <strong id="tmDropTitle">Upload a logo</strong>
+            <span>PNG, JPG, SVG or WebP from your computer.</span>
+          </label>
+          <div class="a-field" id="tmFromLeadWrap" hidden>
+            <label for="tmFromLead">Or use a file the client sent</label>
+            <select class="input" id="tmFromLead"></select>
+          </div>
+        </div>
+        <!-- the same logo check as the public studio, with its fixes -->
+        <div class="t-logo-note" id="tmLogoAdvice" hidden>
+          <p id="tmLogoAdviceText"></p>
+          <div class="row" style="--gap:8px;flex-wrap:wrap;margin-top:8px">
+            <button class="btn btn-secondary btn-sm" type="button" id="tmFixBox" hidden>Remove the white box</button>
+            <button class="btn btn-secondary btn-sm" type="button" id="tmFixInk" hidden>Print it in the ink colour</button>
+          </div>
+        </div>
+        <div class="row" style="justify-content:space-between;--gap:10px;flex-wrap:wrap">
+          <label class="a-check"><input type="checkbox" id="tmOneInk"> Print the logo in the ink colour</label>
+          <button class="btn btn-ghost btn-sm" type="button" id="tmRemoveLogo" hidden>Remove logo</button>
+        </div>
+      </div>
+      <div class="a-two" data-tm-mode="brand">
+        <div class="a-field"><label for="tmText1">Main text</label><input class="input" id="tmText1" maxlength="18" autocomplete="off"></div>
+        <div class="a-field"><label for="tmText2">Second line</label><input class="input" id="tmText2" maxlength="28" autocomplete="off"></div>
+      </div>
+      <fieldset class="a-fieldset a-field" data-tm-mode="brand">
+        <legend class="a-label">Ink colour</legend>
+        <div class="chips">
+          <label class="opt opt-swatch" title="Black"><input type="radio" name="tmInk" value="black"><span style="--sw:#1E1B16"></span><b class="sr-only">Black</b></label>
+          <label class="opt opt-swatch" title="Teal"><input type="radio" name="tmInk" value="teal" checked><span style="--sw:#186078"></span><b class="sr-only">Teal</b></label>
+          <label class="opt opt-swatch" title="Leaf green"><input type="radio" name="tmInk" value="leaf"><span style="--sw:#4A5E17"></span><b class="sr-only">Leaf green</b></label>
+          <label class="opt opt-swatch" title="Red"><input type="radio" name="tmInk" value="red"><span style="--sw:#A3301E"></span><b class="sr-only">Red</b></label>
+          <label class="opt opt-swatch" title="White"><input type="radio" name="tmInk" value="white"><span style="--sw:#FAF7F0"></span><b class="sr-only">White</b></label>
+        </div>
+      </fieldset>
+      <div class="a-field">
+        <label for="tmScale">Design size</label>
+        <input class="range" id="tmScale" type="range" min="50" max="140" value="100" aria-valuetext="100 percent">
+      </div>
+      <div class="row" style="--gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" type="button" id="tmCentre">Centre design</button>
+      </div>
+      <div class="panel-actions">
+        <button class="btn btn-secondary" type="button" id="tmDownloadPng">Download PNG</button>
+        <button class="btn btn-secondary" type="button" id="tmDownloadJpg">Download JPG</button>
+      </div>
+      <button class="btn btn-primary btn-lg" type="button" id="tmSave" disabled>Save to the enquiry</button>
+      <p class="a-note" id="tmSaveNote">Choose an enquiry above to save the mockup to it. Saved mockups can be attached to a reply.</p>
+    </div>
+  </div>
+</section>

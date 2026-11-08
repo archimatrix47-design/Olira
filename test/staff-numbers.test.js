@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { hours, delta, per100, believable, duration, SMALL_BASE } from '../src/scripts/admin/format.js';
-import { scoreOf, scoreLabel, scoreReasons, oldestWaiting, BAND_KEY } from '../src/scripts/admin/leads.js';
+import { hours, delta, per100, believable, duration, SMALL_BASE } from '../lib/format.js';
+import { scoreOf, scoreLabel, scoreReasons, oldestWaiting, BAND_KEY } from '../lib/lead-rules.js';
 
 // The staff workspaces' numbers and inbox (fresh-eyes review FR-R19..R22).
 const read = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
@@ -84,7 +84,7 @@ test('a wide screen opens the oldest enquiry still waiting, not an empty pane', 
 });
 
 test('on a phone the inbox starts with one line, and the tabs stay in one sideways row', () => {
-  assert.match(read('src/components/team/Workspace.astro'), /<p class="t-phone-line" id="inboxGist"><\/p>/);
+  assert.match(read('src/components/team/views/Inbox.astro'), /<p class="t-phone-line" id="inboxGist"><\/p>/);
   const inbox = read('src/scripts/team/inbox.js');
   assert.match(inbox, /\$\('#inboxGist'\)\.textContent = toAccept\.length\n {4}\? `\$\{int\(toAccept\.length\)\} \$\{boss\(\) \? 'not handed out' : 'to accept'\}, oldest \$\{hours\(oldest\)\}/);
   const css = read('src/styles/team.css').replace(/\/\*[\s\S]*?\*\//g, '');

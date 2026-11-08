@@ -1,0 +1,29 @@
+---
+// Admin screen: email. Filled in by scripts/admin/email.js.
+---
+<section class="a-view" data-view="email" aria-labelledby="h-email" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-email">Email delivery</h1>
+      <p>The mail account that sends enquiry notifications to the teams and managers, a confirmation to the visitor, and the replies written in the workspaces.</p>
+    </div>
+    <span class="a-status" id="emailState">Checking</span>
+  </div>
+  <form class="a-form a-settings" id="emailForm" novalidate>
+    <div class="a-card a-group">
+      <div class="a-field"><label for="eHost">SMTP server</label><input class="input" id="eHost" name="smtpHost" required placeholder="smtp.gmail.com" autocomplete="off"></div>
+      <div class="a-field"><label for="ePort">Port</label><input class="input" id="ePort" name="smtpPort" required inputmode="numeric" placeholder="587" aria-describedby="ePortHint"><p class="hint" id="ePortHint">587 for TLS, 465 for SSL.</p></div>
+      <div class="a-field"><label for="eUser">Sending account</label><input class="input" id="eUser" name="smtpUser" type="email" required autocomplete="off" placeholder="notifications@gmail.com"></div>
+      <div class="a-field"><label for="ePass">Password or app password</label><input class="input" id="ePass" name="smtpPassword" type="password" autocomplete="new-password" aria-describedby="ePassHint"><p class="hint" id="ePassHint">Leave blank to keep the saved password. For Gmail, create an app password at myaccount.google.com/apppasswords.</p></div>
+      <div class="a-field"><label for="eTo">Send enquiries to</label><input class="input" id="eTo" name="recipientEmail" type="email" required placeholder="info@oliraagroindustry.com"></div>
+      <div class="a-field"><label for="eFrom">Sender name</label><input class="input" id="eFrom" name="fromName" placeholder="Olira Agro Industry"></div>
+    </div>
+    <div class="a-actions a-savebar"><span class="a-dirty a-grow">Unsaved changes</span><button class="btn btn-primary" type="submit">Save email settings</button></div>
+  </form>
+  <div class="a-card a-group a-settings" aria-labelledby="h-email-test">
+    <div class="a-group-head"><h2 id="h-email-test">Test the settings</h2></div>
+    <p class="hint">Sends a short email to the enquiry address with the saved settings, and shows what the mail server answered. Save any changes first.</p>
+    <div class="a-actions"><button class="btn btn-secondary" type="button" id="emailTest">Send a test email</button></div>
+    <p class="a-test-result" id="emailTestResult" role="status" aria-live="polite" hidden></p>
+  </div>
+</section>
