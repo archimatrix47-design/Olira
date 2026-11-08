@@ -309,7 +309,8 @@ test('11. live facts: a price changed after the build reaches the page without a
 });
 
 test('12. enquiries: a visitor request reaches the right team, with its files and design', async () => {
-  const before = readData('inquiries.json').length;
+  // a fresh data folder has no enquiries file until the first one arrives
+  const before = fs.existsSync(path.join(DATA, 'inquiries.json')) ? readData('inquiries.json').length : 0;
   const send = async (fields, files = []) => {
     const fd = new FormData();
     for (const [k, v] of Object.entries(fields)) fd.append(k, v);
