@@ -309,8 +309,9 @@ test('11. live facts: a price changed after the build reaches the page without a
 });
 
 test('12. enquiries: a visitor request reaches the right team, with its files and design', async () => {
-  // a fresh data folder has no enquiries file until the first one arrives
-  const before = fs.existsSync(path.join(DATA, 'inquiries.json')) ? readData('inquiries.json').length : 0;
+  // a fresh data folder has no enquiries file until the first one is saved
+  const saved = () => (fs.existsSync(path.join(DATA, 'inquiries.json')) ? readData('inquiries.json').length : 0);
+  const before = saved();
   const send = async (fields, files = []) => {
     const fd = new FormData();
     for (const [k, v] of Object.entries(fields)) fd.append(k, v);
@@ -321,10 +322,10 @@ test('12. enquiries: a visitor request reaches the right team, with its files an
   // under the minimum: refused, nothing saved
   const low = await send({ ...base, bundle: JSON.stringify([{ productId: T.boxId, sizeId: T.small, qty: 100 }]) });
   assert.equal(low.status, 400);
-  assert.equal(readData('inquiries.json').length, before, 'a refused request leaves nothing behind');
+  assert.equal(saved(), before, 'a refused request leaves nothing behind');
   // the spam trap: accepted quietly, never stored
   await send({ ...base, website: 'http://spam.example' });
-  assert.equal(readData('inquiries.json').length, before, 'a filled spam trap is not stored');
+  assert.equal(saved(), before, 'a filled spam trap is not stored');
   // a real request with a bundle, the studio design and a file
   const ok = await send({ ...base, bundle: JSON.stringify([{ productId: T.boxId, sizeId: T.small, qty: 6000, colours: 2 }]), design: JSON.stringify({ template: T.boxId, templateName: 'Pipeline Test Box', size: T.small, ink: 'teal', text1: 'PIPE', view: '3d', board: 'kraft' }), consent: '1' }, [['files', await png(200, 200), 'artwork.png'], ['mockup', await png(300, 300), 'studio-mockup.png']]);
   assert.ok([200, 500].includes(ok.status), `request: ${ok.status} ${ok.text}`); // 500 = no mail account; the lead is saved first
