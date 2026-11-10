@@ -53,6 +53,16 @@ RESEARCH.md
 
 # Runtime analytics data (regenerated constantly; not source)
 data/analytics.json
+# Written by a server running on the repo's data folder (npm run dev): runtime, not defaults
+data/ai-log.jsonl
+data/ai-access.json
+data/thumbs/
+data/logs/
+data/email-status.json
+data/admin-audit.log
+data/inquiries-pending.json
+data/database.json
+data/auth.json
 # Customer inquiry leads — contains PII, must never be committed
 data/inquiries.json
 src/data/burayu-grid.cache.json
