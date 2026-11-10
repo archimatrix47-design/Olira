@@ -64,3 +64,9 @@ test('anything else is a 404', async () => {
     assert.notEqual(r.headers.get('content-type'), 'image/webp', p);
   }
 });
+
+test('in development the pages reach the API server for small photos too, or every card shows a broken image', () => {
+  assert.match(thumbUrl('/products/photos/pulses.webp', 480), /^\/thumb\//, 'the cards ask /thumb/ for their photos');
+  const config = fs.readFileSync(new URL('../astro.config.mjs', import.meta.url), 'utf8');
+  for (const p of ['/api', '/thumb']) assert.match(config, new RegExp(`'${p}':\\s*\\{\\s*target: 'http://localhost:3000'`), `the dev server passes ${p} on to the API server`);
+});

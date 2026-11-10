@@ -36,6 +36,13 @@ export default defineConfig({
           rewrite: (path) => path.replace(/^\/api/, '/api'),
           secure: false,
           ws: true
+        },
+        // small copies of catalogue photos (lib/thumbs.js): made by the API server,
+        // so without this every product card shows a broken image in dev
+        '/thumb': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false
         }
       }
     }
