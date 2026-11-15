@@ -23,6 +23,7 @@
   "certificates",
   "branding",
   "agri-catalogue",
+  "packaging-3d",
   "packaging-catalogue",
   "thumbs",
   "partners",
@@ -241,7 +242,7 @@
     "email",
     "staff-ui"
    ],
-   "plugOrder": 25,
+   "plugOrder": 26,
    "receives": [
     {
      "name": "adminAuth",
@@ -475,7 +476,7 @@
     "certificates",
     "enquiry-work",
     "manager-reports",
-    "packaging-catalogue",
+    "packaging-3d",
     "page-speed",
     "product-pages",
     "site-log",
@@ -491,7 +492,7 @@
     "team-workspace",
     "web-guards"
    ],
-   "plugOrder": 24,
+   "plugOrder": 25,
    "receives": [
     {
      "name": "dataDir",
@@ -560,7 +561,7 @@
     "certificates",
     "enquiry-work",
     "manager-reports",
-    "packaging-catalogue",
+    "packaging-3d",
     "page-speed",
     "product-pages",
     "staff-ui",
@@ -612,7 +613,7 @@
     "staff-ui",
     "team-workspace"
    ],
-   "plugOrder": 20,
+   "plugOrder": 21,
    "receives": [
     {
      "name": "dataDir",
@@ -923,7 +924,7 @@
     "site-shell",
     "staff-ui"
    ],
-   "plugOrder": 16,
+   "plugOrder": 17,
    "receives": [
     {
      "name": "dataDir",
@@ -1143,7 +1144,7 @@
     "packaging-catalogue",
     "product-pages"
    ],
-   "plugOrder": 21,
+   "plugOrder": 22,
    "receives": [
     {
      "name": "rateLimit",
@@ -1273,7 +1274,7 @@
     "staff-ui",
     "team-workspace"
    ],
-   "plugOrder": 18,
+   "plugOrder": 19,
    "receives": [
     {
      "name": "dataDir",
@@ -1504,6 +1505,7 @@
    "reads": [],
    "uses": [
     "enquiry-work",
+    "staging",
     "storage"
    ],
    "usedBy": [
@@ -1513,7 +1515,7 @@
     "site-health",
     "site-log"
    ],
-   "plugOrder": 17,
+   "plugOrder": 18,
    "receives": [
     {
      "name": "dataDir",
@@ -1557,7 +1559,9 @@
    ],
    "routes": [],
    "guards": 0,
-   "imports": [],
+   "imports": [
+    "staging"
+   ],
    "calls": {},
    "sends": [],
    "hears": []
@@ -1585,6 +1589,7 @@
    "uses": [
     "certificates",
     "enquiry-work",
+    "packaging-3d",
     "product-pages",
     "site-shell",
     "staff-accounts",
@@ -1605,6 +1610,7 @@
    "imports": [
     "certificates",
     "enquiry-work",
+    "packaging-3d",
     "product-pages",
     "site-shell",
     "staff-accounts",
@@ -1701,7 +1707,7 @@
   },
   "mockup-studio": {
    "name": "Mockup studio",
-   "does": "A visitor sees their brand on a product, as a photo or a 3D box, and sends the design with their request.",
+   "does": "A visitor sees their brand on a product, as a photo or a 3D package, and sends the design with their request.",
    "kind": "sales",
    "files": [
     "src/scripts/pack.js",
@@ -1710,7 +1716,6 @@
     "src/scripts/stations.js",
     "src/scripts/studio-memory.js",
     "src/scripts/studio-3d.js",
-    "src/scripts/studio-3d-scene.js",
     "src/scripts/mockup/engine.js",
     "src/scripts/mockup/logo-check.js",
     "src/scripts/team/mockups.js",
@@ -1726,6 +1731,7 @@
     "branding",
     "enquiry-work",
     "home-page",
+    "packaging-3d",
     "packaging-catalogue",
     "product-pages",
     "site-shell",
@@ -1746,6 +1752,7 @@
    "guards": 0,
    "imports": [
     "enquiry-work",
+    "packaging-3d",
     "packaging-catalogue",
     "product-pages",
     "site-shell",
@@ -1777,6 +1784,91 @@
     "studio:reset"
    ]
   },
+  "packaging-3d": {
+   "name": "3D packaging",
+   "does": "A packaging product in 3D at its own measurements: it folds, opens and lays flat, wears the visitor's logo or artwork, and shows on the website only when both the packaging team and the manager have switched it on.",
+   "kind": "catalogue",
+   "files": [
+    "lib/packaging-3d.js",
+    "lib/package-shapes.js",
+    "lib/box-styles.js",
+    "src/scripts/package-3d/scene.js",
+    "src/scripts/package-3d/viewer.js",
+    "src/scripts/team/package-3d.js",
+    "src/components/team/views/Package3d.astro",
+    "src/scripts/package-3d/handoff.js"
+   ],
+   "tests": [
+    "test/packaging-3d.test.js",
+    "test/box-styles.test.js"
+   ],
+   "data": [
+    "packaging-3d.json"
+   ],
+   "reads": [],
+   "uses": [
+    "packaging-catalogue",
+    "staff-accounts",
+    "staff-ui",
+    "storage"
+   ],
+   "usedBy": [
+    "ai-access",
+    "manager-reports",
+    "mockup-studio",
+    "packaging-catalogue",
+    "product-pages",
+    "site-data",
+    "team-workspace"
+   ],
+   "plugOrder": 12,
+   "receives": [
+    {
+     "name": "dataDir",
+     "from": "storage",
+     "as": "dataDir"
+    },
+    {
+     "name": "readJsonFile",
+     "from": "storage",
+     "as": "readJsonFile"
+    },
+    {
+     "name": "writeJsonFile",
+     "from": "storage",
+     "as": "writeJsonFile"
+    },
+    {
+     "name": "audit",
+     "from": "storage",
+     "as": "audit"
+    },
+    {
+     "name": "roleAuth",
+     "from": "staff-accounts",
+     "as": "roleAuth"
+    }
+   ],
+   "offers": [
+    "view3dOn"
+   ],
+   "routes": [
+    "GET /api/packaging-3d",
+    "GET /api/team/packaging-3d",
+    "POST /api/team/packaging-3d"
+   ],
+   "guards": 0,
+   "imports": [
+    "staff-ui"
+   ],
+   "calls": {
+    "packaging-catalogue": [
+     "/api/packaging-products"
+    ]
+   },
+   "sends": [],
+   "hears": []
+  },
   "packaging-catalogue": {
    "name": "Packaging catalogue",
    "does": "The packaging products: rules, photos, sizes, minimums, prices, the public catalogue and the team editing it.",
@@ -1784,7 +1876,6 @@
    "files": [
     "lib/packaging.js",
     "lib/packaging-rules.js",
-    "lib/box-styles.js",
     "src/pages/packaging.astro",
     "src/pages/packaging/[slug].astro",
     "src/scripts/catalogue.js",
@@ -1800,8 +1891,7 @@
    ],
    "tests": [
     "test/catalogue.test.js",
-    "test/catalogue-grid.test.js",
-    "test/box-styles.test.js"
+    "test/catalogue-grid.test.js"
    ],
    "data": [
     "packaging-products.json",
@@ -1815,6 +1905,7 @@
     "facts-spreadsheet",
     "manager-reports",
     "mockup-studio",
+    "packaging-3d",
     "packing-list",
     "product-pages",
     "seo",
@@ -1826,13 +1917,13 @@
     "thumbs"
    ],
    "usedBy": [
-    "ai-access",
     "analytics",
     "enquiries",
     "enquiry-work",
     "facts-spreadsheet",
     "home-page",
     "mockup-studio",
+    "packaging-3d",
     "packing-list",
     "product-pages",
     "site-data",
@@ -1840,7 +1931,7 @@
     "staff-ui",
     "team-workspace"
    ],
-   "plugOrder": 12,
+   "plugOrder": 13,
    "receives": [
     {
      "name": "dataDir",
@@ -1886,6 +1977,11 @@
      "name": "roleAuth",
      "from": "staff-accounts",
      "as": "roleAuth"
+    },
+    {
+     "name": "view3dOn",
+     "from": "packaging-3d",
+     "as": "view3dOn"
     }
    ],
    "offers": [
@@ -1909,6 +2005,7 @@
     "facts-spreadsheet",
     "manager-reports",
     "mockup-studio",
+    "packaging-3d",
     "packing-list",
     "product-pages",
     "seo",
@@ -1920,6 +2017,9 @@
    "calls": {
     "agri-catalogue": [
      "/api/products"
+    ],
+    "packaging-3d": [
+     "/api/packaging-3d"
     ]
    },
    "sends": [
@@ -2024,7 +2124,7 @@
     "home-page",
     "team-workspace"
    ],
-   "plugOrder": 14,
+   "plugOrder": 15,
    "receives": [
     {
      "name": "dataDir",
@@ -2096,6 +2196,7 @@
     "certificates",
     "enquiries",
     "mockup-studio",
+    "packaging-3d",
     "packaging-catalogue",
     "site-data",
     "site-shell",
@@ -2121,6 +2222,7 @@
     "certificates",
     "enquiries",
     "mockup-studio",
+    "packaging-3d",
     "packaging-catalogue",
     "site-data",
     "site-shell",
@@ -2284,6 +2386,7 @@
    "data": [],
    "reads": [],
    "uses": [
+    "packaging-3d",
     "packaging-catalogue",
     "social-links"
    ],
@@ -2304,6 +2407,7 @@
    "routes": [],
    "guards": 0,
    "imports": [
+    "packaging-3d",
     "packaging-catalogue",
     "social-links"
    ],
@@ -2332,7 +2436,7 @@
     "admin-tools",
     "site-log"
    ],
-   "plugOrder": 22,
+   "plugOrder": 23,
    "receives": [
     {
      "name": "dataDir",
@@ -2408,7 +2512,7 @@
    "usedBy": [
     "ai-access"
    ],
-   "plugOrder": 23,
+   "plugOrder": 24,
    "receives": [
     {
      "name": "dataDir",
@@ -2601,7 +2705,7 @@
     "staff-ui",
     "team-workspace"
    ],
-   "plugOrder": 15,
+   "plugOrder": 16,
    "receives": [
     {
      "name": "dataDir",
@@ -2684,6 +2788,7 @@
     "enquiry-work",
     "manager-reports",
     "mockup-studio",
+    "packaging-3d",
     "packaging-catalogue",
     "partners",
     "social-links",
@@ -2822,6 +2927,7 @@
     "manager-reports",
     "marketing-tags",
     "mockup-studio",
+    "packaging-3d",
     "packaging-catalogue",
     "packing-list",
     "partners",
@@ -2897,6 +3003,7 @@
    "uses": [],
    "usedBy": [
     "email",
+    "lead-store",
     "marketing-tags"
    ],
    "plugOrder": 2,
@@ -2928,7 +3035,7 @@
     "storage"
    ],
    "usedBy": [],
-   "plugOrder": 27,
+   "plugOrder": 28,
    "receives": [
     {
      "name": "PORT",
@@ -3014,7 +3121,7 @@
    "usedBy": [
     "deploy-tools"
    ],
-   "plugOrder": 26,
+   "plugOrder": 27,
    "receives": [
     {
      "name": "uploadsDir",
@@ -3049,12 +3156,25 @@
    "files": [
     "lib/storage.js"
    ],
-   "tests": [],
+   "tests": [
+    "test/storage.test.js"
+   ],
    "data": [
     "admin-audit.log",
     "error.log"
    ],
-   "reads": [],
+   "reads": [
+    "ai-access.json",
+    "analytics.json",
+    "auth.json",
+    "database.json",
+    "email-status.json",
+    "inquiries-pending.json",
+    "inquiries.json",
+    "packaging-3d.json",
+    "targets.json",
+    "team.json"
+   ],
    "uses": [
     "site-basics"
    ],
@@ -3072,6 +3192,7 @@
     "enquiry-work",
     "lead-store",
     "marketing-tags",
+    "packaging-3d",
     "packaging-catalogue",
     "partners",
     "search-verification",
@@ -3108,8 +3229,7 @@
    ],
    "calls": {},
    "sends": [],
-   "hears": [],
-   "checkedBy": "Every test runs on it; test/admin-tools.test.js reads the audit log it writes."
+   "hears": []
   },
   "targets": {
    "name": "Monthly targets",
@@ -3138,7 +3258,7 @@
     "manager-reports",
     "site-log"
    ],
-   "plugOrder": 19,
+   "plugOrder": 20,
    "receives": [
     {
      "name": "dataDir",
@@ -3202,6 +3322,7 @@
     "enquiry-work",
     "manager-reports",
     "mockup-studio",
+    "packaging-3d",
     "packaging-catalogue",
     "partners",
     "site-shell",
@@ -3222,6 +3343,7 @@
     "enquiry-work",
     "manager-reports",
     "mockup-studio",
+    "packaging-3d",
     "packaging-catalogue",
     "partners",
     "site-shell",
@@ -3264,7 +3386,7 @@
     "packaging-catalogue",
     "product-pages"
    ],
-   "plugOrder": 13,
+   "plugOrder": 14,
    "receives": [
     {
      "name": "dataDir",

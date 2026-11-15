@@ -36,6 +36,7 @@ import { registerAiAccess } from './lib/ai-access.js';
 import { registerAdminTools } from './lib/admin-tools.js';
 import { registerStaticSite } from './lib/static-site.js';
 import { registerStartup } from './lib/startup.js';
+import { registerPackaging3d } from './lib/packaging-3d.js';
 
 // Before any box is plugged in: boxes read the environment when they are set up.
 dotenv.config();
@@ -69,7 +70,8 @@ plug('branding', registerBranding, { dataDir, uploadsDir, readJsonFile, writeJso
 
 /* ---------- catalogues and contact links ---------- */
 const { agriProducts } = plug('agri-catalogue', registerAgriProducts, { dataDir, productImagesDir, readJsonFile, writeJsonFile, audit, roleAuth });
-const { catalogue } = plug('packaging-catalogue', registerPackaging, { dataDir, repoDataDir, uploadsDir, publicDirs, readJsonFile, writeJsonFile, audit, logError, roleAuth });
+const { view3dOn } = plug('packaging-3d', registerPackaging3d, { dataDir, readJsonFile, writeJsonFile, audit, roleAuth });
+const { catalogue } = plug('packaging-catalogue', registerPackaging, { dataDir, repoDataDir, uploadsDir, publicDirs, readJsonFile, writeJsonFile, audit, logError, roleAuth, view3dOn });
 plug('thumbs', registerThumbs, { dataDir, uploadsDir, publicDirs, logError });
 plug('partners', registerPartners, { dataDir, uploadsDir, readJsonFile, writeJsonFile, audit, logError, roleAuth });
 const { readSocialLinks } = plug('social-links', registerSocialLinks, { dataDir, readJsonFile, writeJsonFile, audit, roleAuth });

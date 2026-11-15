@@ -366,7 +366,7 @@ fieldset.choice { border: 0; margin: 0; padding: 0; min-width: 0; }
 .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .text-field { width: 100%; min-width: 0; height: 44px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font-size: .9375rem; padding-inline: 12px; }
 .text-field:focus { outline: 2px solid transparent; outline-offset: 1px; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-subtle); }
-.range { width: 100%; accent-color: var(--accent); }
+.range { width: 100%; min-height: 44px; accent-color: var(--accent); } /* the track stays thin; the area to touch is 44 px */
 .range-row { display: flex; justify-content: space-between; font-size: .8125rem; color: var(--ink-2); margin-top: 2px; }
 /* minmax(0, 1fr): text inputs have a built-in minimum width, and two of them
    side by side would not fit a 320px screen */
@@ -533,11 +533,36 @@ a.reach-num:hover { color: var(--accent); text-decoration: underline; }
 .pd { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(28px, 5vw, 72px); align-items: center; padding-block: clamp(20px, 3vw, 40px) clamp(48px, 6vw, 88px); }
 .pd-media { position: relative; aspect-ratio: 4 / 5; border-radius: 14px; overflow: hidden; background: var(--stage); display: grid; place-items: center; }
 .pd-media > img { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* a box with no photo yet: its 3D preview in the panel (pd-pack.js) */
-.pd-media.has-3d .pd-tile { display: none; }
-.pd-media.is-loading-3d .pd-tile::after { content: "Loading the 3D box"; display: block; margin-top: 8px; font-size: .875rem; font-weight: 400; color: var(--ink-2); }
-.pd-3d-bar { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 6px; z-index: 2; }
-.pd-3d-note { margin: 10px 0 0; max-width: 46ch; }
+/* the product in 3D, in the photo's panel (box packaging-3d: src/scripts/package-3d/viewer.js) */
+.pd-media.has-3d > img, .pd-media.has-3d .stand, .pd-media.has-3d .pd-tile, .pd-media.has-3d canvas:not(.p3d-canvas) { visibility: hidden; }
+.pd-media.is-loading-3d .pd-tile::after { content: "Loading the 3D view"; display: block; margin-top: 8px; font-size: .875rem; font-weight: 400; color: var(--ink-2); }
+.p3d-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; z-index: 1; }
+.p3d-canvas[hidden] { display: none; }
+.p3d-canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.p3d-bar { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; z-index: 2; }
+.p3d-bar[hidden], .p3d-bar [hidden] { display: none; }
+.p3d-bar .btn, .p3d-start { min-height: 44px; }
+.p3d-bar [aria-pressed="true"], .p3d-try[aria-expanded="true"] { border-color: var(--ink); background: var(--surface-2); color: var(--ink); }
+.p3d-photo { margin-left: auto; }
+/* said once over the view; the backdrop is the same light studio colour in both themes */
+.p3d-hint { position: absolute; top: 12px; left: 12px; z-index: 2; margin: 0; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.92); color: #1c1b18; font-size: .8125rem; pointer-events: none; }
+/* with the print panel open the text column grows: the 3D view stays at the top, in sight */
+.pd:has(.p3d-print:not([hidden])) { align-items: start; }
+@media (min-width: 761px) { .pd:has(.p3d-print:not([hidden])) .pd-media { position: sticky; top: 88px; } }
+.p3d-start { position: absolute; left: 12px; bottom: 12px; z-index: 2; }
+.p3d-start[hidden] { display: none; }
+/* trying a print on it: beside the panel, under the page's buttons */
+.p3d-print { display: grid; gap: 14px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); max-width: 52ch; }
+.p3d-print[hidden], .p3d-set[hidden] { display: none; }
+.p3d-title { margin: 0; font-size: 1.125rem; }
+.p3d-row { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: end; }
+.p3d-field { display: grid; gap: 6px; min-width: 0; font-size: .875rem; color: var(--ink-2); }
+.p3d-field > span { font-weight: 500; }
+.p3d-field input[type="range"] { min-height: 44px; accent-color: var(--accent); }
+.p3d-modes, fieldset.p3d-set { display: grid; gap: 4px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.p3d-modes legend, fieldset.p3d-set legend { margin-bottom: 6px; padding: 0; font-size: .875rem; font-weight: 500; color: var(--ink-2); }
+.p3d-set { display: grid; gap: 10px; }
+.p3d-msg:empty { display: none; }
 /* "Add to packing list" is a button set like the links beside it */
 button.act { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
 /* a cut-out stands on the floor of the frame at a fixed share of its height, so tall

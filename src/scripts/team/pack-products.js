@@ -10,7 +10,7 @@ import { DEFAULT_QUAD, convex, cornerEditor } from '../admin/corners.js';
 import { watch, clean, touch, mayLeave } from '../admin/tools.js';
 import { packCompleteness, completeLine } from '../../../lib/completeness.js';
 import { thumbUrl } from '../../../lib/thumb-url.js';
-import { has3d } from '../../../lib/box-styles.js';
+import { has3d, needsDepth } from '../../../lib/box-styles.js';
 
 let items = [];
 let bound = false;
@@ -59,9 +59,9 @@ function renderList(focusId, which) {
         p.minOrder ? `minimum ${num(p.minOrder)}` : 'no minimum set',
         p.site === false ? 'Hidden on the website' : null,
         usable(p) ? (p.imageDark ? 'Visitors can design it in the studio, with a dark mode photo' : 'Visitors can design it in the studio')
-          : has3d(p) ? `Visitors can design it in the studio as a 3D box; ${p.image ? 'place the print corners' : 'add a photo'} for the photo mockup too`
+          : has3d(p) ? `Ready for 3D; ${p.image ? 'place the print corners' : 'add a photo'} for the photo mockup too`
           : p.image ? 'Quote only on the website: place the print corners to put it in the studio' : 'Quote only on the website: add a photo to put it in the studio',
-        p.shape3d && !has3d(p) ? 'the 3D view waits for the width, depth and height of each size' : null,
+        p.shape3d && !has3d(p) ? `the 3D view waits for the ${needsDepth(p.shape3d) ? 'width, depth and height' : 'width and height'} of each size` : null,
         p.team === false ? 'not in Mockups' : null,
       ].filter(Boolean).join(', ')),
       (() => { const c = packCompleteness(p); return h('p', { class: `a-missing${c.complete ? ' is-done' : ''}` }, c.complete ? 'Complete' : `Missing: ${c.missing.join(', ')}`); })())),
@@ -347,7 +347,7 @@ async function submit(e) {
     const idx = items.findIndex((p) => p.id === r.product.id);
     if (idx >= 0) items[idx] = r.product; else items.push(r.product);
     // a 3D shape waits for the measurements: say so, or the team wonders where the box is
-    const waiting = r.product.shape3d && !has3d(r.product) ? ' The 3D view appears once every size has its width, depth and height.' : '';
+    const waiting = r.product.shape3d && !has3d(r.product) ? ` It is ready for 3D once every size has its ${needsDepth(r.product.shape3d) ? 'width, depth and height' : 'width and height'}.` : '';
     toast((idx >= 0 ? `${r.product.name} saved. The packaging page shows the change now.` : `${r.product.name} added to the packaging page.`) + waiting);
     done();
     // the saved product stays open, as it now is on the website

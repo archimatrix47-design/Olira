@@ -84,14 +84,14 @@ import { BOX_STYLES, BOARDS } from '../../../../lib/box-styles.js';
               <option value="">None, photo only</option>
               {Object.entries(BOX_STYLES).map(([id, s]) => <option value={id}>{s.label}</option>)}
             </select>
-            <p class="hint" id="pkShape3dHint">For boxes. {Object.values(BOX_STYLES).map((s) => `${s.label}: ${s.hint.toLowerCase()}.`).join(' ')} Once every size above has its width, depth and height, visitors can turn the box in 3D in the studio, at the size they choose, even before it has a photo. Bags and pouches keep None.</p>
+            <p class="hint" id="pkShape3dHint">The shape it folds into. {Object.values(BOX_STYLES).map((s) => `${s.label}: ${s.hint.toLowerCase()}.`).join(' ')} Once every size above has its measurements (width, depth and height; width and height for a pouch or a sachet), it is ready for 3D: visitors can turn it, open it, lay it flat and try their print on it, at the size they choose, even before it has a photo. It shows on the website while the 3D view's two switches are on, yours and the manager's (3D view).</p>
           </div>
           <div class="a-field">
             <label for="pkBoard3d">Board in the 3D view</label>
             <select class="input" id="pkBoard3d" name="board3d" aria-describedby="pkBoard3dHint">
               {Object.entries(BOARDS).map(([id, label]) => <option value={id}>{label}</option>)}
             </select>
-            <p class="hint" id="pkBoard3dHint">The board this box is made in. Choose Both only if you make it in brown kraft and in white; visitors can then switch between them.</p>
+            <p class="hint" id="pkBoard3dHint">What it is made in. Choose Both only if you make it in brown kraft and in white; visitors can then switch between them. Foil is for foil bags and pouches.</p>
           </div>
         </div>
         <div class="a-field">

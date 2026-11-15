@@ -143,7 +143,7 @@ function renderActions(a) {
     errors.length ? h('div', { style: 'margin-top:18px' }, h('h3', { class: 'a-label', style: 'margin-bottom:10px' }, 'Form problems'), barList(errors, { tone: 'context' })) : h('span'),
     contact.length ? tableFor('Contact actions', ['Action', 'Count'], [...contact, ...errors].map((i) => [i.label, int(i.value)])) : h('span'));
   const studio = actionItems([
-    ['studio_change', 'Changed the product or print'], ['studio_logo', 'Uploaded a logo'], ['studio_artwork', 'Uploaded finished artwork'], ['view_3d', 'Turned a box in 3D'], ['lid_3d', 'Opened a box lid in 3D'], ['studio_download', 'Downloaded a mockup'],
+    ['studio_change', 'Changed the product or print'], ['studio_logo', 'Uploaded a logo'], ['studio_artwork', 'Uploaded finished artwork'], ['view_3d', 'Turned a box in 3D'], ['lid_3d', 'Opened a box lid in 3D'], ['flat_3d', 'Laid a package flat in 3D'], ['art_3d', 'Tried their print on a 3D package'], ['save_3d', 'Saved a picture of a 3D package'], ['quote_3d', 'Took a 3D design to the quote form'], ['studio_download', 'Downloaded a mockup'],
     ['studio_quote', 'Asked for a quote from the design'], ['studio_quote_only', 'Asked for a quote on a quote only bag'],
   ], a);
   // the logo check: uploads that would print badly, and how many took the fix

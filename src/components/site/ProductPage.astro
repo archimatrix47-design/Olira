@@ -33,7 +33,7 @@ interface Props {
   productId?: string;           // packaging: the catalogue id, for the live facts
   flexoMax?: number;
   listItem?: { sizeId: string; min: number | null } | null; // packaging: what "Add to packing list" adds
-  box3d?: object | null;        // packaging, no photo: the product as the 3D box (pd-pack.js)
+  box3d?: object | null;        // packaging: the product in 3D, while both 3D switches are on (pd-pack.js)
 }
 const p = Astro.props;
 const agri = p.line === 'agri';

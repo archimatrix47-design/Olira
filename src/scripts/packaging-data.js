@@ -12,10 +12,23 @@ export const byId = (id) => products.find((p) => p.id === id);
 export function onProducts(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 
 const key = (arr) => JSON.stringify(arr.map((p) => [p.id, p.name, p.family, p.description, p.handle, p.image, p.imageDark, p.quad, p.safeTop, p.sizes, p.minOrder, p.printColours, p.pricePer1000, p.leadTimeDays, p.shape3d, p.board3d]));
+const tell = () => listeners.forEach((fn) => { try { fn(products); } catch (e) { /* one page part failing leaves the others */ } });
+// 3D shows only while the packaging team and the manager both have it switched on (box
+// packaging-3d). The switches are asked directly: if they say off, the 3D shapes are dropped
+// at once, whatever this page was built with and whatever a cached catalogue still says.
+let view3d = null; // null until the switches answer
+const gated = (list) => (view3d === false ? list.map((p) => (p.shape3d ? { ...p, shape3d: null } : p)) : list);
+fetch('/api/packaging-3d', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((s) => {
+  if (typeof s?.on !== 'boolean') return;
+  view3d = s.on;
+  if (!view3d && products.some((p) => p.shape3d)) { products = gated(products); tell(); }
+}).catch(() => {});
 fetch('/api/packaging-products').then((r) => (r.ok ? r.json() : null)).then((list) => {
-  if (!Array.isArray(list) || key(list) === key(products)) return;
+  if (!Array.isArray(list)) return;
+  list = gated(list);
+  if (key(list) === key(products)) return;
   products = list;
-  listeners.forEach((fn) => { try { fn(products); } catch (e) { /* one page part failing leaves the others */ } });
+  tell();
 }).catch(() => {});
 
 export const fmt = (n) => Number(n).toLocaleString('en-US');

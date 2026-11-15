@@ -338,3 +338,12 @@ html[data-input="keyboard"] .t-card:active { transform: none; }
 .t-score-pop { position: fixed; inset: auto; margin: 0; width: min(340px, calc(100vw - 16px)); padding: 14px 16px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); color: var(--ink); box-shadow: 0 18px 40px -16px color-mix(in srgb, var(--shadow) 45%, transparent); }
 .t-score-pop-head { margin: 0; font-size: .9375rem; font-weight: 700; }
 .t-score-pop-key { margin: 10px 0 0; font-size: .8125rem; color: var(--ink-2); }
+
+/* the 3D view (box packaging-3d): the other switch, the product rows, the preview */
+.v3-other { margin: 6px 0 0; }
+.v3-rows .v3-row-text { min-width: 0; }
+.v3-rows .v3-row-text strong { font-weight: 600; }
+.v3-preview { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 20px; align-items: start; }
+.v3-stage { position: relative; aspect-ratio: 4 / 5; border-radius: 12px; overflow: hidden; background: var(--surface-2); }
+.v3-side .p3d-print { margin-top: 12px; }
+@media (max-width: 760px) { .v3-preview { grid-template-columns: minmax(0, 1fr); } }

@@ -1,0 +1,47 @@
+---
+// Workspace screen: the 3D view's switches and the products' readiness, for the
+// packaging team and the manager (box packaging-3d). Filled in by scripts/team/package-3d.js.
+interface Props { manager: boolean }
+const { manager } = Astro.props;
+const mine = manager ? 'Manager' : 'Packaging team';
+const other = manager ? 'Packaging team' : 'Manager';
+---
+<section class="a-view" data-view="view3d" aria-labelledby="h-view3d" hidden>
+  <div class="a-head">
+    <div>
+      <h1 id="h-view3d">3D view</h1>
+      <p>Visitors can turn a packaging product in 3D, open it, lay it flat and try their logo or artwork on it, in the studio and on the product's page. It shows on the website only while the packaging team and the manager have both switched it on. Either of you can take it off again at any time.</p>
+    </div>
+    <span class="a-status" id="v3State">Checking</span>
+  </div>
+  <div class="a-settings">
+    <div class="a-card a-group">
+      <div class="a-group-head"><h2>Switches</h2></div>
+      <label class="a-check"><input class="a-switch" type="checkbox" role="switch" id="v3Mine" aria-describedby="v3MineHint" disabled> {mine}: show 3D on the website</label>
+      <p class="hint" id="v3MineHint">Your switch. Changes reach visitors on their next page, with no rebuild.</p>
+      <p class="v3-other"><span class="a-status" id="v3Other">{other}: checking</span></p>
+      <p class="hint" id="v3OtherWhen"></p>
+      <p class="hint" id="v3Gate">3D is on the website only when both switches are on.</p>
+    </div>
+
+    <div class="a-card a-group">
+      <div class="a-group-head"><h2>Products</h2></div>
+      <p class="hint">{manager
+        ? 'What each packaging product needs before visitors can see it in 3D. The packaging team sets its 3D shape and each size\'s measurements. Preview one to see it as visitors will; the preview works with the switches off.'
+        : 'What each product needs before visitors can see it in 3D. Set its 3D shape and each size\'s measurements in Packaging products. Preview one to see it as visitors will; the preview works with the switches off.'}</p>
+      <ul class="a-rows v3-rows" id="v3Products"><li class="hint">Loading the products.</li></ul>
+    </div>
+
+    <div class="a-card a-group" id="v3Preview" hidden>
+      <div class="a-group-head">
+        <h2 id="v3PreviewTitle">Preview</h2>
+        <button class="btn btn-secondary btn-sm" type="button" id="v3Close">Close the preview</button>
+      </div>
+      <div class="v3-preview">
+        <div class="v3-stage" id="v3Stage"></div>
+        <div class="v3-side"><p class="hint" id="v3About"></p><div id="v3PanelHost"></div></div>
+      </div>
+    </div>
+    <p class="sr-only" id="v3Live" role="status" aria-live="polite"></p>
+  </div>
+</section>

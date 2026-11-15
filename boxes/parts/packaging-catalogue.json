@@ -7,7 +7,6 @@
   "files": [
     "lib/packaging.js",
     "lib/packaging-rules.js",
-    "lib/box-styles.js",
     "src/pages/packaging.astro",
     "src/pages/packaging/[slug].astro",
     "src/scripts/catalogue.js",
@@ -23,8 +22,7 @@
   ],
   "tests": [
     "test/catalogue.test.js",
-    "test/catalogue-grid.test.js",
-    "test/box-styles.test.js"
+    "test/catalogue-grid.test.js"
   ],
   "uses": [
     "agri-catalogue",
@@ -33,6 +31,7 @@
     "facts-spreadsheet",
     "manager-reports",
     "mockup-studio",
+    "packaging-3d",
     "packing-list",
     "product-pages",
     "seo",

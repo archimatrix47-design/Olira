@@ -15,6 +15,7 @@ import { studioOrder } from '../../lib/catalogue-facts.js';
 import { MEMORY_KEY, toSaved, fromSaved } from './studio-memory.js';
 import { has3d } from '../../lib/box-styles.js';
 import { view3d } from './studio-3d.js';
+import { keptDesign, dropDesign, pictureOf, PRINTS } from './package-3d/handoff.js';
 
 // designer use, for the admin insights: counted once per page view except downloads and quotes
 let changedOnce = false;
@@ -428,8 +429,20 @@ $('#download').addEventListener('click', async () => {
 
 /* ---------------- sending the design with a quote request ---------------- */
 const sendDesign = $('[data-send-design]');
+// A 3D design made on a product page (box packaging-3d, handoff.js) arrives with ?ask=<its product>.
+// It is sent with the request as it was made there, with its picture, in place of the studio's.
+let pageDesign = null;
+{
+  const kept = keptDesign();
+  if (kept && kept.productId === params.get('ask')) {
+    pageDesign = { ...kept, design: { template: kept.productId, templateName: kept.productName, size: kept.size, view: '3d', board: kept.board, source: 'page', print: kept.print, face: kept.face || '', faces: kept.faces || [], hasLogo: !!kept.hasLogo, hasArtwork: !!kept.hasArtwork } };
+    dropDesign(); // from here it lives in this page only: a later visit does not send it again
+  }
+}
+const pageSummary = (d) => `Your 3D design of ${d.productName}: ${d.sizeLabel || d.size}, ${PRINTS[d.print]}${d.print === 'logo' && d.faceName ? ` (${d.faceName.toLowerCase()})` : ''}. A picture of it is included. Add your logo or artwork file above, so the team can print from it.`;
 function updateSummary() {
   const out = $('[data-design-summary]');
+  if (pageDesign) { if (out) out.textContent = pageSummary(pageDesign); return; }
   if (!out || !tpl()) return;
   const what = state.mode === 'artwork'
     ? (state.artworkFile ? `, with your artwork (${state.artworkFile.name})` : ', no artwork yet')
@@ -439,6 +452,7 @@ function updateSummary() {
   out.textContent = `${specLine(tpl(), state)}${what}. ${noPicture ? 'No picture can be made on this device; the team will draw it from these settings.' : 'A picture of the mockup is included.'}`;
 }
 formHooks.design = async () => {
+  if (pageDesign) return sendDesign?.checked ? { design: pageDesign.design, logo: null, artwork: null, mockup: pictureOf(pageDesign) } : null;
   const t = tpl();
   if (!t || !sendDesign?.checked) return null;
   const on3d = view3d.on(), photo = usableInStudio(t);
@@ -457,6 +471,7 @@ formHooks.design = async () => {
 };
 
 $('#useDesign').addEventListener('click', () => {
+  pageDesign = null; // the studio's own design replaces one brought from a product page
   const form = $('#inquiry'); if (form) form.dataset.product = tpl()?.name || 'Packaging';
   if (sendDesign && !sendDesign.checked) { sendDesign.checked = true; sendDesign.dispatchEvent(new Event('change', { bubbles: true })); }
   track({ event: 'studio_quote' });
@@ -521,3 +536,6 @@ onProducts((list) => {
   syncBundles();
   draw();
 });
+
+// a design brought from a product page: offered for sending at once, with what it is
+if (pageDesign && sendDesign) { sendDesign.checked = true; sendDesign.dispatchEvent(new Event('change', { bubbles: true })); updateSummary(); }
