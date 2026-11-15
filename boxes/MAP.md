@@ -161,7 +161,7 @@ flowchart LR
 
 | Box | What it does | Connects to | Routes | Files |
 | --- | --- | --- | --- | --- |
-| **agri-catalogue** | The agriculture products: the public pages, the team editing them, photos and specifications. | certificates, contact, enquiries, facts-spreadsheet, image-upload, manager-reports, product-pages, seo, site-data, site-shell, staff-accounts, staff-ui, storage, thumbs | 7 | 7 |
+| **agri-catalogue** | The agriculture products: the public pages, the team editing them, photos and specifications. | agri-panel, certificates, contact, enquiries, facts-spreadsheet, image-upload, manager-reports, product-pages, seo, site-data, site-shell, staff-accounts, staff-ui, storage, thumbs | 7 | 7 |
 | **facts-spreadsheet** | The catalogue facts as a spreadsheet: download, fill in, import with a preview, saved whole or not at all. | agri-catalogue, packaging-catalogue, staff-ui | 0 | 2 |
 | **packaging-3d** | A packaging product in 3D at its own measurements: it folds, opens and lays flat, wears the visitor's logo or artwork, and shows on the website only when both the packaging team and the manager have switched it on. | packaging-catalogue, staff-accounts, staff-ui, storage | 3 | 8 |
 | **packaging-catalogue** | The packaging products: rules, photos, sizes, minimums, prices, the public catalogue and the team editing it. | agri-catalogue, contact, enquiries, facts-spreadsheet, manager-reports, mockup-studio, packaging-3d, packing-list, product-pages, seo, site-data, site-shell, staff-accounts, staff-ui, storage, thumbs | 8 | 14 |
@@ -196,7 +196,8 @@ flowchart LR
 
 | Box | What it does | Connects to | Routes | Files |
 | --- | --- | --- | --- | --- |
-| **home-page** | The first page: both businesses, the product strip and the company in brief. | mockup-studio, packaging-catalogue, partners, product-pages, seo, site-data, site-shell, thumbs | 0 | 3 |
+| **agri-panel** | The green agriculture panel: its four product-line tiles on the home page and along the bottom of the agriculture page's first screen, and the trip between the two pages (the panel grows to fill the screen, the packaging panel is pushed off). | thumbs | 0 | 3 |
+| **home-page** | The first page: both businesses, the product strip and the company in brief. | agri-panel, mockup-studio, packaging-catalogue, partners, product-pages, seo, site-data, site-shell, thumbs | 0 | 3 |
 | **seo** | What search engines and AI assistants read: structured data, FAQ, sitemap and llms.txt. | agri-catalogue, certificates, product-pages, site-data | 0 | 7 |
 | **site-data** | Reads the live data folder when the pages are built, so they carry the current facts. | packaging-3d, packaging-catalogue, social-links | 0 | 4 |
 | **site-shell** | What every public page shares: the layout, header, footer, theme, motion and the site's design tokens. | analytics, branding, contact, marketing-tags, packing-list, page-speed, site-data, social-links | 0 | 14 |

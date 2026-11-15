@@ -339,19 +339,24 @@
 .press-note { margin-top: 12px; font-size: .875rem; color: var(--ink-2); }
 
 /* ---------- agriculture page ---------- */
-.ag-hero { position: relative; min-height: min(88svh, 860px); display: flex; align-items: flex-end; overflow: hidden; background: var(--dark-page); color: var(--dark-ink); }
-/* phones: the range peeks in below the hero, inviting the scroll */
-@media (max-width: 760px) { .ag-hero { min-height: 70svh; } }
-.ag-hero .photo { position: absolute; inset: 0; z-index: 0; }
-.ag-hero .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ag-hero .shade { position: absolute; inset: 0; z-index: 0; background: linear-gradient(180deg, rgba(0,0,0,.05) 30%, rgba(0,0,0,.72) 100%), linear-gradient(90deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 60%); }
-.ag-hero > .wrap { position: relative; z-index: 1; padding-block: 140px clamp(44px, 8vh, 88px); }
-.ag-hero h1 { max-width: 15ch; color: var(--dark-ink); }
-.ag-hero .sub { margin-top: 18px; color: rgba(245,245,247,.86); max-width: 40ch; }
-.ag-hero .acts { margin-top: 26px; }
+/* The first screen is the home page's green panel at full width, the same colours
+   and the same tiles: the words on top, the four product lines in one row along
+   the bottom (two by two on a phone, as in the panel). The panel grows into it. */
+.ag-hero { display: flex; flex-direction: column; min-height: calc(100svh - var(--bar-h)); background: var(--agri-band); color: var(--dark-ink); }
+.ag-hero-copy { padding: clamp(40px, 7vh, 96px) clamp(20px, 4vw, 56px) clamp(28px, 5vh, 56px); text-align: center; }
+.ag-hero .label { color: #A7C95B; }
+.ag-hero h1 { max-width: 18ch; margin-inline: auto; color: var(--dark-ink); }
+.ag-hero .sub { margin: 18px auto 0; color: rgba(245,245,247,.86); max-width: 46ch; }
+.ag-hero .acts { margin-top: 26px; justify-content: center; }
 .ag-hero .act { color: var(--dark-ink); }
-.ag-hero .act.fill { background: var(--dark-ink); color: var(--dark-page); }
+.ag-hero .act.fill { background: var(--dark-ink); color: #0C1810; }
 .ag-hero .act.fill:hover { background: var(--white); }
+.ag-hero .produce { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 860px) {
+  .ag-hero { min-height: 0; }
+  .ag-hero .produce { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 861px) and (max-height: 780px) { .ag-hero-copy { padding-block: 28px 20px; } }
 .sheet-site .specsheet { margin-top: 0; border-radius: var(--r-tile); background: var(--tile); box-shadow: none; }
 .sheet-site .specsheet-head h2 { font-size: clamp(1.75rem, 1.3rem + 1.4vw, 2.5rem); letter-spacing: -.02em; }
 .sheet-site .spec-row .v { font: 600 clamp(1.5rem, 1.2rem + 1vw, 2rem)/1.1 var(--font-display); letter-spacing: -.02em; white-space: nowrap; }
@@ -497,18 +502,16 @@ main:has(> .choose) + .sheet-foot { margin-top: 12px; }
   .door + .door { animation-delay: 70ms; }
   :is(.title-block, .ag-hero, .lost) h1 { animation: enter-rise .7s var(--settle) both; }
   :is(.title-block, .ag-hero, .lost) :is(.label, .sub, .acts) { animation: enter-rise .6s var(--settle) .3s both; }
-  .ag-hero .photo img { animation: photo-settle 1s var(--settle) both; }
 }
+/* arriving by the green panel's trip (AgriPanelTrip.astro): the panel was the entrance */
+:root[data-came="panel"] :is(.door, .ag-hero h1, .ag-hero .label, .ag-hero .sub, .ag-hero .acts) { animation: none; }
 
 /* Between pages (cross-document View Transitions, enabled in site.css): the bar
-   and the brand field hold still, the sesame photo on the home page grows into
-   the agriculture hero, and the rest cross-fades with a small rise. */
+   and the brand field hold still, and the rest cross-fades with a small rise.
+   The green panel's trip between home and agriculture is in site.css. */
 .sheet-head { view-transition-name: sheet-head; }
 .brand-field { view-transition-name: brand-field; }
-.produce-tile.is-lead img, .ag-hero .photo { view-transition-name: agri-photo; }
 ::view-transition-group(sheet-head), ::view-transition-group(brand-field) { animation-duration: var(--dur-ui); animation-timing-function: var(--settle); }
-::view-transition-group(agri-photo) { animation-duration: var(--dur-slow); animation-timing-function: var(--settle); }
-::view-transition-old(agri-photo), ::view-transition-new(agri-photo) { height: 100%; object-fit: cover; overflow: clip; }
 /* a product's photo: from its details window or card into its own page (common.js names the source) */
 .pd-media { view-transition-name: product-photo; }
 ::view-transition-group(product-photo) { animation-duration: .3s; animation-timing-function: var(--settle); }

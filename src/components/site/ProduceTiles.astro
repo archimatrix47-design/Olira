@@ -1,0 +1,23 @@
+---
+// The four agriculture product lines as photo tiles (src/lib/produce.ts). On the
+// home page they sit in the green panel and each opens the agriculture page at
+// that line; on the agriculture page they run along the bottom of the first
+// screen and each points at that line in the range below (agri.js). data-p
+// names the line, and gives each tile its name for the trip between the two
+// pages (AgriPanelTrip.astro).
+import { thumbSrcset } from '../../../lib/thumb-url.js';
+import { PRODUCE, TILE_SIZES } from '../../lib/produce';
+
+interface Props { here?: boolean }
+const { here = false } = Astro.props;
+---
+<ul class="produce" aria-label="Product lines">
+  {PRODUCE.map((x, i) => (
+    <li>
+      <a href={here ? '#range' : `/agriculture/?p=${x.p}`} class="produce-tile" data-p={x.p}>
+        <img src={x.img} srcset={thumbSrcset(x.img) || undefined} sizes={TILE_SIZES} alt="" width="800" height="600" decoding="async" fetchpriority={i === 0 ? 'high' : undefined} loading={i === 0 || here ? 'eager' : 'lazy'}>
+        <span>{x.name}</span>
+      </a>
+    </li>
+  ))}
+</ul>

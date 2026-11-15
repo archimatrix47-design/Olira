@@ -17,6 +17,7 @@
     "test/agri-spec.test.js"
   ],
   "uses": [
+    "agri-panel",
     "certificates",
     "contact",
     "enquiries",

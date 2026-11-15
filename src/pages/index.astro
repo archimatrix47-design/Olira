@@ -10,6 +10,9 @@ import { graph, organizationGraph, ORG_ID, SITE_ID } from '../lib/seo';
 import { cutoutOf, standHTML } from '../scripts/catalogue-panel.js';
 import { thumbSrcset } from '../../lib/thumb-url.js';
 import { FACILITY_FACTS, SINCE } from '../lib/company';
+import { PRODUCE, TILE_SIZES } from '../lib/produce';
+import ProduceTiles from '../components/site/ProduceTiles.astro';
+import AgriPanelTrip from '../components/site/AgriPanelTrip.astro';
 
 // A product that still carries its standard photo, as a cut-out at a relative height.
 const stood = (id: string, h: number) => {
@@ -28,16 +31,6 @@ const pick = (list: [string, number][], fill = 100, gap = 1.6) => {
   return got.map((x, i) => ({ ...x, w: +(units[i] / total * room).toFixed(2) }));
 };
 
-// the agriculture door's product lines, each opening that product in the range
-const PRODUCE = [
-  { p: 'sesame', name: 'Humera sesame', img: '/products/photos/sesame-natural.webp' },
-  { p: 'pulses', name: 'Pulses', img: '/products/photos/pulses.webp' },
-  { p: 'spices', name: 'Spices', img: '/products/photos/spices.webp' },
-  { p: 'coffee', name: 'Coffee', img: '/products/photos/coffee.webp' },
-];
-// two tiles a row inside each half: about 45% of a phone, a quarter of a wide screen
-const TILE_SIZES = '(max-width: 860px) 45vw, 24vw';
-
 // the packaging door's lineup, tallest to smallest, heights true to each other
 const lineup = pick([['pk_twisted', 100], ['pk_foil', 86], ['pk_pouch', 74], ['pk_burger', 50]], 100, 4);
 
@@ -55,6 +48,7 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
   jsonLd={jsonLd}
 >
   <link slot="head" rel="preload" as="image" href={PRODUCE[0].img} imagesrcset={thumbSrcset(PRODUCE[0].img) || undefined} imagesizes={thumbSrcset(PRODUCE[0].img) ? TILE_SIZES : undefined} fetchpriority="high">
+  <AgriPanelTrip slot="head" />
 
   <SiteHeader current="/" />
 
@@ -64,7 +58,8 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
       <h1 class="sr-only">Olira Agro Industry</h1>
       <div class="wrap choose-grid">
         <!-- both doors have the same shape: the words on top, the products below -->
-        <article class="door door-agri" aria-labelledby="doorAgri">
+        <!-- the green panel: it grows into the agriculture page's first screen (AgriPanelTrip) -->
+        <article class="door door-agri" data-agri-panel aria-labelledby="doorAgri">
           <div class="door-copy">
             <span class="label">Olira Agro</span>
             <h2 class="headline" id="doorAgri">Agricultural <span class="grad-leaf">exports.</span></h2>
@@ -74,16 +69,7 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
               <a class="act" href="/agriculture/#contact">Talk to sales</a>
             </div>
           </div>
-          <ul class="produce" aria-label="Product lines">
-            {PRODUCE.map((x, i) => (
-              <li>
-                <a href={`/agriculture/?p=${x.p}#range`} class:list={['produce-tile', { 'is-lead': i === 0 }]}>
-                  <img src={x.img} srcset={thumbSrcset(x.img) || undefined} sizes={TILE_SIZES} alt="" width="800" height="600" decoding="async" fetchpriority={i === 0 ? 'high' : undefined} loading={i === 0 ? 'eager' : 'lazy'}>
-                  <span>{x.name}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
+          <ProduceTiles />
         </article>
         <article class="door door-pack" aria-labelledby="packTitle">
           <div class="door-copy">

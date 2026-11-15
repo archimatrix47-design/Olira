@@ -360,6 +360,7 @@
    ],
    "reads": [],
    "uses": [
+    "agri-panel",
     "certificates",
     "contact",
     "enquiries",
@@ -432,6 +433,7 @@
    ],
    "guards": 0,
    "imports": [
+    "agri-panel",
     "certificates",
     "contact",
     "enquiries",
@@ -447,7 +449,45 @@
    ],
    "calls": {},
    "sends": [],
-   "hears": []
+   "hears": [
+    "agri:arrived"
+   ]
+  },
+  "agri-panel": {
+   "name": "Agriculture panel",
+   "does": "The green agriculture panel: its four product-line tiles on the home page and along the bottom of the agriculture page's first screen, and the trip between the two pages (the panel grows to fill the screen, the packaging panel is pushed off).",
+   "kind": "public",
+   "files": [
+    "src/lib/produce.ts",
+    "src/components/site/ProduceTiles.astro",
+    "src/components/site/AgriPanelTrip.astro"
+   ],
+   "tests": [
+    "test/agri-panel.test.js"
+   ],
+   "data": [],
+   "reads": [],
+   "uses": [
+    "thumbs"
+   ],
+   "usedBy": [
+    "agri-catalogue",
+    "home-page"
+   ],
+   "plugOrder": null,
+   "receives": [],
+   "offers": [],
+   "routes": [],
+   "guards": 0,
+   "imports": [
+    "thumbs"
+   ],
+   "calls": {},
+   "sends": [
+    "agri:arrived"
+   ],
+   "hears": [],
+   "checkedBy": "Filmed frame by frame on the sandbox (desktop and phone, there and back); the crawl checks both pages."
   },
   "ai-access": {
    "name": "AI access",
@@ -1421,6 +1461,7 @@
    "data": [],
    "reads": [],
    "uses": [
+    "agri-panel",
     "mockup-studio",
     "packaging-catalogue",
     "partners",
@@ -1440,6 +1481,7 @@
    "routes": [],
    "guards": 0,
    "imports": [
+    "agri-panel",
     "mockup-studio",
     "product-pages",
     "seo",
@@ -3381,6 +3423,7 @@
    ],
    "usedBy": [
     "agri-catalogue",
+    "agri-panel",
     "home-page",
     "mockup-studio",
     "packaging-catalogue",
