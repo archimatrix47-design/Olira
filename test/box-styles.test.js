@@ -35,8 +35,10 @@ test('stored values are read safely', () => {
   assert.equal(boxBoard('white'), 'white');
   assert.equal(boxBoard('both'), 'both');
   for (const v of ['', null, 'gold', 'constructor']) assert.equal(boxBoard(v), 'kraft', String(v));
-  assert.deepEqual(Object.keys(BOX_STYLES).sort(), ['carton', 'mailer']);
-  assert.deepEqual(Object.keys(BOARDS).sort(), ['both', 'kraft', 'white']);
+  // the first two ids are kept as stored before more shapes were added
+  assert.deepEqual(Object.keys(BOX_STYLES).sort(), ['bag', 'bag-flat', 'bag-twisted', 'carton', 'mailer', 'pillow', 'pouch', 'sachet', 'scoop', 'tray']);
+  assert.deepEqual(Object.keys(BOARDS).sort(), ['both', 'foil', 'kraft', 'white']);
+  assert.equal(boxBoard('foil'), 'foil');
 });
 
 test('a measured box joins the studio without a photo, after the photographed products', () => {
@@ -64,12 +66,17 @@ test('the box is built only from measured sizes, in millimetres from the centime
   assert.equal(cmLabel(12.5), '12.5 cm');
 });
 
-test('the studio and product pages build their box with boxOf; three.js loads only on demand', () => {
-  for (const file of ['../src/scripts/studio-3d.js', '../src/scripts/pd-pack.js']) {
+test('the studio and product pages build their package with boxOf; three.js loads only on demand', () => {
+  for (const file of ['../src/scripts/studio-3d.js', '../src/scripts/package-3d/viewer.js']) {
     const src = fs.readFileSync(new URL(file, import.meta.url), 'utf8');
     assert.match(src, /boxOf\(/, `${file} uses the shared boxOf`);
     assert.doesNotMatch(src, /example sizes|min: \[|\* 10/i, `${file} does no size maths of its own`);
     assert.doesNotMatch(src, /^import .*three/m, `${file} does not load three.js with the page`);
-    assert.match(src, /import\('\.\/studio-3d-scene\.js'\)/);
+    assert.match(src, /import\('\.\/(package-3d\/)?scene\.js'\)/, `${file} fetches the scene when a package is first shown`);
   }
+  // the product page loads the viewer only once the live switches say 3D is on
+  const pd = fs.readFileSync(new URL('../src/scripts/pd-pack.js', import.meta.url), 'utf8');
+  assert.match(pd, /\/api\/packaging-3d/);
+  assert.match(pd, /if \(!on\) return;\s*const \{ mountViewer \} = await import\('\.\/package-3d\/viewer\.js'\)/);
+  assert.doesNotMatch(pd, /^import .*(three|package-3d)/m, 'nothing of the 3D view loads before the switches are known');
 });

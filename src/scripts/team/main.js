@@ -30,6 +30,7 @@ if (LINE === 'manager') {
     traffic: (opts) => import('./manager/traffic.js').then((m) => m.show(opts)),
     products: (opts) => import('./manager/products.js').then((m) => m.show(opts)),
     ask: (opts) => import('./manager/ask.js').then((m) => m.show(opts)),
+    view3d: () => import('./package-3d.js').then((m) => m.show()),
   });
 } else {
   VIEWS.social = () => import('./social.js').then((m) => m.show());
@@ -41,6 +42,7 @@ if (LINE === 'pack') {
   VIEWS.products = (opts) => import('./pack-products.js').then((m) => m.show(opts));
   VIEWS.mockups = (opts) => import('./mockups.js').then((m) => m.show(opts));
   VIEWS.minimums = () => import('./minimums.js').then((m) => m.show());
+  VIEWS.view3d = () => import('./package-3d.js').then((m) => m.show());
 }
 const HOME = LINE === 'manager' ? 'dashboard' : 'inbox';
 

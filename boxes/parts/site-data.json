@@ -12,6 +12,7 @@
   "tests": [],
   "checkedBy": "scripts/pipeline-test.mjs builds real pages from changed data.",
   "uses": [
+    "packaging-3d",
     "packaging-catalogue",
     "social-links"
   ],

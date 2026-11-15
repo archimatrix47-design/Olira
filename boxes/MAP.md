@@ -19,6 +19,7 @@ flowchart LR
   certificates["Certificates"]
   branding["Logo and tagline"]
   agri_catalogue["Agriculture catalogue"]
+  packaging_3d["3D packaging"]
   packaging_catalogue["Packaging catalogue"]
   thumbs["Small photos"]
   partners["Partner logos"]
@@ -89,6 +90,9 @@ flowchart LR
   marketing_tags --> admin_sign_in
   marketing_tags --> storage
   marketing_tags --> web_guards
+  packaging_3d --> staff_accounts
+  packaging_3d --> storage
+  packaging_catalogue --> packaging_3d
   packaging_catalogue --> staff_accounts
   packaging_catalogue --> storage
   partners --> staff_accounts
@@ -159,9 +163,10 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | **agri-catalogue** | The agriculture products: the public pages, the team editing them, photos and specifications. | certificates, contact, enquiries, facts-spreadsheet, image-upload, manager-reports, product-pages, seo, site-data, site-shell, staff-accounts, staff-ui, storage, thumbs | 7 | 7 |
 | **facts-spreadsheet** | The catalogue facts as a spreadsheet: download, fill in, import with a preview, saved whole or not at all. | agri-catalogue, packaging-catalogue, staff-ui | 0 | 2 |
-| **packaging-catalogue** | The packaging products: rules, photos, sizes, minimums, prices, the public catalogue and the team editing it. | agri-catalogue, contact, enquiries, facts-spreadsheet, manager-reports, mockup-studio, packing-list, product-pages, seo, site-data, site-shell, staff-accounts, staff-ui, storage, thumbs | 8 | 15 |
+| **packaging-3d** | A packaging product in 3D at its own measurements: it folds, opens and lays flat, wears the visitor's logo or artwork, and shows on the website only when both the packaging team and the manager have switched it on. | packaging-catalogue, staff-accounts, staff-ui, storage | 3 | 8 |
+| **packaging-catalogue** | The packaging products: rules, photos, sizes, minimums, prices, the public catalogue and the team editing it. | agri-catalogue, contact, enquiries, facts-spreadsheet, manager-reports, mockup-studio, packaging-3d, packing-list, product-pages, seo, site-data, site-shell, staff-accounts, staff-ui, storage, thumbs | 8 | 14 |
 | **partners** | The partner logos on the home page, looked after by the marketing teams. | staff-accounts, staff-ui, storage | 3 | 3 |
-| **product-pages** | The product card, grid, details panel and page that both catalogues share, and the facts each one shows. | certificates, enquiries, mockup-studio, packaging-catalogue, site-data, site-shell, thumbs | 0 | 6 |
+| **product-pages** | The product card, grid, details panel and page that both catalogues share, and the facts each one shows. | certificates, enquiries, mockup-studio, packaging-3d, packaging-catalogue, site-data, site-shell, thumbs | 0 | 6 |
 | **social-links** | The social pages and WhatsApp link. The public list leaves the WhatsApp number out. | staff-accounts, staff-ui, storage | 3 | 5 |
 | **thumbs** | Small copies of catalogue photos, made once and kept. | storage | 1 | 2 |
 
@@ -171,8 +176,8 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | **enquiries** | A buyer sends an enquiry: it is checked, saved before any email is tried, routed to its team, and acknowledged. | analytics, email, enquiry-work, lead-store, packaging-catalogue, site-data, staff-accounts, storage, web-guards | 1 | 5 |
 | **enquiry-work** | The inboxes, pipeline, replies, quotes, buyers and files, for the teams and the manager. | agri-catalogue, branding, certificates, contact, email, enquiries, lead-store, packaging-catalogue, packing-list, site-basics, staff-accounts, staff-ui, storage, web-guards | 9 | 15 |
-| **lead-store** | Where enquiries are kept: a database when there is one, a file otherwise, so a buyer is never lost. | enquiry-work, storage | 0 | 1 |
-| **mockup-studio** | A visitor sees their brand on a product, as a photo or a 3D box, and sends the design with their request. | branding, enquiry-work, home-page, packaging-catalogue, product-pages, site-shell, staff-accounts, staff-ui, thumbs | 0 | 11 |
+| **lead-store** | Where enquiries are kept: a database when there is one, a file otherwise, so a buyer is never lost. | enquiry-work, staging, storage | 0 | 1 |
+| **mockup-studio** | A visitor sees their brand on a product, as a photo or a 3D package, and sends the design with their request. | branding, enquiry-work, home-page, packaging-3d, packaging-catalogue, product-pages, site-shell, staff-accounts, staff-ui, thumbs | 0 | 10 |
 | **packing-list** | Several products, sizes and quantities gathered into one quote request. | home-page, packaging-catalogue, product-pages, site-shell, staff-ui | 0 | 2 |
 | **targets** | The month's targets per line, and progress against them. | staff-accounts, staff-ui, storage | 2 | 3 |
 
@@ -180,9 +185,9 @@ flowchart LR
 
 | Box | What it does | Connects to | Routes | Files |
 | --- | --- | --- | --- | --- |
-| **ai-access** | The performance log for an AI: read-only keys, the on and off switch, and the manager asking a model on their own computer. | admin-sign-in, certificates, enquiry-work, manager-reports, packaging-catalogue, page-speed, product-pages, site-log, staff-accounts, staff-ui, storage, targets, web-guards | 9 | 7 |
+| **ai-access** | The performance log for an AI: read-only keys, the on and off switch, and the manager asking a model on their own computer. | admin-sign-in, certificates, enquiry-work, manager-reports, packaging-3d, page-speed, product-pages, site-log, staff-accounts, staff-ui, storage, targets, web-guards | 9 | 7 |
 | **analytics** | The site's own counts: no cookies, no third party, no IP address kept. Answers the Traffic and Insights screens. | admin-sign-in, agri-catalogue, enquiries, enquiry-work, packaging-catalogue, page-speed, site-basics, staff-accounts, staff-ui, storage, targets, web-guards | 3 | 5 |
-| **manager-reports** | The manager's dashboard, team performance, report and product completeness. | certificates, enquiry-work, product-pages, site-shell, staff-accounts, staff-ui, targets | 0 | 9 |
+| **manager-reports** | The manager's dashboard, team performance, report and product completeness. | certificates, enquiry-work, packaging-3d, product-pages, site-shell, staff-accounts, staff-ui, targets | 0 | 9 |
 | **page-speed** | How fast the site is for real visitors, measured in their browsers and kept only as counts. | nothing | 0 | 2 |
 | **site-health** | The address an uptime monitor watches: folders writable, build present, enquiry store answering. | admin-sign-in, analytics, lead-store, storage | 1 | 1 |
 | **site-log** | Gathers the figures for the AI data log and keeps one line of main figures per day, for trends. | agri-catalogue, ai-access, analytics, certificates, lead-store, packaging-catalogue, site-basics, site-health, storage, targets | 0 | 1 |
@@ -193,7 +198,7 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | **home-page** | The first page: both businesses, the product strip and the company in brief. | mockup-studio, packaging-catalogue, partners, product-pages, seo, site-data, site-shell, thumbs | 0 | 3 |
 | **seo** | What search engines and AI assistants read: structured data, FAQ, sitemap and llms.txt. | agri-catalogue, certificates, product-pages, site-data | 0 | 7 |
-| **site-data** | Reads the live data folder when the pages are built, so they carry the current facts. | packaging-catalogue, social-links | 0 | 4 |
+| **site-data** | Reads the live data folder when the pages are built, so they carry the current facts. | packaging-3d, packaging-catalogue, social-links | 0 | 4 |
 | **site-shell** | What every public page shares: the layout, header, footer, theme, motion and the site's design tokens. | analytics, branding, contact, marketing-tags, packing-list, page-speed, site-data, social-links | 0 | 14 |
 
 ## Staff screens
@@ -201,7 +206,7 @@ flowchart LR
 | Box | What it does | Connects to | Routes | Files |
 | --- | --- | --- | --- | --- |
 | **staff-ui** | What the staff screens share: the look, the API helper, charts, number formats and the unsaved-changes guard. | admin-sign-in, admin-tools, agri-catalogue, analytics, branding, certificates, contact, email, enquiry-work, marketing-tags, packaging-catalogue, social-links, staff-accounts | 0 | 11 |
-| **team-workspace** | The workspace page for each team and the manager: its sections and sign-in check. | admin-sign-in, agri-catalogue, ai-access, analytics, enquiry-work, manager-reports, mockup-studio, packaging-catalogue, partners, site-shell, social-links, staff-accounts, staff-ui | 0 | 5 |
+| **team-workspace** | The workspace page for each team and the manager: its sections and sign-in check. | admin-sign-in, agri-catalogue, ai-access, analytics, enquiry-work, manager-reports, mockup-studio, packaging-3d, packaging-catalogue, partners, site-shell, social-links, staff-accounts, staff-ui | 0 | 5 |
 
 ## Tools
 

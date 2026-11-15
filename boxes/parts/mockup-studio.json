@@ -1,7 +1,7 @@
 {
   "id": "mockup-studio",
   "name": "Mockup studio",
-  "does": "A visitor sees their brand on a product, as a photo or a 3D box, and sends the design with their request.",
+  "does": "A visitor sees their brand on a product, as a photo or a 3D package, and sends the design with their request.",
   "kind": "sales",
   "files": [
     "src/scripts/pack.js",
@@ -10,7 +10,6 @@
     "src/scripts/stations.js",
     "src/scripts/studio-memory.js",
     "src/scripts/studio-3d.js",
-    "src/scripts/studio-3d-scene.js",
     "src/scripts/mockup/engine.js",
     "src/scripts/mockup/logo-check.js",
     "src/scripts/team/mockups.js",
@@ -24,6 +23,7 @@
     "branding",
     "enquiry-work",
     "home-page",
+    "packaging-3d",
     "packaging-catalogue",
     "product-pages",
     "site-shell",

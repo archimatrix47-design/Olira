@@ -179,6 +179,10 @@ test('the packaging team sets a 3D shape and board; the page gets them, nothing 
   assert.equal((await save({ board3d: 'gold' })).status, 400, 'an unknown board is refused');
   const r = await save({ shape3d: 'mailer', board3d: 'both' });
   assert.equal(r.status, 200, JSON.stringify(await json(r.clone())));
+  // the public catalogue carries the shape only while both 3D switches are on (box packaging-3d)
+  assert.equal((await json(await req('GET', '/api/packaging-products'))).find((p) => p.id === 'pk_pizza').shape3d, null, 'switches off: no 3D in public');
+  const mgr = await member(admin, { name: 'Mesfin', email: 'mesfin.box@example.com', role: 'manager' });
+  for (const token of [pack, mgr]) assert.equal((await req('POST', '/api/team/packaging-3d', { token, body: { on: true } })).status, 200);
   const pub = (await json(await req('GET', '/api/packaging-products'))).find((p) => p.id === 'pk_pizza');
   assert.equal(pub.shape3d, 'mailer');
   assert.equal(pub.board3d, 'both');

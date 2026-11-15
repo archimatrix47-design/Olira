@@ -1,0 +1,31 @@
+{
+  "id": "packaging-3d",
+  "name": "3D packaging",
+  "does": "A packaging product in 3D at its own measurements: it folds, opens and lays flat, wears the visitor's logo or artwork, and shows on the website only when both the packaging team and the manager have switched it on.",
+  "kind": "catalogue",
+  "plugged": true,
+  "files": [
+    "lib/packaging-3d.js",
+    "lib/package-shapes.js",
+    "lib/box-styles.js",
+    "src/scripts/package-3d/scene.js",
+    "src/scripts/package-3d/viewer.js",
+    "src/scripts/team/package-3d.js",
+    "src/components/team/views/Package3d.astro",
+    "src/scripts/package-3d/handoff.js"
+  ],
+  "tests": [
+    "test/packaging-3d.test.js",
+    "test/box-styles.test.js"
+  ],
+  "uses": [
+    "packaging-catalogue",
+    "staff-accounts",
+    "staff-ui",
+    "storage"
+  ],
+  "data": [
+    "packaging-3d.json"
+  ],
+  "reads": []
+}

@@ -214,7 +214,14 @@ test('8. public API: the new data, nothing hidden, no phone numbers', async () =
   assert.ok(box, 'the new product is public');
   assert.ok(!pk.some((p) => p.id === T.hiddenId), 'a hidden product is not');
   for (const k of ['createdAt', 'updatedAt', 'team', 'site', 'secretField']) assert.ok(!(k in box), `no "${k}" in the public product`);
-  assert.equal(box.shape3d, 'mailer');
+  // 3D (box packaging-3d): off until the packaging team AND the manager switch it on
+  assert.equal(box.shape3d, null, 'no 3D shape in public while the switches are off');
+  assert.equal((await req('POST', '/api/team/packaging-3d', { token: T.pack, body: { on: true } })).json.live, false, 'the team alone does not put 3D on the site');
+  assert.equal((await req('GET', '/api/packaging-products')).json.find((p) => p.id === T.boxId).shape3d, null);
+  assert.equal((await req('POST', '/api/team/packaging-3d', { token: T.mgr, body: { on: true } })).json.live, true, 'both on: 3D is on the site');
+  assert.equal((await req('GET', '/api/packaging-3d')).json.on, true);
+  assert.equal((await req('GET', '/api/packaging-products')).json.find((p) => p.id === T.boxId).shape3d, 'mailer');
+  assert.equal(readData('packaging-3d.json').manager.by, 'Pipeline Manager', 'who switched it, kept');
   assert.equal((await req('GET', '/api/products')).json.find((p) => p.id === 'cleaned-natural-sesame-seeds').spec.aflatoxin, '4 ppb total max');
   assert.ok((await req('GET', '/api/certifications')).json.some((c) => c.file === T.certFile), 'the certificate document is public');
   assert.ok((await req('GET', '/api/partners')).json.some((p) => p.name === 'Pipeline Partner'));
@@ -265,7 +272,10 @@ test('9. build: pages, structured data, llms.txt and sitemap come from the data'
   assert.equal(productLd.offers?.price, 1250.5, 'structured data carries the price');
   assert.equal(productLd.offers?.priceCurrency, 'ETB');
   // the catalogue, the sitemap, llms.txt
-  assert.match(read(path.join('packaging', 'index.html')), /"shape3d":"mailer"/, 'the catalogue data carries the 3D shape');
+  assert.match(read(path.join('packaging', 'index.html')), /"shape3d":"mailer"/, 'the catalogue data carries the 3D shape (both switches were on at build time)');
+  const box3d = JSON.parse((html.match(/data-box3d="([^"]*)"/) || [])[1]?.replace(/&#34;|&quot;/g, '"').replace(/&amp;/g, '&') || 'null');
+  assert.equal(box3d?.shape3d, 'mailer', 'the product page carries its package');
+  assert.equal(box3d?.live, true, 'and the switches as they were at build time');
   assert.ok(read('sitemap.xml').includes(T.boxPath), 'the sitemap lists the page');
   const llms = read('llms.txt') + read('llms-full.txt');
   for (const v of ['Pipeline Test Box', '4 ppb total max', '1207.40']) assert.ok(llms.includes(v), `llms.txt has "${v}"`);
@@ -327,13 +337,16 @@ test('12. enquiries: a visitor request reaches the right team, with its files an
   await send({ ...base, website: 'http://spam.example' });
   assert.equal(saved(), before, 'a filled spam trap is not stored');
   // a real request with a bundle, the studio design and a file
-  const ok = await send({ ...base, bundle: JSON.stringify([{ productId: T.boxId, sizeId: T.small, qty: 6000, colours: 2 }]), design: JSON.stringify({ template: T.boxId, templateName: 'Pipeline Test Box', size: T.small, ink: 'teal', text1: 'PIPE', view: '3d', board: 'kraft' }), consent: '1' }, [['files', await png(200, 200), 'artwork.png'], ['mockup', await png(300, 300), 'studio-mockup.png']]);
+  const ok = await send({ ...base, bundle: JSON.stringify([{ productId: T.boxId, sizeId: T.small, qty: 6000, colours: 2 }]), design: JSON.stringify({ template: T.boxId, templateName: 'Pipeline Test Box', size: T.small, ink: 'teal', text1: 'PIPE', view: '3d', board: 'kraft', source: 'page', print: 'faces', faces: ['front', 'lid', '<b>x</b>', 7], face: 'lid' }), consent: '1' }, [['files', await png(200, 200), 'artwork.png'], ['mockup', await png(300, 300), 'studio-mockup.png']]);
   assert.ok([200, 500].includes(ok.status), `request: ${ok.status} ${ok.text}`); // 500 = no mail account; the lead is saved first
   const lead = readData('inquiries.json').find((i) => i.name === 'Pipeline Buyer');
   assert.ok(lead, 'the request is stored');
   assert.equal(lead.bundle?.[0]?.qty, 6000);
   assert.match(lead.bundle?.[0]?.name || '', /Pipeline Test Box/);
   assert.equal(lead.design?.view, '3d');
+  // a design made on a product page: how it is printed is kept, anything that is not a face name is dropped
+  assert.deepEqual([lead.design.source, lead.design.print, lead.design.face], ['page', 'faces', 'lid']);
+  assert.deepEqual(lead.design.faces, ['front', 'lid']);
   assert.ok((lead.files || []).length >= 1, 'the attached file is kept');
   T.packLead = lead.id;
   // an export enquiry with trade terms

@@ -508,7 +508,12 @@ function designSummary(l) {
     ['Logo', d.hasLogo ? 'Sent, see Files' : 'Not sent'], d.oneInk ? ['Logo colour', 'In the ink colour'] : null,
   ].filter(Boolean);
   // designed on the 3D box: the picture sent is the box, and the board the client chose
-  if (d.view === '3d') chips.push(['Preview', `3D box${d.board ? `, ${d.board === 'white' ? 'white board' : 'brown kraft'}` : ''}`]);
+  if (d.view === '3d') chips.push(['Preview', `3D package${d.board ? `, ${{ white: 'white board', foil: 'foil', kraft: 'brown kraft' }[d.board] || d.board}` : ''}`]);
+  // made on a product page's 3D view: what is printed and where; the studio's ink and text do not apply
+  if (d.source === 'page') {
+    const what = { logo: `Logo on one face${d.face ? ` (${d.face})` : ''}`, wrap: 'One artwork over the whole package', faces: `Artwork on: ${(d.faces || []).join(', ') || 'chosen faces'}` }[d.print] || 'Not said';
+    chips.splice(0, Math.max(0, chips.length - 1), ['Product', d.templateName || d.template], ['Size', d.size], ['Print', what], ['Files', d.hasLogo || d.hasArtwork ? 'In the picture; ask for the file if it is not attached' : 'None chosen']);
+  }
   const wrap = h('div', { class: 't-design' }, h('div', { class: 'a-chips' }, chips.map(([k, v]) => h('span', { class: 'a-chip' }, h('b', {}, k), v))));
   // the studio's logo check on the file the client sent: tells the team to ask for better artwork
   const logoNote = d.logoCheck === 'boxed'

@@ -13,8 +13,9 @@ const dataDir = process.env.DATA_DIR || repoData;
 // back to the repo's copy: on a fresh deploy the build runs before the server's
 // first start seeds DATA_DIR, and without this the build saw no packaging
 // products at all (an empty home page lineup and catalogue).
-function read<T>(file: string, fallback: T): T {
-  for (const dir of dataDir === repoData ? [repoData] : [dataDir, repoData]) {
+// `own`: a file the running site writes (never a default): read from its own data folder only.
+function read<T>(file: string, fallback: T, own = false): T {
+  for (const dir of own || dataDir === repoData ? [dataDir] : [dataDir, repoData]) {
     try {
       const p = path.join(dir, file);
       if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8')) as T;
@@ -48,6 +49,7 @@ export const products = read<Product[]>('products.json', []);
 // Packaging products, managed in the admin. Those with a photo and print corners are also the mockup studio's bags.
 // normalise() is the server's own: older records read as bags with the three studio sizes.
 import { normalise, FAMILIES } from '../../lib/packaging-rules.js';
+import { view3dLive } from '../../lib/box-styles.js';
 export { FAMILIES };
 export interface PackagingSize { id: string; label: string; w: number | null; d: number | null; h: number | null; minOrder: number | null; pricePer1000?: number | null }
 export interface PackagingProduct {
@@ -61,14 +63,22 @@ export interface PackagingProduct {
 // Flexographic printing: the most colours offered when a product does not set its own
 // limit. Shown on the packaging page; the packaging team confirms per order.
 export const FLEXO_MAX_COLOURS = 4;
-export const packagingProducts = read<PackagingProduct[]>('packaging-products.json', [])
+// 3D on the website (box packaging-3d): only when the packaging team AND the manager have
+// switched it on. Built pages follow the switches as they were at build time; the page
+// scripts ask the live switches, so turning one off or on needs no rebuild.
+export const view3dAtBuild = view3dLive(read<object>('packaging-3d.json', {}, true));
+const sitePackaging = read<PackagingProduct[]>('packaging-products.json', [])
   .filter((p) => p && p.id && p.site !== false && p.name)
-  .map((raw) => normalise(raw) as PackagingProduct)
+  .map((raw) => normalise(raw) as PackagingProduct);
+/** Each product's 3D shape and board whatever the switches say: for a product page, which asks the live switches before it draws. */
+export const packaging3d: Record<string, { shape3d: string | null; board3d: string }> = Object.fromEntries(
+  sitePackaging.map((p) => [p.id, { shape3d: p.shape3d ?? null, board3d: p.board3d || 'kraft' }]));
+export const packagingProducts = sitePackaging
   .map(({ id, name, handle, family, description, moq, specs, sizes, minOrder, printColours, pricePer1000, leadTimeDays, shape3d, board3d, image, imageDark, width, height, quad, safeTop }) => ({
     id, name, handle: handle || '', family: family || 'bags', description: description || '', moq: moq || '', specs: specs || [],
     sizes: sizes || [], minOrder: minOrder ?? null, printColours: printColours ?? null,
     pricePer1000: pricePer1000 ?? null, leadTimeDays: leadTimeDays ?? null,
-    shape3d: shape3d ?? null, board3d: board3d || 'kraft',
+    shape3d: view3dAtBuild ? shape3d ?? null : null, board3d: board3d || 'kraft',
     image: image || null, imageDark: image ? imageDark || null : null, width, height,
     quad: image && Array.isArray(quad) && quad.length === 4 ? quad : null, safeTop: safeTop ?? 0.1,
   }));
