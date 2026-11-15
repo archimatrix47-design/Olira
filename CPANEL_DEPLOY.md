@@ -188,7 +188,9 @@ One-time setup, in this order:
    `staging.oliraagroindustry.com`, startup file `server.js`. Environment
    variables: the live list from step 5 with `DATA_DIR` and `UPLOADS_DIR`
    pointing at the staging folders, `SITE_URL` and `CORS_ORIGINS` set to
-   `https://staging.oliraagroindustry.com`, a **different** `JWT_SECRET`, and:
+   `https://staging.oliraagroindustry.com`, a **different** `JWT_SECRET` (32
+   characters or more: with a shorter one the copy switches admin and staff
+   sign-in off, and `/api/health` shows `adminLoginEnabled: false`), and:
 
    | Variable | Value |
    |---|---|
@@ -197,6 +199,10 @@ One-time setup, in this order:
    | `STAGING_MAIL_TO` | optional: one address that receives every email the copy sends |
 
 5. **Git Version Control → Manage (Olira-staging) → Deploy HEAD Commit.**
+
+After changing a variable later: press **Done** on its row, then **Save**, then
+run **Deploy HEAD Commit** again. The Restart button on the Node.js App screen
+does not cycle the app on this host; the deploy does (`scripts/restart-app.sh`).
 
 From then on: push to `staging`, deploy the staging checkout, check
 https://staging.oliraagroindustry.com, then merge to `main` and deploy live.
