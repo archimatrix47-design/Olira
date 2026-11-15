@@ -26,6 +26,7 @@
   ],
   "uses": [
     "agri-catalogue",
+    "home-panels",
     "contact",
     "enquiries",
     "facts-spreadsheet",

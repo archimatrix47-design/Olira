@@ -1,12 +1,12 @@
 ---
-// The four agriculture product lines as photo tiles (src/lib/produce.ts). On the
+// The four agriculture product lines as photo tiles (src/lib/panels.ts). On the
 // home page they sit in the green panel and each opens the agriculture page at
 // that line; on the agriculture page they run along the bottom of the first
 // screen and each points at that line in the range below (agri.js). data-p
 // names the line, and gives each tile its name for the trip between the two
-// pages (AgriPanelTrip.astro).
+// pages (PanelTrip.astro).
 import { thumbSrcset } from '../../../lib/thumb-url.js';
-import { PRODUCE, TILE_SIZES } from '../../lib/produce';
+import { PRODUCE, TILE_SIZES } from '../../lib/panels';
 
 interface Props { here?: boolean }
 const { here = false } = Astro.props;

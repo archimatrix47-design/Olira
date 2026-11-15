@@ -1,0 +1,80 @@
+---
+// The trip between the home page and each business's page. The panel you choose
+// (green agriculture on the left, packaging on the right) grows from its half of
+// the home page to fill the screen and becomes that page's first screen; its
+// products move into their places there (the four tiles into their row, the
+// standing products to the middle), and the other panel is pushed off its own
+// side. Going back plays it in reverse. The motion is in site.css ("PAGE
+// TRANSITIONS"); the panels are marked data-panel="agri" | "pack".
+// The names are given for that one trip only: on the old page just before it is
+// captured (pageswap), on the new page before its first frame (pagereveal). Every
+// other page change stays a plain crossfade. The trip runs only when the panel is
+// on screen and the new page opens at its top (no #section).
+// Inline in <head>, so it is listening before the new page's first frame (a
+// module script can run too late). It marks <html data-revealed> at the first
+// frame, data-trip="agri|pack" while the trip runs (site.css keys the panel's
+// colour on it) and data-came="panel" after one (the entrances are skipped: the
+// panel was the entrance), and fires "agri:arrived" when the page is ready to be
+// used (agri.js waits for it).
+---
+<script is:inline>
+(() => {
+  const KEY = 'olira-panel-trip';
+  const HOME = '/';
+  const PAGES = { '/agriculture/': 'agri', '/packaging/': 'pack' };
+  const html = document.documentElement;
+  const panelOf = (line) => document.querySelector('[data-panel="' + line + '"]');
+  // at least a third of the screen shows the panel
+  const onScreen = (el) => {
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return Math.min(r.bottom, innerHeight) - Math.max(r.top, 0) >= innerHeight / 3;
+  };
+  const safe = (s) => String(s).replace(/[^A-Za-z0-9_-]/g, '-');
+  const name = (line) => {
+    for (const el of document.querySelectorAll('[data-vt-trip]')) { el.style.viewTransitionName = ''; el.style.viewTransitionClass = ''; el.removeAttribute('data-vt-trip'); }
+    if (!line) return;
+    const give = (el, n, cls) => { el.style.viewTransitionName = n; if (cls) el.style.viewTransitionClass = cls; el.setAttribute('data-vt-trip', ''); };
+    for (const p of document.querySelectorAll('[data-panel]')) give(p, p.dataset.panel + '-panel');
+    const grow = panelOf(line);
+    for (const t of grow.querySelectorAll('.produce-tile[data-p]')) {
+      give(t, 'agri-tile-' + t.dataset.p);
+      const label = t.querySelector('span'); // its own name, so it glides once instead of showing twice while the tile changes shape
+      if (label) give(label, 'agri-label-' + t.dataset.p);
+    }
+    for (const it of grow.querySelectorAll('.lineup .item[data-id]')) give(it, 'pack-item-' + safe(it.dataset.id), 'pack-item');
+    // the brand field keeps its own name between packaging pages (sheet.css); on this trip it travels with the panel
+    for (const f of grow.querySelectorAll('.brand-field')) give(f, 'none');
+  };
+  const arrived = () => document.dispatchEvent(new CustomEvent('agri:arrived'));
+
+  addEventListener('pageswap', (e) => {
+    name('');
+    let line = '';
+    try {
+      const entry = e.viewTransition && e.activation && e.activation.entry;
+      const to = entry && new URL(entry.url);
+      if (to && to.origin === location.origin && !to.hash) {
+        if (location.pathname === HOME) line = PAGES[to.pathname] || '';
+        else if (to.pathname === HOME) line = PAGES[location.pathname] || '';
+      }
+      if (line && !onScreen(panelOf(line))) line = '';
+      if (line) sessionStorage.setItem(KEY, line + ' ' + to.pathname); else sessionStorage.removeItem(KEY);
+    } catch (_) { line = ''; }
+    name(line);
+  });
+
+  addEventListener('pagereveal', (e) => {
+    name('');
+    let line = '', path = '';
+    try { [line, path] = (sessionStorage.getItem(KEY) || '').split(' '); sessionStorage.removeItem(KEY); } catch (_) { line = ''; }
+    html.dataset.revealed = '1';
+    if (!e.viewTransition || !line || path !== location.pathname || location.hash || !onScreen(panelOf(line))) { arrived(); return; }
+    name(line);
+    html.dataset.came = 'panel';
+    html.dataset.trip = line;
+    const done = () => { name(''); delete html.dataset.trip; arrived(); };
+    e.viewTransition.finished.then(done, done);
+  });
+})();
+</script>

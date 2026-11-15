@@ -360,11 +360,11 @@
    ],
    "reads": [],
    "uses": [
-    "agri-panel",
     "certificates",
     "contact",
     "enquiries",
     "facts-spreadsheet",
+    "home-panels",
     "image-upload",
     "manager-reports",
     "product-pages",
@@ -433,11 +433,11 @@
    ],
    "guards": 0,
    "imports": [
-    "agri-panel",
     "certificates",
     "contact",
     "enquiries",
     "facts-spreadsheet",
+    "home-panels",
     "image-upload",
     "manager-reports",
     "product-pages",
@@ -452,42 +452,6 @@
    "hears": [
     "agri:arrived"
    ]
-  },
-  "agri-panel": {
-   "name": "Agriculture panel",
-   "does": "The green agriculture panel: its four product-line tiles on the home page and along the bottom of the agriculture page's first screen, and the trip between the two pages (the panel grows to fill the screen, the packaging panel is pushed off).",
-   "kind": "public",
-   "files": [
-    "src/lib/produce.ts",
-    "src/components/site/ProduceTiles.astro",
-    "src/components/site/AgriPanelTrip.astro"
-   ],
-   "tests": [
-    "test/agri-panel.test.js"
-   ],
-   "data": [],
-   "reads": [],
-   "uses": [
-    "thumbs"
-   ],
-   "usedBy": [
-    "agri-catalogue",
-    "home-page"
-   ],
-   "plugOrder": null,
-   "receives": [],
-   "offers": [],
-   "routes": [],
-   "guards": 0,
-   "imports": [
-    "thumbs"
-   ],
-   "calls": {},
-   "sends": [
-    "agri:arrived"
-   ],
-   "hears": [],
-   "checkedBy": "Filmed frame by frame on the sandbox (desktop and phone, there and back); the crawl checks both pages."
   },
   "ai-access": {
    "name": "AI access",
@@ -1461,18 +1425,65 @@
    "data": [],
    "reads": [],
    "uses": [
-    "agri-panel",
+    "home-panels",
     "mockup-studio",
-    "packaging-catalogue",
     "partners",
-    "product-pages",
     "seo",
     "site-data",
     "site-shell",
     "thumbs"
    ],
-   "usedBy": [
+   "usedBy": [],
+   "plugOrder": null,
+   "receives": [],
+   "offers": [],
+   "routes": [],
+   "guards": 0,
+   "imports": [
+    "home-panels",
     "mockup-studio",
+    "seo",
+    "site-data",
+    "site-shell",
+    "thumbs"
+   ],
+   "calls": {
+    "partners": [
+     "/api/partners"
+    ]
+   },
+   "sends": [],
+   "hears": [],
+   "checkedBy": "Browser journeys on the sandbox (visitor and staff paths), and the whole-page build comparison."
+  },
+  "home-panels": {
+   "name": "Home panels",
+   "does": "The two business panels: the green agriculture panel with its four product-line tiles and the packaging panel with its standing products, side by side on the home page and each again as the first screen of its own page, and the trip between them (the chosen panel grows to fill the screen, the other is pushed off its side).",
+   "kind": "public",
+   "files": [
+    "src/lib/panels.ts",
+    "src/components/site/ProduceTiles.astro",
+    "src/components/site/PackLineup.astro",
+    "src/components/site/PanelTrip.astro",
+    "src/scripts/lineup.js"
+   ],
+   "tests": [
+    "test/home-panels.test.js"
+   ],
+   "data": [],
+   "reads": [],
+   "uses": [
+    "packaging-catalogue",
+    "product-pages",
+    "site-data",
+    "site-shell",
+    "thumbs"
+   ],
+   "usedBy": [
+    "agri-catalogue",
+    "home-page",
+    "mockup-studio",
+    "packaging-catalogue",
     "packing-list"
    ],
    "plugOrder": null,
@@ -1481,10 +1492,7 @@
    "routes": [],
    "guards": 0,
    "imports": [
-    "agri-panel",
-    "mockup-studio",
     "product-pages",
-    "seo",
     "site-data",
     "site-shell",
     "thumbs"
@@ -1492,16 +1500,14 @@
    "calls": {
     "packaging-catalogue": [
      "/api/packaging-products"
-    ],
-    "partners": [
-     "/api/partners"
     ]
    },
    "sends": [
+    "agri:arrived",
     "catalogue:rendered"
    ],
    "hears": [],
-   "checkedBy": "Browser journeys on the sandbox (visitor and staff paths), and the whole-page build comparison."
+   "checkedBy": "Filmed frame by frame on the sandbox (desktop and phone, both panels, there and back: vt-film.mjs in the olira-verify skill); the crawl checks the pages."
   },
   "image-upload": {
    "name": "Image upload",
@@ -1772,7 +1778,7 @@
    "uses": [
     "branding",
     "enquiry-work",
-    "home-page",
+    "home-panels",
     "packaging-3d",
     "packaging-catalogue",
     "product-pages",
@@ -1945,6 +1951,7 @@
     "contact",
     "enquiries",
     "facts-spreadsheet",
+    "home-panels",
     "manager-reports",
     "mockup-studio",
     "packaging-3d",
@@ -1963,7 +1970,7 @@
     "enquiries",
     "enquiry-work",
     "facts-spreadsheet",
-    "home-page",
+    "home-panels",
     "mockup-studio",
     "packaging-3d",
     "packing-list",
@@ -2045,6 +2052,7 @@
     "contact",
     "enquiries",
     "facts-spreadsheet",
+    "home-panels",
     "manager-reports",
     "mockup-studio",
     "packaging-3d",
@@ -2084,7 +2092,7 @@
    "data": [],
    "reads": [],
    "uses": [
-    "home-page",
+    "home-panels",
     "packaging-catalogue",
     "product-pages",
     "site-shell",
@@ -2248,7 +2256,7 @@
     "admin-panel",
     "agri-catalogue",
     "ai-access",
-    "home-page",
+    "home-panels",
     "manager-reports",
     "mockup-studio",
     "packaging-catalogue",
@@ -2438,6 +2446,7 @@
     "contact",
     "enquiries",
     "home-page",
+    "home-panels",
     "packaging-catalogue",
     "product-pages",
     "seo",
@@ -2676,6 +2685,7 @@
     "certificates",
     "contact",
     "home-page",
+    "home-panels",
     "manager-reports",
     "mockup-studio",
     "packaging-catalogue",
@@ -3423,8 +3433,8 @@
    ],
    "usedBy": [
     "agri-catalogue",
-    "agri-panel",
     "home-page",
+    "home-panels",
     "mockup-studio",
     "packaging-catalogue",
     "product-pages"

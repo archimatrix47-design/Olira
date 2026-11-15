@@ -5,34 +5,14 @@
 import SiteLayout from '../layouts/SiteLayout.astro';
 import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
-import { contact, SITE, packagingProducts, partners, socialLinks } from '../lib/site-data';
+import { contact, SITE, partners, socialLinks } from '../lib/site-data';
 import { graph, organizationGraph, ORG_ID, SITE_ID } from '../lib/seo';
-import { cutoutOf, standHTML } from '../scripts/catalogue-panel.js';
 import { thumbSrcset } from '../../lib/thumb-url.js';
 import { FACILITY_FACTS, SINCE } from '../lib/company';
-import { PRODUCE, TILE_SIZES } from '../lib/produce';
+import { PRODUCE, TILE_SIZES } from '../lib/panels';
 import ProduceTiles from '../components/site/ProduceTiles.astro';
-import AgriPanelTrip from '../components/site/AgriPanelTrip.astro';
-
-// A product that still carries its standard photo, as a cut-out at a relative height.
-const stood = (id: string, h: number) => {
-  const p = packagingProducts.find((x) => x.id === id);
-  const c = p && cutoutOf(p);
-  return c ? { p, c, h } : null;
-};
-type Stood = { p: any; c: any; h: number; w: number };
-// Each product's share of its row (--w, percent), from its true height and its
-// cut-out's proportions, so a row of products always fits and stays in scale.
-const pick = (list: [string, number][], fill = 100, gap = 1.6) => {
-  const got = list.map(([id, h]) => stood(id, h)).filter(Boolean) as Stood[];
-  const units = got.map((x) => x.h * x.c.width / x.c.height);
-  const total = units.reduce((a, b) => a + b, 0) || 1;
-  const room = fill - gap * (got.length - 1);
-  return got.map((x, i) => ({ ...x, w: +(units[i] / total * room).toFixed(2) }));
-};
-
-// the packaging door's lineup, tallest to smallest, heights true to each other
-const lineup = pick([['pk_twisted', 100], ['pk_foil', 86], ['pk_pouch', 74], ['pk_burger', 50]], 100, 4);
+import PackLineup from '../components/site/PackLineup.astro';
+import PanelTrip from '../components/site/PanelTrip.astro';
 
 // who we are, as search engines and AI assistants read it (src/lib/seo.ts)
 const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
@@ -48,7 +28,7 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
   jsonLd={jsonLd}
 >
   <link slot="head" rel="preload" as="image" href={PRODUCE[0].img} imagesrcset={thumbSrcset(PRODUCE[0].img) || undefined} imagesizes={thumbSrcset(PRODUCE[0].img) ? TILE_SIZES : undefined} fetchpriority="high">
-  <AgriPanelTrip slot="head" />
+  <PanelTrip slot="head" />
 
   <SiteHeader current="/" />
 
@@ -58,8 +38,8 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
       <h1 class="sr-only">Olira Agro Industry</h1>
       <div class="wrap choose-grid">
         <!-- both doors have the same shape: the words on top, the products below -->
-        <!-- the green panel: it grows into the agriculture page's first screen (AgriPanelTrip) -->
-        <article class="door door-agri" data-agri-panel aria-labelledby="doorAgri">
+        <!-- each panel grows into its own page's first screen (PanelTrip) -->
+        <article class="door door-agri" data-panel="agri" aria-labelledby="doorAgri">
           <div class="door-copy">
             <span class="label">Olira Agro</span>
             <h2 class="headline" id="doorAgri">Agricultural <span class="grad-leaf">exports.</span></h2>
@@ -71,7 +51,7 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
           </div>
           <ProduceTiles />
         </article>
-        <article class="door door-pack" aria-labelledby="packTitle">
+        <article class="door door-pack" data-panel="pack" aria-labelledby="packTitle">
           <div class="door-copy">
             <span class="label">Olira Packaging</span>
             <h2 class="headline" id="packTitle">Printed <span class="grad">packaging.</span></h2>
@@ -81,13 +61,7 @@ const jsonLd = graph(organizationGraph(socialLinks.map((l) => l.url)), {
               <a class="act" href="/packaging/#studio">Open the studio</a>
             </div>
           </div>
-          <div class="lineup" data-lineup aria-hidden="true">
-            {lineup.map(({ c, p, w, h }, i) => (
-              <div class="item" style={`--w:${w}`} data-name={p.name} data-id={p.id} data-h={h}>
-                <Fragment set:html={standHTML(c, p.name, { eager: i < 3, brand: 'olira' })} />
-              </div>
-            ))}
-          </div>
+          <PackLineup brand="olira" />
         </article>
       </div>
     </section>

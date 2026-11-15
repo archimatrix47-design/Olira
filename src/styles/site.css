@@ -472,45 +472,58 @@ a.reach-num:hover { color: var(--accent); text-decoration: underline; }
    A page change is a short crossfade: the old page holds still while the new
    one fades in over it with a small rise, so the screen never dips through
    grey. The bar holds still (sheet.css).
-   Home <-> agriculture, the green panel's trip: the panel grows from its half
-   of the home page to fill the screen and becomes the agriculture page's first
-   screen. Its words step aside while it grows and the page's own words arrive
-   once it has room; its four tiles keep their photos and colours and move into
-   their row; the packaging panel is pushed off to the right, its edge on the
-   panel's edge (same time, same curve). Going back plays it in reverse. The
-   names are given for that trip only (AgriPanelTrip.astro). Values are written
-   out here: these pseudo-elements hang off <html>, outside .sheet-site's tokens.
+   Home <-> agriculture and home <-> packaging, the panel's trip: the panel you
+   choose grows from its half of the home page to fill the screen and becomes
+   that page's first screen. Its words step aside while it grows and the page's
+   own words arrive once it has room; its products keep their photos and colours
+   and move into their places (the four tiles into their row, the standing
+   products to the middle); the other panel is pushed off its own side (the
+   packaging panel to the right, the green panel to the left), its edge on the
+   growing panel's edge (same time, same curve). Going back plays it in
+   reverse. The names are given for that trip only, and <html data-trip> says
+   which panel grows (PanelTrip.astro). Values are written out here: these
+   pseudo-elements hang off <html>, outside .sheet-site's tokens.
    Browsers without support simply load the page.
    ========================================================= */
 @view-transition { navigation: auto; }
 ::view-transition-group(*) { animation-duration: .5s; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
 ::view-transition-old(root) { animation: none; }
 ::view-transition-new(root) { animation: vt-fade-in .34s cubic-bezier(0, 0, .2, 1) both; }
-/* the green panel's trip */
-::view-transition-group(agri-panel), ::view-transition-group(pack-panel),
+/* the panel's trip: one time and one curve for everything that moves */
+::view-transition-group(agri-panel), ::view-transition-group(pack-panel), ::view-transition-group(*.pack-item),
 ::view-transition-group(agri-tile-sesame), ::view-transition-group(agri-tile-pulses),
 ::view-transition-group(agri-tile-spices), ::view-transition-group(agri-tile-coffee),
 ::view-transition-group(agri-label-sesame), ::view-transition-group(agri-label-pulses),
 ::view-transition-group(agri-label-spices), ::view-transition-group(agri-label-coffee) { animation-duration: .56s; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-::view-transition-group(agri-panel) { background: #0C1810; overflow: clip; }
-/* the green panel and its tiles over the packaging panel (on a phone it grows down over it), the bar over all */
-::view-transition-group(agri-panel) { z-index: 1; }
-::view-transition-group(agri-tile-sesame), ::view-transition-group(agri-tile-pulses), ::view-transition-group(agri-tile-spices), ::view-transition-group(agri-tile-coffee) { z-index: 2; }
+/* the growing panel keeps its colour while it changes shape, and sits over the
+   one being pushed off (on a phone it grows over it); its products over it; the bar over all */
+:root[data-trip="agri"]::view-transition-group(agri-panel) { background: #0C1810; overflow: clip; z-index: 1; }
+:root[data-trip="pack"]::view-transition-group(pack-panel) { background: #F3EEE6; overflow: clip; z-index: 1; }
+:root[data-trip="pack"][data-theme="dark"]::view-transition-group(pack-panel) { background: #15130F; }
+@media (prefers-color-scheme: dark) { :root[data-trip="pack"]:not([data-theme="light"])::view-transition-group(pack-panel) { background: #15130F; } }
+::view-transition-group(agri-tile-sesame), ::view-transition-group(agri-tile-pulses), ::view-transition-group(agri-tile-spices), ::view-transition-group(agri-tile-coffee), ::view-transition-group(*.pack-item) { z-index: 2; }
 ::view-transition-group(agri-label-sesame), ::view-transition-group(agri-label-pulses), ::view-transition-group(agri-label-spices), ::view-transition-group(agri-label-coffee) { z-index: 3; }
 ::view-transition-group(sheet-head) { z-index: 4; }
-::view-transition-old(agri-panel), ::view-transition-new(agri-panel) { width: 100%; height: 100%; object-fit: none; object-position: 50% 0; }
-::view-transition-old(agri-panel) { animation: vt-fade-out .18s cubic-bezier(.4, 0, 1, 1) both; }
-::view-transition-new(agri-panel) { animation: vt-fade-in .32s .2s cubic-bezier(0, 0, .2, 1) both; }
+/* the panel's words: shown at their own size (no stretching), the old ones step aside early, the new ones arrive once there is room */
+::view-transition-old(agri-panel), ::view-transition-new(agri-panel),
+::view-transition-old(pack-panel), ::view-transition-new(pack-panel) { width: 100%; height: 100%; object-fit: none; object-position: 50% 0; }
+::view-transition-old(agri-panel), ::view-transition-old(pack-panel) { animation: vt-fade-out .18s cubic-bezier(.4, 0, 1, 1) both; }
+::view-transition-new(agri-panel), ::view-transition-new(pack-panel) { animation: vt-fade-in .32s .2s cubic-bezier(0, 0, .2, 1) both; }
 ::view-transition-old(agri-tile-sesame), ::view-transition-new(agri-tile-sesame),
 ::view-transition-old(agri-tile-pulses), ::view-transition-new(agri-tile-pulses),
 ::view-transition-old(agri-tile-spices), ::view-transition-new(agri-tile-spices),
 ::view-transition-old(agri-tile-coffee), ::view-transition-new(agri-tile-coffee) { height: 100%; object-fit: cover; }
+/* the other panel, pushed off its own side (and back in, going home) */
 ::view-transition-old(pack-panel):only-child { animation: vt-out-right .56s cubic-bezier(.22, 1, .36, 1) both; }
 ::view-transition-new(pack-panel):only-child { animation: vt-in-right .56s cubic-bezier(.22, 1, .36, 1) both; }
+::view-transition-old(agri-panel):only-child { animation: vt-out-left .56s cubic-bezier(.22, 1, .36, 1) both; }
+::view-transition-new(agri-panel):only-child { animation: vt-in-left .56s cubic-bezier(.22, 1, .36, 1) both; }
 @keyframes vt-fade-out { to { opacity: 0; } }
 @keyframes vt-fade-in { from { opacity: 0; transform: translateY(8px); } }
 @keyframes vt-out-right { to { transform: translateX(100%); } }
 @keyframes vt-in-right { from { transform: translateX(100%); } }
+@keyframes vt-out-left { to { transform: translateX(-100%); } }
+@keyframes vt-in-left { from { transform: translateX(-100%); } }
 
 @media (prefers-reduced-motion: reduce) {
   @view-transition { navigation: none; }

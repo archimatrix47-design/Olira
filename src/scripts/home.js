@@ -2,13 +2,10 @@
 //  - The agriculture door's product tiles (sesame, pulses, spices, coffee) open
 //    that product in the range. Opening one is counted once per page view, for
 //    the admin's Traffic page ("opened a product line from the first screen").
-//  - The packaging door's products follow the live catalogue: when the packaging
-//    team replaces a product's image in their workspace, the lineup shows the new
-//    one without a rebuild. A product needs a cut-out (a transparent image) to
-//    stand in the lineup; one without is left out until it has one.
+//  - The packaging door's products follow the live catalogue (lineup.js).
 import { $, $$, getJSON, track } from './common.js';
-import { cutoutOf, standHTML } from './catalogue-panel.js';
 import { marquee } from './marquee.js';
+import './lineup.js';
 
 // Partner logos: the list the marketing teams keep, moving right to left.
 // Built into the page, then refreshed from the live list, so a logo added in a
@@ -41,36 +38,4 @@ for (const a of $$('.produce-tile')) {
     counted = true;
     track({ event: 'home_product' });
   });
-}
-
-const lineup = $('[data-lineup]');
-if (lineup) {
-  getJSON('/api/packaging-products').then((live) => {
-    if (!Array.isArray(live)) return;
-    const items = $$('.item', lineup);
-    let changed = false;
-    for (const el of items) {
-      const p = live.find((x) => x.id === el.dataset.id);
-      const c = p && cutoutOf(p);
-      const now = el.querySelector('.cutimg')?.getAttribute('src');
-      if (!c) { el.remove(); changed = true; continue; }
-      if (c.cutout === now && JSON.stringify(c.quad) === el.querySelector('canvas')?.dataset.quad) continue;
-      el.innerHTML = standHTML(c, p.name, { brand: 'olira' });
-      el.dataset.ratio = String(c.width / c.height);
-      changed = true;
-    }
-    if (!changed) return;
-    // each product's share of the row again, from its true height and its image's proportions
-    const kept = $$('.item', lineup);
-    const units = kept.map((el) => Number(el.dataset.h || 80) * (Number(el.dataset.ratio) || ratioOf(el)));
-    const total = units.reduce((a, b) => a + b, 0) || 1;
-    const room = 100 - 4 * (kept.length - 1);
-    kept.forEach((el, i) => el.style.setProperty('--w', (units[i] / total * room).toFixed(2)));
-    document.dispatchEvent(new CustomEvent('catalogue:rendered')); // the live print paints the new images
-  });
-}
-
-function ratioOf(el) {
-  const img = el.querySelector('.cutimg');
-  return img ? Number(img.getAttribute('width')) / Number(img.getAttribute('height')) || 0.7 : 0.7;
 }

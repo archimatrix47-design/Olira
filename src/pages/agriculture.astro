@@ -12,10 +12,10 @@ import QuoteBar from '../components/site/QuoteBar.astro';
 import { graph, organizationGraph, breadcrumbs, faqPage, agriUrl, agriFaq, ORG_ID, AGRO_ID } from '../lib/seo';
 import { products, certifications, contact, SITE } from '../lib/site-data';
 import { FACILITY_FACTS } from '../lib/company';
-import { PRODUCE, TILE_SIZES } from '../lib/produce';
+import { PRODUCE, TILE_SIZES } from '../lib/panels';
 import { thumbSrcset } from '../../lib/thumb-url.js';
 import ProduceTiles from '../components/site/ProduceTiles.astro';
-import AgriPanelTrip from '../components/site/AgriPanelTrip.astro';
+import PanelTrip from '../components/site/PanelTrip.astro';
 
 // the grid's cards: the same shape the packaging catalogue uses
 const items = products.map((p) => ({ id: p.id, name: p.name, sub: p.category, image: p.image, cat: p.category }));
@@ -51,14 +51,14 @@ const jsonLd = graph(
 >
   <Fragment slot="head">
     <link rel="preload" as="image" href={PRODUCE[0].img} imagesrcset={thumbSrcset(PRODUCE[0].img) || undefined} imagesizes={thumbSrcset(PRODUCE[0].img) ? TILE_SIZES : undefined} fetchpriority="high">
-    <AgriPanelTrip />
+    <PanelTrip />
   </Fragment>
   <SiteHeader section={[{ href: '#range', label: 'Range' }, { href: '#specTitle', label: 'Specification' }, { href: '#contact', label: 'Talk to sales' }]} current="/agriculture/" />
 
   <main id="main">
     <!-- the home page's green panel at full width: the words on top, the four
          product lines along the bottom (it grows into this from the home page) -->
-    <section class="ag-hero" data-agri-panel aria-labelledby="agTitle">
+    <section class="ag-hero" data-panel="agri" aria-labelledby="agTitle">
       <div class="ag-hero-copy">
         <span class="label">Olira Agro</span>
         <h1 class="display" id="agTitle">Agricultural <span class="grad-leaf">exports</span> from the Ethiopian highlands.</h1>
