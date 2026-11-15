@@ -30,11 +30,25 @@ getJSON('/api/products').then((live) => {
   grid.set(live.map(toItem));
 });
 
-// a product line from the home page (?p=sesame|pulses|spices|coffee, or a product id)
+// A product line: a tile on the home page (?p=sesame|pulses|spices|coffee, or a
+// product id) or along the bottom of this page's first screen. Its cards in the
+// range are pointed out. From the home page that waits until the green panel has
+// finished growing into this page (AgriPanelTrip.astro), then glides down to them.
+const line = (want) => (d) => d.id === want || d.cat === want;
+const settled = () => new Promise((go) => {
+  const { revealed, trip } = document.documentElement.dataset;
+  if (!('onpagereveal' in window) || (revealed && !trip)) return go();
+  document.addEventListener('agri:arrived', go, { once: true });
+  setTimeout(go, 1500);
+});
 {
   const want = (new URLSearchParams(location.search).get('p') || '').toLowerCase();
-  if (want) grid.pick((d) => d.id === want || d.cat === want);
+  if (want) settled().then(() => {
+    if (location.hash !== '#range') $('#range')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    grid.pick(line(want));
+  });
 }
+for (const a of document.querySelectorAll('.ag-hero [data-p]')) a.addEventListener('click', () => grid.pick(line(a.dataset.p)));
 
 // The enquiry form's product field: a product added since the build is added to
 // it, so the buyer can still pick it.
