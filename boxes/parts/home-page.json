@@ -11,11 +11,9 @@
   "tests": [],
   "checkedBy": "Browser journeys on the sandbox (visitor and staff paths), and the whole-page build comparison.",
   "uses": [
-    "agri-panel",
+    "home-panels",
     "mockup-studio",
-    "packaging-catalogue",
     "partners",
-    "product-pages",
     "seo",
     "site-data",
     "site-shell",

@@ -14,6 +14,8 @@ import ProductGrid from '../components/site/ProductGrid.astro';
 import Faq from '../components/site/Faq.astro';
 import ProductIndex from '../components/site/ProductIndex.astro';
 import { graph, organizationGraph, breadcrumbs, faqPage, packUrl, packFaq, ORG_ID, PACK_ID } from '../lib/seo';
+import PackLineup from '../components/site/PackLineup.astro';
+import PanelTrip from '../components/site/PanelTrip.astro';
 
 // The catalogue is every packaging product the admin shows on the site, grouped
 // by family. Products with a photo and print corners can also be designed in the
@@ -60,14 +62,17 @@ const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, fami
   jsonLd={jsonLd}
 >
   {firstBag?.image && <link slot="head" rel="preload" as="image" href={firstBag.image}>}
+  <PanelTrip slot="head" />
 
   <SiteHeader section={[{ href: '#catalogue-title', label: 'Catalogue' }, { href: '#studio', label: 'Mockup studio' }, { href: '#printing', label: 'Printing' }, { href: '#quote', label: 'Request a quote' }]} current="/packaging/">
     <button class="tab-btn" id="plOpen" type="button" aria-haspopup="dialog" aria-controls="packingList" aria-label="Packing list"><Fragment set:html={BAG_ICON} /><span class="tab-word">Packing list</span> <span class="count" data-zero>0</span></button>
   </SiteHeader>
 
   <main id="main">
-    <!-- the title and the brand field -->
-    <section class="title-block center" aria-labelledby="packTitle">
+    <!-- the home page's packaging panel at full width: the title and the brand field
+         on top, the products standing along the bottom, printed with the brand as it
+         is typed (it grows into this from the home page) -->
+    <section class="title-block center pk-hero" data-panel="pack" aria-labelledby="packTitle">
       <div class="wrap">
         <span class="label">Olira Packaging</span>
         <h1 class="display" id="packTitle">Packaging printed with <span class="grad">your brand.</span></h1>
@@ -79,6 +84,7 @@ const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, fami
           <p id="brandHelp">Every product below is printed with it as you type, and the studio starts from it.</p>
         </div>
       </div>
+      <PackLineup />
     </section>
 
     <!-- the catalogue on the grey stage -->
@@ -350,5 +356,5 @@ const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, fami
   <QuoteBar href="#quote" after=".title-block" until="#quote, #studio .panel" />
   <SiteFooter note="Olira Packaging, a product line of Olira Agro Industry, Addis Ababa." line="pack" />
 
-  <script>import '../scripts/catalogue.js'; import '../scripts/packing-list.js'; import '../scripts/pack.js'; import '../scripts/stations.js'; import '../scripts/live-print.js';</script>
+  <script>import '../scripts/catalogue.js'; import '../scripts/packing-list.js'; import '../scripts/pack.js'; import '../scripts/stations.js'; import '../scripts/lineup.js'; import '../scripts/live-print.js';</script>
 </SiteLayout>

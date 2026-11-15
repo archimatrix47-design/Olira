@@ -357,6 +357,18 @@
   .ag-hero .produce { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (min-width: 861px) and (max-height: 780px) { .ag-hero-copy { padding-block: 28px 20px; } }
+
+/* ---------- packaging page: the first screen ---------- */
+/* The home page's packaging panel at full width, on the same kraft stage: the
+   title and the brand field on top, the products standing along the bottom at
+   the size they stand on the home page, printed with the brand as it is typed.
+   The panel grows into it. */
+.pk-hero { display: flex; flex-direction: column; min-height: calc(100svh - var(--bar-h)); padding-bottom: 0; background: var(--stage); }
+.pk-hero .lineup { flex: 1; width: min(100%, 720px); margin-inline: auto; gap: 4%; padding: clamp(16px, 3vh, 32px) clamp(20px, 3vw, 36px) clamp(20px, 3vw, 36px); }
+@media (max-width: 860px) {
+  .pk-hero { min-height: 0; }
+  .pk-hero .lineup { padding: 16px 20px 20px; }
+}
 .sheet-site .specsheet { margin-top: 0; border-radius: var(--r-tile); background: var(--tile); box-shadow: none; }
 .sheet-site .specsheet-head h2 { font-size: clamp(1.75rem, 1.3rem + 1.4vw, 2.5rem); letter-spacing: -.02em; }
 .sheet-site .spec-row .v { font: 600 clamp(1.5rem, 1.2rem + 1vw, 2rem)/1.1 var(--font-display); letter-spacing: -.02em; white-space: nowrap; }
@@ -503,12 +515,12 @@ main:has(> .choose) + .sheet-foot { margin-top: 12px; }
   :is(.title-block, .ag-hero, .lost) h1 { animation: enter-rise .7s var(--settle) both; }
   :is(.title-block, .ag-hero, .lost) :is(.label, .sub, .acts) { animation: enter-rise .6s var(--settle) .3s both; }
 }
-/* arriving by the green panel's trip (AgriPanelTrip.astro): the panel was the entrance */
-:root[data-came="panel"] :is(.door, .ag-hero h1, .ag-hero .label, .ag-hero .sub, .ag-hero .acts) { animation: none; }
+/* arriving by a panel's trip (PanelTrip.astro): the panel was the entrance */
+:root[data-came="panel"] :is(.door, .ag-hero h1, .ag-hero .label, .ag-hero .sub, .ag-hero .acts, .pk-hero h1, .pk-hero .label, .pk-hero .sub, .pk-hero .acts) { animation: none; }
 
 /* Between pages (cross-document View Transitions, enabled in site.css): the bar
    and the brand field hold still, and the rest cross-fades with a small rise.
-   The green panel's trip between home and agriculture is in site.css. */
+   A panel's trip between home and its page is in site.css. */
 .sheet-head { view-transition-name: sheet-head; }
 .brand-field { view-transition-name: brand-field; }
 ::view-transition-group(sheet-head), ::view-transition-group(brand-field) { animation-duration: var(--dur-ui); animation-timing-function: var(--settle); }

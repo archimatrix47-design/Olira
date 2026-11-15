@@ -33,7 +33,7 @@ getJSON('/api/products').then((live) => {
 // A product line: a tile on the home page (?p=sesame|pulses|spices|coffee, or a
 // product id) or along the bottom of this page's first screen. Its cards in the
 // range are pointed out. From the home page that waits until the green panel has
-// finished growing into this page (AgriPanelTrip.astro), then glides down to them.
+// finished growing into this page (PanelTrip.astro), then glides down to them.
 const line = (want) => (d) => d.id === want || d.cat === want;
 const settled = () => new Promise((go) => {
   const { revealed, trip } = document.documentElement.dataset;
