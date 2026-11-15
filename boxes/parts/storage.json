@@ -7,8 +7,9 @@
   "files": [
     "lib/storage.js"
   ],
-  "tests": [],
-  "checkedBy": "Every test runs on it; test/admin-tools.test.js reads the audit log it writes.",
+  "tests": [
+    "test/storage.test.js"
+  ],
   "uses": [
     "site-basics"
   ],
@@ -16,5 +17,16 @@
     "admin-audit.log",
     "error.log"
   ],
-  "reads": []
+  "reads": [
+    "ai-access.json",
+    "analytics.json",
+    "auth.json",
+    "database.json",
+    "email-status.json",
+    "inquiries-pending.json",
+    "inquiries.json",
+    "packaging-3d.json",
+    "targets.json",
+    "team.json"
+  ]
 }

@@ -74,3 +74,7 @@ public/uploads/packaging/
 
 # mockup source files: licensed for our renders only, never to be redistributed
 *.psd
+
+# the work list by role: business facts, kept out of the public repository
+TODO.md
+BACKLOG_DONE.md

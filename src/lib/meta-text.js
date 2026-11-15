@@ -7,7 +7,9 @@ export function clipDescription(text, max = 155) {
   if (t.length <= max) return t;
   const head = t.slice(0, max + 1);
   const end = Math.max(head.lastIndexOf('. '), head.lastIndexOf('! '), head.lastIndexOf('? '), /[.!?]$/.test(head) ? head.length - 1 : -1);
-  if (end >= max * 0.6) return head.slice(0, end + 1);
+  // a sentence end is used only when it leaves a full description (about 110 characters
+  // of 155): cut earlier, the page showed two thirds of its line in search results
+  if (end >= max * 0.71) return head.slice(0, end + 1);
   const word = t.slice(0, max).replace(/[\s,;:.]+\S*$/, '');
   return `${word}…`;
 }

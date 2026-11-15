@@ -173,9 +173,13 @@ One-time setup, in this order:
    ```bash
    mkdir -p ~/olira-staging-data ~/olira-staging-uploads
    cp -a ~/olira-data/. ~/olira-staging-data/ && cp -a ~/olira-uploads/. ~/olira-staging-uploads/
+   rm -f ~/olira-staging-data/database.json
    ```
-   (Enquiries come along. Delete `~/olira-staging-data/inquiries.json` first if
-   the copy should start without them.)
+   **Do not skip the last line.** `database.json` holds the live site's database
+   settings: left in place, the staging copy would read and write the live
+   enquiries. Without it the copy keeps its enquiries in its own file.
+   (The enquiries file comes along. Delete `~/olira-staging-data/inquiries.json`
+   too if the copy should start without them.)
 3. **Git Version Control → Create:** clone the same GitHub URL into
    `/home/oliraagr/repositories/Olira-staging`, then **Manage** and set the
    checked-out branch to `staging` (push a `staging` branch from GitHub first).

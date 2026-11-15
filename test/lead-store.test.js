@@ -191,6 +191,24 @@ test('the database is used only when DB_NAME, DB_USER and DB_PASSWORD are all se
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('the staging copy never uses a database it merely found: only one it is told is its own', async () => {
+  const dir = tmp();
+  // the live site's settings, copied over with the rest of its data folder
+  fs.writeFileSync(path.join(dir, 'database.json'), JSON.stringify({ host: 'localhost', database: 'oliraagr_site', user: 'oliraagr_site', password: 'live-settings-copied-over' }));
+  let pools = 0;
+  const createPool = () => { pools++; return fakeMaria().pool; };
+  const live = createLeadStore({ env: {}, dataDir: dir, readJsonFile, writeJsonFile, createPool });
+  assert.equal(live.kind, 'mariadb', 'the live site uses the settings');
+  const staging = createLeadStore({ env: { SITE_ENV: 'staging' }, dataDir: dir, readJsonFile, writeJsonFile, createPool });
+  assert.equal(staging.kind, 'file', 'the staging copy stays on its own file');
+  const viaEnv = createLeadStore({ env: { SITE_ENV: 'staging', DB_NAME: 'n', DB_USER: 'u', DB_PASSWORD: 'p' }, dataDir: tmp(), readJsonFile, writeJsonFile, createPool });
+  assert.equal(viaEnv.kind, 'file', 'nor settings from the environment');
+  const own = createLeadStore({ env: { SITE_ENV: 'staging', STAGING_DATABASE: 'own' }, dataDir: dir, readJsonFile, writeJsonFile, createPool });
+  assert.equal(own.kind, 'mariadb', 'unless it is told the database is its own');
+  await Promise.all([live, staging, viaEnv, own].map((s) => s.close()));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 /* ---------- the admin's "Check the database" ---------- */
 test('the database check runs the store in a scratch table and removes it, leaving the enquiries alone', async () => {
   const db = fakeMaria();

@@ -13,6 +13,15 @@ test('a long description ends at a full sentence', () => {
   assert.ok(out.endsWith('creamy color.'), out);
 });
 
+test('a sentence that ends early is not used: the description fills its line', () => {
+  // the first sentence ends at 95 characters; stopping there wasted a third of the line
+  const s = 'Flat handle bags made in Addis Ababa and printed with your logo, flexographic, up to 4 colours. Kraft paper bags with flat paper handles, for shops, bakeries and takeaway food, in three sizes.';
+  assert.equal(s.indexOf('. ') + 1, 95);
+  const out = clipDescription(s);
+  assert.ok(out.length >= 110 && out.length <= 156, String(out.length));
+  assert.ok(out.endsWith('…'), out);
+});
+
 test('without a late sentence end it stops at a word, with an ellipsis', () => {
   const s = 'Square bottom paper bags made in Addis Ababa and printed with your logo, up to four colours, for bakeries, restaurants, shops and pharmacies that want a strong bag with a flat base that stands';
   const out = clipDescription(s);

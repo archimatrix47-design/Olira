@@ -12,6 +12,7 @@
   ],
   "uses": [
     "enquiry-work",
+    "staging",
     "storage"
   ],
   "data": [
