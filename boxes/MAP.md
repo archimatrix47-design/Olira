@@ -177,8 +177,8 @@ flowchart LR
 | **enquiries** | A buyer sends an enquiry: it is checked, saved before any email is tried, routed to its team, and acknowledged. | analytics, email, enquiry-work, lead-store, packaging-catalogue, site-data, staff-accounts, storage, web-guards | 1 | 5 |
 | **enquiry-work** | The inboxes, pipeline, replies, quotes, buyers and files, for the teams and the manager. | agri-catalogue, branding, certificates, contact, email, enquiries, lead-store, packaging-catalogue, packing-list, site-basics, staff-accounts, staff-ui, storage, web-guards | 9 | 15 |
 | **lead-store** | Where enquiries are kept: a database when there is one, a file otherwise, so a buyer is never lost. | enquiry-work, staging, storage | 0 | 1 |
-| **mockup-studio** | A visitor sees their brand on a product, as a photo or a 3D package, and sends the design with their request. | branding, enquiry-work, home-panels, packaging-3d, packaging-catalogue, product-pages, site-shell, staff-accounts, staff-ui, thumbs | 0 | 10 |
-| **packing-list** | Several products, sizes and quantities gathered into one quote request. | home-panels, packaging-catalogue, product-pages, site-shell, staff-ui | 0 | 2 |
+| **mockup-studio** | A visitor sees their brand on a product, as a photo or a 3D package, and sends the design with their request. | branding, enquiry-work, packaging-3d, packaging-catalogue, product-pages, site-shell, staff-accounts, staff-ui, thumbs | 0 | 10 |
+| **packing-list** | Several products, sizes and quantities gathered into one quote request. | packaging-catalogue, product-pages, site-shell, staff-ui | 0 | 2 |
 | **targets** | The month's targets per line, and progress against them. | staff-accounts, staff-ui, storage | 2 | 3 |
 
 ## How the site is doing
@@ -196,8 +196,8 @@ flowchart LR
 
 | Box | What it does | Connects to | Routes | Files |
 | --- | --- | --- | --- | --- |
-| **home-page** | The first page: both businesses, the product strip and the company in brief. | home-panels, mockup-studio, partners, seo, site-data, site-shell, thumbs | 0 | 3 |
-| **home-panels** | The two business panels: the green agriculture panel with its four product-line tiles and the packaging panel with its standing products, side by side on the home page and each again as the first screen of its own page, and the trip between them (the chosen panel grows to fill the screen, the other is pushed off its side). | packaging-catalogue, product-pages, site-data, site-shell, thumbs | 0 | 5 |
+| **home-page** | The first page: both businesses, the product strip and the company in brief. | home-panels, partners, seo, site-data, site-shell, thumbs | 0 | 3 |
+| **home-panels** | The two business panels: the green agriculture panel with its four product-line tiles and the packaging panel with its products standing in 3D (a box opens its lid under the pointer), side by side on the home page and each again as the first screen of its own page, and the trip between them (the chosen panel grows to fill the screen, the other is pushed off its side). | branding, packaging-3d, site-shell, thumbs | 0 | 8 |
 | **seo** | What search engines and AI assistants read: structured data, FAQ, sitemap and llms.txt. | agri-catalogue, certificates, product-pages, site-data | 0 | 7 |
 | **site-data** | Reads the live data folder when the pages are built, so they carry the current facts. | packaging-3d, packaging-catalogue, social-links | 0 | 4 |
 | **site-shell** | What every public page shares: the layout, header, footer, theme, motion and the site's design tokens. | analytics, branding, contact, marketing-tags, packing-list, page-speed, site-data, social-links | 0 | 14 |
