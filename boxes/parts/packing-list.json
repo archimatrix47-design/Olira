@@ -10,7 +10,6 @@
   "tests": [],
   "checkedBy": "test/catalogue.test.js checks bundles on the server; browser journeys use the list.",
   "uses": [
-    "home-panels",
     "packaging-catalogue",
     "product-pages",
     "site-shell",

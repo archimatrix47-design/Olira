@@ -1,23 +1,25 @@
 {
   "id": "home-panels",
   "name": "Home panels",
-  "does": "The two business panels: the green agriculture panel with its four product-line tiles and the packaging panel with its standing products, side by side on the home page and each again as the first screen of its own page, and the trip between them (the chosen panel grows to fill the screen, the other is pushed off its side).",
+  "does": "The two business panels: the green agriculture panel with its four product-line tiles and the packaging panel with its products standing in 3D (a box opens its lid under the pointer), side by side on the home page and each again as the first screen of its own page, and the trip between them (the chosen panel grows to fill the screen, the other is pushed off its side).",
   "kind": "public",
   "files": [
     "src/lib/panels.ts",
     "src/components/site/ProduceTiles.astro",
     "src/components/site/PackLineup.astro",
     "src/components/site/PanelTrip.astro",
-    "src/scripts/lineup.js"
+    "src/scripts/lineup.js",
+    "src/scripts/package-3d/lineup3d.js",
+    "src/lib/lineup-renders.json",
+    "scripts/render-lineup.mjs"
   ],
   "tests": [
     "test/home-panels.test.js"
   ],
   "checkedBy": "Filmed frame by frame on the sandbox (desktop and phone, both panels, there and back: vt-film.mjs in the olira-verify skill); the crawl checks the pages.",
   "uses": [
-    "packaging-catalogue",
-    "product-pages",
-    "site-data",
+    "branding",
+    "packaging-3d",
     "site-shell",
     "thumbs"
   ],

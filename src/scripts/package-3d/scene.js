@@ -56,7 +56,7 @@ function boardBase(material, W, H) {
 
 /* ---------------- the package: one body per panel, placed by its fold ---------------- */
 
-function buildPackage(model, { board, handles }) {
+export function buildPackage(model, { board, handles }) {
   const { sheet } = model;
   const s = Math.min(4, 2048 / Math.max(sheet.w, sheet.h)); // canvas pixels per mm
   const canvas = makeCanvas(sheet.w * s, sheet.h * s);

@@ -1,38 +1,26 @@
-// The packaging lineup (PackLineup.astro) follows the live catalogue: when the
-// packaging team replaces a product's image in their workspace, the lineup shows
-// the new one without a rebuild. A product needs a cut-out (a transparent image)
-// to stand in the lineup; one without is left out until it has one. Used on the
-// home page and on the packaging page's first screen.
-import { $$, getJSON } from './common.js';
-import { cutoutOf, standHTML } from './catalogue-panel.js';
+// The packaging line-up (PackLineup.astro) shows still renders at once; this
+// brings in the live 3D (package-3d/lineup3d.js), where a box opens under the
+// pointer and the packaging page prints the brand as it is typed. The 3D library
+// is only fetched when it can be used: soon after the page has loaded on a screen
+// with a mouse, at the first touch of the line-up, or when a brand is typed.
+// Without WebGL the stills stay. Used on the home page and the packaging page.
+import { $$ } from './common.js';
 
-for (const lineup of $$('[data-lineup]')) {
-  const brand = lineup.dataset.brand || '';
-  getJSON('/api/packaging-products').then((live) => {
-    if (!Array.isArray(live)) return;
-    let changed = false;
-    for (const el of $$('.item', lineup)) {
-      const p = live.find((x) => x.id === el.dataset.id);
-      const c = p && cutoutOf(p);
-      const now = el.querySelector('.cutimg')?.getAttribute('src');
-      if (!c) { el.remove(); changed = true; continue; }
-      if (c.cutout === now && JSON.stringify(c.quad) === el.querySelector('canvas')?.dataset.quad) continue;
-      el.innerHTML = standHTML(c, p.name, { brand });
-      el.dataset.ratio = String(c.width / c.height);
-      changed = true;
-    }
-    if (!changed) return;
-    // each product's share of the row again, from its true height and its image's proportions
-    const kept = $$('.item', lineup);
-    const units = kept.map((el) => Number(el.dataset.h || 80) * (Number(el.dataset.ratio) || ratioOf(el)));
-    const total = units.reduce((a, b) => a + b, 0) || 1;
-    const room = 100 - 4 * (kept.length - 1);
-    kept.forEach((el, i) => el.style.setProperty('--w', (units[i] / total * room).toFixed(2)));
-    document.dispatchEvent(new CustomEvent('catalogue:rendered')); // the live print paints the new images
-  });
-}
+const lineups = $$('[data-lineup]').filter((el) => el.querySelector('.item[data-style]'));
+let started = null;
+const start = () => (started ||= import('./package-3d/lineup3d.js').then((m) => m.mount(lineups)).catch(() => null));
 
-function ratioOf(el) {
-  const img = el.querySelector('.cutimg');
-  return img ? Number(img.getAttribute('width')) / Number(img.getAttribute('height')) || 0.7 : 0.7;
+if (lineups.length) {
+  for (const el of lineups) {
+    el.addEventListener('pointerenter', start, { once: true });
+    el.addEventListener('touchstart', start, { once: true, passive: true });
+  }
+  for (const input of $$('input[data-brand-input]')) input.addEventListener('input', start, { once: true });
+  let stored = '';
+  try { stored = localStorage.getItem('olira-brand') || ''; } catch (e) { stored = ''; }
+  const later = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 1500));
+  // a brand typed on an earlier visit is printed without waiting; a mouse can hover any moment
+  if ((stored.trim() && lineups.some((el) => el.dataset.brand !== 'olira')) || matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    if (document.readyState === 'complete') later(start); else addEventListener('load', () => later(start), { once: true });
+  }
 }

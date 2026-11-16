@@ -12,7 +12,6 @@
   "checkedBy": "Browser journeys on the sandbox (visitor and staff paths), and the whole-page build comparison.",
   "uses": [
     "home-panels",
-    "mockup-studio",
     "partners",
     "seo",
     "site-data",

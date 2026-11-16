@@ -16,7 +16,10 @@ const TRIP = read('src/components/site/PanelTrip.astro');
 const TILES = read('src/components/site/ProduceTiles.astro');
 const LINEUP = read('src/components/site/PackLineup.astro');
 const CSS = read('src/styles/site.css');
-const LINES = [...read('src/lib/panels.ts').matchAll(/\bp: '([a-z-]+)'/g)].map((m) => m[1]);
+const PANELS = read('src/lib/panels.ts');
+const LINES = [...PANELS.matchAll(/\bp: '([a-z-]+)'/g)].map((m) => m[1]);
+const SHOWN = [...PANELS.matchAll(/\{ id: '([a-z_]+)', style: '([a-z-]+)'/g)].map((m) => ({ id: m[1], style: m[2] }));
+const RENDERS = JSON.parse(read('src/lib/lineup-renders.json'));
 
 test('home-panels: four product lines are listed', () => {
   assert.deepEqual(LINES, ['sesame', 'pulses', 'spices', 'coffee']);
@@ -32,7 +35,7 @@ test('home-panels: the home page carries both panels with their products, and ea
   assert.match(PACK, /data-panel="pack"/);
   assert.match(PACK, /<PackLineup \/>/, 'on the packaging page the products carry the visitor\'s brand');
   assert.match(TILES, /data-p=\{x\.p\}/, 'each tile names its line');
-  assert.match(LINEUP, /data-id=\{p\.id\}/, 'each standing product names itself');
+  assert.match(LINEUP, /data-id=\{s\.id\}/, 'each standing product names itself');
 });
 
 test('home-panels: the trip script is inline in the head of all three pages', () => {
@@ -62,4 +65,17 @@ test('home-panels: every name the trip gives has its motion in site.css', () => 
 
 test('home-panels: no page change dips through a blank screen (the old page holds while the new fades in)', () => {
   assert.match(CSS, /::view-transition-old\(root\) \{ animation: none; \}/);
+});
+
+test('home-panels: every product in the 3D line-up has a shape, a place in the row and both still renders', async () => {
+  const { BOX_STYLES } = await import('../lib/box-styles.js');
+  assert.ok(SHOWN.length >= 3, 'the line-up lists its products');
+  assert.ok(SHOWN.some((s) => BOX_STYLES[s.style]?.template === 'mailer' || BOX_STYLES[s.style]?.template === 'tuckEnd'), 'at least one box that opens');
+  for (const { id, style } of SHOWN) {
+    assert.ok(BOX_STYLES[style], `${id}: ${style} is a 3D shape`);
+    const r = RENDERS.items[id];
+    assert.ok(r && r.w > 0 && r.ratio > 0 && r.box?.w >= 1 && r.box?.h >= 1, `${id}: its place in the row (run node scripts/render-lineup.mjs)`);
+    for (const print of ['olira', 'brand']) assert.ok(fs.existsSync(new URL(`../public/images/lineup/${id}-${print}.webp`, import.meta.url)), `${id}-${print}.webp exists`);
+  }
+  assert.deepEqual(Object.keys(RENDERS.items).sort(), SHOWN.map((s) => s.id).sort(), 'the renders are of this line-up (run node scripts/render-lineup.mjs)');
 });

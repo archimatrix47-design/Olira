@@ -1,33 +1,26 @@
 ---
-// The packaging panel's products, standing together in true proportion: on the
-// home page (printed with Olira's logo) and along the bottom of the packaging
-// page's first screen (printed with the visitor's brand as they type). Each
-// product's share of the row (--w) comes from its true height and its cut-out's
-// proportions, so the row always fits. lineup.js keeps it in step with the live
-// catalogue; live-print.js prints on it. data-id gives each product its name for
-// the trip between the two pages (PanelTrip.astro).
-import { packagingProducts } from '../../lib/site-data';
-import { cutoutOf, standHTML } from '../../scripts/catalogue-panel.js';
+// The packaging panel's products standing in a row, in 3D: on the home page
+// (printed with Olira's logo) and along the bottom of the packaging page's first
+// screen (printed with the visitor's brand as they type). The page shows still
+// renders at once (scripts/render-lineup.mjs makes them from LINEUP); lineup.js
+// then brings in the live 3D (lineup3d.js), where a box opens under the pointer.
+// The row is laid out by each closed product (its share --w and proportions
+// --ratio, from the renders, base on the row's line); its picture is larger and
+// reaches past it (--fl --ft --fw --fh), so an open lid or the shadow has room.
+// data-id gives each product its name for the trip between the two pages
+// (PanelTrip.astro).
 import { LINEUP } from '../../lib/panels';
+import RENDERS from '../../lib/lineup-renders.json';
 
 interface Props { brand?: '' | 'olira' }
 const { brand = '' } = Astro.props;
-
-type Stood = { p: any; c: any; h: number; w: number };
-const got = LINEUP.map(([id, h]) => {
-  const p = packagingProducts.find((x) => x.id === id);
-  const c = p && cutoutOf(p);
-  return c ? { p, c, h } : null;
-}).filter(Boolean) as Omit<Stood, 'w'>[];
-const units = got.map((x) => x.h * x.c.width / x.c.height);
-const total = units.reduce((a, b) => a + b, 0) || 1;
-const room = 100 - 4 * (got.length - 1);
-const items: Stood[] = got.map((x, i) => ({ ...x, w: +(units[i] / total * room).toFixed(2) }));
+const print = brand === 'olira' ? 'olira' : 'brand';
+const items = LINEUP.map((s) => ({ s, r: (RENDERS.items as Record<string, { w: number; ratio: number; box: { l: number; t: number; w: number; h: number }; px: number[] }>)[s.id] })).filter((x) => x.r);
 ---
 <div class="lineup" data-lineup data-brand={brand || undefined} aria-hidden="true">
-  {items.map(({ c, p, w, h }, i) => (
-    <div class="item" style={`--w:${w}`} data-name={p.name} data-id={p.id} data-h={h}>
-      <Fragment set:html={standHTML(c, p.name, { eager: i < 3, brand })} />
+  {items.map(({ s, r }, i) => (
+    <div class="item" style={`--w:${r.w};--ratio:${r.ratio};--fl:${r.box.l};--ft:${r.box.t};--fw:${r.box.w};--fh:${r.box.h}`} data-id={s.id} data-style={s.style} data-board={s.board} data-cm={s.cm.join(',')} data-tilt={s.tilt} data-h={s.h}>
+      <img class="still" src={`/images/lineup/${s.id}-${print}.webp`} alt="" width={r.px[0]} height={r.px[1]} decoding="async" fetchpriority={i === 0 ? 'high' : undefined}>
     </div>
   ))}
 </div>

@@ -714,6 +714,7 @@
    "usedBy": [
     "admin-panel",
     "enquiry-work",
+    "home-panels",
     "mockup-studio",
     "site-shell",
     "staff-ui"
@@ -1426,7 +1427,6 @@
    "reads": [],
    "uses": [
     "home-panels",
-    "mockup-studio",
     "partners",
     "seo",
     "site-data",
@@ -1441,7 +1441,6 @@
    "guards": 0,
    "imports": [
     "home-panels",
-    "mockup-studio",
     "seo",
     "site-data",
     "site-shell",
@@ -1458,14 +1457,17 @@
   },
   "home-panels": {
    "name": "Home panels",
-   "does": "The two business panels: the green agriculture panel with its four product-line tiles and the packaging panel with its standing products, side by side on the home page and each again as the first screen of its own page, and the trip between them (the chosen panel grows to fill the screen, the other is pushed off its side).",
+   "does": "The two business panels: the green agriculture panel with its four product-line tiles and the packaging panel with its products standing in 3D (a box opens its lid under the pointer), side by side on the home page and each again as the first screen of its own page, and the trip between them (the chosen panel grows to fill the screen, the other is pushed off its side).",
    "kind": "public",
    "files": [
     "src/lib/panels.ts",
     "src/components/site/ProduceTiles.astro",
     "src/components/site/PackLineup.astro",
     "src/components/site/PanelTrip.astro",
-    "src/scripts/lineup.js"
+    "src/scripts/lineup.js",
+    "src/scripts/package-3d/lineup3d.js",
+    "src/lib/lineup-renders.json",
+    "scripts/render-lineup.mjs"
    ],
    "tests": [
     "test/home-panels.test.js"
@@ -1473,18 +1475,15 @@
    "data": [],
    "reads": [],
    "uses": [
-    "packaging-catalogue",
-    "product-pages",
-    "site-data",
+    "branding",
+    "packaging-3d",
     "site-shell",
     "thumbs"
    ],
    "usedBy": [
     "agri-catalogue",
     "home-page",
-    "mockup-studio",
-    "packaging-catalogue",
-    "packing-list"
+    "packaging-catalogue"
    ],
    "plugOrder": null,
    "receives": [],
@@ -1492,19 +1491,17 @@
    "routes": [],
    "guards": 0,
    "imports": [
-    "product-pages",
-    "site-data",
+    "packaging-3d",
     "site-shell",
     "thumbs"
    ],
    "calls": {
-    "packaging-catalogue": [
-     "/api/packaging-products"
+    "branding": [
+     "/api/branding"
     ]
    },
    "sends": [
-    "agri:arrived",
-    "catalogue:rendered"
+    "agri:arrived"
    ],
    "hears": [],
    "checkedBy": "Filmed frame by frame on the sandbox (desktop and phone, both panels, there and back: vt-film.mjs in the olira-verify skill); the crawl checks the pages."
@@ -1778,7 +1775,6 @@
    "uses": [
     "branding",
     "enquiry-work",
-    "home-panels",
     "packaging-3d",
     "packaging-catalogue",
     "product-pages",
@@ -1788,7 +1784,6 @@
     "thumbs"
    ],
    "usedBy": [
-    "home-page",
     "packaging-catalogue",
     "product-pages",
     "team-workspace"
@@ -1862,6 +1857,7 @@
    ],
    "usedBy": [
     "ai-access",
+    "home-panels",
     "manager-reports",
     "mockup-studio",
     "packaging-catalogue",
@@ -1970,7 +1966,6 @@
     "enquiries",
     "enquiry-work",
     "facts-spreadsheet",
-    "home-panels",
     "mockup-studio",
     "packaging-3d",
     "packing-list",
@@ -2092,7 +2087,6 @@
    "data": [],
    "reads": [],
    "uses": [
-    "home-panels",
     "packaging-catalogue",
     "product-pages",
     "site-shell",
@@ -2256,7 +2250,6 @@
     "admin-panel",
     "agri-catalogue",
     "ai-access",
-    "home-panels",
     "manager-reports",
     "mockup-studio",
     "packaging-catalogue",
@@ -2446,7 +2439,6 @@
     "contact",
     "enquiries",
     "home-page",
-    "home-panels",
     "packaging-catalogue",
     "product-pages",
     "seo",
