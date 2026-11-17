@@ -618,3 +618,49 @@ main:has(> .choose) + .sheet-foot { margin-top: 0; }
   .sheet-foot { margin-top: 6mm; padding-top: 4mm; }
   .print-url { display: block; margin: 6mm 0 0; font: 400 9pt/1.4 var(--font-sans, sans-serif); }
 }
+
+/* ---------- icons in motion ----------
+   An icon answers the pointer the way its object would: the phone rings, the
+   WhatsApp bubble tips up, the paper plane flies off and comes back, the
+   @ turns, the sun's rays turn and the moon rocks, the plus turns into place,
+   the product's open arrows reach out, the arrows step forward, a social icon
+   lifts. Forward when the pointer arrives or keyboard focus lands, back when it
+   leaves (a ring or a flight plays once). Only on screens with a mouse, never
+   with reduced motion. CSS only: no animation library (house rule). */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  :is(.reach-btn, .fab-btn, .icon-btn, .pp-add, .foot-social a) svg,
+  .pg-go { transition: transform var(--dur-ui) var(--settle); transform-origin: 50% 50%; }
+
+  /* call: the handset rings, once */
+  [data-reach-kind="phone"]:is(:hover, :focus-visible) svg { animation: ico-ring .62s var(--ease) both; }
+  /* WhatsApp: the bubble tips up, as if it just arrived (the chat button has its own: it opens) */
+  [data-reach-kind="whatsapp"]:is(:hover, :focus-visible) svg { transform: translateY(-2px) rotate(-10deg) scale(1.08); }
+  /* Telegram: the paper plane flies off to the corner and comes back in, once */
+  [data-contact="telegram"]:is(:hover, :focus-visible) svg { animation: ico-fly .66s var(--ease) both; }
+  /* email: the @ turns */
+  [data-contact-href="email"]:is(:hover, :focus-visible) svg { transform: rotate(-24deg) scale(1.06); }
+  /* light and dark: the sun's rays turn, the moon rocks */
+  #themeBtn:is(:hover, :focus-visible) .theme-dark-icon { transform: rotate(45deg); }
+  #themeBtn:is(:hover, :focus-visible) .theme-light-icon { transform: rotate(-20deg); }
+  /* add to the packing list: the plus turns into place */
+  .pp-add:is(:hover, :focus-visible) svg { transform: rotate(90deg); }
+  /* a product card: its open arrows reach out */
+  .pg-card:is(:hover, :focus-visible) .pg-go { transform: scale(1.18); }
+  /* arrows step forward */
+  .pp-studio::after, .produce-tile span::after { display: inline-block; transition: transform var(--dur-micro) var(--ease); }
+  .pp-studio:hover::after { transform: translate(2px, -.04em); }
+  .produce-tile:is(:hover, :focus-visible) span::after { transform: translateX(3px); }
+  /* social links in the footer: the icon lifts */
+  .foot-social a:is(:hover, :focus-visible) svg { transform: translateY(-2px); }
+}
+@keyframes ico-ring {
+  0%, 100% { transform: rotate(0); }
+  12% { transform: rotate(-16deg); } 26% { transform: rotate(14deg); } 40% { transform: rotate(-11deg); }
+  54% { transform: rotate(8deg); } 68% { transform: rotate(-4deg); } 82% { transform: rotate(2deg); }
+}
+@keyframes ico-fly {
+  0% { transform: translate(0, 0); opacity: 1; }
+  40% { transform: translate(9px, -9px) scale(.8); opacity: 0; }
+  41% { transform: translate(-9px, 9px) scale(.8); opacity: 0; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
