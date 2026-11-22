@@ -4,7 +4,7 @@
 // be changed on the card, with the same confirm step as the enquiry screen. The
 // board scrolls sideways on narrow screens, with a fade on the side that has more.
 import { $, $$, h, api, toast, formatDate, timeAgo } from '../../admin/api.js';
-import { scoreOf, BAND_LABEL, scoreLabel, scoreReasons, STAGES, stageLabel, stageWaits } from '../../../../lib/lead-rules.js';
+import { scoreOf, BAND_LABEL, scoreLabel, scoreReasons, STAGES, stageLabel, stageWaits, stageSince } from '../../../../lib/lead-rules.js';
 import { int } from '../../../../lib/format.js';
 import { confirmSelect } from '../../admin/stage-control.js';
 import { leads, putLead, followupsOf, lineOf, LINE_LABEL, teamOf } from '../session.js';
@@ -18,6 +18,7 @@ const COLUMNS = [
   { id: 'lost', label: 'Lost', note: 'Last 30 days', closed: true },
 ];
 const SHOWN = 12; // the most urgent per column; the rest are a click away in Enquiries
+const DAY = 86400000;
 const MONTH = 30 * 86400000;
 let bound = false;
 let all = [];
@@ -97,15 +98,20 @@ function render() {
 
   $('#pipeBoard').replaceChildren(...cols.filter((c) => !c.closed).map((c) => {
     const value = ['quoted', 'won'].includes(c.id) ? money(c.items) : '';
-    const more = c.items.length - SHOWN;
+    // the most urgent first; then what moved into this stage in the last day, so movement is seen
+    const top = c.items.slice(0, SHOWN);
+    const fresh = c.items.slice(SHOWN).filter((l) => now - stageSince(l) < DAY).slice(0, 5);
+    const more = c.items.length - top.length - fresh.length;
     return h('section', { class: `t-col t-col-${c.id}`, 'aria-labelledby': `pipe-${c.id}` },
       h('header', {},
         h('h2', { id: `pipe-${c.id}` }, c.label, h('b', {}, int(c.items.length))),
         h('p', {}, value || c.note),
         typical(c.id) ? h('p', { class: 't-col-wait' }, typical(c.id)) : null),
       c.items.length
-        ? h('ul', {}, c.items.slice(0, SHOWN).map((l) => card(l, overdue.has(l.id))))
+        ? h('ul', {}, top.map((l) => card(l, overdue.has(l.id))))
         : h('p', { class: 't-col-empty' }, 'None'),
+      fresh.length ? h('p', { class: 't-col-fresh' }, 'Moved here in the last day') : null,
+      fresh.length ? h('ul', {}, fresh.map((l) => card(l, overdue.has(l.id)))) : null,
       more > 0 ? h('a', { class: 'btn btn-ghost btn-sm', href: `#inbox?filter=${c.closed ? 'closed' : 'open'}${ln !== 'all' ? `&line=${ln}` : ''}` }, `${more} more in Enquiries`) : null);
   }));
   edges();

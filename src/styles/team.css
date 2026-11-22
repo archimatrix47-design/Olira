@@ -374,3 +374,5 @@ html[data-input="keyboard"] .t-card:active { transform: none; }
 .t-min-fold[open] > summary h2::after { transform: rotate(90deg); }
 .t-min-count { font-size: .8125rem; color: var(--ink-2); }
 .t-min-fold > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+/* pipeline: what moved into a stage in the last day, below its most urgent cards */
+.t-col-fresh { margin: 6px 4px 0; font-size: .75rem; font-weight: 600; color: var(--ink-2); text-transform: none; }
