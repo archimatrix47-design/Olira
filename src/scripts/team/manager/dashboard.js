@@ -4,10 +4,10 @@
 // settings belong to the administrator; the catalogues to the marketing teams.
 import { $, h, toast } from '../../admin/api.js';
 import * as store from '../../admin/store.js';
-import { trendChart, funnel, tableFor, empty } from '../../admin/charts.js';
+import { trendChart, funnel, tableFor, empty, barList, stackBar } from '../../admin/charts.js';
 import { kpiCard, freshness } from '../../admin/widgets.js';
 import { int, pct, decimal, duration, hours, delta, per100, believable, NO_DATA, shortDate, WEEKDAYS, hourLabel, CHANNEL_NAMES, languageName, pageName } from '../../../../lib/format.js';
-import { inPeriod, lineOfLead, firstResponseHours, median, ageHours, scoreOf } from '../../../../lib/lead-rules.js';
+import { inPeriod, lineOfLead, firstResponseHours, median, ageHours, scoreOf, stageWaits, ageBands } from '../../../../lib/lead-rules.js';
 import { session, followupsOf, OPEN, LINE_LABEL } from '../session.js';
 import { certAlerts } from '../../admin/cert-alerts.js';
 import { getJSON } from '../../common.js';
@@ -32,6 +32,7 @@ async function load() {
     renderKpis(a, leads, days);
     showTargets(tg?.targets || {}, leads);
     renderTeam(leads);
+    renderWait(leads);
     renderTrend(a, leads);
     renderFacts(a, leads, days);
     renderFunnels(a);
@@ -78,6 +79,27 @@ function renderKpis(a, leads, days) {
 }
 
 // who holds what: open enquiries per person, overdue follow-ups, and the ones nobody has
+// Where the open enquiries wait: each stage's count, typical and longest days in it,
+// and their ages; the lead sentence names the stage holding most of the waiting.
+const DO_NEXT = { new: 'Hand them out.', read: 'Contact the buyers.', contacted: 'Send the quotes, or close the ones that went nowhere.', quoted: 'Chase the quotes.' };
+const daysText = (d) => (d == null ? 'no time' : d < 1 ? 'under a day' : `${int(Math.round(d))} day${Math.round(d) === 1 ? '' : 's'}`);
+function renderWait(leads) {
+  const box = $('#ovWait'), lead = $('#ovWaitLead');
+  const rows = stageWaits(leads);
+  if (!rows.some((r) => r.count)) { lead.textContent = ''; box.replaceChildren(empty('No open enquiries: nothing is waiting.')); return; }
+  const due = followupsOf(leads);
+  const late = (id) => due.filter((d) => d.lead.status === id).length;
+  const worst = rows.filter((r) => r.count).sort((x, y) => y.count * (y.medianDays || 0) - x.count * (x.medianDays || 0))[0];
+  lead.textContent = `Most of the waiting is at ${worst.label}: ${int(worst.count)} enquir${worst.count === 1 ? 'y' : 'ies'}, typically ${daysText(worst.medianDays)} there. ${DO_NEXT[worst.id] || ''}`;
+  box.replaceChildren(
+    barList(rows.map((r) => ({
+      label: r.label, value: r.count,
+      note: r.count ? `Typically ${daysText(r.medianDays)} in this stage, the oldest ${daysText(r.oldestDays)}${late(r.id) ? `. ${int(late(r.id))} overdue` : ''}` : 'None waiting here',
+    }))),
+    h('p', { class: 't-wait-sub' }, 'Open enquiries by age, since they arrived'),
+    stackBar(ageBands(leads).map((b) => ({ label: b.label, value: b.count })), { label: 'Open enquiries by age' }));
+}
+
 function renderTeam(leads) {
   const box = $('#ovTeam');
   const due = followupsOf(leads);

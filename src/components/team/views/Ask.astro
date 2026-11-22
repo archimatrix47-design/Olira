@@ -1,7 +1,8 @@
 ---
-// Manager: ask the website's performance log (lib/ai-log.js) in plain words. The
-// answer comes from the local model the admin connected (lib/ai-access.js), reached
-// from this browser only. Filled in by scripts/team/manager/ask.js.
+// Manager: ask the website's numbers in plain words. The website answers from its
+// performance log (lib/ai-log.js) and the enquiries (lib/ask-rules.js), with no AI
+// model; a local model the admin connected (lib/ai-access.js) can be ticked instead.
+// Filled in by scripts/team/manager/ask.js.
 const IDEAS = [
   'Which products do visitors look at but rarely ask about?',
   'Where do our visitors come from, and which of them send enquiries?',
@@ -10,7 +11,7 @@ const IDEAS = [
   'How quickly are enquiries answered, and is it getting better?',
 ];
 ---
-<!-- ASK THE DATA: questions about the website, answered by the local model -->
+<!-- ASK THE DATA: questions about the website, answered from its own numbers -->
 <section class="a-view" data-view="ask" aria-labelledby="h-ask" hidden>
   <div class="a-head">
     <div>
@@ -29,7 +30,7 @@ const IDEAS = [
       <button class="btn btn-secondary" type="button" id="askDownload">Download the data log</button>
     </div>
   </div>
-  <p class="a-card a-ask-model" id="askModel">Checking for a local model.</p>
+  <p class="a-card a-ask-model" id="askModel">Answers come from the website's own numbers.</p>
   <div class="a-card a-ask">
     <div class="a-ask-ideas" id="askIdeas" role="group" aria-label="Questions to start with">
       {IDEAS.map((q) => <button class="btn btn-secondary btn-sm" type="button" data-ask-idea>{q}</button>)}
@@ -37,6 +38,7 @@ const IDEAS = [
     <form class="a-ask-form" id="askForm" novalidate>
       <label class="a-label" for="askQ">Your question</label>
       <textarea class="input" id="askQ" rows="3" maxlength="500" placeholder="For example: which pages do visitors leave quickly?"></textarea>
+      <label class="a-check" id="askUseModelRow" hidden><input type="checkbox" id="askUseModel"> <span>Use the local model instead</span></label>
       <div class="a-actions">
         <button class="btn btn-primary" type="submit" id="askGo">Ask</button>
         <button class="btn btn-secondary" type="button" id="askStop" hidden>Stop</button>
@@ -46,5 +48,5 @@ const IDEAS = [
     <p class="sr-only" id="askStatus" role="status" aria-live="polite"></p>
     <div class="a-ask-thread" id="askThread"></div>
   </div>
-  <p class="hint">A model can misread a figure. Before acting on an answer, check the number in Traffic, Report or Products.</p>
+  <p class="hint">Each answer links to the screen it comes from, where the same number can be checked. The local model, when ticked, can misread a figure.</p>
 </section>

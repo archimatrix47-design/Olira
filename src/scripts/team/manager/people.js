@@ -92,7 +92,9 @@ function render() {
   }
 
   $('#peopleLoad').replaceChildren(rows.length
-    ? barList([...rows.map((r) => ({ label: r.m.name, value: r.open, note: r.overdue ? `${r.overdue} overdue` : null })), ...(loose ? [{ label: 'Not handed out', value: loose }] : [])].sort((a, b) => b.value - a.value), { emptyText: 'Nothing open.' })
+    ? h('div', {},
+      barList([...rows.map((r) => ({ label: r.m.name, value: r.open, part: r.overdue, note: r.overdue ? `${int(r.overdue)} overdue` : null })), ...(loose ? [{ label: 'Not handed out', value: loose }] : [])].sort((a, b) => b.value - a.value), { emptyText: 'Nothing open.' }),
+      rows.some((r) => r.overdue) ? h('p', { class: 'v-bars-key' }, h('i', { class: 'is-part', 'aria-hidden': 'true' }), 'Overdue', h('i', { 'aria-hidden': 'true' }), 'On time') : null)
     : empty('No one on the teams yet.'));
   const winners = rows.filter((r) => r.won.length).map((r) => ({ label: r.m.name, value: r.won.length, display: `${int(r.won.length)}${money(r.won) ? `, ${money(r.won)}` : ''}` }));
   $('#peopleWon').replaceChildren(winners.length ? barList(winners, { tone: 'b' }) : empty('Nothing marked Won in this period.'));

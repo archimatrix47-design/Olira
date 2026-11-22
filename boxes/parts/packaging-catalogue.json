@@ -26,10 +26,11 @@
   ],
   "uses": [
     "agri-catalogue",
-    "home-panels",
+    "analytics",
     "contact",
     "enquiries",
     "facts-spreadsheet",
+    "home-panels",
     "manager-reports",
     "mockup-studio",
     "packaging-3d",

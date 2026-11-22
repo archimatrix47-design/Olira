@@ -31,7 +31,8 @@ export function renderTargets(box, { targets, leads, lines, onEdit }) {
       meter('Value won', p.wonValue, wonUnit),
       p.wonValue.otherCurrency ? h('p', { class: 'a-note' }, `${p.wonValue.otherCurrency} won enquiry${p.wonValue.otherCurrency === 1 ? ' was' : 's were'} quoted in another currency and ${p.wonValue.otherCurrency === 1 ? 'is' : 'are'} not in this sum.`) : null);
   });
-  box.replaceChildren(h('div', { class: 't-targets' }, ...cards), onEdit ? h('div', { class: 'a-actions' }, h('button', { class: 'btn btn-secondary btn-sm', type: 'button', onclick: onEdit }, 'Set targets')) : null);
+  // no edit button on a team's Insights: nothing is passed (replaceChildren would write "null")
+  box.replaceChildren(...[h('div', { class: 't-targets' }, ...cards), onEdit ? h('div', { class: 'a-actions' }, h('button', { class: 'btn btn-secondary btn-sm', type: 'button', onclick: onEdit }, 'Set targets')) : null].filter(Boolean));
 }
 
 /** The manager's form: both lines, saved together. */

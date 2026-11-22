@@ -246,6 +246,10 @@
 /* ---------- manager ---------- */
 /* the team strip on the dashboard: what is loose, and who holds what */
 .t-team-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--s-4); }
+/* where enquiries wait (manager dashboard): the lead sentence names the stage to push */
+.t-wait-lead { margin: 0 0 var(--s-4); font-size: 1.0625rem; font-weight: 600; color: var(--ink); max-width: 70ch; }
+.t-wait-lead:empty { display: none; }
+.t-wait-sub { margin: var(--s-5) 0 var(--s-2); font-size: .875rem; color: var(--ink-2); }
 .t-team-chip { display: inline-flex; align-items: baseline; gap: 8px; padding: 8px 14px; border-radius: 999px; background: var(--fill-1); color: var(--ink-2); text-decoration: none; font-size: .875rem; transition: background-color var(--dur-micro) var(--ease); }
 .t-team-chip strong { color: var(--ink); font-size: 1rem; font-variant-numeric: tabular-nums; }
 .t-team-chip:hover { background: var(--fill-2); }
@@ -269,6 +273,11 @@
 .t-col header p { font-size: .8125rem; color: var(--ink-2); }
 .t-col ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .t-col-empty { font-size: .8125rem; color: var(--ink-2); padding: 4px; }
+.t-col header .t-col-wait { font-weight: 600; color: var(--ink); }
+/* Won and Lost (last 30 days) beside the totals above the board */
+.t-outcome { color: var(--ink-2); text-decoration: none; }
+.t-outcome strong { color: var(--ink); }
+.t-outcome:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .t-card { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 6px; padding: 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(0,0,0,.04); color: var(--ink); text-decoration: none; transition: box-shadow var(--dur-micro) var(--ease), transform var(--dur-micro) var(--ease); }
 .t-card:hover { box-shadow: 0 0 0 1px var(--line-strong), 0 6px 16px -8px rgba(0,0,0,.18); }
 .t-card:active { transform: scale(.985); }
@@ -347,3 +356,21 @@ html[data-input="keyboard"] .t-card:active { transform: none; }
 .v3-stage { position: relative; aspect-ratio: 4 / 5; border-radius: 12px; overflow: hidden; background: var(--surface-2); }
 .v3-side .p3d-print { margin-top: 12px; }
 @media (max-width: 760px) { .v3-preview { grid-template-columns: minmax(0, 1fr); } }
+
+/* "Fill in first" above a team's product list (fill-first.js): the incomplete products visitors open most */
+.t-first { margin: 0 0 12px; padding: 12px 14px; border-radius: var(--t-radius); background: var(--fill-1); }
+.t-first h3 { font-size: .9375rem; font-weight: 650; }
+.t-first .a-note { margin: 2px 0 8px; }
+.t-first ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.t-first li { display: flex; align-items: center; gap: 12px; }
+.t-first li .grow { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.t-first li .grow span { font-size: .8125rem; color: var(--ink-2); }
+
+/* Prices and minimums: each family folds; its summary says how many are filled in (minimums.js) */
+.t-min-fold > summary { display: flex; align-items: baseline; gap: 12px; cursor: pointer; list-style: none; min-height: 44px; padding: 6px 0; }
+.t-min-fold > summary::-webkit-details-marker { display: none; }
+.t-min-fold > summary h2 { font-size: 1.0625rem; padding: 0; margin: 0; }
+.t-min-fold > summary h2::after { content: " \203A"; content: " \203A" / ""; display: inline-block; margin-left: 4px; color: var(--ink-2); transition: transform var(--dur-micro, 150ms) ease; }
+.t-min-fold[open] > summary h2::after { transform: rotate(90deg); }
+.t-min-count { font-size: .8125rem; color: var(--ink-2); }
+.t-min-fold > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }

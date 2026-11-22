@@ -9,7 +9,8 @@
     "src/scripts/team/insights.js",
     "src/scripts/team/manager/traffic.js",
     "src/components/team/views/Insights.astro",
-    "src/components/team/views/Traffic.astro"
+    "src/components/team/views/Traffic.astro",
+    "src/scripts/team/fill-first.js"
   ],
   "tests": [
     "test/insights.test.js",

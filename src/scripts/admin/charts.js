@@ -118,11 +118,14 @@ export function barList(items, { max, emptyText = 'No data yet for this period.'
   const top = max ?? Math.max(...items.map((i) => i.value), 1);
   return h('ol', { class: `v-bars v-bars-${tone}` }, items.map((i) => {
     const fill = h('b'); fill.style.width = `${Math.max(i.value > 0 ? 1.5 : 0, (i.value / top) * 100)}%`;
+    // an optional part of the bar drawn over its start in the status colour (e.g. overdue); its note says it in words
+    const part = i.part > 0 ? h('b', { class: 'v-bars-part' }) : null;
+    if (part) part.style.width = `${Math.max(1.5, (Math.min(i.part, i.value) / top) * 100)}%`;
     return h('li', {},
       h('div', { class: 'v-bars-head' },
         h('span', { class: 'v-bars-label', title: i.title || i.label }, i.label),
         h('span', { class: 'v-bars-value' }, i.display ?? int(i.value), i.delta ? deltaChip(i.delta, true) : null)),
-      h('i', { 'aria-hidden': 'true' }, fill),
+      h('i', { 'aria-hidden': 'true' }, fill, part),
       i.note ? h('small', {}, i.note) : null);
   }));
 }

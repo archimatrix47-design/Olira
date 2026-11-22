@@ -17,11 +17,12 @@
     "test/agri-spec.test.js"
   ],
   "uses": [
-    "home-panels",
+    "analytics",
     "certificates",
     "contact",
     "enquiries",
     "facts-spreadsheet",
+    "home-panels",
     "image-upload",
     "manager-reports",
     "product-pages",

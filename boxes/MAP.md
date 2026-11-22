@@ -161,10 +161,10 @@ flowchart LR
 
 | Box | What it does | Connects to | Routes | Files |
 | --- | --- | --- | --- | --- |
-| **agri-catalogue** | The agriculture products: the public pages, the team editing them, photos and specifications. | certificates, contact, enquiries, facts-spreadsheet, home-panels, image-upload, manager-reports, product-pages, seo, site-data, site-shell, staff-accounts, staff-ui, storage, thumbs | 7 | 7 |
+| **agri-catalogue** | The agriculture products: the public pages, the team editing them, photos and specifications. | analytics, certificates, contact, enquiries, facts-spreadsheet, home-panels, image-upload, manager-reports, product-pages, seo, site-data, site-shell, staff-accounts, staff-ui, storage, thumbs | 7 | 7 |
 | **facts-spreadsheet** | The catalogue facts as a spreadsheet: download, fill in, import with a preview, saved whole or not at all. | agri-catalogue, packaging-catalogue, staff-ui | 0 | 2 |
 | **packaging-3d** | A packaging product in 3D at its own measurements: it folds, opens and lays flat, wears the visitor's logo or artwork, and shows on the website only when both the packaging team and the manager have switched it on. | packaging-catalogue, staff-accounts, staff-ui, storage | 3 | 8 |
-| **packaging-catalogue** | The packaging products: rules, photos, sizes, minimums, prices, the public catalogue and the team editing it. | agri-catalogue, contact, enquiries, facts-spreadsheet, home-panels, manager-reports, mockup-studio, packaging-3d, packing-list, product-pages, seo, site-data, site-shell, staff-accounts, staff-ui, storage, thumbs | 8 | 14 |
+| **packaging-catalogue** | The packaging products: rules, photos, sizes, minimums, prices, the public catalogue and the team editing it. | agri-catalogue, analytics, contact, enquiries, facts-spreadsheet, home-panels, manager-reports, mockup-studio, packaging-3d, packing-list, product-pages, seo, site-data, site-shell, staff-accounts, staff-ui, storage, thumbs | 8 | 14 |
 | **partners** | The partner logos on the home page, looked after by the marketing teams. | staff-accounts, staff-ui, storage | 3 | 3 |
 | **product-pages** | The product card, grid, details panel and page that both catalogues share, and the facts each one shows. | certificates, enquiries, mockup-studio, packaging-3d, packaging-catalogue, site-data, site-shell, thumbs | 0 | 6 |
 | **social-links** | The social pages and WhatsApp link. The public list leaves the WhatsApp number out. | staff-accounts, staff-ui, storage | 3 | 5 |
@@ -185,8 +185,8 @@ flowchart LR
 
 | Box | What it does | Connects to | Routes | Files |
 | --- | --- | --- | --- | --- |
-| **ai-access** | The performance log for an AI: read-only keys, the on and off switch, and the manager asking a model on their own computer. | admin-sign-in, certificates, enquiry-work, manager-reports, packaging-3d, page-speed, product-pages, site-log, staff-accounts, staff-ui, storage, targets, web-guards | 9 | 7 |
-| **analytics** | The site's own counts: no cookies, no third party, no IP address kept. Answers the Traffic and Insights screens. | admin-sign-in, agri-catalogue, enquiries, enquiry-work, packaging-catalogue, page-speed, site-basics, staff-accounts, staff-ui, storage, targets, web-guards | 3 | 5 |
+| **ai-access** | The performance log for an AI: read-only keys, the on and off switch, and the manager's Ask the data, answered by the website itself from the log (lib/ask-rules.js), or by a model on their own computer when one is connected. | admin-sign-in, certificates, enquiry-work, manager-reports, packaging-3d, page-speed, product-pages, site-log, staff-accounts, staff-ui, storage, targets, web-guards | 9 | 8 |
+| **analytics** | The site's own counts: no cookies, no third party, no IP address kept. Answers the Traffic and Insights screens. | admin-sign-in, agri-catalogue, enquiries, enquiry-work, packaging-catalogue, page-speed, site-basics, staff-accounts, staff-ui, storage, targets, web-guards | 3 | 6 |
 | **manager-reports** | The manager's dashboard, team performance, report and product completeness. | certificates, enquiry-work, packaging-3d, product-pages, site-shell, staff-accounts, staff-ui, targets | 0 | 9 |
 | **page-speed** | How fast the site is for real visitors, measured in their browsers and kept only as counts. | nothing | 0 | 2 |
 | **site-health** | The address an uptime monitor watches: folders writable, build present, enquiry store answering. | admin-sign-in, analytics, lead-store, storage | 1 | 1 |

@@ -360,6 +360,7 @@
    ],
    "reads": [],
    "uses": [
+    "analytics",
     "certificates",
     "contact",
     "enquiries",
@@ -433,6 +434,7 @@
    ],
    "guards": 0,
    "imports": [
+    "analytics",
     "certificates",
     "contact",
     "enquiries",
@@ -455,7 +457,7 @@
   },
   "ai-access": {
    "name": "AI access",
-   "does": "The performance log for an AI: read-only keys, the on and off switch, and the manager asking a model on their own computer.",
+   "does": "The performance log for an AI: read-only keys, the on and off switch, and the manager's Ask the data, answered by the website itself from the log (lib/ask-rules.js), or by a model on their own computer when one is connected.",
    "kind": "insight",
    "files": [
     "lib/ai-access.js",
@@ -464,12 +466,14 @@
     "src/scripts/team/manager/ask.js",
     "src/scripts/team/manager/ask-model.js",
     "src/components/admin/views/AiAccess.astro",
-    "src/components/team/views/Ask.astro"
+    "src/components/team/views/Ask.astro",
+    "lib/ask-rules.js"
    ],
    "tests": [
     "test/ai-access.test.js",
     "test/ai-log.test.js",
-    "test/ask-model.test.js"
+    "test/ask-model.test.js",
+    "test/ask-rules.test.js"
    ],
    "data": [
     "ai-access.json"
@@ -568,6 +572,7 @@
     "packaging-3d",
     "page-speed",
     "product-pages",
+    "staff-accounts",
     "staff-ui",
     "targets"
    ],
@@ -584,7 +589,8 @@
     "src/scripts/team/insights.js",
     "src/scripts/team/manager/traffic.js",
     "src/components/team/views/Insights.astro",
-    "src/components/team/views/Traffic.astro"
+    "src/components/team/views/Traffic.astro",
+    "src/scripts/team/fill-first.js"
    ],
    "tests": [
     "test/insights.test.js",
@@ -610,7 +616,9 @@
    ],
    "usedBy": [
     "admin-tools",
+    "agri-catalogue",
     "enquiries",
+    "packaging-catalogue",
     "site-health",
     "site-log",
     "site-shell",
@@ -1944,6 +1952,7 @@
    "reads": [],
    "uses": [
     "agri-catalogue",
+    "analytics",
     "contact",
     "enquiries",
     "facts-spreadsheet",
@@ -2044,6 +2053,7 @@
    "guards": 0,
    "imports": [
     "agri-catalogue",
+    "analytics",
     "contact",
     "enquiries",
     "facts-spreadsheet",

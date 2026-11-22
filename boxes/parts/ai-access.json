@@ -1,7 +1,7 @@
 {
   "id": "ai-access",
   "name": "AI access",
-  "does": "The performance log for an AI: read-only keys, the on and off switch, and the manager asking a model on their own computer.",
+  "does": "The performance log for an AI: read-only keys, the on and off switch, and the manager's Ask the data, answered by the website itself from the log (lib/ask-rules.js), or by a model on their own computer when one is connected.",
   "kind": "insight",
   "plugged": true,
   "files": [
@@ -11,12 +11,14 @@
     "src/scripts/team/manager/ask.js",
     "src/scripts/team/manager/ask-model.js",
     "src/components/admin/views/AiAccess.astro",
-    "src/components/team/views/Ask.astro"
+    "src/components/team/views/Ask.astro",
+    "lib/ask-rules.js"
   ],
   "tests": [
     "test/ai-access.test.js",
     "test/ai-log.test.js",
-    "test/ask-model.test.js"
+    "test/ask-model.test.js",
+    "test/ask-rules.test.js"
   ],
   "uses": [
     "admin-sign-in",

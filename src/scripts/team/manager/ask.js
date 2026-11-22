@@ -1,10 +1,17 @@
-// Manager, Ask the data: a question about the website, answered by the local model
-// the admin connected (lib/ai-access.js), from the performance log (lib/ai-log.js).
-// The log is fetched from the website; the question and the log then go from this
-// browser straight to the model on this computer. Answers are shown as plain text
-// only, never as HTML. "Download the data log" gives the same log as a file.
+// Manager, Ask the data: a question about the website in plain words, answered by
+// the website itself from its performance log (lib/ai-log.js) and the enquiries,
+// worked out in this browser by lib/ask-rules.js: no AI model is needed. Each answer
+// gives the figures, the change on the period before and the screen to check them.
+// When the admin has connected a local model (lib/ai-access.js), the manager can tick
+// "Use the local model" to ask it instead: the question and the log then go from this
+// browser straight to the model on this computer. Answers are shown as text only,
+// never as HTML. "Download the data log" gives the same log as a file.
 import { $, $$, h, api, toast, busy } from '../../admin/api.js';
 import { messagesFor, requestFor, readLine, streamLines } from './ask-model.js';
+import { answer as builtIn, periodOf } from '../../../../lib/ask-rules.js';
+import { barList } from '../../admin/charts.js';
+import * as store from '../../admin/store.js';
+import { session, followupsOf } from '../session.js';
 
 let bound = false, cfg = null, schema = null, controller = null;
 let log = null, logDays = 0;
@@ -19,11 +26,13 @@ export async function show() {
   } catch (e) { cfg = null; if (e.status !== 401) toast(e.message, 'error'); }
   const model = $('#askModel');
   model.textContent = cfg
-    ? `Answers come from ${cfg.model}, running in ${PROGRAM[cfg.kind] || 'a model server'} at ${cfg.url} on this computer.`
-    : 'No local model is connected yet: the admin can connect one under AI access. Meanwhile you can download the data log and give it to an assistant you trust.';
-  model.classList.toggle('is-off', !cfg);
-  $('#askGo').disabled = !cfg;
-  $$('[data-ask-idea]').forEach((b) => { b.disabled = !cfg; });
+    ? `Answers come from the website's own numbers, worked out in this browser. A local model is also connected (${cfg.model}, in ${PROGRAM[cfg.kind] || 'a model server'} on this computer): tick "Use the local model" to ask it instead.`
+    : "Answers come from the website's own numbers, worked out in this browser: no AI model is used, and nothing leaves this computer.";
+  model.classList.toggle('is-off', false);
+  $('#askUseModelRow').hidden = !cfg;
+  if (!cfg) $('#askUseModel').checked = false;
+  $('#askGo').disabled = false;
+  $$('[data-ask-idea]').forEach((b) => { b.disabled = false; });
 }
 
 const days = () => Number($('#askDays').value) || 30;
@@ -56,7 +65,40 @@ function bind() {
   });
 }
 
-async function ask(question) {
+function ask(question) {
+  return cfg && $('#askUseModel').checked ? askModel(question) : askWebsite(question);
+}
+
+/** The website's own answer (lib/ask-rules.js): sentences, a small chart, where to check. */
+async function askWebsite(question) {
+  if (controller) return;
+  if (!question) { toast('Type a question, or choose one above.', 'error'); $('#askQ').focus(); return; }
+  const want = periodOf(question);
+  if (want && want !== days()) $('#askDays').value = String(want); // "this week" asks about the last 7 days
+  const out = h('div', { class: 'a-ask-a', 'aria-busy': 'true' }, 'Working it out.');
+  $('#askThread').append(h('div', { class: 'a-ask-turn' }, h('p', { class: 'a-ask-q' }, question), out));
+  $('#askQ').value = '';
+  try {
+    const [data, inbox] = await Promise.all([getLog(), store.inquiries()]);
+    const leads = Array.isArray(inbox?.inquiries) ? inbox.inquiries : [];
+    const a = builtIn(question, { log: data, leads, members: session.members, overdue: followupsOf(leads) });
+    out.replaceChildren(...[
+      ...a.lines.map((s) => h('p', {}, s)),
+      a.bars?.length ? barList(a.bars) : null,
+      a.ideas ? h('div', { class: 'a-ask-ideas' }, a.ideas.map((idea) => h('button', { class: 'btn btn-secondary btn-sm', type: 'button', onclick: () => { $('#askQ').value = idea; ask(idea); } }, idea))) : null,
+      a.link ? h('p', { class: 'a-ask-check' }, h('a', { href: a.link.href }, `Check it in ${a.link.label}`)) : null,
+    ].filter(Boolean));
+    $('#askStatus').textContent = a.lines[0] || 'Answer ready.';
+    $('#askClear').hidden = false;
+  } catch (e) {
+    if (e.status !== 401) { out.textContent = e.message; out.classList.add('is-error'); }
+  } finally {
+    out.removeAttribute('aria-busy');
+    $('#askQ').focus();
+  }
+}
+
+async function askModel(question) {
   if (!cfg || controller) return;
   if (!question) { toast('Type a question, or choose one above.', 'error'); $('#askQ').focus(); return; }
   const status = $('#askStatus'), go = $('#askGo'), stop = $('#askStop');

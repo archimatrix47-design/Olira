@@ -6,6 +6,7 @@ import { $, h, api, toast, confirmDialog, busy, uploadImage } from '../admin/api
 import { scrollBehavior } from '../admin/motion.js';
 import { watch, clean, touch, mayLeave } from '../admin/tools.js';
 import { agriCompleteness, completeLine } from '../../../lib/completeness.js';
+import { fillFirst } from './fill-first.js';
 import { SPEC_FIELDS } from '../../../lib/agri-spec.js';
 import { thumbUrl } from '../../../lib/thumb-url.js';
 import { mountFactsImport } from './facts-import.js';
@@ -44,6 +45,7 @@ function renderList(focusId, focusWhich) {
   const list = $('#productList');
   const done = $('#productComplete');
   done.hidden = !items.length; done.textContent = completeLine(items, agriCompleteness);
+  fillFirst($('#productFirst'), { items, check: agriCompleteness, onOpen: (p) => edit(p) });
   if (!items.length) {
     list.replaceChildren(h('li', { class: 'a-empty' }, h('strong', {}, 'No products yet'), 'Add the first product with Add product.'));
     return;

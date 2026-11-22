@@ -46,9 +46,22 @@ export async function show() {
     form().querySelector('.a-savebar').hidden = !rows.length;
     if (!rows.length) { box.replaceChildren(h('p', { class: 'note' }, 'No packaging products yet. Add them under Packaging products.')); return; }
     const families = [...new Set(rows.map((r) => r.p.family || 'bags'))];
-    box.replaceChildren(...families.map((f) => h('section', { class: 'a-card t-min-group', 'aria-labelledby': `minfam-${f}` },
-      h('h2', { id: `minfam-${f}` }, FAMILY[f] || f),
-      ...rows.filter((r) => (r.p.family || 'bags') === f).map((r) => r.el))));
+    // one folding section per family; the first that still needs filling in opens
+    const filled = (r) => [...r.el.querySelectorAll('input')].some((i) => i.value.trim());
+    const tally = (list) => `${list.length} product${list.length === 1 ? '' : 's'}, ${list.filter(filled).length} filled in`;
+    let opened = false;
+    box.replaceChildren(...families.map((f) => {
+      const mine = rows.filter((r) => (r.p.family || 'bags') === f);
+      const open = !opened && mine.some((r) => !filled(r));
+      if (open) opened = true;
+      const count = h('span', { class: 't-min-count' }, tally(mine));
+      const fold = h('details', { class: 't-min-fold', open: open || null },
+        h('summary', {}, h('h2', { id: `minfam-${f}` }, FAMILY[f] || f), count),
+        ...mine.map((r) => r.el));
+      fold.addEventListener('input', () => { count.textContent = tally(mine); });
+      return h('section', { class: 'a-card t-min-group', 'aria-labelledby': `minfam-${f}` }, fold);
+    }));
+    if (!opened) box.querySelector('details')?.setAttribute('open', '');
     mark();
     clean(form());
   } catch (e) {
@@ -109,7 +122,7 @@ async function submit(e) {
     f.err.hidden = !bad; f.err.textContent = bad ? PROBLEM[f.kind] : '';
     if (bad) { f.input.setAttribute('aria-invalid', 'true'); first ||= f.input; } else f.input.removeAttribute('aria-invalid');
   }
-  if (first) return first.focus();
+  if (first) { first.closest('details')?.setAttribute('open', ''); return first.focus(); } // a folded family opens to show its error
   const done = busy($('#tMinSave'));
   const saved = [], failed = [];
   const val = (f) => READ[f.kind](f.input.value) ?? '';

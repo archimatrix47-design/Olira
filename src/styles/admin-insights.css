@@ -106,7 +106,14 @@
 .v-bars-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v-bars-value { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .v-bars i { display: block; height: 8px; border-radius: 999px; background: var(--fill-2); overflow: hidden; }
+.v-bars i { position: relative; }
 .v-bars i b { display: block; height: 100%; border-radius: inherit; background: var(--viz-a); }
+/* the part of a bar in the status colour (overdue), over its start, with a 2px surface gap */
+.v-bars i b.v-bars-part { position: absolute; left: 0; top: 0; background: var(--danger); box-shadow: 2px 0 0 var(--surface); }
+.v-bars-key { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: .8125rem; color: var(--ink-2); }
+.v-bars-key i { width: 10px; height: 10px; border-radius: 3px; background: var(--viz-a); }
+.v-bars-key i:not(:first-child) { margin-left: 10px; }
+.v-bars-key i.is-part { background: var(--danger); }
 .v-bars-b i b { background: var(--viz-b); }
 .v-bars-context i b { background: var(--viz-context); }
 .v-bars small { font-size: .8125rem; color: var(--ink-2); }
@@ -233,6 +240,14 @@
 .a-activity-item strong { display: block; font-weight: 500; }
 .a-activity-item span { font-size: .8125rem; color: var(--ink-2); }
 .a-activity-item.is-problem strong { color: var(--danger); font-weight: 600; }
+/* a run of sign-ins folded into one line; it opens to each (activity.js) */
+.a-activity-group details > summary { cursor: pointer; list-style: none; min-height: 44px; display: grid; align-content: center; }
+.a-activity-group details > summary::-webkit-details-marker { display: none; }
+.a-activity-group details > summary strong::after { content: " \203A"; content: " \203A" / ""; display: inline-block; margin-left: 4px; color: var(--ink-2); transition: transform var(--dur-micro, 150ms) ease; }
+.a-activity-group details[open] > summary strong::after { transform: rotate(90deg); }
+.a-activity-group details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.a-activity-group ul { list-style: none; margin: 6px 0 0; padding: 0; }
+.a-activity-group ul .a-activity-item:first-child { border-top: 0; }
 /* a small heading inside a card, between two lists */
 .v-sub { font-size: .8125rem !important; font-weight: 600 !important; letter-spacing: 0 !important; color: var(--ink-2) !important; margin: 0 0 8px; }
 * + .v-sub { margin-top: 18px; }

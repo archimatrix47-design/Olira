@@ -508,3 +508,9 @@ html[data-input="keyboard"] .a-dialog, html[data-input="keyboard"] .a-dialog::ba
 /* keyboard shortcuts, shown where they help */
 .a-kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding-inline: 5px; border-radius: 5px; font: 600 .6875rem/1 var(--font-sans); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-strong), 0 1px 0 var(--line-strong); }
 @media (pointer: coarse) { .a-kbd { display: none; } }
+/* Ask the data: the website's own answer (lib/ask-rules.js) - sentences, a small chart, where to check it */
+.a-ask-a > p { margin: 0 0 6px; white-space: normal; }
+.a-ask-a .v-bars { margin-top: 10px; max-width: 560px; }
+.a-ask-a .a-ask-ideas { margin-top: 10px; }
+.a-ask-check { margin-top: 10px; font-size: .875rem; }
+.a-ask-check a { color: var(--link, var(--accent)); }

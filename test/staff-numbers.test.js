@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { hours, delta, per100, believable, duration, SMALL_BASE } from '../lib/format.js';
-import { scoreOf, scoreLabel, scoreReasons, oldestWaiting, BAND_KEY } from '../lib/lead-rules.js';
+import { scoreOf, scoreLabel, scoreReasons, oldestWaiting, BAND_KEY, stageSince, stageWaits, ageBands } from '../lib/lead-rules.js';
 
 // The staff workspaces' numbers and inbox (fresh-eyes review FR-R19..R22).
 const read = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
@@ -92,4 +92,30 @@ test('on a phone the inbox starts with one line, and the tabs stay in one sidewa
   assert.match(phone, /@media \(max-width: 760px\) \{\n {2}\.t-inbox-head \.t-summary \{ display: none; \}\n {2}\.t-phone-line \{ display: block;/);
   assert.match(phone, /\[data-view="inbox"\] \.t-toolbar \.a-seg \{ flex-wrap: nowrap; min-width: 0; max-width: 100%; overflow-x: auto;/);
   assert.match(phone, /\[data-view="inbox"\] \.t-toolbar \{ min-width: 0; \}/, 'the row scrolls inside the card, the card stays on screen');
+});
+
+// the manager dashboard's "Where enquiries wait": time in the current stage, not since arrival
+test('time in a stage counts from the last move into it, and ages fall in their bands', () => {
+  const now = Date.parse('2026-11-21T12:00:00Z');
+  const day = 86400000;
+  const at = (d) => new Date(now - d * day).toISOString();
+  const leads = [
+    { status: 'quoted', createdAt: at(40), history: [{ status: 'read', at: at(39) }, { status: 'quoted', at: at(10) }] },
+    { status: 'quoted', createdAt: at(30), history: [{ status: 'quoted', at: at(2) }, { at: at(1), assignee: { id: 'tm_1' } }] },
+    { status: 'new', createdAt: at(0.5) },
+    { status: 'new', createdAt: at(5) },
+    { status: 'won', createdAt: at(3) },
+  ];
+  assert.equal(stageSince(leads[0]), now - 10 * day, 'the move into Quoted, not the arrival');
+  assert.equal(stageSince(leads[2]), now - 0.5 * day, 'never moved: since it arrived');
+  assert.equal(stageSince(leads[1]), now - 2 * day, 'a later entry that is not a move (handing out) does not restart the clock');
+  const w = Object.fromEntries(stageWaits(leads, now).map((r) => [r.id, r]));
+  assert.equal(w.quoted.count, 2);
+  assert.equal(w.quoted.medianDays, 6);
+  assert.equal(w.quoted.oldestDays, 10);
+  assert.equal(w.new.count, 2);
+  assert.equal(w.contacted.count, 0);
+  assert.equal(w.contacted.medianDays, null);
+  assert.ok(!('won' in w), 'closed stages are not waiting');
+  assert.deepEqual(ageBands(leads, now).map((b) => [b.label, b.count]), [['Over 4 weeks', 2], ['1 to 4 weeks', 0], ['1 to 7 days', 1], ['Under a day', 1]]);
 });
