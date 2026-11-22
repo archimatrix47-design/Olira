@@ -101,3 +101,16 @@ test('a question it cannot read gets the list of questions it can answer', () =>
   assert.equal(a.topic, 'help');
   assert.equal(a.ideas.length, CAN_ANSWER.length);
 });
+
+test('the Ask buttons start disabled and the script enables them once it handles them', async () => {
+  const fs = await import('node:fs');
+  const view = fs.readFileSync(new URL('../src/components/team/views/Ask.astro', import.meta.url), 'utf8');
+  // pressed before the script is ready, a live submit button sends the form natively and reloads the page
+  assert.match(view, /<button[^>]*id="askGo"[^>]*\sdisabled[\s>]/);
+  assert.match(view, /<button[^>]*data-ask-idea[^>]*\sdisabled[\s>]/);
+  const js = fs.readFileSync(new URL('../src/scripts/team/manager/ask.js', import.meta.url), 'utf8');
+  const show = js.slice(js.indexOf('export async function show'));
+  const bindAt = show.indexOf('bind();'), enableAt = show.indexOf("$('#askGo').disabled = false");
+  assert.ok(bindAt > 0 && enableAt > bindAt, 'enabled after the submit handler is bound');
+  assert.ok(enableAt < show.indexOf('await '), 'enabled without waiting for the model settings');
+});

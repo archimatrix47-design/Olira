@@ -53,6 +53,10 @@
 .a-alerts li.a-attn-more { display: flex; justify-content: flex-start; padding: 0; background: none; }
 .a-alerts li.a-attn-more::before { content: none; }
 .a-alerts li[hidden] { display: none; }
+/* until the first answer, the cards below "Needs attention" stay invisible: the list grows to
+   its real length first, so nothing seen moves (admin overview and manager dashboard; the
+   skeleton row is there only before that answer) */
+.a-view:has(#ovAttention > .v-skeleton) .a-attention ~ * { visibility: hidden; }
 @media (max-width: 620px) {
   .a-alerts li { grid-template-columns: 10px minmax(0, 1fr); }
   .a-alerts li .btn { grid-column: 2; justify-self: start; }

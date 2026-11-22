@@ -296,12 +296,12 @@
 }
 
 /* ---- the public site (sheet.css): product-first, Apple-style ----
-   White page, a light grey stage for products, near-black ink, the logo's teal as
+   Cream paper page, a kraft stage for products, near-black ink, the logo's teal as
    the one accent. Dark mode is true black with graphite stages. */
 .sheet-site {
-  --page: #FFFFFF;
+  --page: #FAF6EE;           /* cream paper (owner, 21 Nov 2026): warmer with the logo's teal and leaf; ink-3 5.3:1, accent 6.5:1 on it */
   --stage: #F3EEE6;          /* kraft paper, lightly: the stage the products stand on */
-  --tile: #FFFFFF;
+  --tile: #FFFDF8;           /* cards and fields: a lighter sheet of the same paper */
   --ink: #1D1D1F;
   --ink-2: #606065;          /* 5.4:1 on the kraft stage, 6.3:1 on white */
   --ink-3: #66666B;          /* 4.9:1 on the stage: still text, so still AA */
@@ -321,7 +321,7 @@
   --dark-ink: #F5F5F7;
   --dark-ink-2: #A1A1A6;
   --kraft-fill: rgba(181,138,90,.16);
-  --glass: rgba(255,255,255,.72);
+  --glass: rgba(250,246,238,.72);  /* the page's cream, for the header and quote bar */
   --leaf-ink: #48721B;        /* the logo's leaf, as text on light: 4.9:1 on the kraft stage */
   --grad: linear-gradient(100deg, #186078 5%, #2F7A5A 50%, #5E8A1E 95%);   /* the logo's leaf, teal into green */
   --agri-band: #0C1810;       /* deep leaf: the agriculture band */

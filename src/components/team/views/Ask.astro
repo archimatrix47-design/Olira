@@ -33,14 +33,15 @@ const IDEAS = [
   <p class="a-card a-ask-model" id="askModel">Answers come from the website's own numbers.</p>
   <div class="a-card a-ask">
     <div class="a-ask-ideas" id="askIdeas" role="group" aria-label="Questions to start with">
-      {IDEAS.map((q) => <button class="btn btn-secondary btn-sm" type="button" data-ask-idea>{q}</button>)}
+      {IDEAS.map((q) => <button class="btn btn-secondary btn-sm" type="button" data-ask-idea disabled>{q}</button>)}
     </div>
     <form class="a-ask-form" id="askForm" novalidate>
       <label class="a-label" for="askQ">Your question</label>
       <textarea class="input" id="askQ" rows="3" maxlength="500" placeholder="For example: which pages do visitors leave quickly?"></textarea>
       <label class="a-check" id="askUseModelRow" hidden><input type="checkbox" id="askUseModel"> <span>Use the local model instead</span></label>
       <div class="a-actions">
-        <button class="btn btn-primary" type="submit" id="askGo">Ask</button>
+        {/* enabled by the script (manager/ask.js show()), so an early press cannot send the form natively */}
+        <button class="btn btn-primary" type="submit" id="askGo" disabled>Ask</button>
         <button class="btn btn-secondary" type="button" id="askStop" hidden>Stop</button>
         <button class="btn btn-ghost" type="button" id="askClear" hidden>Start a new conversation</button>
       </div>

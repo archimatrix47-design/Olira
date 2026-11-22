@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { hours, delta, per100, believable, duration, SMALL_BASE } from '../lib/format.js';
-import { scoreOf, scoreLabel, scoreReasons, oldestWaiting, BAND_KEY, stageSince, stageWaits, ageBands } from '../lib/lead-rules.js';
+import { scoreOf, scoreLabel, scoreReasons, oldestWaiting, BAND_KEY, stageSince, stageWaits, ageBands, recentMoves } from '../lib/lead-rules.js';
 
 // The staff workspaces' numbers and inbox (fresh-eyes review FR-R19..R22).
 const read = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
@@ -118,4 +118,18 @@ test('time in a stage counts from the last move into it, and ages fall in their 
   assert.equal(w.contacted.medianDays, null);
   assert.ok(!('won' in w), 'closed stages are not waiting');
   assert.deepEqual(ageBands(leads, now).map((b) => [b.label, b.count]), [['Over 4 weeks', 2], ['1 to 4 weeks', 0], ['1 to 7 days', 1], ['Under a day', 1]]);
+});
+
+test('recent moves: the newest move into a stage first, only within the day, at most five', () => {
+  const now = Date.parse('2026-11-22T10:00:00Z');
+  const hoursAgo = (h) => new Date(now - h * 3600000).toISOString();
+  // seven quotes moved in today (an hour apart), one moved in two days ago, one created quoted today
+  const moved = Array.from({ length: 7 }, (_, k) => ({ id: `q${k}`, status: 'quoted', createdAt: hoursAgo(300), history: [{ status: 'quoted', at: hoursAgo(7 - k) }] }));
+  const old = { id: 'old', status: 'quoted', createdAt: hoursAgo(300), history: [{ status: 'quoted', at: hoursAgo(48) }] };
+  const created = { id: 'new', status: 'quoted', createdAt: hoursAgo(0.5) };
+  const got = recentMoves([...moved, old, created], now).map((l) => l.id);
+  assert.deepEqual(got, ['new', 'q6', 'q5', 'q4', 'q3'], 'the latest move leads, however many moved today');
+  assert.ok(!got.includes('old'));
+  assert.deepEqual(recentMoves([old], now), []);
+  assert.equal(recentMoves(moved, now, { max: 2 }).length, 2);
 });

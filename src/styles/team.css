@@ -22,6 +22,15 @@
 .t-stat-link span { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
 .t-stat-link:hover span { color: var(--ink); text-decoration-color: currentColor; }
 @media (max-width: 620px) { .t-inbox-head #inboxRefresh { margin-left: 0; } .t-summary { width: 100%; } }
+/* room for the numbers before they arrive, and the search and filters on their own row
+   (the product filter appears with the data), so nothing below moves while loading */
+@media (min-width: 761px) {
+  .t-inbox-head .t-summary { min-height: 3.75rem; align-content: center; }
+  [data-view="inbox"] .t-toolbar-row { flex-basis: 100%; }
+  /* menus filled from the data keep one width, so their options arriving moves nothing */
+  [data-view="inbox"] #inboxProduct { width: 13rem; }
+  [data-view="inbox"] #inboxOwner { width: 11rem; }
+}
 /* phones: one line instead of the counters, and the filters in one row that scrolls
    sideways, so the first enquiry is near the top of the screen */
 .t-phone-line { display: none; }

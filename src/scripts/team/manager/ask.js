@@ -20,6 +20,9 @@ const PROGRAM = { ollama: 'Ollama', openai: 'the model server' };
 
 export async function show() {
   if (!bound) { bound = true; bind(); }
+  // the built-in answers need nothing more, so the buttons work as soon as they are bound
+  $('#askGo').disabled = false;
+  $$('[data-ask-idea]').forEach((b) => { b.disabled = false; });
   try {
     const r = await api('/api/team/manager/ai');
     cfg = r.llm; schema = r.schema;
@@ -31,8 +34,6 @@ export async function show() {
   model.classList.toggle('is-off', false);
   $('#askUseModelRow').hidden = !cfg;
   if (!cfg) $('#askUseModel').checked = false;
-  $('#askGo').disabled = false;
-  $$('[data-ask-idea]').forEach((b) => { b.disabled = false; });
 }
 
 const days = () => Number($('#askDays').value) || 30;

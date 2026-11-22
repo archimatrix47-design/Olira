@@ -145,25 +145,44 @@ function renderSummary() {
   $('#plSummaryCount').textContent = `${lines.length} product${lines.length === 1 ? '' : 's'}`;
   // the quote form's message is optional while the list is attached (common.js)
   document.dispatchEvent(new CustomEvent('packinglist:changed', { detail: { lines: lines.length } }));
-  $('#plSummaryBody').replaceChildren(...lines.map((l) => {
+  $('#plSummaryBody').replaceChildren(...lines.map((l, i) => {
     const p = byId(l.productId);
     const s = (p.sizes || []).find((x) => x.id === l.sizeId);
     const tr = h('tr');
     const td = h('td', {}, p.name);
     td.append(h('small', {}, [s?.label, colourLabel(l.colours)].filter(Boolean).join(', ')));
-    const err = problem(l);
-    tr.append(td, h('td', {}, units(l.qty) ? fmt(units(l.qty)) : 'Quantity needed'));
-    if (err) tr.lastChild.style.color = 'var(--danger)';
+    const q = h('td', { class: 'pl-sum-q' });
+    q.append(...summaryQty(l, i, p));
+    tr.append(td, q);
     return tr;
-  }));
+  }), ...estimateRow());
+}
+// the quantity is typed right here in the form (no name: the list is sent by formHooks.bundle)
+function summaryQty(l, i, p) {
+  const min = minimumFor(p, l.sizeId);
+  const qty = h('input', { class: 'pl-sum-qty', id: `plSumQty-${i}`, inputmode: 'numeric', autocomplete: 'off', maxlength: '12', value: units(l.qty) ? fmt(units(l.qty)) : '', placeholder: min ? fmt(min) : 'Quantity', 'aria-label': `Quantity of ${p.name}`, 'aria-describedby': `plSumMsg-${i}` });
+  const msg = h('small', { class: 'pl-sum-msg', id: `plSumMsg-${i}` });
+  const check = (strict) => {
+    const err = problem(l), q = units(l.qty);
+    const show = err && (strict || (q && min && q < min));
+    msg.textContent = show ? err : min ? `Minimum ${fmt(min)}` : '';
+    msg.classList.toggle('is-error', !!show);
+    if (show) qty.setAttribute('aria-invalid', 'true'); else qty.removeAttribute('aria-invalid');
+  };
+  qty.addEventListener('input', () => { l.qty = qty.value.trim(); save(); check(false); $('#plSummaryBody .pl-summary-est')?.remove(); $('#plSummaryBody').append(...estimateRow()); });
+  qty.addEventListener('blur', () => { const n = units(qty.value); if (n) { qty.value = fmt(n); l.qty = n; save(); } check(true); });
+  qty.__check = check;
+  check(false);
+  return [qty, msg];
+}
+function estimateRow() {
   const e = listEstimate();
-  if (e) {
-    const td = h('td', {}, 'Estimate');
-    td.append(h('small', {}, estimateNote(e)));
-    const tr = h('tr', { class: 'pl-summary-est' });
-    tr.append(td, h('td', {}, etb(e.sum)));
-    $('#plSummaryBody').append(tr);
-  }
+  if (!e) return [];
+  const td = h('td', {}, 'Estimate');
+  td.append(h('small', {}, estimateNote(e)));
+  const tr = h('tr', { class: 'pl-summary-est' });
+  tr.append(td, h('td', {}, etb(e.sum)));
+  return [tr];
 }
 
 /* ---------- counts and the Add buttons ---------- */
@@ -258,7 +277,14 @@ formHooks.bundle = () => {
   if (bad) return { error: `${byId(bad.productId)?.name}: ${problem(bad)}` };
   return { items: lines.map((l) => ({ productId: l.productId, sizeId: l.sizeId || undefined, qty: units(l.qty), colours: l.colours === '' ? undefined : Number(l.colours) })) };
 };
-formHooks.bundleProblem = () => { track({ event: 'bundle_below_min' }); open(lines.findIndex((l) => problem(l))); };
+formHooks.bundleProblem = () => {
+  track({ event: 'bundle_below_min' });
+  const i = lines.findIndex((l) => problem(l));
+  // a quantity is fixed where it is, in the form; a size is chosen in the list
+  const qty = /quantity|Minimum/i.test(problem(lines[i])) && $(`#plSumQty-${i}`);
+  if (qty) { qty.__check?.(true); qty.focus(); return; }
+  open(i);
+};
 formHooks.rejected = (reply) => {
   if (reply.productId) open(Math.max(0, lines.findIndex((l) => l.productId === reply.productId)));
 };

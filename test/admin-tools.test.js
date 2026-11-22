@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { describeEvent, deviceOf } from '../lib/admin-tools.js';
+import { describeEvent, deviceOf, folderBytes } from '../lib/admin-tools.js';
 
 for (const key of ['NODE_ENV', 'PORT', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_NAME', 'RECIPIENT_EMAIL', 'CORS_ORIGINS', 'SITE_URL']) process.env[key] = '';
 process.env.NODE_ENV = 'test';
@@ -89,6 +89,31 @@ test('a test email: refused until set up, then the mail server\'s answer is kept
   const log = (await (await req('GET', '/api/admin/activity', { token: admin })).json()).items.map((i) => i.text);
   assert.ok(log.includes('Email delivery settings saved'));
   assert.ok(log.some((t) => t.startsWith('Test email failed')));
+});
+
+test('folder sizes: one walk counts the whole folder and the uploads inside it', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'olira-sizes-'));
+  fs.mkdirSync(path.join(root, 'uploads', 'client-files'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'sub'));
+  fs.writeFileSync(path.join(root, 'a.json'), 'x'.repeat(10));
+  fs.writeFileSync(path.join(root, 'sub', 'b.json'), 'x'.repeat(3));
+  fs.writeFileSync(path.join(root, 'uploads', 'c.webp'), 'x'.repeat(5));
+  fs.writeFileSync(path.join(root, 'uploads', 'client-files', 'd.pdf'), 'x'.repeat(7));
+  fs.writeFileSync(path.join(root, 'uploads-old.json'), 'x'.repeat(2)); // a name that starts the same is not inside
+  assert.deepEqual(await folderBytes(root, path.join(root, 'uploads')), { total: 27, within: 12 });
+  assert.deepEqual(await folderBytes(path.join(root, 'missing')), { total: 0, within: 0 });
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('site health: the folder sizes are kept for a while, the checks run every time', async () => {
+  const admin = await login();
+  const first = await (await req('GET', '/api/admin/health', { token: admin })).json();
+  fs.writeFileSync(path.join(tmp, 'grown.bin'), 'x'.repeat(4096));
+  const again = await (await req('GET', '/api/admin/health', { token: admin })).json();
+  assert.equal(again.dataBytes, first.dataBytes, 'the sizes were measured again on the second look');
+  assert.equal(again.sizesAt, first.sizesAt);
+  assert.ok(Array.isArray(again.checks.failing) && 'dataDirWritable' in again.checks.checks);
+  fs.rmSync(path.join(tmp, 'grown.bin'));
 });
 
 test('the enquiry database: settings are saved only when the check passes, and the password never comes back', async () => {

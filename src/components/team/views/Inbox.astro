@@ -39,7 +39,8 @@ const { manager, pack, team } = Astro.props;
           <select class="input" id="inboxOwner"><option value="">Anyone</option></select>
         </Fragment>
       )}
-      <span class="t-filter" hidden>
+      {/* shown from the start (hidden by inbox.js only when buyers named fewer than two products), so the row keeps its shape */}
+      <span class="t-filter">
         <label class="sr-only" for="inboxProduct">Product</label>
         <select class="input" id="inboxProduct"><option value="">Every product</option></select>
       </span>

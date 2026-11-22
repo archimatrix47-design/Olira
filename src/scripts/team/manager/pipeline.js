@@ -4,7 +4,7 @@
 // be changed on the card, with the same confirm step as the enquiry screen. The
 // board scrolls sideways on narrow screens, with a fade on the side that has more.
 import { $, $$, h, api, toast, formatDate, timeAgo } from '../../admin/api.js';
-import { scoreOf, BAND_LABEL, scoreLabel, scoreReasons, STAGES, stageLabel, stageWaits, stageSince } from '../../../../lib/lead-rules.js';
+import { scoreOf, BAND_LABEL, scoreLabel, scoreReasons, STAGES, stageLabel, stageWaits, recentMoves } from '../../../../lib/lead-rules.js';
 import { int } from '../../../../lib/format.js';
 import { confirmSelect } from '../../admin/stage-control.js';
 import { leads, putLead, followupsOf, lineOf, LINE_LABEL, teamOf } from '../session.js';
@@ -18,7 +18,6 @@ const COLUMNS = [
   { id: 'lost', label: 'Lost', note: 'Last 30 days', closed: true },
 ];
 const SHOWN = 12; // the most urgent per column; the rest are a click away in Enquiries
-const DAY = 86400000;
 const MONTH = 30 * 86400000;
 let bound = false;
 let all = [];
@@ -100,7 +99,7 @@ function render() {
     const value = ['quoted', 'won'].includes(c.id) ? money(c.items) : '';
     // the most urgent first; then what moved into this stage in the last day, so movement is seen
     const top = c.items.slice(0, SHOWN);
-    const fresh = c.items.slice(SHOWN).filter((l) => now - stageSince(l) < DAY).slice(0, 5);
+    const fresh = recentMoves(c.items.slice(SHOWN), now); // the newest moves first, so today's quote is never cut
     const more = c.items.length - top.length - fresh.length;
     return h('section', { class: `t-col t-col-${c.id}`, 'aria-labelledby': `pipe-${c.id}` },
       h('header', {},

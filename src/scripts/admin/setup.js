@@ -21,6 +21,7 @@ export async function show() {
   } catch (e) {
     if (e.status !== 401) toast(e.message, 'error');
   } finally {
+    $('#ovAttention > .v-skeleton')?.remove(); // shows the cards below even when the overview could not load
     view().removeAttribute('aria-busy');
   }
 }
