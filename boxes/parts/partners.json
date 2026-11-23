@@ -12,6 +12,7 @@
   "tests": [],
   "checkedBy": "test/workspace.test.js covers who may change them.",
   "uses": [
+    "image-upload",
     "staff-accounts",
     "staff-ui",
     "storage"

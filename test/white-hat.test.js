@@ -178,3 +178,45 @@ test('the staff screens get a narrower content policy than the public pages', as
   assert.match(pub, /googletagmanager/, 'public pages keep the optional Google tag');
   assert.match(directive(pub, 'img-src'), /(^|\s)https:(\s|$)/);
 });
+
+test('through the real form: a buyer\'s photo is kept without its metadata, a scripted PDF is refused, text is cleaned', async () => {
+  const sharp = (await import('sharp')).default;
+  const photo = await sharp({ create: { width: 60, height: 40, channels: 3, background: '#a0522d' } }).jpeg().withExif({ IFD0: { Artist: 'Buyer Phone' } }).toBuffer();
+  const scripted = Buffer.from('%PDF-1.7\n1 0 obj\n<< /Type /Catalog /OpenAction << /S /JavaScript /JS (app.alert(1)) >> >>\nendobj\n%%EOF\n', 'latin1');
+  const fd = new FormData();
+  for (const [k, v] of Object.entries({ name: 'Gr‮eta\u0007 Buyer', email: 'photo.buyer@example.com', message: 'Bags, please.\r\nThanks', product: 'Kraft paper bags', consent: '1' })) fd.append(k, v);
+  fd.append('files', new Blob([photo], { type: 'image/jpeg' }), 'artwork.jpg');
+  fd.append('files', new Blob([scripted], { type: 'application/pdf' }), 'artwork.pdf');
+  const r = await req('POST', '/api/inquiry', { from: '192.0.2.70', form: fd });
+  assert.ok(r.status === 200 || r.status === 400, `answered ${r.status}`);
+  const rec = JSON.parse(fs.readFileSync(path.join(tmp, 'inquiries.json'), 'utf8')).find((i) => i.email === 'photo.buyer@example.com');
+  assert.ok(rec, 'the enquiry is saved');
+  assert.equal(rec.name, 'Greta Buyer', 'direction and control marks removed');
+  assert.equal(rec.message, 'Bags, please.\nThanks');
+  assert.equal(rec.files.length, 1, 'the scripted PDF was refused, the photo kept');
+  const stored = fs.readFileSync(path.join(tmp, 'client-files', rec.id, rec.files[0].stored));
+  assert.ok(!stored.includes('Buyer Phone'), 'no camera metadata on disk');
+  assert.equal((await sharp(stored).metadata()).width, 60);
+});
+
+test('/uploads serves only pictures and PDFs, and a picture opened on its own is inert', async () => {
+  const up = path.join(tmp, 'uploads', 'partners');
+  fs.mkdirSync(up, { recursive: true });
+  fs.writeFileSync(path.join(up, 'logo.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+  fs.writeFileSync(path.join(up, 'page.html'), '<script>alert(1)</script>');
+  fs.writeFileSync(path.join(up, '.secret'), 'x');
+  assert.equal((await req('GET', '/uploads/partners/page.html')).status, 404);
+  assert.equal((await req('GET', '/uploads/partners/.secret')).status, 404);
+  const svg = await req('GET', '/uploads/partners/logo.svg');
+  assert.equal(svg.status, 200);
+  assert.match(svg.headers.get('content-security-policy') || '', /sandbox/);
+  assert.match(svg.headers.get('content-security-policy') || '', /default-src 'none'/);
+});
+
+test('a JSON request is cleaned at the door too', async () => {
+  const r = await req('POST', '/api/inquiry', { from: '192.0.2.80', body: { name: 'Jo‮hn\u0000 Buyer', email: 'json.buyer@example.com', message: 'Sesame,\r\nplease.', product: 'Humera sesame' } });
+  assert.ok(r.status === 200 || r.status === 502 || r.status === 500, `answered ${r.status}`);
+  const rec = JSON.parse(fs.readFileSync(path.join(tmp, 'inquiries.json'), 'utf8')).find((i) => i.email === 'json.buyer@example.com');
+  assert.equal(rec.name, 'John Buyer');
+  assert.equal(rec.message, 'Sesame,\nplease.');
+});

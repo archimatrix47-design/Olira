@@ -14,6 +14,7 @@
   ],
   "uses": [
     "ai-access",
+    "site-basics",
     "storage"
   ],
   "data": [],

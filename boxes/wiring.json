@@ -806,6 +806,7 @@
     "admin-panel",
     "admin-sign-in",
     "email",
+    "image-upload",
     "site-basics",
     "site-data",
     "site-shell",
@@ -893,6 +894,7 @@
    "guards": 0,
    "imports": [
     "admin-panel",
+    "image-upload",
     "site-basics",
     "site-data",
     "site-shell",
@@ -1272,6 +1274,7 @@
     "contact",
     "email",
     "enquiries",
+    "image-upload",
     "lead-store",
     "packaging-catalogue",
     "packing-list",
@@ -1365,6 +1368,7 @@
    "guards": 0,
    "imports": [
     "enquiries",
+    "image-upload",
     "packing-list",
     "site-basics",
     "staff-accounts",
@@ -1524,15 +1528,22 @@
    "does": "Makes an uploaded picture safe and small: everything, SVG included, is redrawn as WebP.",
    "kind": "foundation",
    "files": [
-    "lib/image-upload.js"
+    "lib/image-upload.js",
+    "lib/file-safety.js"
    ],
-   "tests": [],
+   "tests": [
+    "test/file-safety.test.js"
+   ],
    "data": [],
    "reads": [],
    "uses": [],
    "usedBy": [
     "agri-catalogue",
-    "branding"
+    "branding",
+    "certificates",
+    "enquiry-work",
+    "packaging-catalogue",
+    "partners"
    ],
    "plugOrder": null,
    "receives": [],
@@ -1962,6 +1973,7 @@
     "enquiries",
     "facts-spreadsheet",
     "home-panels",
+    "image-upload",
     "manager-reports",
     "mockup-studio",
     "packaging-3d",
@@ -2063,6 +2075,7 @@
     "enquiries",
     "facts-spreadsheet",
     "home-panels",
+    "image-upload",
     "manager-reports",
     "mockup-studio",
     "packaging-3d",
@@ -2175,6 +2188,7 @@
    ],
    "reads": [],
    "uses": [
+    "image-upload",
     "staff-accounts",
     "staff-ui",
     "storage"
@@ -2229,6 +2243,7 @@
    ],
    "guards": 0,
    "imports": [
+    "image-upload",
     "staff-ui"
    ],
    "calls": {},
@@ -2418,7 +2433,8 @@
     "enquiry-work",
     "site-log",
     "staff-accounts",
-    "storage"
+    "storage",
+    "web-guards"
    ],
    "plugOrder": null,
    "receives": [],
@@ -3203,7 +3219,7 @@
    "routes": [
     "GET *"
    ],
-   "guards": 5,
+   "guards": 6,
    "imports": [],
    "calls": {},
    "sends": [],
@@ -3496,6 +3512,7 @@
    "reads": [],
    "uses": [
     "ai-access",
+    "site-basics",
     "storage"
    ],
    "usedBy": [
@@ -3530,8 +3547,10 @@
     "makeRateLimiter"
    ],
    "routes": [],
-   "guards": 9,
-   "imports": [],
+   "guards": 10,
+   "imports": [
+    "site-basics"
+   ],
    "calls": {},
    "sends": [],
    "hears": []

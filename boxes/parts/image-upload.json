@@ -4,9 +4,12 @@
   "does": "Makes an uploaded picture safe and small: everything, SVG included, is redrawn as WebP.",
   "kind": "foundation",
   "files": [
-    "lib/image-upload.js"
+    "lib/image-upload.js",
+    "lib/file-safety.js"
   ],
-  "tests": [],
+  "tests": [
+    "test/file-safety.test.js"
+  ],
   "checkedBy": "test/api.test.js uploads a logo and a product photo through it.",
   "uses": [],
   "data": [],
