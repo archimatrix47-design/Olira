@@ -115,6 +115,7 @@ flowchart LR
   social_links --> staff_accounts
   social_links --> storage
   staff_accounts --> admin_sign_in
+  staff_accounts --> email
   staff_accounts --> storage
   staff_accounts --> web_guards
   startup --> admin_sign_in
@@ -137,7 +138,7 @@ flowchart LR
 | **email** | The mail account the site sends from, and sendEmail, which every box that writes to someone goes through. | admin-panel, admin-sign-in, admin-tools, staff-ui, staging, storage, web-guards | 2 | 3 |
 | **image-upload** | Makes an uploaded picture safe and small: everything, SVG included, is redrawn as WebP. | nothing | 0 | 2 |
 | **site-basics** | Small shared facts: who is calling, what counts as a bot, the site address, clean form text. | nothing | 0 | 1 |
-| **staff-accounts** | Who may sign in to the workspaces, with which role, and the guards the staff routes stand behind. | admin-sign-in, enquiry-work, site-basics, site-shell, staff-ui, storage, web-guards | 6 | 8 |
+| **staff-accounts** | Who may sign in to the workspaces, with which role, and the guards the staff routes stand behind. | admin-sign-in, email, enquiry-work, site-basics, site-shell, staff-ui, storage, web-guards | 6 | 8 |
 | **staging** | The password-protected copy of the site: kept out of search engines and never mails real people. | nothing | 0 | 1 |
 | **startup** | What happens once when the server really starts: a masked settings summary, safety checks, listening. | admin-sign-in, certificates, email, storage | 0 | 1 |
 | **static-site** | Serves the built pages and uploads, sets how long browsers keep them, and answers the 404 and any server error. | storage | 1 | 2 |

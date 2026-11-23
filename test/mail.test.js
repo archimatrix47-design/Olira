@@ -169,3 +169,33 @@ test('a team reply carries the attached file, a reply-to and the sender\'s name'
   const body = part.split('\r\n\r\n').slice(1).join('').replace(/\s+/g, '');
   assert.deepEqual(Buffer.from(body, 'base64'), logo, 'the file arrives byte for byte');
 });
+
+test('managers hear when the admin adds a manager or sets a staff password, and so does that person', async () => {
+  // a stolen admin session cannot quietly make itself a manager or take over an account
+  const token = await admin();
+  await member(token, { name: 'First Manager', email: 'first.manager@example.com', role: 'manager' });
+  const wait = async (n, count) => { for (let i = 0; i < 50 && since(n).length < count; i++) await new Promise((r) => setTimeout(r, 50)); return since(n); };
+  let n = mailbox.mails.length;
+  await member(token, { name: 'Second Manager', email: 'second.manager@example.com', role: 'manager' });
+  const added = (await wait(n, 1)).filter((m) => m.to.includes('first.manager@example.com'));
+  assert.equal(added.length, 1, 'the existing manager is told');
+  assert.match(header(added[0].data, 'Subject'), /manager account was added/);
+  assert.match(added[0].data, /Second Manager/);
+
+  const pack = await member(token, { name: 'Pack Person', email: 'pack.person@example.com', role: 'pack' });
+  n = mailbox.mails.length;
+  const r = await req('POST', '/api/admin/team', { token, body: { member: { id: pack.id, name: 'Pack Person', email: 'pack.person@example.com', role: 'pack', password: 'a-new-password-456' } } });
+  assert.equal(r.status, 200);
+  const got = await wait(n, 3);
+  const to = got.flatMap((m) => m.to).sort();
+  assert.deepEqual(to, ['first.manager@example.com', 'pack.person@example.com', 'second.manager@example.com']);
+  const own = got.find((m) => m.to.includes('pack.person@example.com'));
+  assert.match(header(own.data, 'Subject'), /Your Olira staff password was changed/);
+  assert.ok(!got.some((m) => m.data.includes('a-new-password-456')), 'the password itself is never mailed');
+
+  // a plain edit (no new password, no new manager) sends nothing
+  n = mailbox.mails.length;
+  await req('POST', '/api/admin/team', { token, body: { member: { id: pack.id, name: 'Pack Person B', email: 'pack.person@example.com', role: 'pack' } } });
+  await new Promise((r) => setTimeout(r, 300));
+  assert.equal(since(n).length, 0);
+});

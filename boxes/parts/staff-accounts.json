@@ -18,6 +18,7 @@
   "checkedBy": "test/workspace.test.js signs in as each role and checks what each may reach.",
   "uses": [
     "admin-sign-in",
+    "email",
     "enquiry-work",
     "site-basics",
     "site-shell",

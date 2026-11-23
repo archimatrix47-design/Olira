@@ -1079,6 +1079,7 @@
     "certificates",
     "enquiries",
     "enquiry-work",
+    "staff-accounts",
     "staff-ui",
     "startup"
    ],
@@ -2847,6 +2848,7 @@
    "reads": [],
    "uses": [
     "admin-sign-in",
+    "email",
     "enquiry-work",
     "site-basics",
     "site-shell",
@@ -2895,6 +2897,11 @@
      "as": "audit"
     },
     {
+     "name": "logError",
+     "from": "storage",
+     "as": "logError"
+    },
+    {
      "name": "verifyTokenDetailed",
      "from": "admin-sign-in",
      "as": "verifyTokenDetailed"
@@ -2918,6 +2925,16 @@
      "name": "isLoginDisabled",
      "from": "admin-sign-in",
      "as": "isLoginDisabled"
+    },
+    {
+     "name": "sendEmail",
+     "from": "email",
+     "as": "sendEmail"
+    },
+    {
+     "name": "loadEmailConfig",
+     "from": "email",
+     "as": "loadEmailConfig"
     }
    ],
    "offers": [

@@ -60,7 +60,7 @@ plug('staging', (a) => registerStaging(a));
 const { rateLimit, makeRateLimiter } = plug('web-guards', registerWebGuards, { distPath, connectSource: later('ai-access', 'connectSource', (req) => ai.connectSource(req)) });
 const { adminAuth, verifyTokenDetailed, generateToken, checkOrigin, isAdminRequest, adoptResetIfPresent, hasUsableAdminCredential, isLoginDisabled, disableLogin, tokenSecret } = plug('admin-sign-in', registerAdminAuth, { dataDir, writeJsonFile, audit, logError, makeRateLimiter });
 const { sendEmail, loadEmailConfig, initializeEmailConfig } = plug('email', registerEmail, { settingsPath, rateLimit, adminAuth, audit });
-const { readTeam, teamAuth, roleAuth, teamEmailsFor, managerEmails } = plug('staff-accounts', registerStaffAccounts, { dataDir, readJsonFile, writeJsonFile, audit, verifyTokenDetailed, generateToken, checkOrigin, makeRateLimiter, isLoginDisabled });
+const { readTeam, teamAuth, roleAuth, teamEmailsFor, managerEmails } = plug('staff-accounts', registerStaffAccounts, { dataDir, readJsonFile, writeJsonFile, audit, logError, verifyTokenDetailed, generateToken, checkOrigin, makeRateLimiter, isLoginDisabled, sendEmail, loadEmailConfig });
 
 /* ---------- what the admin looks after ---------- */
 const { loadIntegrationsConfig, saveIntegrationsConfig } = plug('marketing-tags', registerIntegrations, { settingsPath, rateLimit, adminAuth, audit });
