@@ -9,7 +9,9 @@
     "src/scripts/admin/password.js",
     "src/components/admin/views/Password.astro"
   ],
-  "tests": [],
+  "tests": [
+    "test/secret-fail-closed.test.js"
+  ],
   "checkedBy": "test/api.test.js signs in, is locked out and changes the password.",
   "uses": [
     "admin-panel",

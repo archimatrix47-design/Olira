@@ -9,7 +9,8 @@
     "lib/csp.js"
   ],
   "tests": [
-    "test/csp.test.js"
+    "test/csp.test.js",
+    "test/white-hat.test.js"
   ],
   "uses": [
     "ai-access",

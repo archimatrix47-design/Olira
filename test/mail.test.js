@@ -133,6 +133,18 @@ test('an enquiry: the inbox is told, the line\'s team on blind copy, and the buy
   assert.equal(rec.emailed, true, 'the enquiry records that the notification went out');
 });
 
+test('the thank-you goes to an address once a day, and greets only a name that looks like one', async () => {
+  // the form must not become a way to send our mail, with someone's text in it, to anyone
+  const n = mailbox.mails.length;
+  const send = (name) => req('POST', '/api/inquiry', { body: { name, email: 'target@example.com', message: 'A price for sesame, please.', product: 'Humera sesame' } });
+  assert.equal((await send('Win cash at http://spam.example')).status, 200);
+  assert.equal((await send('Abebe Sample')).status, 200);
+  const thanks = since(n).filter((m) => m.to.includes('target@example.com'));
+  assert.equal(thanks.length, 1, 'one thank-you a day for the same address');
+  assert.match(thanks[0].data, /Hello,/);
+  assert.doesNotMatch(thanks[0].data, /spam\.example/, 'the visitor\'s text is not mailed out');
+});
+
 test('a team reply carries the attached file, a reply-to and the sender\'s name', async () => {
   const token = await admin();
   const pack = await member(token, { name: 'Dawit Pack', email: 'dawit.pack@example.com', role: 'pack' });

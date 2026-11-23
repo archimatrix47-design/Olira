@@ -174,7 +174,7 @@ flowchart LR
 
 | Box | What it does | Connects to | Routes | Files |
 | --- | --- | --- | --- | --- |
-| **enquiries** | A buyer sends an enquiry: it is checked, saved before any email is tried, routed to its team, and acknowledged. | analytics, email, enquiry-work, lead-store, packaging-catalogue, site-data, staff-accounts, storage, web-guards | 1 | 5 |
+| **enquiries** | A buyer sends an enquiry: it is checked, saved before any email is tried, routed to its team, and acknowledged. | analytics, email, enquiry-work, lead-store, packaging-catalogue, site-basics, site-data, staff-accounts, storage, web-guards | 1 | 5 |
 | **enquiry-work** | The inboxes, pipeline, replies, quotes, buyers and files, for the teams and the manager. | agri-catalogue, branding, certificates, contact, email, enquiries, lead-store, packaging-catalogue, packing-list, site-basics, staff-accounts, staff-ui, storage, web-guards | 9 | 15 |
 | **lead-store** | Where enquiries are kept: a database when there is one, a file otherwise, so a buyer is never lost. | enquiry-work, staging, storage | 0 | 1 |
 | **mockup-studio** | A visitor sees their brand on a product, as a photo or a 3D package, and sends the design with their request. | branding, enquiry-work, packaging-3d, packaging-catalogue, product-pages, site-shell, staff-accounts, staff-ui, thumbs | 0 | 10 |

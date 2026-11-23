@@ -122,7 +122,9 @@
     "src/scripts/admin/password.js",
     "src/components/admin/views/Password.astro"
    ],
-   "tests": [],
+   "tests": [
+    "test/secret-fail-closed.test.js"
+   ],
    "data": [
     "auth.json",
     "admin-reset.txt"
@@ -1145,6 +1147,7 @@
     "enquiry-work",
     "lead-store",
     "packaging-catalogue",
+    "site-basics",
     "site-data",
     "staff-accounts",
     "storage",
@@ -1227,6 +1230,7 @@
    "guards": 1,
    "imports": [
     "packaging-catalogue",
+    "site-basics",
     "site-data"
    ],
    "calls": {},
@@ -2409,6 +2413,7 @@
     "analytics",
     "certificates",
     "contact",
+    "enquiries",
     "enquiry-work",
     "site-log",
     "staff-accounts",
@@ -3483,7 +3488,8 @@
     "lib/csp.js"
    ],
    "tests": [
-    "test/csp.test.js"
+    "test/csp.test.js",
+    "test/white-hat.test.js"
    ],
    "data": [],
    "reads": [],
@@ -3523,7 +3529,7 @@
     "makeRateLimiter"
    ],
    "routes": [],
-   "guards": 8,
+   "guards": 9,
    "imports": [],
    "calls": {},
    "sends": [],
