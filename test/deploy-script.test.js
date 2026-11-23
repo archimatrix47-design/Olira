@@ -76,4 +76,6 @@ test("the host installs the repo's locked versions, not its own old lock file", 
   assert.ok(copy > 0, 'the lock file is copied into the nodevenv folder');
   assert.ok(install > copy, 'before npm install runs');
   assert.match(src, /VENV_LIB="\$HOME_DIR\/nodevenv\/\$APP_NAME\/\$NODEVER\/lib"/);
+  // once the host has linked the two, copying again fails as "the same file" and stops the deploy
+  assert.match(src, /if \[ "\$APP\/package-lock.json" -ef "\$VENV_LIB\/package-lock.json" \]; then/);
 });

@@ -76,9 +76,15 @@ cd "$APP"
 # body-parser 1.20.6, nodemailer 10.1.0 and qs 6.15.3, all with advisories, until
 # 23 Nov 2026).
 VENV_LIB="$HOME_DIR/nodevenv/$APP_NAME/$NODEVER/lib"
+# After the first such install the host links its lock file to the app's (seen 23 Nov
+# 2026), so a second copy would fail as "the same file": then there is nothing to copy.
 if [ -d "$VENV_LIB" ] && [ -f "$APP/package-lock.json" ]; then
-  cp "$APP/package-lock.json" "$VENV_LIB/package-lock.json"
-  echo "deploy:   lock     the repo's package-lock.json"
+  if [ "$APP/package-lock.json" -ef "$VENV_LIB/package-lock.json" ]; then
+    echo "deploy:   lock     the repo's package-lock.json (already linked)"
+  else
+    cp "$APP/package-lock.json" "$VENV_LIB/package-lock.json"
+    echo "deploy:   lock     the repo's package-lock.json"
+  fi
 fi
 npm install
 # the versions that will run, in the log, so a deploy shows what it installed
