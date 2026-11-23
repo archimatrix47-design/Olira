@@ -123,7 +123,7 @@ test('the enquiry database: settings are saved only when the check passes, and t
   const bad = await req('POST', '/api/admin/database', { token, body: { database: 'bad name', user: 'u', password: 'p' } });
   assert.equal(bad.status, 400);
   // a database that does not answer: checked, failed, not saved, the site stays on the file
-  const r = await req('POST', '/api/admin/database', { token, body: { database: 'oliraagr_site', user: 'oliraagr_site', password: 'secret-never-echoed', host: '127.0.0.1', port: 1 } });
+  const r = await req('POST', '/api/admin/database', { token, body: { database: 'oliraagr_site', user: 'oliraagr_site', password: 'secret-never-echoed', host: '127.0.0.1', port: 3306 } });
   const text = await r.text();
   assert.equal(r.status, 200);
   const j = JSON.parse(text);

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileLeadStore, mariaLeadStore, createLeadStore, checkMaria, dbConfigFrom, cleanDbSettings, saveDbFile, readDbFile, StoreUnavailable, StoreFull } from '../lib/lead-store.js';
+import { fileLeadStore, mariaLeadStore, createLeadStore, checkMaria, dbConfigFrom, cleanDbSettings, saveDbFile, readDbFile, StoreUnavailable, StoreFull, plainDbError } from '../lib/lead-store.js';
 
 const readJsonFile = (f, d) => { try { return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : d; } catch { return d; } };
 const writeJsonFile = (f, v) => { try { fs.writeFileSync(f, JSON.stringify(v)); return true; } catch { return false; } };
@@ -234,7 +234,7 @@ test('the database check says which step failed, and still tries to clean up', a
   const r = await checkMaria({ config: { database: 'oliraagr_site', host: 'localhost', user: 'u' }, createPool: () => db.pool, readJsonFile, writeJsonFile });
   assert.equal(r.ok, false);
   assert.equal(r.steps[0].ok, false);
-  assert.match(r.steps[0].detail, /ECONNREFUSED/);
+  assert.equal(r.steps[0].detail, 'Could not reach the database server.', 'plain words, never the network code');
   assert.equal(r.steps.at(-1).step, 'Removes the scratch table');
   assert.equal(dbConfigFrom({ DB_NAME: 'oliraagr_site', DB_USER: 'oliraagr_site', DB_PASSWORD: 'x' }).host, 'localhost');
   assert.equal(dbConfigFrom({}), null);
@@ -284,8 +284,12 @@ test('what the admin types is checked, and a blank password keeps the saved one 
   assert.deepEqual(cleanDbSettings({ database: 'oliraagr_site', user: 'oliraagr_site', password: '' }, saved).config.password, 'kept');
   assert.match(cleanDbSettings({ database: 'oliraagr_site', user: 'someone_else', password: '' }, saved).error, /password/);
   // another server or port never gets the saved password sent to it
-  assert.match(cleanDbSettings({ host: 'attacker.example', database: 'oliraagr_site', user: 'oliraagr_site', password: '' }, saved).error, /password/);
-  assert.match(cleanDbSettings({ port: 3307, database: 'oliraagr_site', user: 'oliraagr_site', password: '' }, saved).error, /password/);
+  // even where another host or port is allowed, it never gets the saved password sent to it
+  process.env.DB_ALLOWED_HOSTS = 'attacker.example'; process.env.DB_ALLOWED_PORTS = '3307';
+  try {
+    assert.match(cleanDbSettings({ host: 'attacker.example', database: 'oliraagr_site', user: 'oliraagr_site', password: '' }, saved).error, /password/);
+    assert.match(cleanDbSettings({ port: 3307, database: 'oliraagr_site', user: 'oliraagr_site', password: '' }, saved).error, /password/);
+  } finally { delete process.env.DB_ALLOWED_HOSTS; delete process.env.DB_ALLOWED_PORTS; }
   assert.match(cleanDbSettings({ database: 'olira site; DROP', user: 'u', password: 'p' }).error, /database name/);
   assert.match(cleanDbSettings({ database: 'd', user: "u'--", password: 'p' }).error, /database user/);
   assert.match(cleanDbSettings({ database: 'd', user: 'u', password: 'p', host: 'bad host/' }).error, /host/);
@@ -305,4 +309,17 @@ test('database.json: written whole, read back, and an incomplete one counts as n
   fs.writeFileSync(f, '{not json');
   assert.equal(readDbFile(f), null);
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('the database is on this server: other hosts and ports are refused, network errors say nothing about them', () => {
+  // the admin's check could otherwise knock on other machines or local ports (white-hat, 23 Nov 2026)
+  const ok = { database: 'oliraagr_site', user: 'oliraagr_site', password: 'p' };
+  assert.ok(cleanDbSettings({ ...ok, host: 'localhost', port: 3306 }).config);
+  assert.ok(cleanDbSettings({ ...ok, host: '127.0.0.1' }).config);
+  for (const host of ['10.0.0.5', '169.254.169.254', 'db.example.com']) assert.match(cleanDbSettings({ ...ok, host }).error, /this server/, host);
+  for (const port of [22, 80, 3456, 6379]) assert.match(cleanDbSettings({ ...ok, port }).error, /3306/, String(port));
+  process.env.DB_ALLOWED_HOSTS = 'db.example.com';
+  try { assert.ok(cleanDbSettings({ ...ok, host: 'db.example.com' }).config, 'the owner can allow another host'); } finally { delete process.env.DB_ALLOWED_HOSTS; }
+  for (const e of [{ code: 'ECONNREFUSED' }, { code: 'ETIMEDOUT' }, { cause: { code: 'EHOSTUNREACH' } }, new Error('connect ECONNREFUSED 127.0.0.1:3307')]) assert.equal(plainDbError(e), 'Could not reach the database server.');
+  assert.equal(plainDbError({ code: 'ER_ACCESS_DENIED_ERROR' }), 'ER_ACCESS_DENIED_ERROR', 'a wrong password is still said plainly');
 });
