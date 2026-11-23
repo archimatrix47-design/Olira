@@ -70,7 +70,19 @@ wasm_fit
 /usr/bin/rsync -a --delete --exclude='.git' --exclude='node_modules' --exclude='tmp' --exclude='dist' --exclude='.env' "$REPO/" "$APP/"
 
 cd "$APP"
+# CloudLinux runs npm inside the app's nodevenv folder, which keeps its OWN lock file
+# and only links package.json: without this copy the repo's locked, audited versions
+# were never used, and an existing app kept old ones (live ran multer 2.2.0,
+# body-parser 1.20.6, nodemailer 10.1.0 and qs 6.15.3, all with advisories, until
+# 23 Nov 2026).
+VENV_LIB="$HOME_DIR/nodevenv/$APP_NAME/$NODEVER/lib"
+if [ -d "$VENV_LIB" ] && [ -f "$APP/package-lock.json" ]; then
+  cp "$APP/package-lock.json" "$VENV_LIB/package-lock.json"
+  echo "deploy:   lock     the repo's package-lock.json"
+fi
 npm install
+# the versions that will run, in the log, so a deploy shows what it installed
+node -e "for (const n of ['express', 'multer', 'body-parser', 'qs', 'nodemailer', 'sharp']) { try { console.log('deploy:   ' + n + ' ' + require(n + '/package.json').version); } catch (e) { console.log('deploy:   ' + n + ' missing'); } }"
 # the pages are built from this app's own data (src/lib/site-data.ts)
 DATA_DIR="$DATA" SITE_ENV="$SITE_ENV" npm run build
 /bin/sh "$APP/scripts/restart-app.sh" "$APP"

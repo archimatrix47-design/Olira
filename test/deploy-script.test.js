@@ -66,3 +66,14 @@ test("CloudLinux's activate script, which reads unset variables, does not stop t
     assert.equal(r.status, 0, r.stderr);
   } finally { fs.rmSync(home, { recursive: true, force: true }); }
 });
+
+test("the host installs the repo's locked versions, not its own old lock file", () => {
+  // CloudLinux runs npm in ~/nodevenv/<app>/<node>/lib, which has its own package-lock.json;
+  // live kept packages with advisories until the deploy copied the repo's lock there first
+  const src = fs.readFileSync(SCRIPT, 'utf8');
+  const copy = src.indexOf('cp "$APP/package-lock.json" "$VENV_LIB/package-lock.json"');
+  const install = src.indexOf('\nnpm install');
+  assert.ok(copy > 0, 'the lock file is copied into the nodevenv folder');
+  assert.ok(install > copy, 'before npm install runs');
+  assert.match(src, /VENV_LIB="\$HOME_DIR\/nodevenv\/\$APP_NAME\/\$NODEVER\/lib"/);
+});

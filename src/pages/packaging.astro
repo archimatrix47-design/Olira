@@ -110,7 +110,7 @@ const catalogueItems = photoFirst(packagingProducts).map((p) => flowItem(p, fami
           </ProductGrid>
         </div>
         <script type="application/json" id="packagingData" set:html={JSON.stringify(packagingProducts).replace(/</g, '\\u003c')}></script>
-        <script type="application/json" id="productPages" set:html={JSON.stringify(pages)}></script>
+        <script type="application/json" id="productPages" set:html={JSON.stringify(pages).replace(/</g, '\\u003c')}></script>
         <ProductIndex id="packIndex" groups={famsInUse.map((f) => ({ label: f.label, items: packagingProducts.filter((p) => p.family === f.id).map((p) => ({ name: p.name, href: pages[p.id] })) }))} />
       </div>
     </section>

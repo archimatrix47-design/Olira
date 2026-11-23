@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 // server.js loads .env with dotenv, which fills in any variable that is not
 // already present. Keys set to '' count as present, so the real mail account,
@@ -332,11 +333,38 @@ test('enquiry pipeline keeps a dated history and notes; the admin does not see e
 // ---- Restart-free admin credentials ----
 test('admin can change the password from the panel, effective immediately (no restart)', async () => {
   const { token } = await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json();
-  const chg = await post('/api/admin/change-password', { newPassword: 'panel_new_password_1' }, { Authorization: `Bearer ${token}` });
+  const other = (await (await post('/api/admin/login', { password: 'test_admin_password_123' })).json()).token; // a second device
+  // the current password is asked for: a session left open cannot lock the owner out
+  const refused = await post('/api/admin/change-password', { newPassword: 'panel_new_password_1', currentPassword: 'not_the_password_1' }, { Authorization: `Bearer ${token}` });
+  assert.equal(refused.status, 400);
+  assert.equal((await post('/api/admin/change-password', { newPassword: 'panel_new_password_1' }, { Authorization: `Bearer ${token}` })).status, 400, 'no current password, no change');
+  const chg = await post('/api/admin/change-password', { newPassword: 'panel_new_password_1', currentPassword: 'test_admin_password_123' }, { Authorization: `Bearer ${token}` });
   assert.equal(chg.status, 200);
+  const fresh = (await chg.json()).token;
   // old password now rejected, new one works — with no process restart
   assert.equal((await post('/api/admin/login', { password: 'test_admin_password_123' })).status, 401);
   assert.equal((await post('/api/admin/login', { password: 'panel_new_password_1' })).status, 200);
+  // every older admin session has ended; the device that changed it carries on with its new token
+  assert.equal((await get('/api/admin/verify', { Authorization: `Bearer ${other}` })).status, 401, 'the other device is signed out');
+  assert.equal((await get('/api/admin/verify', { Authorization: `Bearer ${token}` })).status, 401, 'the old token too');
+  assert.equal((await get('/api/admin/verify', { Authorization: `Bearer ${fresh}` })).status, 200);
+  // stored with scrypt and a salt, never a fast hash
+  const saved = JSON.parse(fs.readFileSync(path.join(process.env.DATA_DIR, 'auth.json'), 'utf8'));
+  assert.ok(saved.scrypt?.length === 128 && saved.salt && !saved.passwordSha256 && saved.pv === 2);
+});
+
+test('an old-style saved admin password still works and moves to scrypt at sign-in', async () => {
+  const authPath = path.join(process.env.DATA_DIR, 'auth.json');
+  const before = fs.readFileSync(authPath, 'utf8');
+  const sha = crypto.createHash('sha256').update(`legacy_password_12|${process.env.JWT_SECRET}`).digest('hex');
+  fs.writeFileSync(authPath, JSON.stringify({ passwordSha256: sha, pv: 2, source: 'panel' }));
+  const r = await post('/api/admin/login', { password: 'legacy_password_12' });
+  assert.equal(r.status, 200);
+  const saved = JSON.parse(fs.readFileSync(authPath, 'utf8'));
+  assert.ok(saved.scrypt && !saved.passwordSha256 && saved.pv === 2, 'upgraded, same version, nobody signed out');
+  assert.equal((await get('/api/admin/verify', { Authorization: `Bearer ${(await r.json()).token}` })).status, 200);
+  assert.equal((await post('/api/admin/login', { password: 'legacy_password_12' })).status, 200, 'the same password after the upgrade');
+  fs.writeFileSync(authPath, before);
 });
 
 test('change-password rejects a too-short password', async () => {

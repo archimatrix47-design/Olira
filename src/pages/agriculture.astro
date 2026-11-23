@@ -80,7 +80,7 @@ const jsonLd = graph(
         </div>
       </ProductGrid>
       <script type="application/json" id="productsData" set:html={JSON.stringify(products).replace(/</g, '\\u003c')}></script>
-      <script type="application/json" id="productPages" set:html={JSON.stringify(pages)}></script>
+      <script type="application/json" id="productPages" set:html={JSON.stringify(pages).replace(/</g, '\\u003c')}></script>
       <ProductIndex id="agriIndex" groups={[...new Set(products.map((p) => p.category || 'Other'))].map((cat) => ({ label: cat, items: products.filter((p) => (p.category || 'Other') === cat).map((p) => ({ name: p.name, href: pages[p.id] })) }))} />
 
     </section>

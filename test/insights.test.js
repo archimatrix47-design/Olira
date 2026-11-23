@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { tally } from '../lib/analytics.js';
 
 for (const key of ['NODE_ENV', 'PORT', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_NAME', 'RECIPIENT_EMAIL', 'CORS_ORIGINS', 'SITE_URL']) process.env[key] = '';
 process.env.NODE_ENV = 'test';
@@ -59,4 +60,29 @@ test('each team sees its own line; the manager chooses; nobody else gets in', as
   const m = await (await req('GET', '/api/team/insights?line=pack', { token: mgr })).json();
   assert.equal(m.line, 'pack', 'the manager chooses the line');
   assert.ok(Array.isArray(m.site.channels) && m.site.devices, 'site-wide sources come along, labelled as such');
+});
+
+test('counts under names a visitor sent: inherited names go to "other", and the names are capped', () => {
+  const o = {};
+  for (const k of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) tally(o, k);
+  assert.deepEqual(Object.keys(o), ['other']);
+  assert.equal(o.other, 4);
+  assert.equal(Object.getPrototypeOf(o), Object.prototype, 'the prototype is untouched');
+  const capped = {};
+  for (let i = 0; i < 10; i++) tally(capped, `made-up ${i}`, 1, 3);
+  assert.equal(Object.keys(capped).length, 4, 'three names, then "other"');
+  assert.equal(capped.other, 7);
+  tally(capped, 'made-up 0', 2, 3);
+  assert.equal(capped['made-up 0'], 3, 'a name already counted keeps counting past the cap');
+});
+
+test('a ping naming "toString" or "constructor" leaves the reports as numbers', async () => {
+  await req('POST', '/api/track', { body: { event: 'product', product: 'toString' } });
+  await req('POST', '/api/track', { body: { event: 'product', product: 'constructor' } });
+  await req('POST', '/api/track', { body: { path: '/', referrer: 'http://constructor/' } });
+  const mgr = await member('manager', 'mgr.proto@example.com');
+  const r = await req('GET', '/api/analytics?days=30', { token: mgr });
+  assert.equal(r.status, 200);
+  const text = await r.text();
+  assert.ok(!/function|\[native code\]|NaN/.test(text), 'no function text or NaN in the report');
 });
