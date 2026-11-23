@@ -127,7 +127,8 @@
    ],
    "data": [
     "auth.json",
-    "admin-reset.txt"
+    "admin-reset.txt",
+    "revoked-tokens.json"
    ],
    "reads": [],
    "uses": [

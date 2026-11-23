@@ -63,6 +63,7 @@ data/admin-audit.log
 data/inquiries-pending.json
 data/database.json
 data/auth.json
+data/revoked-tokens.json
 # Customer inquiry leads — contains PII, must never be committed
 data/inquiries.json
 src/data/burayu-grid.cache.json

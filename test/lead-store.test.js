@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileLeadStore, mariaLeadStore, createLeadStore, checkMaria, dbConfigFrom, cleanDbSettings, saveDbFile, readDbFile, StoreUnavailable } from '../lib/lead-store.js';
+import { fileLeadStore, mariaLeadStore, createLeadStore, checkMaria, dbConfigFrom, cleanDbSettings, saveDbFile, readDbFile, StoreUnavailable, StoreFull } from '../lib/lead-store.js';
 
 const readJsonFile = (f, d) => { try { return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : d; } catch { return d; } };
 const writeJsonFile = (f, v) => { try { fs.writeFileSync(f, JSON.stringify(v)); return true; } catch { return false; } };
@@ -93,13 +93,18 @@ for (const kind of ['file', 'mariadb']) {
   });
 }
 
-test('file: keeps the newest 1,000 and lets go of the files of the ones dropped', async () => {
+test('file: when full, only a finished enquiry makes room; open ones are never pushed out', async () => {
   const dir = tmp();
   const dropped = [];
   const store = fileLeadStore({ file: path.join(dir, 'inquiries.json'), readJsonFile, writeJsonFile, max: 3, onDrop: (old) => dropped.push(old.id) });
-  for (const id of ['a', 'b', 'c', 'd']) await store.add(lead(id, '2026-10-01T00:00:00Z'));
+  await store.add({ ...lead('a', '2026-10-01T00:00:00Z'), status: 'won' });
+  for (const id of ['b', 'c', 'd']) await store.add(lead(id, '2026-10-01T00:00:00Z'));
+  assert.deepEqual((await store.all()).map((l) => l.id), ['d', 'c', 'b'], 'the won one made room');
+  assert.deepEqual(dropped, ['a'], 'and its files were let go');
+  // full of open enquiries: a flood of form posts cannot erase them (white-hat, 23 Nov 2026)
+  await assert.rejects(() => store.add(lead('e', '2026-10-01T00:00:00Z')), StoreFull);
   assert.deepEqual((await store.all()).map((l) => l.id), ['d', 'c', 'b']);
-  assert.deepEqual(dropped, ['a']);
+  assert.equal(store.health(), true, 'full is not broken');
 });
 
 test('file: a damaged file is reported, never read as an empty list', async () => {
@@ -278,6 +283,9 @@ test('what the admin types is checked, and a blank password keeps the saved one 
   const saved = { host: 'localhost', port: 3306, database: 'oliraagr_site', user: 'oliraagr_site', password: 'kept' };
   assert.deepEqual(cleanDbSettings({ database: 'oliraagr_site', user: 'oliraagr_site', password: '' }, saved).config.password, 'kept');
   assert.match(cleanDbSettings({ database: 'oliraagr_site', user: 'someone_else', password: '' }, saved).error, /password/);
+  // another server or port never gets the saved password sent to it
+  assert.match(cleanDbSettings({ host: 'attacker.example', database: 'oliraagr_site', user: 'oliraagr_site', password: '' }, saved).error, /password/);
+  assert.match(cleanDbSettings({ port: 3307, database: 'oliraagr_site', user: 'oliraagr_site', password: '' }, saved).error, /password/);
   assert.match(cleanDbSettings({ database: 'olira site; DROP', user: 'u', password: 'p' }).error, /database name/);
   assert.match(cleanDbSettings({ database: 'd', user: "u'--", password: 'p' }).error, /database user/);
   assert.match(cleanDbSettings({ database: 'd', user: 'u', password: 'p', host: 'bad host/' }).error, /host/);

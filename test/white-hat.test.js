@@ -129,3 +129,52 @@ test('a stranger can leave only so many megabytes of files a day', async () => {
   const other = await req('POST', '/api/inquiry', { from: '192.0.2.51', form: fd('three.pdf') });
   assert.ok(other.status !== 400, 'another address has its own budget');
 });
+
+test('a sign-out is kept on disk, so a restart does not bring the session back', async () => {
+  const token = await adminToken();
+  assert.equal((await req('GET', '/api/admin/verify', { token })).status, 200);
+  assert.equal((await req('POST', '/api/admin/logout', { token })).status, 200);
+  assert.equal((await req('GET', '/api/admin/verify', { token })).status, 401);
+  const saved = JSON.parse(fs.readFileSync(path.join(tmp, 'revoked-tokens.json'), 'utf8'));
+  assert.ok(saved.length >= 1 && saved.every(([h, until]) => typeof h === 'string' && until > Date.now()));
+});
+
+test('small hardening: one-line subjects, odd product ids, made-up countries, broken JSON', async () => {
+  const { oneLine } = await import('../lib/site-basics.js');
+  assert.equal(oneLine('Re: price\r\nBcc: x@example.com', 200), 'Re: price Bcc: x@example.com');
+
+  const admin = await adminToken();
+  await req('POST', '/api/admin/team', { token: admin, body: { member: { name: 'Agri Ids', email: 'agri.ids@example.com', role: 'agri', password: 'member-password-12' } } });
+  const agri = (await (await req('POST', '/api/team/login', { body: { email: 'agri.ids@example.com', password: 'member-password-12' } })).json()).token;
+  for (const id of [{ x: 1 }, '../escape', 'a b']) {
+    const r = await req('POST', '/api/products', { token: agri, body: { product: { id, name: 'Odd Id Beans', category: 'Pulses', description: 'Test beans.' } } });
+    assert.equal(r.status, 200, JSON.stringify(id));
+  }
+  const ids = (await (await req('GET', '/api/products')).json()).map((p) => p.id);
+  assert.ok(ids.includes('odd-id-beans') && !ids.some((i) => typeof i !== 'string' || /[./ ]/.test(i)), 'the id is made from the name');
+
+  await fetch(base + '/api/track', { method: 'POST', headers: { 'User-Agent': UA, 'Content-Type': 'application/json', 'CF-IPCountry': 'FR' }, body: JSON.stringify({ path: '/' }) });
+  const mgr = (await (await req('POST', '/api/team/login', { body: { email: 'act.manager@example.com', password: 'member-password-12' } })).json()).token;
+  assert.doesNotMatch(await (await req('GET', '/api/analytics?days=7', { token: mgr })).text(), /"FR"/, 'no country without a CDN in front');
+
+  const errLog = path.join(tmp, 'logs', 'error.log');
+  const before = fs.existsSync(errLog) ? fs.statSync(errLog).size : 0;
+  const bad = await fetch(base + '/api/track', { method: 'POST', headers: { 'User-Agent': UA, 'Content-Type': 'application/json' }, body: '{not json' });
+  assert.equal(bad.status, 400);
+  assert.match((await bad.json()).error, /not valid JSON/);
+  assert.equal(fs.existsSync(errLog) ? fs.statSync(errLog).size : 0, before, 'not written to the error log');
+});
+
+test('the staff screens get a narrower content policy than the public pages', async () => {
+  const csp = async (p) => (await fetch(base + p, { headers: { 'User-Agent': UA } })).headers.get('content-security-policy') || '';
+  const directive = (policy, name) => (policy.split(';').map((d) => d.trim()).find((d) => d.startsWith(name + ' ')) || '');
+  for (const p of ['/admin/', '/team/', '/team/manager/']) {
+    const policy = await csp(p);
+    assert.ok(policy, p);
+    assert.doesNotMatch(policy, /googletagmanager/, `${p}: no tag host`);
+    for (const d of ['img-src', 'connect-src']) assert.doesNotMatch(directive(policy, d), /(^|\s)https:(\s|$)/, `${p} ${d}: no "any https site"`);
+  }
+  const pub = await csp('/');
+  assert.match(pub, /googletagmanager/, 'public pages keep the optional Google tag');
+  assert.match(directive(pub, 'img-src'), /(^|\s)https:(\s|$)/);
+});

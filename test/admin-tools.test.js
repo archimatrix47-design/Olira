@@ -138,3 +138,15 @@ test('the enquiry database: settings are saved only when the check passes, and t
   await settle();
   assert.ok(fs.readFileSync(path.join(tmp, 'admin-audit.log'), 'utf8').includes('database_rejected'));
 });
+
+test('the saved mail password is kept only for the same server and account', async () => {
+  const admin = await login();
+  const base = { smtpHost: '127.0.0.1', smtpPort: '1', smtpUser: 'test@example.com', recipientEmail: 'inbox@example.com', fromName: 'Test' };
+  assert.equal((await req('POST', '/api/email-config', { token: admin, body: { ...base, smtpPassword: 'saved-password-1' } })).status, 200);
+  assert.equal((await req('POST', '/api/email-config', { token: admin, body: { ...base, smtpPassword: '' } })).status, 200, 'same account: kept');
+  // another server, port or account never gets the saved password sent to it
+  for (const change of [{ smtpHost: 'mail.attacker.example' }, { smtpPort: '2525' }, { smtpUser: 'other@example.com' }]) {
+    const r = await req('POST', '/api/email-config', { token: admin, body: { ...base, ...change, smtpPassword: '' } });
+    assert.equal(r.status, 400, JSON.stringify(change));
+  }
+});

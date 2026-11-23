@@ -114,7 +114,7 @@ function enquiriesFact(e, fact) {
   const onDb = e.store === 'mariadb';
   const out = h('div', { class: 'a-test-result', role: 'status', 'aria-live': 'polite', hidden: true });
   const note = !onDb
-    ? `${int(e.count || 0)} enquiries; the newest ${int(e.cap || 1000)} are kept`
+    ? `${int(e.count || 0)} of ${int(e.cap || 1000)} enquiries kept; when full, finished ones make room and new ones reach the inbox by email only`
     : e.ok
       ? `${int(e.count)} enquiries${e.pending ? `, ${int(e.pending)} waiting to move in` : ''}. All are kept.`
       : `Not answering${e.error ? ` (${e.error})` : ''}${e.pending ? `. ${int(e.pending)} new enquiries are waiting on the server` : ''}.`;
