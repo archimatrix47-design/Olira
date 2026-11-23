@@ -6,12 +6,12 @@
 # scripts/deploy.sh does the work: it copies the checkout into its Node app,
 # installs, builds from that app's data folder, restarts the app and (for the
 # live site only) pings IndexNow. The checkout's branch decides where it goes:
-#   main    (~/repositories/Olira)          -> ~/olira          the live site
-#   staging (~/repositories/Olira-staging)  -> ~/olira-staging  the staging copy
+#   main    (~/repositories/Olira-live)     -> ~/olira          the live site
+#   staging (~/repositories/Olira-stage)    -> ~/olira-staging  the staging copy
 # so deploying the staging checkout can never overwrite the live site.
 #
 # Check a checkout without changing anything, in Terminal:
-#   cd ~/repositories/Olira && DEPLOY_DRY=1 sh scripts/deploy.sh
+#   cd ~/repositories/Olira-live && DEPLOY_DRY=1 sh scripts/deploy.sh
 deployment:
   tasks:
     - export DEPLOY_HOME=/home/oliraagr

@@ -126,7 +126,7 @@ IndexNow. Check both lines, then commit and push. To see what a deploy would do
 without changing anything, in Terminal:
 
 ```bash
-cd ~/repositories/Olira && DEPLOY_DRY=1 NODEVER=20 sh scripts/deploy.sh
+cd ~/repositories/Olira-live && DEPLOY_DRY=1 NODEVER=20 sh scripts/deploy.sh
 ```
 
 Then: **Git Version Control → Manage → Pull or Deploy → Update from Remote →
@@ -181,7 +181,7 @@ One-time setup, in this order:
    (The enquiries file comes along. Delete `~/olira-staging-data/inquiries.json`
    too if the copy should start without them.)
 3. **Git Version Control → Create:** clone the same GitHub URL into
-   `/home/oliraagr/repositories/Olira-staging`, then **Manage** and set the
+   `/home/oliraagr/repositories/Olira-stage`, then **Manage** and set the
    checked-out branch to `staging` (push a `staging` branch from GitHub first).
 4. **Setup Node.js App → Create Application:** same Node version as live,
    application root `olira-staging`, application URL

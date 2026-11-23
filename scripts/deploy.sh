@@ -82,7 +82,8 @@ if [ -d "$VENV_LIB" ] && [ -f "$APP/package-lock.json" ]; then
 fi
 npm install
 # the versions that will run, in the log, so a deploy shows what it installed
-node -e "for (const n of ['express', 'multer', 'body-parser', 'qs', 'nodemailer', 'sharp']) { try { console.log('deploy:   ' + n + ' ' + require(n + '/package.json').version); } catch (e) { console.log('deploy:   ' + n + ' missing'); } }"
+# (read from node_modules directly: sharp, for one, does not let require() load its package.json)
+node -e "const fs = require('fs'); for (const n of ['express', 'multer', 'body-parser', 'qs', 'nodemailer', 'sharp']) { try { console.log('deploy:   ' + n + ' ' + JSON.parse(fs.readFileSync('node_modules/' + n + '/package.json', 'utf8')).version); } catch (e) { console.log('deploy:   ' + n + ' missing'); } }"
 # the pages are built from this app's own data (src/lib/site-data.ts)
 DATA_DIR="$DATA" SITE_ENV="$SITE_ENV" npm run build
 /bin/sh "$APP/scripts/restart-app.sh" "$APP"
